@@ -1,5 +1,5 @@
 window.initModVehiculos = function() {
-    //  FUNCIÓN GLOBAL PARA VISTA PREVIA
+    // 🔹 FUNCIÓN GLOBAL PARA VISTA PREVIA
     window.previewFile = function(input, imgId) {
         const img = document.getElementById(imgId);
         if (!img) return;
@@ -70,6 +70,7 @@ window.initModVehiculos = function() {
     const selectionPanel = document.getElementById('selection-panel');
 
     let pendingData = { moto: null, auto: null };
+    let currentData = null; // Registro activo seleccionado
     let isSelectionMode = false;
 
     // 🔹 1. Poblar Años
@@ -79,7 +80,7 @@ window.initModVehiculos = function() {
         for (let y = currentYear; y >= 1850; y--) anioSelect.innerHTML += `<option value="${y}">${y}</option>`;
     }
 
-    //  2. Lógica de Marcas/Modelos
+    // 🔹 2. Lógica de Marcas/Modelos
     function cargarMarcas(tipo) {
         const lista = tipo === 'moto' ? marcasModelosMoto : marcasModelosAuto;
         marcaSelect.innerHTML = '<option value="">Seleccione marca...</option>';
@@ -125,18 +126,18 @@ window.initModVehiculos = function() {
     // 🔹 5. Buscador con Lógica de Selección
     btnBuscar.addEventListener('click', async () => {
         const val = inputBusqueda.value.trim().toUpperCase();
-        if (val.length < 5) return mostrarMsg(msgBusqueda, '⚠️ Ingrese un dato válido (mín. 5 caracteres).', 'error');
+        if (val.length < 5) return mostrarMsg(msgBusqueda, '️ Ingrese un dato válido (mín. 5 caracteres).', 'error');
 
-        mostrarMsg(msgBusqueda, ' Buscando...', 'success');
+        mostrarMsg(msgBusqueda, '🔍 Buscando...', 'success');
         btnBuscar.disabled = true;
         form.style.display = 'none';
         selectionPanel.classList.remove('active');
         pendingData = { moto: null, auto: null };
+        currentData = null;
 
         try {
             const query = `placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`;
             
-            // Buscar en paralelo
             const [resMoto, resAuto] = await Promise.all([
                 window.supabaseClient.from('registro_motos').select('*').or(query).maybeSingle(),
                 window.supabaseClient.from('registro_automoviles').select('*').or(query).maybeSingle()
@@ -145,9 +146,7 @@ window.initModVehiculos = function() {
             const moto = resMoto.data;
             const auto = resAuto.data;
 
-            // Lógica de decisión
             if (moto && auto) {
-                // 🔥 CASO DUAL: Mostrar panel de selección
                 pendingData = { moto, auto };
                 isSelectionMode = true;
                 selectionPanel.classList.add('active');
@@ -167,6 +166,7 @@ window.initModVehiculos = function() {
 
     // 🔹 6. Cargar Datos en el Formulario
     function cargarDatos(data, tabla, tipo) {
+        currentData = data; // Guardar referencia actual
         setUIForType(tipo);
         form.style.display = 'block';
         mostrarMsg(msgBusqueda, '✅ Registro cargado. Puede editar y guardar.', 'success');
@@ -195,6 +195,9 @@ window.initModVehiculos = function() {
         }
         if (tipo === 'moto') document.getElementById('m_cilindraje').value = data.cilindraje || '';
 
+        // Limpiar validación al cargar
+        resetValidation();
+
         const sufijo = tipo === 'moto' ? '' : '_a';
         mostrarPreview(`m_prev_frontal${sufijo}`, data.foto_frontal);
         mostrarPreview(`m_prev_trasera${sufijo}`, data.foto_trasera);
@@ -214,11 +217,78 @@ window.initModVehiculos = function() {
         if (el) { el.textContent = txt; el.className = `msg ${type}`; el.style.display = txt ? 'block' : 'none'; }
     }
 
-    // 🔹 7. Guardar Cambios
+    // 🔹 7.  VALIDACIÓN EN TIEMPO REAL (Igual que Registro)
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    async function checkAvailability(input, msgId) {
+        const val = input.value.trim().toUpperCase();
+        const msgEl = document.getElementById(msgId);
+        
+        // Limpiar si está vacío
+        if (!val) {
+            input.classList.remove('input-valid', 'input-error');
+            if (msgEl) { msgEl.textContent = ''; msgEl.className = 'status-msg'; }
+            return;
+        }
+
+        // No validar si no hay registro cargado
+        if (!currentData) return;
+
+        if (msgEl) { msgEl.textContent = '⏳ Verificando...'; msgEl.className = 'status-msg'; }
+
+        try {
+            let found = false;
+            const currentTable = document.getElementById('mod_tabla_destino').value;
+            const col = input.id === 'm_placa' ? 'placa' : 
+                        input.id === 'm_serial_carroceria' ? 'serial_carroceria' : 'serial_motor';
+
+            // 🔑 CLAVE: Buscar en la tabla correspondiente, excluyendo el ID actual
+            const { data } = await window.supabaseClient.from(currentTable).select('id').eq(col, val).neq('id', currentData.id).maybeSingle();
+            
+            if (data) found = true;
+
+            if (found) {
+                input.classList.add('input-error'); input.classList.remove('input-valid');
+                if (msgEl) { msgEl.textContent = '❌ Ya registrado'; msgEl.className = 'status-msg error'; }
+            } else {
+                input.classList.add('input-valid'); input.classList.remove('input-error');
+                if (msgEl) { msgEl.textContent = '✅ Disponible'; msgEl.className = 'status-msg valid'; }
+            }
+        } catch (e) {
+            if (msgEl) msgEl.textContent = '️ Error de conexión';
+        }
+    }
+
+    // Listeners para validación
+    document.getElementById('m_placa')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'msg-m-placa'), 600));
+    document.getElementById('m_serial_carroceria')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'msg-m-carroceria'), 600));
+    document.getElementById('m_serial_motor')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'msg-m-motor'), 600));
+
+    function resetValidation() {
+        document.querySelectorAll('.registro-form input').forEach(i => i.classList.remove('input-valid', 'input-error'));
+        ['msg-m-placa', 'msg-m-carroceria', 'msg-m-motor'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.textContent = '';
+        });
+    }
+
+    //  8. Guardar Cambios
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (isSelectionMode) return mostrarMsg(msgBox, 'Seleccione qué registro desea editar.', 'error');
         
+        // Verificar que no haya errores de validación
+        const inputs = document.querySelectorAll('.registro-form input');
+        let hasError = false;
+        inputs.forEach(i => { if(i.classList.contains('input-error')) hasError = true; });
+        if (hasError) return mostrarMsg(msgBox, 'Por favor corrija los campos marcados en rojo.', 'error');
+
         const placa = document.getElementById('m_placa').value.trim().toUpperCase();
         const serialCarro = document.getElementById('m_serial_carroceria').value.trim();
         const color = document.getElementById('m_color').value;
