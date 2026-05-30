@@ -7,7 +7,7 @@
   .registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; transition: border 0.2s; }
   .registro-form input:focus, .registro-form select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,43,92,0.1); }
   
-  /*  Indicadores de Validación */
+  /* 🔹 Indicadores de Validación */
   .status-msg { display: block; font-size: 0.75rem; margin-top: 4px; font-weight: 600; min-height: 16px; }
   .status-msg.valid { color: #15803d; }
   .status-msg.error { color: #dc2626; }
@@ -57,7 +57,7 @@
         <h4 class="selection-title">⚠️ Dato encontrado en dos registros distintos</h4>
         <p style="margin-bottom: 15px; font-size: 0.9rem;">Seleccione qué tipo de vehículo desea editar:</p>
         <div class="selection-btns">
-            <button class="btn-select-type" onclick="seleccionarRegistro('moto')">🏍️ Editar Motocicleta</button>
+            <button class="btn-select-type" onclick="seleccionarRegistro('moto')">️ Editar Motocicleta</button>
             <button class="btn-select-type" onclick="seleccionarRegistro('auto')">🚙 Editar Automóvil</button>
         </div>
     </div>
@@ -102,13 +102,25 @@
             </div>
         </fieldset>
 
-        <!-- 🔹 3. IDENTIFICACIÓN -->
+        <!-- 🔹 3. IDENTIFICACIÓN (Con validación en vivo) -->
         <fieldset>
             <legend>📋 Datos de Identificación</legend>
             <div class="form-grid">
-                <div class="form-group"><label>Placa</label><input type="text" id="m_placa" required style="text-transform: uppercase;"></div>
-                <div class="form-group"><label>Serial de Carrocería</label><input type="text" id="m_serial_carroceria" required></div>
-                <div class="form-group"><label>Serial de Motor</label><input type="text" id="m_serial_motor" placeholder="Opcional en autos"></div>
+                <div class="form-group">
+                    <label>Placa</label>
+                    <input type="text" id="m_placa" required style="text-transform: uppercase;">
+                    <small id="msg-m-placa" class="status-msg"></small>
+                </div>
+                <div class="form-group">
+                    <label>Serial de Carrocería</label>
+                    <input type="text" id="m_serial_carroceria" required>
+                    <small id="msg-m-carroceria" class="status-msg"></small>
+                </div>
+                <div class="form-group">
+                    <label>Serial de Motor</label>
+                    <input type="text" id="m_serial_motor" placeholder="Opcional en autos">
+                    <small id="msg-m-motor" class="status-msg"></small>
+                </div>
                 <div class="form-group">
                     <label>Color</label>
                     <select id="m_color" required>
@@ -147,7 +159,7 @@
 
         <!-- 🔹 5. REGISTRO -->
         <fieldset>
-            <legend>️ Datos del Registro</legend>
+            <legend>🏛️ Datos del Registro</legend>
             <div class="form-grid">
                 <div class="form-group" style="grid-column: span 2;">
                     <label>Estación policial</label>
