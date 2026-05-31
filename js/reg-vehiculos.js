@@ -178,7 +178,6 @@ window.initRegVinculado = function() {
     const codeText = document.getElementById('pv_tlf-code-text');
     const countryText = document.getElementById('pv_tlf-country-text');
     
-    // Mapa completo de códigos ISO para banderas
     const isoMap = {
         "Afganistán":"af", "Albania":"al", "Alemania":"de", "Andorra":"ad", "Angola":"ao", "Antigua y Barbuda":"ag", "Arabia Saudita":"sa", "Argelia":"dz", "Argentina":"ar", "Armenia":"am", "Australia":"au", "Austria":"at", "Azerbaiyán":"az", "Bahamas":"bs", "Baréin":"bh", "Bangladés":"bd", "Barbados":"bb", "Bélgica":"be", "Belice":"bz", "Benín":"bj", "Bielorrusia":"by", "Birmania":"mm", "Bolivia":"bo", "Bosnia y Herzegovina":"ba", "Botsuana":"bw", "Brasil":"br", "Brunéi":"bn", "Bulgaria":"bg", "Burkina Faso":"bf", "Burundi":"bi", "Bután":"bt", "Cabo Verde":"cv", "Camboya":"kh", "Camerún":"cm", "Canadá":"ca", "Catar":"qa", "Rep. Centroafricana":"cf", "Chad":"td", "Rep. Checa":"cz", "Chile":"cl", "China":"cn", "Chipre":"cy", "Colombia":"co", "Comoras":"km", "Corea del Norte":"kp", "Corea del Sur":"kr", "Costa de Marfil":"ci", "Costa Rica":"cr", "Croacia":"hr", "Cuba":"cu", "Dinamarca":"dk", "Dominica":"dm", "Ecuador":"ec", "Egipto":"eg", "El Salvador":"sv", "Emiratos Árabes":"ae", "Eritrea":"er", "Eslovaquia":"sk", "Eslovenia":"si", "España":"es", "Estados Unidos":"us", "Estonia":"ee", "Etiopía":"et", "Filipinas":"ph", "Finlandia":"fi", "Fiyi":"fj", "Francia":"fr", "Gabón":"ga", "Gambia":"gm", "Georgia":"ge", "Ghana":"gh", "Granada":"gd", "Grecia":"gr", "Guatemala":"gt", "Guinea":"gn", "Guinea Ecuatorial":"gq", "Guinea-Bisáu":"gw", "Guyana":"gy", "Haití":"ht", "Honduras":"hn", "Hungría":"hu", "India":"in", "Indonesia":"id", "Irak":"iq", "Irán":"ir", "Irlanda":"ie", "Islandia":"is", "Israel":"il", "Italia":"it", "Jamaica":"jm", "Japón":"jp", "Jordania":"jo", "Kazajistán":"kz", "Kenia":"ke", "Kirguistán":"kg", "Kiribati":"ki", "Kuwait":"kw", "Laos":"la", "Lesoto":"ls", "Letonia":"lv", "Líbano":"lb", "Liberia":"lr", "Libia":"ly", "Liechtenstein":"li", "Lituania":"lt", "Luxemburgo":"lu", "Macedonia del Norte":"mk", "Madagascar":"mg", "Malasia":"my", "Malaui":"mw", "Maldivas":"mv", "Malí":"ml", "Malta":"mt", "Marruecos":"ma", "Mauricio":"mu", "Mauritania":"mr", "México":"mx", "Micronesia":"fm", "Moldavia":"md", "Mónaco":"mc", "Mongolia":"mn", "Montenegro":"me", "Mozambique":"mz", "Namibia":"na", "Nauru":"nr", "Nepal":"np", "Nicaragua":"ni", "Níger":"ne", "Nigeria":"ng", "Nueva Zelanda":"nz", "Noruega":"no", "Omán":"om", "Países Bajos":"nl", "Pakistán":"pk", "Palaos":"pw", "Palestina":"ps", "Panamá":"pa", "Papúa Nueva Guinea":"pg", "Paraguay":"py", "Perú":"pe", "Polonia":"pl", "Portugal":"pt", "Reino Unido":"gb", "Puerto Rico":"pr", "Ruanda":"rw", "Rumania":"ro", "Rusia":"ru", "Samoa":"ws", "San Marino":"sm", "Santa Lucía":"lc", "Santo Tomé y Príncipe":"st", "San Vicente y las Granadinas":"vc", "Senegal":"sn", "Serbia":"rs", "Seychelles":"sc", "Sierra Leona":"sl", "Singapur":"sg", "Siria":"sy", "Somalia":"so", "Sudáfrica":"za", "Sudán":"sd", "Sudán del Sur":"ss", "Suecia":"se", "Suiza":"ch", "Surinam":"sr", "Esuatini":"sz", "Tayikistán":"tj", "Tanzania":"tz", "Tailandia":"th", "Timor Oriental":"tl", "Togo":"tg", "Tonga":"to", "Trinidad y Tobago":"tt", "Túnez":"tn", "Turquía":"tr", "Turkmenistán":"tm", "Tuvalu":"tv", "Ucrania":"ua", "Uganda":"ug", "Uruguay":"uy", "Uzbekistán":"uz", "Vanuatu":"vu", "Vaticano":"va", "Venezuela":"ve", "Vietnam":"vn", "Yemen":"ye", "Yibuti":"dj", "Zambia":"zm", "Zimbabue":"zw"
     };
@@ -287,22 +286,18 @@ window.initRegVinculado = function() {
     }
 
     // Listeners de Validación
-    // 🔹 Validar Cédula en registro_personas
     const validateCedula = debounce(() => verificarDuplicado('pv_p_cedula', 'pv-msg-cedula', ['registro_personas'], 'cedula'), 600);
     const elCedula = document.getElementById('pv_p_cedula');
     if (elCedula) elCedula.addEventListener('input', validateCedula);
 
-    //  Validar Placa en registro_motos y registro_automoviles
     const validatePlaca = debounce(() => verificarDuplicado('pv_v_placa', 'pv-msg-placa', ['registro_motos', 'registro_automoviles'], 'placa'), 600);
     const elPlaca = document.getElementById('pv_v_placa');
     if (elPlaca) elPlaca.addEventListener('input', validatePlaca);
 
-    // 🔹 Validar Serial Carrocería en registro_motos y registro_automoviles
     const validateCarro = debounce(() => verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', ['registro_motos', 'registro_automoviles'], 'serial_carroceria'), 600);
     const elCarro = document.getElementById('pv_v_serial_carro');
     if (elCarro) elCarro.addEventListener('input', validateCarro);
 
-    // 🔹 Validar Serial Motor en registro_motos y registro_automoviles
     const validateMotor = debounce(() => verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', ['registro_motos', 'registro_automoviles'], 'serial_motor'), 600);
     const elMotor = document.getElementById('pv_v_serial_motor');
     if (elMotor) elMotor.addEventListener('input', validateMotor);
@@ -327,7 +322,6 @@ window.initRegVinculado = function() {
 
     if (cedulaInput) {
         cedulaInput.addEventListener('input', e => {
-            // Solo números y máximo 8 dígitos
             e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
         });
         cedulaInput.setAttribute('inputmode', 'numeric');
@@ -336,7 +330,6 @@ window.initRegVinculado = function() {
 
     if (tlfNumInput) {
         tlfNumInput.addEventListener('input', e => {
-            // Solo números y máximo 20 dígitos
             e.target.value = e.target.value.replace(/\D/g, '').slice(0, 20);
         });
         tlfNumInput.setAttribute('inputmode', 'numeric');
@@ -346,7 +339,7 @@ window.initRegVinculado = function() {
         e.preventDefault();
         if (!form.checkValidity()) { form.reportValidity(); return; }
 
-        // Verificar si hay errores de validación activos
+        // Verificar errores de validación
         const inputsValidar = ['pv_p_cedula', 'pv_v_placa', 'pv_v_serial_carro', 'pv_v_serial_motor'];
         const hasError = inputsValidar.some(id => document.getElementById(id)?.classList.contains('input-error'));
         if (hasError) return mostrarError('Por favor corrija los campos marcados en rojo antes de registrar.');
@@ -354,20 +347,16 @@ window.initRegVinculado = function() {
         const cedula = document.getElementById('pv_p_cedula').value.trim();
         if (cedula.length < 7) return mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
 
-        // ✅ Validación de Condición Médica y Medicamento
+        // Validación de campos condicionales de salud
         const condMedica = document.getElementById('pv_p_cond_medica')?.value;
         const txtCond = document.getElementById('pv_txt_cond')?.value.trim();
         const medicamento = document.getElementById('pv_p_medicamento')?.value;
         const txtMed = document.getElementById('pv_txt_med')?.value.trim();
 
-        if (condMedica === 'true' && !txtCond) {
-            return mostrarError('Si marca "Sí" en Condición Médica, debe describirla.');
-        }
-        if (medicamento === 'true' && !txtMed) {
-            return mostrarError('Si marca "Sí" en Consumo de Medicamento, debe indicar cuál.');
-        }
+        if (condMedica === 'true' && !txtCond) return mostrarError('Describa la condición médica.');
+        if (medicamento === 'true' && !txtMed) return mostrarError('Ingrese el nombre del medicamento.');
 
-        btn.disabled = true; btn.textContent = ' Subiendo y Registrando...'; msg.style.display = 'none';
+        btn.disabled = true; btn.textContent = '⏳ Subiendo y Registrando...'; msg.style.display = 'none';
 
         try {
             const bucket = window.supabaseClient.storage.from('fotos_personas');
@@ -417,18 +406,19 @@ window.initRegVinculado = function() {
                 color_cabello: document.getElementById('pv_p_color_cabello').value,
                 complexion: document.getElementById('pv_p_complexion').value,
                 
-                // ✅ CAMPO MARCA CORPORAL
+                // ✅ CAMPOS QUE FALTABAN - AHORA INCLUIDOS
                 marca_corporal: document.getElementById('pv_p_marca')?.value.trim() || null,
+                condicion_medica: condMedica === 'true' ? txtCond : null,
+                consume_medicamento: medicamento === 'true' ? txtMed : null,
+                problema_judicial: document.getElementById('pv_p_judicial')?.value === 'true' 
+                    ? document.getElementById('pv_txt_jud')?.value.trim() || null 
+                    : null,
 
                 usa_lentes: document.getElementById('pv_p_lentes').value === 'true',
                 detalle_lentes: document.getElementById('pv_p_lentes').value === 'true' ? document.getElementById('pv_txt_lentes').value.trim() : null,
                 perforaciones: document.getElementById('pv_p_perforaciones').value === 'true',
                 detalle_perforaciones: document.getElementById('pv_p_perforaciones').value === 'true' ? document.getElementById('pv_txt_lugar_perforacion').value.trim() : null,
                 
-                // ✅ CAMPOS DE SALUD (Condición Médica y Medicamento)
-                condicion_medica: condMedica === 'true' ? txtCond : null,
-                consume_medicamento: medicamento === 'true' ? txtMed : null,
-
                 foto_frontal_persona: fp_frontal,
                 foto_perfil_izq_persona: fp_izq,
                 foto_perfil_der_persona: fp_der,
@@ -474,6 +464,9 @@ window.initRegVinculado = function() {
             let m = 'Error inesperado.';
             if (err.message.includes('23505')) m = '❌ Esta cédula ya tiene un registro vinculado.';
             else if (err.message.includes('storage')) m = '❌ Error subiendo fotografías.';
+            else if (err.message.includes('marca_corporal') || err.message.includes('complexion') || err.message.includes('condicion_medica')) {
+                m = '❌ Error: La tabla en la base de datos no tiene todas las columnas necesarias. Contacte al administrador.';
+            }
             else m = '❌ ' + err.message;
             mostrarError(m);
         } finally {
