@@ -30,6 +30,8 @@ window.initElimVehiculos = function() {
 
     // 🔹 Mostrar datos + UI según estado
     function renderUI(data, isArchived, tablaOrigen) {
+        console.log('📋 Renderizando UI - Archivado:', isArchived, 'Tabla:', tablaOrigen);
+        
         // Fotos
         setPhoto('elim-foto-frontal', data.foto_frontal);
         setPhoto('elim-foto-trasera', data.foto_trasera);
@@ -77,6 +79,8 @@ window.initElimVehiculos = function() {
     // 🔹 Búsqueda principal (Activos -> Historial)
     async function buscarVehiculo() {
         const val = buscarInput.value.trim().toUpperCase();
+        console.log('🔍 Iniciando búsqueda para:', val);
+        
         if (val.length < 5) return showMsg(msgBuscar, '⚠️ Ingrese un dato válido (mín. 5 caracteres).', 'error');
 
         showMsg(msgBuscar, '🔍 Buscando...', 'success');
@@ -88,10 +92,9 @@ window.initElimVehiculos = function() {
         currentTable = '';
 
         try {
-            console.log('🔍 Buscando valor:', val);
-            
             // 1. Buscar en tablas activas con ilike
             const query = `placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`;
+            console.log('📝 Query de búsqueda activa:', query);
             
             const [resMoto, resAuto] = await Promise.all([
                 window.supabaseClient.from('registro_motos').select('*').or(query).maybeSingle(),
@@ -102,7 +105,7 @@ window.initElimVehiculos = function() {
             console.log('📊 Resultado Autos:', resAuto);
 
             if (resMoto.data) {
-                console.log('✅ Encontrado en MOTOS:', resMoto.data.placa);
+                console.log('✅ ENCONTRADO EN MOTOS:', resMoto.data.placa);
                 currentData = resMoto.data;
                 currentId = resMoto.data.id;
                 currentTable = 'registro_motos';
@@ -114,7 +117,7 @@ window.initElimVehiculos = function() {
             }
             
             if (resAuto.data) {
-                console.log('✅ Encontrado en AUTOS:', resAuto.data.placa);
+                console.log('✅ ENCONTRADO EN AUTOS:', resAuto.data.placa);
                 currentData = resAuto.data;
                 currentId = resAuto.data.id;
                 currentTable = 'registro_automoviles';
@@ -126,14 +129,14 @@ window.initElimVehiculos = function() {
             }
 
             // 2. Si no está activo, buscar en historial
-            console.log('📁 Buscando en historial...');
+            console.log('📁 Buscando en historial (vehiculos_eliminados)...');
             const queryArchive = `placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`;
             const resArchive = await window.supabaseClient.from('vehiculos_eliminados').select('*').or(queryArchive).maybeSingle();
             
             console.log('📊 Resultado Historial:', resArchive);
             
             if (resArchive.data) {
-                console.log('✅ Encontrado en HISTORIAL:', resArchive.data.placa);
+                console.log('✅ ENCONTRADO EN HISTORIAL:', resArchive.data.placa);
                 currentData = resArchive.data;
                 currentId = resArchive.data.id_original || resArchive.data.id;
                 currentTable = resArchive.data.tabla_origen || 'registro_motos';
@@ -144,7 +147,7 @@ window.initElimVehiculos = function() {
                 return;
             }
 
-            console.log('❌ No encontrado en ninguna tabla');
+            console.log('❌ NO ENCONTRADO EN NINGUNA TABLA');
             showMsg(msgBuscar, '❌ Vehículo no encontrado en activos ni en historial.', 'error');
         } catch (err) {
             console.error('❌ Error búsqueda:', err);
@@ -210,12 +213,14 @@ window.initElimVehiculos = function() {
             };
 
             console.log('📦 Archivando en vehiculos_eliminados:', dataToArchive);
-            const { error: insErr } = await window.supabaseClient.from('vehiculos_eliminados').insert([dataToArchive]);
+            const { error: insErr, data: insData } = await window.supabaseClient.from('vehiculos_eliminados').insert([dataToArchive]).select();
             if (insErr) throw new Error('Error archivando: ' + insErr.message);
+            console.log('✅ Archivado exitosamente:', insData);
 
             console.log('🗑️ Eliminando de:', currentTable, 'ID:', currentData.id);
-            const { error: delErr } = await window.supabaseClient.from(currentTable).delete().eq('id', currentData.id);
+            const { error: delErr, data: delData } = await window.supabaseClient.from(currentTable).delete().eq('id', currentData.id).select();
             if (delErr) throw new Error('Error eliminando: ' + delErr.message);
+            console.log('✅ Eliminado de tabla activa:', delData);
 
             showMsgElim('✅ Vehículo eliminado y archivado correctamente.', 'success');
             setTimeout(() => { 
@@ -278,17 +283,15 @@ window.initElimVehiculos = function() {
             const { error: delError } = await window.supabaseClient.from('vehiculos_eliminados').delete().eq('id', currentData.id);
             if (delError) throw new Error('Error limpiando historial: ' + delError.message);
 
-            showMsgElim('✅ Vehículo reintegrado al sistema activo. Puede buscarlo nuevamente.', 'success');
+            console.log('✅ Eliminación del historial exitosa');
+            showMsgElim('✅ Vehículo reintegrado al sistema activo. Busque la placa nuevamente.', 'success');
             
-            // Limpiar formulario después de 3 segundos
-            setTimeout(() => { 
-                dataContainer.style.display = 'none'; 
-                buscarInput.value = ''; 
-                hideMsg(msgBuscar); 
-                hideMsgElim(); 
-                if (archivedNotice) archivedNotice.style.display = 'none';
-                console.log('✅ Formulario limpiado. Listo para nueva búsqueda.');
-            }, 3000);
+            // Forzar búsqueda inmediata después de 2 segundos
+            setTimeout(async () => { 
+                console.log('🔄 Buscando vehículo recién reintegrado...');
+                buscarInput.value = currentData.placa;
+                await buscarVehiculo();
+            }, 2000);
             
         } catch (err) {
             console.error('❌ Error reintegrando:', err);
