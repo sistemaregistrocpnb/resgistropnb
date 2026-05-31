@@ -76,21 +76,28 @@ window.initElimVehiculos = function() {
         setPhoto('elim-foto-der', data.foto_lado_derecho);
         setPhoto('elim-foto-izq', data.foto_lado_izquierdo);
 
-        // 🔔 LÓGICA DE UI SEGÚN ESTADO
+        // 🔔 LÓGICA DE UI SEGÚN ESTADO - ✅ IDs CORREGIDOS
         if (isArchived) {
             if (archivedBanner) archivedBanner.style.display = 'block';
             const notice = document.getElementById('archived-notice');
             if (notice) notice.style.display = 'block';
             
-            const dateEl = document.getElementById('archive-date');
-            const byEl = document.getElementById('archive-by');
+            // ✅ CORRECCIÓN: Usar IDs exactos del HTML (archived-date y archived-by)
+            const dateEl = document.getElementById('archived-date');
+            const byEl = document.getElementById('archived-by');
+            
             if (dateEl && data.eliminado_en) {
                 dateEl.textContent = new Date(data.eliminado_en).toLocaleDateString('es-VE', { 
                     year: 'numeric', month: 'long', day: 'numeric', 
                     hour: '2-digit', minute:'2-digit' 
                 });
-            } else if (dateEl) dateEl.textContent = '-';
-            if (byEl) byEl.textContent = data.eliminado_por || 'Sistema';
+            } else if (dateEl) {
+                dateEl.textContent = '-';
+            }
+            
+            if (byEl) {
+                byEl.textContent = data.eliminado_por || 'Sistema';
+            }
             
             btnEliminar.style.display = 'none';
             btnReintegrar.style.display = 'block';
@@ -116,7 +123,7 @@ window.initElimVehiculos = function() {
         isSelectionMode = false;
     };
 
-    // 🔍 BUSCADOR PRINCIPAL CON LÓGICA DE SELECCIÓN Y ARCHIVO
+    // 🔍 BUSCADOR PRINCIPAL CON LÓGICA DE SELECCIÓN CRUZADA
     buscarBtn.addEventListener('click', async () => {
         const val = buscarInput.value.trim().toUpperCase();
         if (val.length < 5) return showMsg(msgBuscar, '⚠️ Ingrese un dato válido (mín. 5 caracteres).', 'error');
@@ -132,7 +139,7 @@ window.initElimVehiculos = function() {
         isArchived = false;
 
         try {
-            // 1. Búsqueda en tablas activas
+            // 1. Búsqueda en tablas activas (Motos y Autos) con ilike
             const query = `placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`;
             
             const [resMoto, resAuto] = await Promise.all([
@@ -140,35 +147,37 @@ window.initElimVehiculos = function() {
                 window.supabaseClient.from('registro_automoviles').select('*').or(query).maybeSingle()
             ]);
 
-            // 2. Búsqueda en Historial (Vehículos Eliminados)
-            const { data: resArchive, error: errArchive } = await window.supabaseClient
+            // 2. Búsqueda en Historial (Vehículos Eliminados) - obtener TODOS los resultados
+            const { data: resArchiveList, error: errArchive } = await window.supabaseClient
                 .from('vehiculos_eliminados')
                 .select('*')
-                .or(query)
-                .order('eliminado_en', { ascending: false })
-                .limit(1);
+                .or(query);
             
             if (errArchive) throw errArchive;
-            const archiveRecord = resArchive && resArchive.length > 0 ? resArchive[0] : null;
-
-            // 3. Consolidar datos encontrados
+            
+            // Clasificar resultados del historial por tipo
             let archiveMoto = null;
             let archiveAuto = null;
             
-            if (archiveRecord) {
-                if (archiveRecord.tabla_origen === 'registro_motos') archiveMoto = archiveRecord;
-                else if (archiveRecord.tabla_origen === 'registro_automoviles') archiveAuto = archiveRecord;
+            if (resArchiveList && resArchiveList.length > 0) {
+                for (const record of resArchiveList) {
+                    if (record.tabla_origen === 'registro_motos' && !archiveMoto) {
+                        archiveMoto = record;
+                    } else if (record.tabla_origen === 'registro_automoviles' && !archiveAuto) {
+                        archiveAuto = record;
+                    }
+                }
             }
 
             const activeMoto = resMoto.data;
             const activeAuto = resAuto.data;
 
-            // Lógica de Duplicidad y Selección
+            // 3. Lógica de Duplicidad y Selección
             const hasMoto = activeMoto || archiveMoto;
             const hasAuto = activeAuto || archiveAuto;
 
             if (hasMoto && hasAuto) {
-                // ¡Duplicidad detectada! (Moto y Auto encontrados en cualquier estado)
+                // ¡Duplicidad detectada! Mostrar panel de selección
                 isSelectionMode = true;
                 pendingData = {
                     moto: activeMoto || archiveMoto,
