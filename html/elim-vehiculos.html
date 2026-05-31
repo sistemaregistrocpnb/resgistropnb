@@ -13,13 +13,13 @@
 
   /* 🔹 Panel de Selección y Advertencia Cruzada */
   .selection-panel { display: none; padding: 20px; background: #f1f5f9; border: 2px dashed var(--beige-border); border-radius: 8px; margin-bottom: 20px; text-align: center; }
-  .selection-panel.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+  .selection-panel.active { display: block; animation: fadeIn 0.3s; }
   .selection-title { margin: 0 0 15px; font-weight: 600; color: var(--primary); }
   .selection-btns { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
   .btn-select-type { padding: 10px 20px; border: 2px solid var(--primary); background: white; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--primary); transition: 0.2s; }
   .btn-select-type:hover { background: var(--primary); color: white; }
 
-  /* 🔹 Banner de Archivado */
+  /* 🔹 Banner de Registro Archivado */
   .archived-banner {
     background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px;
     padding: 16px; margin-bottom: 20px; text-align: center; display: none;
@@ -63,16 +63,17 @@
 <div class="card">
     <h3>🗑️ Eliminar / Reintegrar Vehículo</h3>
     
+    <!-- 🔍 BÚSQUEDA -->
     <div class="search-box">
         <label>Buscar por Placa, Serial de Carrocería o Motor:</label>
         <div class="search-row">
             <input type="text" id="buscar-input-elim" placeholder="Ej: AA123BC o serial..." maxlength="20">
-            <button id="btn-buscar-elim"> Buscar</button>
+            <button id="btn-buscar-elim">🔍 Buscar</button>
         </div>
         <div id="buscar-msg-elim" class="msg" style="margin-top:8px;"></div>
     </div>
 
-    <!-- ⚠️ PANEL DE SELECCIÓN (Aparece si hay duplicados entre tablas) -->
+    <!-- ⚠️ PANEL DE SELECCIÓN (Aparece si hay duplicados entre tablas activas) -->
     <div id="selection-panel" class="selection-panel">
         <h4 class="selection-title">⚠️ Dato encontrado en dos registros distintos</h4>
         <p style="margin-bottom: 15px; font-size: 0.9rem;">Seleccione qué tipo de vehículo desea eliminar:</p>
@@ -82,9 +83,9 @@
         </div>
     </div>
 
-    <!-- ⚠️ BANNER DE ARCHIVADO (Visible si está en historial) -->
+    <!-- 🗄️ BANNER DE ARCHIVADO (Visible si está en historial) -->
     <div id="archived-banner" class="archived-banner">
-        <strong>🗄️ Registro Archivado</strong>
+        <strong>️ Registro Archivado</strong>
         <p>Este vehículo fue eliminado el <span id="archive-date" style="font-weight:600;">-</span></p>
         <p>Por el usuario: <span id="archive-user" style="font-weight:600;">-</span></p>
         <p style="margin-top:10px; font-size:0.85rem; color:#64748b;">Utilice el botón <strong>Reintegrar</strong> para devolverlo al sistema activo.</p>
@@ -113,7 +114,7 @@
         </fieldset>
 
         <fieldset style="border:1px solid var(--beige-border); border-radius:8px; padding:16px; margin-bottom:18px; background:#fafbfc;">
-            <legend>️ Características</legend>
+            <legend>⚙️ Características</legend>
             <div class="form-grid">
                 <div class="data-item"><label>Marca</label><input id="elim-marca" readonly></div>
                 <div class="data-item"><label>Modelo</label><input id="elim-modelo" readonly></div>
