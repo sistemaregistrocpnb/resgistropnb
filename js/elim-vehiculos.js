@@ -3,207 +3,211 @@ window.initElimVehiculos = function() {
     const buscarInput = document.getElementById('buscar-input-elim');
     const buscarBtn = document.getElementById('btn-buscar-elim');
     const msgBuscar = document.getElementById('buscar-msg-elim');
-    const archivedNotice = document.getElementById('archived-notice');
+    const crossWarning = document.getElementById('cross-warning');
+    const selectionPanel = document.getElementById('selection-panel');
     const dataContainer = document.getElementById('elim-data-container');
-    const archivedBanner = document.getElementById('archived-banner');
     const btnEliminar = document.getElementById('btn-eliminar');
-    const btnReintegrar = document.getElementById('btn-reintegrar');
     const msgElim = document.getElementById('msg-elim');
     const modal = document.getElementById('elim-modal');
-    const modalTitle = document.getElementById('modal-title');
     const modalText = document.getElementById('modal-text');
-    const btnYes = document.getElementById('btn-modal-yes');
-    const btnNo = document.getElementById('btn-modal-no');
+    const btnSi = document.getElementById('btn-confirm-si');
+    const btnNo = document.getElementById('btn-confirm-no');
 
+    let pendingData = { moto: null, auto: null };
     let currentData = null;
-    let isArchived = false;
-    let pendingAction = null;
+    let currentTable = '';
+    let isSelectionMode = false;
 
-    const showMsg = (el, txt, type) => { el.textContent = txt; el.className = `search-msg ${type}`; el.style.display = 'block'; };
+    // 🔹 Helpers UI
+    const showMsg = (el, txt, type) => { el.textContent = txt; el.className = `msg ${type}`; el.style.display = 'block'; };
     const hideMsg = (el) => { el.style.display = 'none'; };
-    const showMsgElim = (txt, type) => { msgElim.textContent = txt; msgElim.className = `msg ${type}`; msgElim.style.display = 'block'; };
-    const hideMsgElim = () => { msgElim.style.display = 'none'; };
     const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = (val !== null && val !== undefined && val !== '') ? val : '-'; };
     const setPhoto = (imgId, url) => { const img = document.getElementById(imgId); if (img) { img.src = url || ''; img.style.display = url ? 'block' : 'none'; } };
 
-    //  Función para mostrar datos + UI según estado
-    function renderUI(data, archivado = false) {
-        isArchived = archivado;
-        currentData = data;
-        hideMsg(msgBuscar);
+    // 🔍 FUNCIÓN PARA BUSCAR VÍNCULOS EN LA OTRA TABLA
+    // Busca si existe un registro que coincida en Placa, Serial Carrocería o Serial Motor
+    async function buscarVinculado(tablaNombre, dataOrigen) {
+        if (!dataOrigen) return null;
+        const parts = [];
+        if (dataOrigen.placa) parts.push(`placa.ilike.${dataOrigen.placa}`);
+        if (dataOrigen.serial_carroceria) parts.push(`serial_carroceria.ilike.${dataOrigen.serial_carroceria}`);
+        if (dataOrigen.serial_motor) parts.push(`serial_motor.ilike.${dataOrigen.serial_motor}`);
+        if (parts.length === 0) return null;
         
+        const { data } = await window.supabaseClient.from(tablaNombre).select('*').or(parts.join(',')).maybeSingle();
+        return data;
+    }
+
+    // 🔍 BUSCADOR PRINCIPAL CON LÓGICA DE SELECCIÓN Y CRUCE
+    buscarBtn.addEventListener('click', async () => {
+        const val = buscarInput.value.trim().toUpperCase();
+        if (val.length < 5) return showMsg(msgBuscar, '⚠️ Ingrese un dato válido (mín. 5 caracteres).', 'error');
+
+        showMsg(msgBuscar, '🔍 Buscando...', 'success');
+        buscarBtn.disabled = true;
+        dataContainer.style.display = 'none';
+        selectionPanel.classList.remove('active');
+        crossWarning.style.display = 'none';
+        pendingData = { moto: null, auto: null };
+        currentData = null;
+
+        try {
+            // 1. Búsqueda directa por el valor ingresado
+            const query = `placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`;
+            
+            const [resMoto, resAuto] = await Promise.all([
+                window.supabaseClient.from('registro_motos').select('*').or(query).maybeSingle(),
+                window.supabaseClient.from('registro_automoviles').select('*').or(query).maybeSingle()
+            ]);
+
+            // 2. VERIFICACIÓN CRUZADA AUTOMÁTICA
+            let linkedAuto = null;
+            let linkedMoto = null;
+
+            if (resMoto.data) linkedAuto = await buscarVinculado('registro_automoviles', resMoto.data);
+            if (resAuto.data) linkedMoto = await buscarVinculado('registro_motos', resAuto.data);
+
+            // 3. Consolidar datos encontrados
+            if (resMoto.data) pendingData.moto = resMoto.data;
+            if (resAuto.data) pendingData.auto = resAuto.data;
+            if (!pendingData.moto && linkedMoto) pendingData.moto = linkedMoto;
+            if (!pendingData.auto && linkedAuto) pendingData.auto = linkedAuto;
+
+            // 4. Lógica de visualización
+            if (pendingData.moto && pendingData.auto) {
+                isSelectionMode = true;
+                selectionPanel.classList.add('active');
+                hideMsg(msgBuscar);
+            } else if (pendingData.moto) {
+                cargarDatos(pendingData.moto, 'registro_motos', 'moto');
+            } else if (pendingData.auto) {
+                cargarDatos(pendingData.auto, 'registro_automoviles', 'auto');
+            } else {
+                showMsg(msgBuscar, '❌ Vehículo no encontrado.', 'error');
+            }
+        } catch (e) {
+            console.error(e);
+            showMsg(msgBuscar, '❌ Error de conexión.', 'error');
+        } finally { buscarBtn.disabled = false; }
+    });
+
+    // 🔹 Función Global para seleccionar (llamada desde HTML)
+    window.seleccionarRegistro = function(tipo) {
+        if (tipo === 'moto' && pendingData.moto) cargarDatos(pendingData.moto, 'registro_motos', 'moto');
+        else if (tipo === 'auto' && pendingData.auto) cargarDatos(pendingData.auto, 'registro_automoviles', 'auto');
+        selectionPanel.classList.remove('active');
+        isSelectionMode = false;
+    };
+
+    // 🔹 Cargar Datos en el Formulario
+    function cargarDatos(data, tabla, tipo) {
+        currentData = data;
+        currentTable = tabla;
+        dataContainer.style.display = 'block';
+        hideMsg(msgBuscar);
+        crossWarning.style.display = 'none';
+        hideMsg(msgElim);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
         // Fotos
         setPhoto('elim-foto-frontal', data.foto_frontal);
         setPhoto('elim-foto-trasera', data.foto_trasera);
         setPhoto('elim-foto-der', data.foto_lado_derecho);
         setPhoto('elim-foto-izq', data.foto_lado_izquierdo);
 
-        // Campos comunes
-        setVal('elim-placa', data.placa); setVal('elim-serial-carro', data.serial_carroceria);
-        setVal('elim-serial-motor', data.serial_motor); setVal('elim-color', data.color);
-        setVal('elim-marca', data.marca); setVal('elim-modelo', data.modelo);
-        setVal('elim-anio', data.anio); 
-        setVal('elim-tipo', data.tipo_vehiculo || 'Automóvil');
-        setVal('elim-estacion', data.estacion_policial); setVal('elim-dir-det', data.direccion_detencion);
-        setVal('elim-estatus', data.estatus || 'Verificación'); setVal('elim-obs', data.observaciones);
+        // Campos
+        setVal('elim-placa', data.placa);
+        setVal('elim-serial-carro', data.serial_carroceria);
+        setVal('elim-serial-motor', data.serial_motor);
+        setVal('elim-color', data.color);
+        setVal('elim-marca', data.marca);
+        setVal('elim-modelo', data.modelo);
+        setVal('elim-anio', data.anio);
+        setVal('elim-tipo', tipo === 'moto' ? 'Motocicleta' : 'Automóvil');
+        setVal('elim-estacion', data.estacion_policial);
+        setVal('elim-dir-det', data.direccion_detencion);
+        setVal('elim-estatus', data.estatus || 'Verificación');
+        setVal('elim-obs', data.observaciones);
         
-        // Cilindraje solo si es moto
-        const esMoto = data.tipo_vehiculo === 'Motocicleta';
-        document.getElementById('box-cilindro').style.display = (esMoto && data.cilindraje) ? 'block' : 'none';
+        document.getElementById('box-cilindro').style.display = (tipo === 'moto' && data.cilindraje) ? 'block' : 'none';
         if (data.cilindraje) setVal('elim-cilindraje', data.cilindraje);
 
-        // ✅ Lógica de UI para Archivados vs Activos
-        if (archivado) {
-            archivedBanner.style.display = 'block';
-            archivedNotice.style.display = 'block';
-            
-            // Cargar fecha y usuario del archivado
-            const fecha = data.eliminado_en ? new Date(data.eliminado_en).toLocaleDateString('es-VE') : 'Fecha desconocida';
-            const usuario = data.eliminado_por || 'Sistema';
-            
-            document.getElementById('archived-date').textContent = fecha;
-            document.getElementById('archived-by').textContent = usuario;
-            
-            btnEliminar.style.display = 'none';
-            btnReintegrar.style.display = 'block';
-        } else {
-            archivedBanner.style.display = 'none';
-            archivedNotice.style.display = 'none';
-            btnEliminar.style.display = 'block';
-            btnReintegrar.style.display = 'none';
+        // Verificar advertencia cruzada
+        verificarAdvertenciaCruzada(data, tabla);
+    }
+
+    // 🔔 Verificar si la placa existe en la otra tabla para mostrar advertencia
+    async function verificarAdvertenciaCruzada(data, tablaActual) {
+        if (!data.placa) return;
+        const tablaContraria = tablaActual === 'registro_motos' ? 'registro_automoviles' : 'registro_motos';
+        const { data: match } = await window.supabaseClient.from(tablaContraria).select('id').ilike('placa', data.placa).maybeSingle();
+        if (match) {
+            const tipoNombre = tablaContraria === 'registro_motos' ? 'Motocicleta' : 'Automóvil';
+            crossWarning.innerHTML = `⚠️ <strong>Nota:</strong> Esta placa también está registrada en <strong>${tipoNombre}</strong>. Verifique antes de eliminar.`;
+            crossWarning.style.display = 'block';
         }
-        dataContainer.style.display = 'block';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // 🔹 Búsqueda principal (Activos → Archivados)
-    async function buscarVehiculo() {
-        const val = buscarInput.value.trim().toUpperCase();
-        if (val.length < 5) return showMsg(msgBuscar, '⚠️ Ingrese un dato válido (mín. 5 caracteres).', 'error');
-        
-        showMsg(msgBuscar, ' Buscando...', 'success');
-        buscarBtn.disabled = true; dataContainer.style.display = 'none'; hideMsgElim();
-        archivedNotice.style.display = 'none'; // Ocultar aviso previo
+    // 🔹 Listeners
+    buscarInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); buscarBtn.click(); } });
+    btnNo.addEventListener('click', () => modal.style.display = 'none');
+    modal.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
 
-        try {
-            const query = `placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`;
-            
-            // 1. Buscar en tablas activas
-            let { data: moto } = await window.supabaseClient.from('registro_motos').select('*').or(query).maybeSingle();
-            if (moto) { renderUI(moto, false); return; }
-            
-            let { data: auto } = await window.supabaseClient.from('registro_automoviles').select('*').or(query).maybeSingle();
-            if (auto) { renderUI(auto, false); return; }
-
-            // 2. Buscar en eliminados (Archivados)
-            let { data: arch } = await window.supabaseClient.from('vehiculos_eliminados').select('*').or(query).maybeSingle();
-            if (arch) { renderUI(arch, true); return; }
-
-            showMsg(msgBuscar, '❌ Vehículo no encontrado.', 'error');
-        } catch (err) {
-            console.error(err);
-            showMsg(msgBuscar, ' Error de conexión.', 'error');
-        } finally { buscarBtn.disabled = false; }
-    }
-
-    // 🔹 Modal genérico
-    function showModal(titulo, texto, accion, tipo = 'danger') {
-        pendingAction = accion;
-        modalTitle.textContent = titulo;
-        modalText.textContent = texto;
-        btnYes.className = tipo === 'danger' ? 'btn-modal-danger' : 'btn-modal-success';
-        btnYes.textContent = tipo === 'danger' ? '✅ Sí, Eliminar' : '✅ Sí, Reintegrar';
+    btnEliminar.addEventListener('click', () => {
+        if (isSelectionMode) return showMsg(msgElim, '⚠️ Seleccione qué registro desea eliminar.', 'error');
+        modalText.textContent = `¿Eliminar permanentemente la placa ${currentData.placa}? Se moverá al historial de eliminados.`;
         modal.style.display = 'flex';
-    }
+    });
 
-    function closeModal() { modal.style.display = 'none'; pendingAction = null; }
+    // 🔹 Lógica de eliminación
+    btnSi.addEventListener('click', async () => {
+        modal.style.display = 'none';
+        btnEliminar.disabled = true; btnEliminar.textContent = ' Archivando y eliminando...';
+        hideMsg(msgElim);
 
-    async function ejecutarAccion() {
-        if (pendingAction === 'delete') await eliminarRegistro();
-        else if (pendingAction === 'reintegrate') await reintegrarRegistro();
-        closeModal();
-    }
-
-    // 🔹 Eliminar (Activa → Eliminados)
-    async function eliminarRegistro() {
-        btnEliminar.disabled = true; btnEliminar.textContent = '⏳ Archivando...'; hideMsgElim();
         try {
             const userId = sessionStorage.getItem('pnb_user_id') || 'user';
-            const tipo = document.getElementById('elim-tipo').value;
-            const tablaActiva = tipo === 'Motocicleta' ? 'registro_motos' : 'registro_automoviles';
-
+            
+            // 1. Insertar en vehiculos_eliminados
             const registroElim = {
-                id_original: currentData.id, tabla_origen: tablaActiva, tipo_vehiculo: tipo,
-                placa: currentData.placa, marca: currentData.marca, modelo: currentData.modelo,
-                anio: currentData.anio, color: currentData.color, serial_carroceria: currentData.serial_carroceria,
-                serial_motor: currentData.serial_motor, cilindraje: currentData.cilindraje || null,
+                id_original: currentData.id,
+                tabla_origen: currentTable,
+                tipo_vehiculo: document.getElementById('elim-tipo').value,
+                placa: currentData.placa,
+                marca: currentData.marca, modelo: currentData.modelo, anio: currentData.anio, color: currentData.color,
+                serial_carroceria: currentData.serial_carroceria, serial_motor: currentData.serial_motor,
+                cilindraje: currentData.cilindraje || null,
                 direccion_detencion: currentData.direccion_detencion || null,
-                estacion_policial: currentData.estacion_policial, estatus: currentData.estatus,
-                observaciones: currentData.observaciones || null,
+                estacion_policial: currentData.estacion_policial,
+                estatus: currentData.estatus, observaciones: currentData.observaciones || null,
                 foto_frontal: currentData.foto_frontal, foto_trasera: currentData.foto_trasera,
                 foto_lado_derecho: currentData.foto_lado_derecho, foto_lado_izquierdo: currentData.foto_lado_izquierdo,
                 eliminado_por: userId
             };
 
-            const { error: insErr } = await window.supabaseClient.from('vehiculos_eliminados').insert([registroElim]);
-            if (insErr) throw insErr;
+            const { error: insError } = await window.supabaseClient.from('vehiculos_eliminados').insert([registroElim]);
+            if (insError) throw insError;
 
-            const { error: delErr } = await window.supabaseClient.from(tablaActiva).delete().eq('id', currentData.id);
-            if (delErr) throw delErr;
+            // 2. Eliminar de tabla original
+            const { error: delError } = await window.supabaseClient.from(currentTable).delete().eq('id', currentData.id);
+            if (delError) throw delError;
 
-            showMsgElim('✅ Vehículo eliminado y archivado correctamente.', 'success');
-            setTimeout(() => { dataContainer.style.display = 'none'; buscarInput.value = ''; hideMsg(msgBuscar); hideMsgElim(); archivedNotice.style.display = 'none'; }, 4000);
+            showMsg(msgElim, '✅ Vehículo eliminado y archivado correctamente.', 'success');
+            setTimeout(() => { 
+                dataContainer.style.display = 'none'; 
+                buscarInput.value = ''; 
+                hideMsg(msgBuscar); 
+                hideMsg(msgElim); 
+                crossWarning.style.display = 'none';
+            }, 4000);
         } catch (err) {
             console.error('Error eliminando:', err);
-            showMsgElim('❌ ' + (err.message || 'Error al eliminar.'), 'error');
-        } finally { btnEliminar.disabled = false; btnEliminar.textContent = '🗑️ Eliminar Vehículo del Sistema'; }
-    }
-
-    // 🔹 Reintegrar (Eliminados → Activa)
-    async function reintegrarRegistro() {
-        btnReintegrar.disabled = true; btnReintegrar.textContent = ' Reintegrando...'; hideMsgElim();
-        try {
-            const userId = sessionStorage.getItem('pnb_user_id') || 'user';
-            // Determinar tabla de destino basada en el tipo guardado
-            const tablaDestino = currentData.tabla_origen || (currentData.tipo_vehiculo === 'Motocicleta' ? 'registro_motos' : 'registro_automoviles');
-
-            const dataActiva = {
-                estatus: currentData.estatus, estacion_policial: currentData.estacion_policial,
-                direccion_detencion: currentData.direccion_detencion, observaciones: currentData.observaciones,
-                placa: currentData.placa, marca: currentData.marca, modelo: currentData.modelo,
-                anio: currentData.anio, color: currentData.color, serial_carroceria: currentData.serial_carroceria,
-                serial_motor: currentData.serial_motor, cilindraje: currentData.cilindraje || null,
-                foto_frontal: currentData.foto_frontal, foto_trasera: currentData.foto_trasera,
-                foto_lado_derecho: currentData.foto_lado_derecho, foto_lado_izquierdo: currentData.foto_lado_izquierdo
-            };
-
-            const { error: insErr } = await window.supabaseClient.from(tablaDestino).insert([dataActiva]);
-            if (insErr) throw insErr;
-
-            // Actualizar auditoría y eliminar de eliminados
-            await window.supabaseClient.from('vehiculos_eliminados')
-                .update({ reintegrado_en: new Date().toISOString(), reintegrado_por: userId })
-                .eq('id', currentData.id);
-            await window.supabaseClient.from('vehiculos_eliminados').delete().eq('id', currentData.id);
-
-            showMsgElim('✅ Vehículo reintegrado al sistema activo.', 'success');
-            setTimeout(() => { dataContainer.style.display = 'none'; buscarInput.value = ''; hideMsg(msgBuscar); hideMsgElim(); archivedNotice.style.display = 'none'; }, 4000);
-        } catch (err) {
-            console.error('Error reintegrando:', err);
-            let msg = 'Error al reintegrar.';
-            if (err.message.includes('23505')) msg = 'Esta placa ya existe en el sistema activo.';
-            showMsgElim('❌ ' + msg, 'error');
-        } finally { btnReintegrar.disabled = false; btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo'; }
-    }
-
-    // 🔹 Listeners
-    buscarBtn.addEventListener('click', buscarVehiculo);
-    buscarInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); buscarVehiculo(); } });
-    
-    btnEliminar.addEventListener('click', () => showModal('⚠️ Confirmar Eliminación', `¿Eliminar placa ${currentData.placa}? Se archivará permanentemente.`, 'delete', 'danger'));
-    btnReintegrar.addEventListener('click', () => showModal('♻️ Confirmar Reintegración', `¿Reintegrar placa ${currentData.placa}? Volverá al sistema activo.`, 'reintegrate', 'success'));
-
-    btnYes.addEventListener('click', ejecutarAccion);
-    btnNo.addEventListener('click', closeModal);
-    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+            let msg = 'Error al eliminar. Intente nuevamente.';
+            if (err.message.includes('PGRST')) msg = 'Error de conexión con la base de datos.';
+            showMsg(msgElim, '❌ ' + msg, 'error');
+        } finally {
+            btnEliminar.disabled = false;
+            btnEliminar.textContent = '🗑️ Eliminar Vehículo del Sistema';
+        }
+    });
 };
