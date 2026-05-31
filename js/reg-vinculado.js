@@ -1,6 +1,4 @@
 window.initRegVinculado = function() {
-    console.log("✅ Módulo reg-vinculado.js cargado correctamente.");
-
     // ==========================================
     // 🔹 1. LISTAS COMPLETAS DE MARCAS Y MODELOS
     // ==========================================
@@ -52,7 +50,7 @@ window.initRegVinculado = function() {
     };
 
     // ==========================================
-    // 🔹 2. FUNCIONES DE UI
+    //  2. FUNCIONES DE UI
     // ==========================================
     window.toggleCampo = function(select, targetId) {
         const el = document.getElementById(targetId);
@@ -86,7 +84,6 @@ window.initRegVinculado = function() {
         return null;
     };
 
-    // 🔹 Cargar Marcas y Modelos
     window.cargarMarcasPV = function() {
         const tipo = document.getElementById('pv_v_tipo').value;
         const marcaSelect = document.getElementById('pv_v_marca');
@@ -230,7 +227,7 @@ window.initRegVinculado = function() {
     setupPreview('pv_foto_v_izq', 'prev_v_izq');
 
     // ==========================================
-    // 🔹 3. VALIDACIÓN EN TIEMPO REAL (CRUCIAL)
+    // 🔹 3. VALIDACIÓN EN TIEMPO REAL
     // ==========================================
     function debounce(func, wait) {
         let timeout;
@@ -241,14 +238,9 @@ window.initRegVinculado = function() {
     }
 
     async function verificarDuplicado(inputId, msgId, tablas, columna) {
-        // Verificar si existen los elementos en el HTML
         const input = document.getElementById(inputId);
         const msgEl = document.getElementById(msgId);
-
-        if (!input || !msgEl) {
-            console.warn(`⚠️ Elementos no encontrados para validación: ${inputId} o ${msgId}`);
-            return;
-        }
+        if (!input || !msgEl) return;
 
         const val = input.value.trim().toUpperCase();
         
@@ -258,23 +250,17 @@ window.initRegVinculado = function() {
             return;
         }
 
-        console.log(`🔍 Validando ${columna}: ${val}`);
         msgEl.textContent = '🔍 Verificando...'; 
         msgEl.className = 'status-msg';
         
         try {
             let found = false;
-            // Buscar en todas las tablas especificadas
             for (const tabla of tablas) {
-                console.log(`Buscando en tabla: ${tabla}, columna: ${columna}`);
                 const { data, error } = await window.supabaseClient.from(tabla).select('id').ilike(columna, val).limit(1);
-                
                 if (error) throw error;
-                
                 if (data && data.length > 0) {
                     found = true;
-                    console.log(`❌ Duplicado encontrado en ${tabla}`);
-                    break; 
+                    break;
                 }
             }
 
@@ -290,28 +276,23 @@ window.initRegVinculado = function() {
                 msgEl.className = 'status-msg valid';
             }
         } catch (e) {
-            console.error("Error en validación:", e);
-            msgEl.textContent = '️ Error de conexión';
+            msgEl.textContent = '⚠️ Error';
         }
     }
 
     // Listeners de Validación
-    // 🔹 Validar Cédula en registro_personas
     const validateCedula = debounce(() => verificarDuplicado('pv_p_cedula', 'pv-msg-cedula', ['registro_personas'], 'cedula'), 600);
     const elCedula = document.getElementById('pv_p_cedula');
     if (elCedula) elCedula.addEventListener('input', validateCedula);
 
-    // 🔹 Validar Placa en registro_motos y registro_automoviles
     const validatePlaca = debounce(() => verificarDuplicado('pv_v_placa', 'pv-msg-placa', ['registro_motos', 'registro_automoviles'], 'placa'), 600);
     const elPlaca = document.getElementById('pv_v_placa');
     if (elPlaca) elPlaca.addEventListener('input', validatePlaca);
 
-    // 🔹 Validar Serial Carrocería en registro_motos y registro_automoviles
     const validateCarro = debounce(() => verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', ['registro_motos', 'registro_automoviles'], 'serial_carroceria'), 600);
     const elCarro = document.getElementById('pv_v_serial_carro');
     if (elCarro) elCarro.addEventListener('input', validateCarro);
 
-    // 🔹 Validar Serial Motor en registro_motos y registro_automoviles
     const validateMotor = debounce(() => verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', ['registro_motos', 'registro_automoviles'], 'serial_motor'), 600);
     const elMotor = document.getElementById('pv_v_serial_motor');
     if (elMotor) elMotor.addEventListener('input', validateMotor);
@@ -328,7 +309,16 @@ window.initRegVinculado = function() {
 
     // Inicializar
     cargarEstaciones();
-    window.cargarMarcasPV(); // Carga inicial de marcas vacía o por defecto
+    window.cargarMarcasPV();
+
+    // Validación de campo numérico para teléfono
+    const tlfNumInput = document.getElementById('pv_p_tlf_num');
+    if (tlfNumInput) {
+        tlfNumInput.addEventListener('input', e => {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 20);
+        });
+        tlfNumInput.setAttribute('inputmode', 'numeric');
+    }
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -336,17 +326,13 @@ window.initRegVinculado = function() {
 
         // Verificar si hay errores de validación activos
         const inputsValidar = ['pv_p_cedula', 'pv_v_placa', 'pv_v_serial_carro', 'pv_v_serial_motor'];
-        const hasError = inputsValidar.some(id => {
-            const el = document.getElementById(id);
-            return el && el.classList.contains('input-error');
-        });
-        
+        const hasError = inputsValidar.some(id => document.getElementById(id)?.classList.contains('input-error'));
         if (hasError) return mostrarError('Por favor corrija los campos marcados en rojo antes de registrar.');
 
         const cedula = document.getElementById('pv_p_cedula').value.trim();
         if (cedula.length < 7) return mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
 
-        btn.disabled = true; btn.textContent = '⏳ Subiendo y Registrando...'; msg.style.display = 'none';
+        btn.disabled = true; btn.textContent = ' Subiendo y Registrando...'; msg.style.display = 'none';
 
         try {
             const bucket = window.supabaseClient.storage.from('fotos_personas');
@@ -394,7 +380,11 @@ window.initRegVinculado = function() {
                 color_piel: document.getElementById('pv_p_color_piel').value,
                 color_ojos: document.getElementById('pv_p_color_ojos').value,
                 color_cabello: document.getElementById('pv_p_color_cabello').value,
+                complexion: document.getElementById('pv_p_complexion').value,
                 
+                // ✅ CAMPO MARCA CORPORAL
+                marca_corporal: document.getElementById('pv_p_marca')?.value.trim() || null,
+
                 usa_lentes: document.getElementById('pv_p_lentes').value === 'true',
                 detalle_lentes: document.getElementById('pv_p_lentes').value === 'true' ? document.getElementById('pv_txt_lentes').value.trim() : null,
                 perforaciones: document.getElementById('pv_p_perforaciones').value === 'true',
