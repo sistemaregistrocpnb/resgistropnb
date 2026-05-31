@@ -329,6 +329,16 @@ window.initRegVinculado = function() {
         });
         tlfNumInput.setAttribute('inputmode', 'numeric');
     }
+    // ✅ Validación de Cédula: Solo números y máximo 8 dígitos
+const cedulaInput = document.getElementById('pv_p_cedula');
+if (cedulaInput) {
+    cedulaInput.addEventListener('input', e => {
+        // Reemplaza cualquier caracter que NO sea dígito (\D) y limita a 8 caracteres
+        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
+    });
+    cedulaInput.setAttribute('inputmode', 'numeric');
+    cedulaInput.setAttribute('pattern', '\\d{7,8}');
+}
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
