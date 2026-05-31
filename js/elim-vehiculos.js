@@ -186,7 +186,7 @@ window.initElimVehiculos = function() {
                 color: currentData.color,
                 serial_carroceria: currentData.serial_carroceria,
                 serial_motor: currentData.serial_motor,
-                cilindraje: currentData.cilindraje || null,
+                cilindraje: currentData.cilindraje || null, // ✅ Solo existe en motos
                 estacion_policial: currentData.estacion_policial,
                 direccion_detencion: currentData.direccion_detencion,
                 estatus: currentData.estatus,
@@ -220,7 +220,7 @@ window.initElimVehiculos = function() {
         }
     }
 
-    // 🔹 Reintegrar (Eliminados → Activa)
+    // 🔹 Reintegrar (Eliminados → Activa) - CORREGIDO
     async function reintegrarRegistro() {
         btnReintegrar.disabled = true; 
         btnReintegrar.textContent = '⏳ Reintegrando...'; 
@@ -228,7 +228,9 @@ window.initElimVehiculos = function() {
         
         try {
             const tablaDestino = currentData.tabla_origen || currentTable;
+            const esMoto = (currentData.tipo_vehiculo === 'Motocicleta') || (tablaDestino === 'registro_motos');
 
+            // ✅ Construir objeto dinámicamente según el tipo de vehículo
             const dataToRestore = {
                 estatus: currentData.estatus,
                 estacion_policial: currentData.estacion_policial,
@@ -241,12 +243,16 @@ window.initElimVehiculos = function() {
                 color: currentData.color,
                 serial_carroceria: currentData.serial_carroceria,
                 serial_motor: currentData.serial_motor,
-                cilindraje: currentData.cilindraje || null,
                 foto_frontal: currentData.foto_frontal,
                 foto_trasera: currentData.foto_trasera,
                 foto_lado_derecho: currentData.foto_lado_derecho,
                 foto_lado_izquierdo: currentData.foto_lado_izquierdo
             };
+
+            // ✅ Solo agregar cilindraje si es moto
+            if (esMoto) {
+                dataToRestore.cilindraje = currentData.cilindraje || null;
+            }
 
             const { error: insErr } = await window.supabaseClient.from(tablaDestino).insert([dataToRestore]);
             if (insErr) throw new Error('Error restaurando: ' + insErr.message);
@@ -258,7 +264,7 @@ window.initElimVehiculos = function() {
                 dataContainer.style.display = 'none'; 
                 buscarInput.value = ''; 
                 hideMsg(msgBuscar); 
-                hideMsgElim(); 
+                hideMsg(msgElim); 
                 if (archivedNotice) archivedNotice.style.display = 'none';
             }, 4000);
         } catch (err) {
