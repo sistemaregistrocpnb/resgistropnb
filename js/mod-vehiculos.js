@@ -1,5 +1,4 @@
 window.initModVehiculos = function() {
-    // 🔹 FUNCIÓN GLOBAL PARA VISTA PREVIA
     window.previewFile = function(input, imgId) {
         const img = document.getElementById(imgId);
         if (!img) return;
@@ -10,7 +9,6 @@ window.initModVehiculos = function() {
         }
     };
 
-    // 🔹 LISTAS COMPLETAS DE MARCAS/MODELOS
     const marcasModelosMoto = {
         "Empire Keeway": ["Matrix Lite", "Matrix II 150", "EK Xpress Lite", "QJ Fort", "Horse (EK Horse 2 SE)", "EK Arsen II 200", "EK Atlas", "EK Atlas HD/HDS 200", "Owen 200", "Thunder EK", "TX II 150", "TX 250GS", "QJ Motor SRT 550", "QJ Motor SRT 550X", "QJ Motor SRT 700S", "QJ Motor SRT 700SX", "Superlight 200S", "V302C"],
         "Bera Motorcycles": ["Bera BWS", "Milán", "Runner", "SBR", "X1", "BRF", "León", "BR200 / DT", "Cobra", "Kavak", "BRZ", "GR", "Antiking", "Carguero"],
@@ -58,7 +56,6 @@ window.initModVehiculos = function() {
         "Otra": ["Otra (Especificar en observaciones)"]
     };
 
-    // 🔹 Referencias DOM
     const marcaSelect = document.getElementById('m_marca');
     const modeloSelect = document.getElementById('m_modelo');
     const anioSelect = document.getElementById('m_anio');
@@ -67,20 +64,19 @@ window.initModVehiculos = function() {
     const inputBusqueda = document.getElementById('mod_busqueda_input');
     const msgBox = document.getElementById('msg_mod_vehiculos');
     const msgBusqueda = document.getElementById('mod_msg_busqueda');
+    const crossWarning = document.getElementById('cross-plate-warning');
     const selectionPanel = document.getElementById('selection-panel');
 
     let pendingData = { moto: null, auto: null };
-    let currentData = null; // Registro activo seleccionado
+    let currentData = null;
     let isSelectionMode = false;
 
-    // 🔹 1. Poblar Años
     if (anioSelect) {
         const currentYear = new Date().getFullYear();
         anioSelect.innerHTML = '<option value="">Seleccione año...</option>';
         for (let y = currentYear; y >= 1850; y--) anioSelect.innerHTML += `<option value="${y}">${y}</option>`;
     }
 
-    // 🔹 2. Lógica de Marcas/Modelos
     function cargarMarcas(tipo) {
         const lista = tipo === 'moto' ? marcasModelosMoto : marcasModelosAuto;
         marcaSelect.innerHTML = '<option value="">Seleccione marca...</option>';
@@ -96,7 +92,6 @@ window.initModVehiculos = function() {
         if (lista[marca]) lista[marca].forEach(mod => modeloSelect.innerHTML += `<option value="${mod}">${mod}</option>`);
     });
 
-    // 🔹 3. UI Helper para mostrar/ocultar campos según tipo
     function setUIForType(type) {
         const isMoto = type === 'moto';
         document.getElementById('mod_tipo_vehiculo').value = isMoto ? 'Motocicleta' : 'Automóvil';
@@ -112,49 +107,59 @@ window.initModVehiculos = function() {
         cargarMarcas(type);
     }
 
-    // 🔹 4. Función Global para seleccionar (llamada desde HTML)
     window.seleccionarRegistro = function(tipo) {
-        if (tipo === 'moto' && pendingData.moto) {
-            cargarDatos(pendingData.moto, 'registro_motos', 'moto');
-        } else if (tipo === 'auto' && pendingData.auto) {
-            cargarDatos(pendingData.auto, 'registro_automoviles', 'auto');
-        }
+        if (tipo === 'moto' && pendingData.moto) cargarDatos(pendingData.moto, 'registro_motos', 'moto');
+        else if (tipo === 'auto' && pendingData.auto) cargarDatos(pendingData.auto, 'registro_automoviles', 'auto');
         selectionPanel.classList.remove('active');
         isSelectionMode = false;
     };
 
-    // 🔹 5. Buscador con Lógica de Selección
+    // 🔍 NUEVA FUNCIÓN: Verificar placa cruzada entre tablas
+    async function verificarPlacaCruzada(data, tablaActual) {
+        crossWarning.style.display = 'none';
+        if (!data.placa) return;
+        
+        const tablaContraria = tablaActual === 'registro_motos' ? 'registro_automoviles' : 'registro_motos';
+        const { data: match } = await window.supabaseClient
+            .from(tablaContraria)
+            .select('id')
+            .eq('placa', data.placa)
+            .maybeSingle();
+
+        if (match) {
+            const tipoNombre = tablaContraria === 'registro_motos' ? 'Motocicleta' : 'Automóvil';
+            crossWarning.innerHTML = `⚠️ <strong>Atención:</strong> Esta placa (<strong>${data.placa}</strong>) también se encuentra registrada en la tabla de <strong>${tipoNombre}</strong>.`;
+            crossWarning.style.display = 'block';
+        }
+    }
+
     btnBuscar.addEventListener('click', async () => {
         const val = inputBusqueda.value.trim().toUpperCase();
-        if (val.length < 5) return mostrarMsg(msgBusqueda, '️ Ingrese un dato válido (mín. 5 caracteres).', 'error');
+        if (val.length < 5) return mostrarMsg(msgBusqueda, '⚠️ Ingrese un dato válido (mín. 5 caracteres).', 'error');
 
-        mostrarMsg(msgBusqueda, '🔍 Buscando...', 'success');
+        mostrarMsg(msgBusqueda, ' Buscando...', 'success');
         btnBuscar.disabled = true;
         form.style.display = 'none';
         selectionPanel.classList.remove('active');
+        crossWarning.style.display = 'none'; // Ocultar alerta al iniciar búsqueda
         pendingData = { moto: null, auto: null };
-        currentData = null;
 
         try {
             const query = `placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`;
-            
             const [resMoto, resAuto] = await Promise.all([
                 window.supabaseClient.from('registro_motos').select('*').or(query).maybeSingle(),
                 window.supabaseClient.from('registro_automoviles').select('*').or(query).maybeSingle()
             ]);
 
-            const moto = resMoto.data;
-            const auto = resAuto.data;
-
-            if (moto && auto) {
-                pendingData = { moto, auto };
+            if (resMoto.data && resAuto.data) {
+                pendingData = { moto: resMoto.data, auto: resAuto.data };
                 isSelectionMode = true;
                 selectionPanel.classList.add('active');
                 msgBusqueda.textContent = ''; msgBusqueda.style.display = 'none';
-            } else if (moto) {
-                cargarDatos(moto, 'registro_motos', 'moto');
-            } else if (auto) {
-                cargarDatos(auto, 'registro_automoviles', 'auto');
+            } else if (resMoto.data) {
+                cargarDatos(resMoto.data, 'registro_motos', 'moto');
+            } else if (resAuto.data) {
+                cargarDatos(resAuto.data, 'registro_automoviles', 'auto');
             } else {
                 mostrarMsg(msgBusqueda, '❌ Vehículo no encontrado.', 'error');
             }
@@ -164,9 +169,8 @@ window.initModVehiculos = function() {
         } finally { btnBuscar.disabled = false; }
     });
 
-    // 🔹 6. Cargar Datos en el Formulario
     function cargarDatos(data, tabla, tipo) {
-        currentData = data; // Guardar referencia actual
+        currentData = data;
         setUIForType(tipo);
         form.style.display = 'block';
         mostrarMsg(msgBusqueda, '✅ Registro cargado. Puede editar y guardar.', 'success');
@@ -195,8 +199,10 @@ window.initModVehiculos = function() {
         }
         if (tipo === 'moto') document.getElementById('m_cilindraje').value = data.cilindraje || '';
 
-        // Limpiar validación al cargar
         resetValidation();
+        
+        // 🔔 VERIFICACIÓN CRUZADA AL CARGAR
+        verificarPlacaCruzada(data, tabla);
 
         const sufijo = tipo === 'moto' ? '' : '_a';
         mostrarPreview(`m_prev_frontal${sufijo}`, data.foto_frontal);
@@ -217,7 +223,6 @@ window.initModVehiculos = function() {
         if (el) { el.textContent = txt; el.className = `msg ${type}`; el.style.display = txt ? 'block' : 'none'; }
     }
 
-    // 🔹 7.  VALIDACIÓN EN TIEMPO REAL (Igual que Registro)
     function debounce(func, wait) {
         let timeout;
         return function(...args) {
@@ -229,17 +234,12 @@ window.initModVehiculos = function() {
     async function checkAvailability(input, msgId) {
         const val = input.value.trim().toUpperCase();
         const msgEl = document.getElementById(msgId);
-        
-        // Limpiar si está vacío
         if (!val) {
             input.classList.remove('input-valid', 'input-error');
             if (msgEl) { msgEl.textContent = ''; msgEl.className = 'status-msg'; }
             return;
         }
-
-        // No validar si no hay registro cargado
         if (!currentData) return;
-
         if (msgEl) { msgEl.textContent = '⏳ Verificando...'; msgEl.className = 'status-msg'; }
 
         try {
@@ -248,9 +248,7 @@ window.initModVehiculos = function() {
             const col = input.id === 'm_placa' ? 'placa' : 
                         input.id === 'm_serial_carroceria' ? 'serial_carroceria' : 'serial_motor';
 
-            // 🔑 CLAVE: Buscar en la tabla correspondiente, excluyendo el ID actual
             const { data } = await window.supabaseClient.from(currentTable).select('id').eq(col, val).neq('id', currentData.id).maybeSingle();
-            
             if (data) found = true;
 
             if (found) {
@@ -261,11 +259,10 @@ window.initModVehiculos = function() {
                 if (msgEl) { msgEl.textContent = '✅ Disponible'; msgEl.className = 'status-msg valid'; }
             }
         } catch (e) {
-            if (msgEl) msgEl.textContent = '️ Error de conexión';
+            if (msgEl) msgEl.textContent = '⚠️ Error de conexión';
         }
     }
 
-    // Listeners para validación
     document.getElementById('m_placa')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'msg-m-placa'), 600));
     document.getElementById('m_serial_carroceria')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'msg-m-carroceria'), 600));
     document.getElementById('m_serial_motor')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'msg-m-motor'), 600));
@@ -278,15 +275,12 @@ window.initModVehiculos = function() {
         });
     }
 
-    //  8. Guardar Cambios
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (isSelectionMode) return mostrarMsg(msgBox, 'Seleccione qué registro desea editar.', 'error');
         
-        // Verificar que no haya errores de validación
-        const inputs = document.querySelectorAll('.registro-form input');
         let hasError = false;
-        inputs.forEach(i => { if(i.classList.contains('input-error')) hasError = true; });
+        document.querySelectorAll('.registro-form input').forEach(i => { if(i.classList.contains('input-error')) hasError = true; });
         if (hasError) return mostrarMsg(msgBox, 'Por favor corrija los campos marcados en rojo.', 'error');
 
         const placa = document.getElementById('m_placa').value.trim().toUpperCase();
@@ -339,7 +333,7 @@ window.initModVehiculos = function() {
             if (finalError) throw finalError;
 
             mostrarMsg(msgBox, '✅ Vehículo actualizado correctamente.', 'success');
-            setTimeout(() => { form.style.display = 'none'; inputBusqueda.value = ''; msgBusqueda.style.display = 'none'; }, 4000);
+            setTimeout(() => { form.style.display = 'none'; inputBusqueda.value = ''; msgBusqueda.style.display = 'none'; crossWarning.style.display = 'none'; }, 4000);
 
         } catch (err) {
             console.error('Error:', err);
@@ -358,6 +352,5 @@ window.initModVehiculos = function() {
         }
     });
 
-    // Inicializar
     setUIForType('moto');
 };
