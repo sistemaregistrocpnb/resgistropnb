@@ -160,9 +160,26 @@
                         <option value="Automóvil"> Automóvil</option>
                     </select>
                 </div>
-                <div class="form-group"><label>Placa</label><input type="text" id="pv_v_placa" style="text-transform: uppercase;" required></div>
-                <div class="form-group"><label>Serial Carrocería</label><input type="text" id="pv_v_serial_carro" required></div>
-                <div class="form-group"><label>Serial Motor</label><input type="text" id="pv_v_serial_motor"></div>
+                <div class="form-group">
+    <label>Placa</label>
+    <input type="text" id="pv_v_placa" style="text-transform: uppercase;" required>
+    <!-- 👇 Este small es obligatorio para que salga el mensaje -->
+    <small id="pv-msg-placa" class="status-msg"></small>
+</div>
+
+<div class="form-group">
+    <label>Serial Carrocería</label>
+    <input type="text" id="pv_v_serial_carro" required>
+    <!-- 👇 Este small es obligatorio -->
+    <small id="pv-msg-carro" class="status-msg"></small>
+</div>
+
+<div class="form-group">
+    <label>Serial Motor</label>
+    <input type="text" id="pv_v_serial_motor">
+    <!-- 👇 Este small es obligatorio -->
+    <small id="pv-msg-motor" class="status-msg"></small>
+</div>
                 <div class="form-group" id="pv_box_cilindro" style="display:none;"><label>Cilindraje</label>
                     <select id="pv_v_cilindraje">
                         <option value="Baja">Baja (hasta 250cc)</option>
