@@ -1,4 +1,6 @@
 window.initRegVinculado = function() {
+    console.log("✅ Módulo reg-vinculado.js cargado correctamente.");
+
     // ==========================================
     // 🔹 1. LISTAS COMPLETAS DE MARCAS Y MODELOS
     // ==========================================
@@ -228,7 +230,7 @@ window.initRegVinculado = function() {
     setupPreview('pv_foto_v_izq', 'prev_v_izq');
 
     // ==========================================
-    //  3. VALIDACIÓN EN TIEMPO REAL (CRUCIAL)
+    // 🔹 3. VALIDACIÓN EN TIEMPO REAL (CRUCIAL)
     // ==========================================
     function debounce(func, wait) {
         let timeout;
@@ -239,25 +241,39 @@ window.initRegVinculado = function() {
     }
 
     async function verificarDuplicado(inputId, msgId, tablas, columna) {
-        const val = document.getElementById(inputId).value.trim().toUpperCase();
-        const msgEl = document.getElementById(msgId);
+        // Verificar si existen los elementos en el HTML
         const input = document.getElementById(inputId);
-        
-        if (!val) {
-            input.classList.remove('input-valid', 'input-error');
-            if(msgEl) msgEl.textContent = '';
+        const msgEl = document.getElementById(msgId);
+
+        if (!input || !msgEl) {
+            console.warn(`⚠️ Elementos no encontrados para validación: ${inputId} o ${msgId}`);
             return;
         }
 
-        if(msgEl) { msgEl.textContent = '🔍 Verificando...'; msgEl.className = 'status-msg'; }
+        const val = input.value.trim().toUpperCase();
+        
+        if (!val) {
+            input.classList.remove('input-valid', 'input-error');
+            msgEl.textContent = '';
+            return;
+        }
+
+        console.log(`🔍 Validando ${columna}: ${val}`);
+        msgEl.textContent = '🔍 Verificando...'; 
+        msgEl.className = 'status-msg';
         
         try {
             let found = false;
             // Buscar en todas las tablas especificadas
             for (const tabla of tablas) {
-                const { data } = await window.supabaseClient.from(tabla).select('id').ilike(columna, val).limit(1);
+                console.log(`Buscando en tabla: ${tabla}, columna: ${columna}`);
+                const { data, error } = await window.supabaseClient.from(tabla).select('id').ilike(columna, val).limit(1);
+                
+                if (error) throw error;
+                
                 if (data && data.length > 0) {
                     found = true;
+                    console.log(`❌ Duplicado encontrado en ${tabla}`);
                     break; 
                 }
             }
@@ -265,36 +281,43 @@ window.initRegVinculado = function() {
             if (found) {
                 input.classList.add('input-error');
                 input.classList.remove('input-valid');
-                if(msgEl) { msgEl.textContent = '❌ Ya registrado'; msgEl.className = 'status-msg error'; }
+                msgEl.textContent = '❌ Ya registrado'; 
+                msgEl.className = 'status-msg error';
             } else {
                 input.classList.add('input-valid');
                 input.classList.remove('input-error');
-                if(msgEl) { msgEl.textContent = '✅ Disponible'; msgEl.className = 'status-msg valid'; }
+                msgEl.textContent = '✅ Disponible'; 
+                msgEl.className = 'status-msg valid';
             }
         } catch (e) {
-            if(msgEl) msgEl.textContent = '⚠️ Error de conexión';
+            console.error("Error en validación:", e);
+            msgEl.textContent = '️ Error de conexión';
         }
     }
 
     // Listeners de Validación
     // 🔹 Validar Cédula en registro_personas
     const validateCedula = debounce(() => verificarDuplicado('pv_p_cedula', 'pv-msg-cedula', ['registro_personas'], 'cedula'), 600);
-    document.getElementById('pv_p_cedula')?.addEventListener('input', validateCedula);
+    const elCedula = document.getElementById('pv_p_cedula');
+    if (elCedula) elCedula.addEventListener('input', validateCedula);
 
     // 🔹 Validar Placa en registro_motos y registro_automoviles
     const validatePlaca = debounce(() => verificarDuplicado('pv_v_placa', 'pv-msg-placa', ['registro_motos', 'registro_automoviles'], 'placa'), 600);
-    document.getElementById('pv_v_placa')?.addEventListener('input', validatePlaca);
+    const elPlaca = document.getElementById('pv_v_placa');
+    if (elPlaca) elPlaca.addEventListener('input', validatePlaca);
 
     // 🔹 Validar Serial Carrocería en registro_motos y registro_automoviles
     const validateCarro = debounce(() => verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', ['registro_motos', 'registro_automoviles'], 'serial_carroceria'), 600);
-    document.getElementById('pv_v_serial_carro')?.addEventListener('input', validateCarro);
+    const elCarro = document.getElementById('pv_v_serial_carro');
+    if (elCarro) elCarro.addEventListener('input', validateCarro);
 
     // 🔹 Validar Serial Motor en registro_motos y registro_automoviles
     const validateMotor = debounce(() => verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', ['registro_motos', 'registro_automoviles'], 'serial_motor'), 600);
-    document.getElementById('pv_v_serial_motor')?.addEventListener('input', validateMotor);
+    const elMotor = document.getElementById('pv_v_serial_motor');
+    if (elMotor) elMotor.addEventListener('input', validateMotor);
 
     // ==========================================
-    //  4. ENVÍO DEL FORMULARIO
+    // 🔹 4. ENVÍO DEL FORMULARIO
     // ==========================================
     const form = document.getElementById('form-reg-vinculado');
     const btn = form?.querySelector('.btn-submit');
@@ -313,13 +336,17 @@ window.initRegVinculado = function() {
 
         // Verificar si hay errores de validación activos
         const inputsValidar = ['pv_p_cedula', 'pv_v_placa', 'pv_v_serial_carro', 'pv_v_serial_motor'];
-        const hasError = inputsValidar.some(id => document.getElementById(id)?.classList.contains('input-error'));
+        const hasError = inputsValidar.some(id => {
+            const el = document.getElementById(id);
+            return el && el.classList.contains('input-error');
+        });
+        
         if (hasError) return mostrarError('Por favor corrija los campos marcados en rojo antes de registrar.');
 
         const cedula = document.getElementById('pv_p_cedula').value.trim();
         if (cedula.length < 7) return mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
 
-        btn.disabled = true; btn.textContent = ' Subiendo y Registrando...'; msg.style.display = 'none';
+        btn.disabled = true; btn.textContent = '⏳ Subiendo y Registrando...'; msg.style.display = 'none';
 
         try {
             const bucket = window.supabaseClient.storage.from('fotos_personas');
