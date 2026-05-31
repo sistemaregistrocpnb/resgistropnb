@@ -1,5 +1,6 @@
 <style>
   :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; }
+  
   .search-box { padding: 16px; background: #f8fafc; border: 1.5px dashed var(--beige-border); border-radius: 8px; margin-bottom: 20px; }
   .search-box label { font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; display: block; }
   .search-row { display: flex; gap: 10px; }
@@ -10,18 +11,20 @@
   .msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
   .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 
-  /* 🔹 Estilos de Mensajes y Avisos (Idénticos a elim-personas) */
-  .search-msg { margin-top: 8px; font-size: 0.85rem; display: none; }
-  .search-msg.error { color: #dc2626; }
-  .search-msg.success { color: #15803d; }
-  .search-msg.archived { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; padding: 8px; border-radius: 4px; margin-top: 8px; display: none; }
+  /* 🔹 Panel de Selección y Advertencia Cruzada */
+  .selection-panel { display: none; padding: 20px; background: #f1f5f9; border: 2px dashed var(--beige-border); border-radius: 8px; margin-bottom: 20px; text-align: center; }
+  .selection-panel.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+  .selection-title { margin: 0 0 15px; font-weight: 600; color: var(--primary); }
+  .selection-btns { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+  .btn-select-type { padding: 10px 20px; border: 2px solid var(--primary); background: white; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--primary); transition: 0.2s; }
+  .btn-select-type:hover { background: var(--primary); color: white; }
 
-  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 14px; }
-  .data-item { margin-bottom: 8px; }
-  .data-item label { font-weight: 600; font-size: 0.8rem; color: #64748b; display: block; margin-bottom: 4px; }
-  .data-item input, .data-item textarea { width: 100%; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 8px; font-size: 0.9rem; pointer-events: none; color: #334155; }
-  .img-preview-elim { width: 100%; height: auto; max-height: 200px; object-fit: contain; border: 1px solid var(--beige-border); border-radius: 5px; background: #f8fafc; display: none; margin-top: 4px; }
-  
+  /* 🔹 Banner de Archivado */
+  .archived-banner { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 16px; margin-bottom: 20px; text-align: center; display: none; }
+  .archived-banner strong { color: #92400e; font-size: 1.1rem; display: block; margin-bottom: 8px; }
+  .archived-banner p { color: #475569; margin: 4px 0; font-size: 0.9rem; }
+
+  /* 🔹 Botones */
   .btn-eliminar { width: 100%; padding: 14px; background: #dc2626; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 20px; font-size: 1rem; transition: 0.2s; }
   .btn-eliminar:hover { background: #b91c1c; }
   .btn-eliminar:disabled { background: #fca5a5; cursor: not-allowed; }
@@ -29,11 +32,14 @@
   .btn-reintegrar { width: 100%; padding: 14px; background: #059669; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 20px; font-size: 1rem; display: none; transition: 0.2s; }
   .btn-reintegrar:hover { background: #047857; }
   .btn-reintegrar:disabled { background: #6ee7b7; cursor: not-allowed; }
-  
-  .archived-banner { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 12px; margin-bottom: 16px; display: none; text-align: center; }
-  .archived-banner strong { color: #92400e; }
-  
-  /* Modal */
+
+  /*  Formulario de Solo Lectura */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .data-item label { font-weight: 600; font-size: 0.8rem; color: #64748b; display: block; margin-bottom: 4px; }
+  .data-item input, .data-item textarea { width: 100%; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 8px; font-size: 0.9rem; pointer-events: none; color: #334155; }
+  .img-preview-elim { width: 100%; height: auto; max-height: 150px; object-fit: contain; border: 1px solid var(--beige-border); border-radius: 5px; margin-top: 4px; display: none; background: #fff; }
+
+  /* 🔹 Modal */
   .elim-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; animation: fadeIn 0.2s; }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   .elim-modal-box { background: #fff; padding: 24px; border-radius: 10px; width: 90%; max-width: 440px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-top: 4px solid var(--primary); }
@@ -42,45 +48,52 @@
   .elim-btns { display: flex; gap: 12px; justify-content: center; }
   .btn-modal-danger { background: #dc2626; color: #fff; border: none; padding: 11px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; flex: 1; max-width: 140px; }
   .btn-modal-cancel { background: #e2e8f0; color: #334155; border: none; padding: 11px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; flex: 1; max-width: 140px; }
-  .btn-modal-success { background: #059669; color: #fff; border: none; padding: 11px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; flex: 1; max-width: 140px; }
   .btn-modal-danger:hover { background: #b91c1c; }
   .btn-modal-cancel:hover { background: #cbd5e1; }
-  .btn-modal-success:hover { background: #047857; }
 
-  @media (max-width: 600px) { .search-row, .form-grid { flex-direction: column; } }
+  @media (max-width: 600px) { .search-row, .form-grid, .selection-btns { flex-direction: column; } }
 </style>
 
 <div class="card">
     <h3>🗑️ Eliminar / Reintegrar Vehículo</h3>
     
+    <!-- 🔍 BÚSQUEDA -->
     <div class="search-box">
         <label>Buscar por Placa, Serial de Carrocería o Motor:</label>
         <div class="search-row">
             <input type="text" id="buscar-input-elim" placeholder="Ej: AA123BC o serial..." maxlength="20">
             <button id="btn-buscar-elim">🔍 Buscar</button>
         </div>
-        <div id="buscar-msg-elim" class="search-msg"></div>
-        
-        <!-- ✅ AVISO DE ELIMINADO ANTERIORMENTE (Idéntico a elim-personas) -->
-        <div id="archived-notice" class="search-msg archived">
-            🔒 Sujeto eliminado anteriormente. Use el botón <strong>Reintegrar</strong> si desea volver a activarlo.
+        <div id="buscar-msg-elim" class="msg" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- ⚠️ PANEL DE SELECCIÓN (Aparece si hay duplicados entre tablas activas) -->
+    <div id="selection-panel" class="selection-panel">
+        <h4 class="selection-title">⚠️ Dato encontrado en dos registros distintos</h4>
+        <p style="margin-bottom: 15px; font-size: 0.9rem;">Seleccione qué tipo de vehículo desea eliminar:</p>
+        <div class="selection-btns">
+            <button class="btn-select-type" onclick="seleccionarRegistro('moto')">🏍️ Eliminar Motocicleta</button>
+            <button class="btn-select-type" onclick="seleccionarRegistro('auto')">🚙 Eliminar Automóvil</button>
         </div>
     </div>
 
-    <div id="elim-data-container" style="display: none;">
-        <!-- Banner para registros ya eliminados (Idéntico a elim-personas) -->
-        <div id="archived-banner" class="archived-banner">
-            <strong>🗄️ Registro Archivado</strong><br>
-            Eliminado el <span id="archive-date">-</span> por <span id="archive-by">-</span>
-        </div>
+    <!-- 🗄️ BANNER DE ARCHIVADO (Visible solo si está en historial) -->
+    <div id="archived-banner" class="archived-banner">
+        <strong>️ Registro Archivado</strong>
+        <p>Este vehículo fue eliminado el <span id="archive-date" style="font-weight:600;">-</span></p>
+        <p>Por el usuario: <span id="archive-user" style="font-weight:600;">-</span></p>
+        <p style="margin-top:10px; font-size:0.85rem; color:#64748b;">Utilice el botón <strong>Reintegrar</strong> para devolverlo al sistema activo.</p>
+    </div>
 
+    <!-- 📝 DATOS DEL VEHÍCULO (Oculto hasta buscar o seleccionar) -->
+    <div id="elim-data-container" style="display: none;">
         <fieldset style="border:1px solid var(--beige-border); border-radius:8px; padding:16px; margin-bottom:18px; background:#fafbfc;">
-            <legend>📸 Fotografías</legend>
+            <legend>📸 Fotografías del Registro</legend>
             <div class="form-grid">
-                <div class="data-item"><label>Frontal</label><img id="elim-foto-frontal" class="img-preview-elim" alt="Frontal"></div>
-                <div class="data-item"><label>Trasera</label><img id="elim-foto-trasera" class="img-preview-elim" alt="Trasera"></div>
-                <div class="data-item"><label>Lado Derecho</label><img id="elim-foto-der" class="img-preview-elim" alt="Lado Der"></div>
-                <div class="data-item"><label>Lado Izquierdo</label><img id="elim-foto-izq" class="img-preview-elim" alt="Lado Izq"></div>
+                <div class="data-item"><label>Frontal</label><img id="elim-foto-frontal" class="img-preview-elim"></div>
+                <div class="data-item"><label>Trasera</label><img id="elim-foto-trasera" class="img-preview-elim"></div>
+                <div class="data-item"><label>Lado Derecho</label><img id="elim-foto-der" class="img-preview-elim"></div>
+                <div class="data-item"><label>Lado Izquierdo</label><img id="elim-foto-izq" class="img-preview-elim"></div>
             </div>
         </fieldset>
 
@@ -95,7 +108,7 @@
         </fieldset>
 
         <fieldset style="border:1px solid var(--beige-border); border-radius:8px; padding:16px; margin-bottom:18px; background:#fafbfc;">
-            <legend>⚙️ Características</legend>
+            <legend>️ Características</legend>
             <div class="form-grid">
                 <div class="data-item"><label>Marca</label><input id="elim-marca" readonly></div>
                 <div class="data-item"><label>Modelo</label><input id="elim-modelo" readonly></div>
@@ -117,9 +130,10 @@
             <textarea id="elim-obs" rows="2" readonly></textarea>
         </fieldset>
 
-        <!-- Botones dinámicos -->
+        <!-- BOTONES DE ACCIÓN -->
         <button id="btn-eliminar" class="btn-eliminar">🗑️ Eliminar Vehículo del Sistema</button>
         <button id="btn-reintegrar" class="btn-reintegrar">♻️ Reintegrar al Sistema Activo</button>
+        
         <div id="msg-elim" class="msg"></div>
     </div>
 </div>
