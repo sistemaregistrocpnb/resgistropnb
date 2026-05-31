@@ -1,5 +1,5 @@
 window.initElimVehiculos = function() {
-    // 🔹 Referencias DOM
+    //  Referencias DOM
     const buscarInput = document.getElementById('buscar-input-elim');
     const buscarBtn = document.getElementById('btn-buscar-elim');
     const msgBuscar = document.getElementById('buscar-msg-elim');
@@ -13,7 +13,7 @@ window.initElimVehiculos = function() {
     const modalTitle = document.getElementById('modal-title');
     const modalText = document.getElementById('modal-text');
     const btnModalYes = document.getElementById('btn-modal-yes');
-    const btnModalNo = document.getElementById('btn-modal-no'); // ✅ CORRECCIÓN: Definido correctamente
+    const btnModalNo = document.getElementById('btn-modal-no');
 
     let pendingData = { moto: null, auto: null };
     let currentData = null;
@@ -22,7 +22,7 @@ window.initElimVehiculos = function() {
     let isSelectionMode = false;
     let pendingAction = null;
 
-    // 🔹 Helpers UI
+    //  Helpers UI
     const showMsg = (el, txt, type) => { el.textContent = txt; el.className = `msg ${type}`; el.style.display = 'block'; };
     const hideMsg = (el) => { el.style.display = 'none'; };
     const showMsgElim = (txt, type) => { msgElim.textContent = txt; msgElim.className = `msg ${type}`; msgElim.style.display = 'block'; };
@@ -78,8 +78,9 @@ window.initElimVehiculos = function() {
         setPhoto('elim-foto-der', data.foto_lado_derecho);
         setPhoto('elim-foto-izq', data.foto_lado_izquierdo);
 
-        // 🔔 LÓGICA DE UI SEGÚN ESTADO
+        //  LÓGICA DE UI SEGÚN ESTADO
         if (isArchived) {
+            // Mostrar Banner de Archivado
             archivedBanner.style.display = 'block';
             document.getElementById('archive-date').textContent = data.eliminado_en ? new Date(data.eliminado_en).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : '-';
             document.getElementById('archive-user').textContent = data.eliminado_por || 'Sistema';
@@ -148,7 +149,7 @@ window.initElimVehiculos = function() {
                 if (resArchive.data) {
                     cargarDatos(resArchive.data, 'archive');
                 } else {
-                    showMsg(msgBuscar, ' Vehículo no encontrado.', 'error');
+                    showMsg(msgBuscar, '❌ Vehículo no encontrado.', 'error');
                 }
             }
         } catch (err) {
@@ -285,18 +286,18 @@ window.initElimVehiculos = function() {
             if (err.message.includes('23505') || err.message.includes('unique')) {
                 msg = '❌ Esta placa ya existe en el sistema activo.';
             } else {
-                msg = ' ' + err.message;
+                msg = '❌ ' + err.message;
             }
             showMsgElim(msg, 'error');
         } finally { 
             btnReintegrar.disabled = false; 
-            btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo'; 
+            btnReintegrar.textContent = '️ Reintegrar al Sistema Activo'; 
         }
     }
 
     // 🔹 Listeners
     buscarInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); buscarBtn.click(); } });
-    btnModalNo.addEventListener('click', closeModal); // ✅ CORRECCIÓN: Listener corregido
+    btnModalNo.addEventListener('click', closeModal);
     modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 
     btnEliminar.addEventListener('click', () => {
@@ -308,7 +309,7 @@ window.initElimVehiculos = function() {
     
     btnReintegrar.addEventListener('click', () => {
         if (!currentData || !isArchived) return;
-        showModal('️ Confirmar Reintegración', `¿Reintegrar vehículo placa ${currentData.placa}? Volverá al sistema activo.`, 'reintegrate', 'success');
+        showModal('♻️ Confirmar Reintegración', `¿Reintegrar vehículo placa ${currentData.placa}? Volverá al sistema activo.`, 'reintegrate', 'success');
     });
     
     btnModalYes.addEventListener('click', ejecutarAccion);
