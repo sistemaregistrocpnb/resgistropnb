@@ -1,5 +1,5 @@
 window.initElimVehiculos = function() {
-    //  Referencias DOM
+    // 🔹 Referencias DOM
     const buscarInput = document.getElementById('buscar-input-elim');
     const buscarBtn = document.getElementById('btn-buscar-elim');
     const msgBuscar = document.getElementById('buscar-msg-elim');
@@ -78,19 +78,29 @@ window.initElimVehiculos = function() {
         setPhoto('elim-foto-der', data.foto_lado_derecho);
         setPhoto('elim-foto-izq', data.foto_lado_izquierdo);
 
-        //  LÓGICA DE UI SEGÚN ESTADO (Banners y Botones)
+        // 🔔 LÓGICA DE UI SEGÚN ESTADO (Banners y Botones)
         if (isArchived) {
             // Mostrar Banners de Archivado
             if (archivedBanner) archivedBanner.style.display = 'block';
             const notice = document.getElementById('archived-notice');
             if (notice) notice.style.display = 'block';
             
-            // ✅ CORRECCIÓN: Usar los IDs correctos que existen en el HTML (archive-date y archive-by)
+            // ✅ CORRECCIÓN: Usar los IDs correctos que existen en el HTML
             const dateEl = document.getElementById('archive-date');
             const byEl = document.getElementById('archive-by');
             
-            if (dateEl) dateEl.textContent = data.eliminado_en ? new Date(data.eliminado_en).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : '-';
-            if (byEl) byEl.textContent = data.eliminado_por || 'Sistema';
+            if (dateEl && data.eliminado_en) {
+                dateEl.textContent = new Date(data.eliminado_en).toLocaleDateString('es-VE', { 
+                    year: 'numeric', month: 'long', day: 'numeric', 
+                    hour: '2-digit', minute:'2-digit' 
+                });
+            } else if (dateEl) {
+                dateEl.textContent = '-';
+            }
+            
+            if (byEl) {
+                byEl.textContent = data.eliminado_por || 'Sistema';
+            }
             
             // Botones
             btnEliminar.style.display = 'none';
@@ -108,7 +118,6 @@ window.initElimVehiculos = function() {
     // 🔹 Función Global para seleccionar (llamada desde HTML)
     window.seleccionarRegistro = function(tipo) {
         if (tipo === 'moto' && pendingData.moto) {
-            // Si tiene fecha de eliminación, viene del archivo
             const source = pendingData.moto.eliminado_en ? 'archive' : 'registro_motos';
             cargarDatos(pendingData.moto, source);
         } else if (tipo === 'auto' && pendingData.auto) {
@@ -271,7 +280,7 @@ window.initElimVehiculos = function() {
             const { error: insErr } = await window.supabaseClient.from('vehiculos_eliminados').insert([dataToArchive]);
             if (insErr) throw new Error('Error archivando: ' + insErr.message);
 
-            console.log('️ Eliminando de:', currentTable, 'ID:', currentData.id);
+            console.log('🗑️ Eliminando de:', currentTable, 'ID:', currentData.id);
             const { error: delErr } = await window.supabaseClient.from(currentTable).delete().eq('id', currentData.id);
             if (delErr) throw new Error('Error eliminando: ' + delErr.message);
 
@@ -293,17 +302,20 @@ window.initElimVehiculos = function() {
         }
     }
 
-    // 🔹 Reintegrar (Eliminados → Activa)
+    // 🔹 Reintegrar (Eliminados → Activa) - ✅ CORREGIDO
     async function reintegrarRegistro() {
         btnReintegrar.disabled = true; 
-        btnReintegrar.textContent = ' Reintegrando...'; 
+        btnReintegrar.textContent = '⏳ Reintegrando...'; 
         hideMsgElim();
         
         try {
             // Usar tabla_origen guardada en el historial para saber dónde devolverlo
             const tablaDestino = currentData.tabla_origen || currentTable; 
-            console.log('️ Reintegrando a tabla:', tablaDestino);
+            console.log('♻️ Reintegrando a tabla:', tablaDestino);
 
+            // ✅ Construir objeto dinámicamente: solo incluir cilindraje si es moto
+            const esMoto = currentData.tipo_vehiculo === 'Motocicleta' || tablaDestino === 'registro_motos';
+            
             const dataToRestore = {
                 estatus: currentData.estatus,
                 estacion_policial: currentData.estacion_policial,
@@ -316,17 +328,22 @@ window.initElimVehiculos = function() {
                 color: currentData.color,
                 serial_carroceria: currentData.serial_carroceria,
                 serial_motor: currentData.serial_motor,
-                cilindraje: currentData.cilindraje || null,
                 foto_frontal: currentData.foto_frontal,
                 foto_trasera: currentData.foto_trasera,
                 foto_lado_derecho: currentData.foto_lado_derecho,
                 foto_lado_izquierdo: currentData.foto_lado_izquierdo
             };
 
+            // ✅ Solo agregar cilindraje si es moto
+            if (esMoto) {
+                dataToRestore.cilindraje = currentData.cilindraje || null;
+            }
+
+            console.log('📦 Datos a restaurar:', dataToRestore);
             const { error: insErr } = await window.supabaseClient.from(tablaDestino).insert([dataToRestore]);
             if (insErr) throw new Error('Error restaurando: ' + insErr.message);
 
-            console.log('️ Eliminando del historial ID:', currentData.id);
+            console.log('🗑️ Eliminando del historial ID:', currentData.id);
             const { error: delError } = await window.supabaseClient.from('vehiculos_eliminados').delete().eq('id', currentData.id);
             if (delError) throw new Error('Error limpiando historial: ' + delError.message);
 
