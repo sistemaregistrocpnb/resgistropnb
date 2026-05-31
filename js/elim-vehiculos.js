@@ -1,5 +1,5 @@
 window.initElimVehiculos = function() {
-    // 🔹 Referencias DOM
+    //  Referencias DOM
     const buscarInput = document.getElementById('buscar-input-elim');
     const buscarBtn = document.getElementById('btn-buscar-elim');
     const msgBuscar = document.getElementById('buscar-msg-elim');
@@ -78,16 +78,19 @@ window.initElimVehiculos = function() {
         setPhoto('elim-foto-der', data.foto_lado_derecho);
         setPhoto('elim-foto-izq', data.foto_lado_izquierdo);
 
-        // 🔔 LÓGICA DE UI SEGÚN ESTADO (Banners y Botones)
+        //  LÓGICA DE UI SEGÚN ESTADO (Banners y Botones)
         if (isArchived) {
             // Mostrar Banners de Archivado
             if (archivedBanner) archivedBanner.style.display = 'block';
             const notice = document.getElementById('archived-notice');
             if (notice) notice.style.display = 'block';
             
-            // Fecha y Usuario
-            document.getElementById('archive-date').textContent = data.eliminado_en ? new Date(data.eliminado_en).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : '-';
-            document.getElementById('archive-by').textContent = data.eliminado_por || 'Sistema';
+            // ✅ CORRECCIÓN: Usar los IDs correctos que existen en el HTML (archive-date y archive-by)
+            const dateEl = document.getElementById('archive-date');
+            const byEl = document.getElementById('archive-by');
+            
+            if (dateEl) dateEl.textContent = data.eliminado_en ? new Date(data.eliminado_en).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : '-';
+            if (byEl) byEl.textContent = data.eliminado_por || 'Sistema';
             
             // Botones
             btnEliminar.style.display = 'none';
@@ -144,7 +147,6 @@ window.initElimVehiculos = function() {
             ]);
 
             // 2. Búsqueda en Historial (Vehículos Eliminados)
-            // Usamos limit(1) y orden para obtener el más reciente si hay duplicados
             const { data: resArchive, error: errArchive } = await window.supabaseClient
                 .from('vehiculos_eliminados')
                 .select('*')
@@ -161,7 +163,6 @@ window.initElimVehiculos = function() {
             console.log('📊 Resultado Historial:', archiveRecord);
 
             // 3. Consolidar datos encontrados
-            // Clasificamos el resultado del historial según su tabla_origen
             let archiveMoto = null;
             let archiveAuto = null;
             
@@ -186,7 +187,7 @@ window.initElimVehiculos = function() {
                 };
                 selectionPanel.classList.add('active');
                 hideMsg(msgBuscar);
-                console.log('️ Duplicidad detectada. Mostrando panel de selección.');
+                console.log('⚠️ Duplicidad detectada. Mostrando panel de selección.');
             } else if (hasMoto) {
                 // Solo Moto encontrada (Activa o Archivada)
                 const dataToShow = activeMoto || archiveMoto;
@@ -235,7 +236,7 @@ window.initElimVehiculos = function() {
     // 🔹 Eliminar (Activa → Eliminados)
     async function eliminarRegistro() {
         btnEliminar.disabled = true; 
-        btnEliminar.textContent = ' Archivando...'; 
+        btnEliminar.textContent = '⏳ Archivando...'; 
         hideMsgElim();
         
         try {
@@ -266,11 +267,11 @@ window.initElimVehiculos = function() {
                 foto_lado_izquierdo: currentData.foto_lado_izquierdo
             };
 
-            console.log(' Archivando:', dataToArchive);
+            console.log('📦 Archivando:', dataToArchive);
             const { error: insErr } = await window.supabaseClient.from('vehiculos_eliminados').insert([dataToArchive]);
             if (insErr) throw new Error('Error archivando: ' + insErr.message);
 
-            console.log('🗑️ Eliminando de:', currentTable, 'ID:', currentData.id);
+            console.log('️ Eliminando de:', currentTable, 'ID:', currentData.id);
             const { error: delErr } = await window.supabaseClient.from(currentTable).delete().eq('id', currentData.id);
             if (delErr) throw new Error('Error eliminando: ' + delErr.message);
 
@@ -295,13 +296,13 @@ window.initElimVehiculos = function() {
     // 🔹 Reintegrar (Eliminados → Activa)
     async function reintegrarRegistro() {
         btnReintegrar.disabled = true; 
-        btnReintegrar.textContent = '⏳ Reintegrando...'; 
+        btnReintegrar.textContent = ' Reintegrando...'; 
         hideMsgElim();
         
         try {
             // Usar tabla_origen guardada en el historial para saber dónde devolverlo
             const tablaDestino = currentData.tabla_origen || currentTable; 
-            console.log('♻️ Reintegrando a tabla:', tablaDestino);
+            console.log('️ Reintegrando a tabla:', tablaDestino);
 
             const dataToRestore = {
                 estatus: currentData.estatus,
@@ -325,7 +326,7 @@ window.initElimVehiculos = function() {
             const { error: insErr } = await window.supabaseClient.from(tablaDestino).insert([dataToRestore]);
             if (insErr) throw new Error('Error restaurando: ' + insErr.message);
 
-            console.log('🗑️ Eliminando del historial ID:', currentData.id);
+            console.log('️ Eliminando del historial ID:', currentData.id);
             const { error: delError } = await window.supabaseClient.from('vehiculos_eliminados').delete().eq('id', currentData.id);
             if (delError) throw new Error('Error limpiando historial: ' + delError.message);
 
