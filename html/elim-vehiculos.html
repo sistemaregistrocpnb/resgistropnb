@@ -5,81 +5,66 @@
   .search-row { display: flex; gap: 10px; }
   .search-row input { flex: 1; padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; text-transform: uppercase; }
   .search-row button { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
+  .msg { padding: 10px; margin-top: 12px; border-radius: 5px; text-align: center; display: none; }
+  .msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+  .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
   
-  /* 🔹 Mensajes y Banners */
-  .search-msg { margin-top: 8px; font-size: 0.85rem; display: none; }
-  .search-msg.error { color: #dc2626; }
-  .search-msg.success { color: #15803d; }
+  /* 🔹 Panel de Selección y Advertencia Cruzada */
+  .selection-panel { display: none; padding: 20px; background: #f1f5f9; border: 2px dashed var(--beige-border); border-radius: 8px; margin-bottom: 20px; text-align: center; }
+  .selection-panel.active { display: block; animation: fadeIn 0.3s; }
+  .selection-title { margin: 0 0 15px; font-weight: 600; color: var(--primary); }
+  .selection-btns { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+  .btn-select-type { padding: 10px 20px; border: 2px solid var(--primary); background: white; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--primary); transition: 0.2s; }
+  .btn-select-type:hover { background: var(--primary); color: white; }
   
-  /* Mensaje de advertencia (Sujeto eliminado) */
-  .search-msg.archived { 
-    background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; 
-    padding: 10px; border-radius: 6px; margin-top: 10px; display: none; font-weight: 500;
-  }
-  .search-msg.archived strong { color: #78350f; }
-
-  /* Banner de Registro Archivado */
-  .archived-banner { 
-    background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; 
-    padding: 16px; margin-bottom: 20px; display: none; text-align: center;
-  }
-  .archived-banner strong { color: #92400e; font-size: 1rem; }
-  .archived-banner p { margin: 5px 0 0; color: #4b5563; }
+  .cross-warning { margin-top: 8px; background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; padding: 10px; border-radius: 6px; display: none; text-align: left; }
 
   .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
   .data-item label { font-weight: 600; font-size: 0.8rem; color: #64748b; display: block; margin-bottom: 4px; }
-  .data-item input, .data-item select, .data-item textarea { width: 100%; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 8px; font-size: 0.9rem; pointer-events: none; }
-  .img-preview { width: 100%; height: auto; max-height: 200px; object-fit: contain; border: 1px solid var(--beige-border); border-radius: 5px; margin-top: 4px; display: none; background: #fff; }
+  .data-item input, .data-item textarea { width: 100%; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 8px; font-size: 0.9rem; pointer-events: none; }
+  .img-preview { width: 100%; height: auto; max-height: 150px; object-fit: contain; border: 1px solid var(--beige-border); border-radius: 5px; margin-top: 4px; display: none; background: #fff; }
   
   .btn-eliminar { width: 100%; padding: 14px; background: #dc2626; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 20px; font-size: 1rem; }
   .btn-eliminar:hover { background: #b91c1c; }
   .btn-eliminar:disabled { background: #fca5a5; cursor: not-allowed; }
-  
-  .btn-reintegrar { width: 100%; padding: 14px; background: #059669; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 20px; font-size: 1rem; display: none; }
-  .btn-reintegrar:hover { background: #047857; }
-  .btn-reintegrar:disabled { background: #6ee7b7; cursor: not-allowed; }
-  
-  .msg { padding: 12px; margin-top: 15px; border-radius: 5px; text-align: center; display: none; }
-  .msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
-  .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-  
+
   .elim-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
   .elim-modal-box { background: #fff; padding: 24px; border-radius: 8px; width: 90%; max-width: 420px; text-align: center; box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
   .elim-modal-box h4 { margin: 0 0 10px; color: var(--primary); }
   .elim-modal-box p { margin: 0 0 20px; color: #475569; line-height: 1.5; }
   .elim-btns { display: flex; gap: 10px; justify-content: center; }
   .btn-modal-danger { background: #dc2626; color: #fff; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer; font-weight: 600; flex: 1; max-width: 140px; }
-  .btn-modal-success { background: #059669; color: #fff; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer; font-weight: 600; flex: 1; max-width: 140px; }
   .btn-modal-cancel { background: #e2e8f0; color: #334155; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer; font-weight: 600; flex: 1; max-width: 140px; }
   .btn-modal-danger:hover { background: #b91c1c; }
-  .btn-modal-success:hover { background: #047857; }
   .btn-modal-cancel:hover { background: #cbd5e1; }
-  @media (max-width: 600px) { .search-row, .form-grid { flex-direction: column; } }
+  @media (max-width: 600px) { .search-row, .form-grid, .selection-btns { flex-direction: column; } }
 </style>
 
 <div class="card">
-    <h3>🗑️ Eliminar / Reintegrar Vehículo</h3>
+    <h3>🗑️ Eliminar Vehículo</h3>
     
     <div class="search-box">
         <label>Buscar por Placa, Serial de Carrocería o Motor:</label>
         <div class="search-row">
             <input type="text" id="buscar-input-elim" placeholder="Ej: AA123BC o serial..." maxlength="20">
-            <button id="btn-buscar-elim">🔍 Buscar</button>
+            <button id="btn-buscar-elim"> Buscar</button>
         </div>
-        <div id="buscar-msg-elim" class="search-msg"></div>
-        <!-- ✅ MENSAJE DE ADVERTENCIA (Igual que en Personas) -->
-        <div id="archived-notice" class="search-msg archived">
-            🔒 Vehículo eliminado anteriormente. Use el botón <strong>Reintegrar</strong> si desea volver a activarlo.
+        <div id="buscar-msg-elim" class="msg" style="margin-top:8px;"></div>
+        <div id="cross-warning" class="cross-warning"></div>
+    </div>
+
+    <!-- 🔹 PANEL DE SELECCIÓN (Aparece si hay duplicados entre tablas) -->
+    <div id="selection-panel" class="selection-panel">
+        <h4 class="selection-title">⚠️ Dato encontrado en dos registros distintos</h4>
+        <p style="margin-bottom: 15px; font-size: 0.9rem;">Seleccione qué tipo de vehículo desea eliminar:</p>
+        <div class="selection-btns">
+            <button class="btn-select-type" onclick="seleccionarRegistro('moto')">️ Eliminar Motocicleta</button>
+            <button class="btn-select-type" onclick="seleccionarRegistro('auto')">🚙 Eliminar Automóvil</button>
         </div>
     </div>
 
+    <!-- 📝 DATOS DEL VEHÍCULO (Oculto hasta seleccionar) -->
     <div id="elim-data-container" style="display: none;">
-        <!-- ✅ BANNER DE REGISTRO ARCHIVADO (Igual que en Personas) -->
-        <div id="archived-banner" class="archived-banner">
-            <strong>🗄️ Registro Archivado</strong>
-            <p>Eliminado el <span id="archived-date">-</span> por <span id="archived-by">-</span></p>
-        </div>
-
         <fieldset style="border:1px solid var(--beige-border); border-radius:8px; padding:16px; margin-bottom:18px; background:#fafbfc;">
             <legend>📸 Fotografías del Registro</legend>
             <div class="form-grid">
@@ -123,21 +108,19 @@
             <textarea id="elim-obs" rows="2" readonly></textarea>
         </fieldset>
 
-        <!-- Botones dinámicos -->
         <button id="btn-eliminar" class="btn-eliminar">🗑️ Eliminar Vehículo del Sistema</button>
-        <button id="btn-reintegrar" class="btn-reintegrar">♻️ Reintegrar al Sistema Activo</button>
         <div id="msg-elim" class="msg"></div>
     </div>
 </div>
 
-<!-- ✅ Modal de Confirmación (Reutilizable) -->
+<!-- ✅ Modal de Confirmación -->
 <div id="elim-modal" class="elim-modal">
     <div class="elim-modal-box">
-        <h4 id="modal-title">⚠️ Confirmar Acción</h4>
-        <p id="modal-text">¿Está seguro?</p>
+        <h4>⚠️ Confirmar Eliminación</h4>
+        <p id="modal-text">¿Está seguro? El registro se archivará permanentemente.</p>
         <div class="elim-btns">
-            <button id="btn-modal-yes" class="btn-modal-danger">✅ Confirmar</button>
-            <button id="btn-modal-no" class="btn-modal-cancel">❌ Cancelar</button>
+            <button id="btn-confirm-si" class="btn-modal-danger">✅ Sí, Eliminar</button>
+            <button id="btn-confirm-no" class="btn-modal-cancel">❌ Cancelar</button>
         </div>
     </div>
 </div>
