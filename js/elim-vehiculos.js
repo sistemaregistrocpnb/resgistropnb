@@ -13,7 +13,7 @@ window.initElimVehiculos = function() {
     const modalTitle = document.getElementById('modal-title');
     const modalText = document.getElementById('modal-text');
     const btnModalYes = document.getElementById('btn-modal-yes');
-    const btnModalNo = document.getElementById('btn-modal-no');
+    const btnModalNo = document.getElementById('btn-modal-no'); // ✅ CORRECCIÓN: Definido correctamente
 
     let pendingData = { moto: null, auto: null };
     let currentData = null;
@@ -80,7 +80,6 @@ window.initElimVehiculos = function() {
 
         // 🔔 LÓGICA DE UI SEGÚN ESTADO
         if (isArchived) {
-            // Mostrar Banner de Archivado
             archivedBanner.style.display = 'block';
             document.getElementById('archive-date').textContent = data.eliminado_en ? new Date(data.eliminado_en).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : '-';
             document.getElementById('archive-user').textContent = data.eliminado_por || 'Sistema';
@@ -149,7 +148,7 @@ window.initElimVehiculos = function() {
                 if (resArchive.data) {
                     cargarDatos(resArchive.data, 'archive');
                 } else {
-                    showMsg(msgBuscar, '❌ Vehículo no encontrado.', 'error');
+                    showMsg(msgBuscar, ' Vehículo no encontrado.', 'error');
                 }
             }
         } catch (err) {
@@ -160,7 +159,7 @@ window.initElimVehiculos = function() {
         }
     });
 
-    //  Modal
+    // 🔹 Modal
     function showModal(titulo, texto, accion, tipo) {
         pendingAction = accion;
         modalTitle.textContent = titulo;
@@ -232,7 +231,7 @@ window.initElimVehiculos = function() {
             }, 4000);
         } catch (err) {
             console.error('Error eliminando:', err);
-            showMsgElim(' ' + err.message, 'error');
+            showMsgElim('❌ ' + err.message, 'error');
         } finally { 
             btnEliminar.disabled = false; 
             btnEliminar.textContent = '🗑️ Eliminar Vehículo del Sistema'; 
@@ -297,19 +296,20 @@ window.initElimVehiculos = function() {
 
     // 🔹 Listeners
     buscarInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); buscarBtn.click(); } });
-    btnNo.addEventListener('click', closeModal);
+    btnModalNo.addEventListener('click', closeModal); // ✅ CORRECCIÓN: Listener corregido
     modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 
     btnEliminar.addEventListener('click', () => {
         if (isSelectionMode) return showMsg(msgElim, '⚠️ Seleccione qué registro desea eliminar.', 'error');
         if (!currentData) return;
-        showModal('⚠️ Confirmar Eliminación', `¿Eliminar ${currentData.tipo_vehiculo || 'vehículo'} placa ${currentData.placa}? Se archivará.`, 'delete', 'danger');
+        const tipoVeh = currentTable === 'registro_motos' ? 'Motocicleta' : 'Automóvil';
+        showModal('⚠️ Confirmar Eliminación', `¿Eliminar ${tipoVeh} placa ${currentData.placa}? Se archivará permanentemente.`, 'delete', 'danger');
     });
-
+    
     btnReintegrar.addEventListener('click', () => {
         if (!currentData || !isArchived) return;
-        showModal('♻️ Confirmar Reintegración', `¿Reintegrar ${currentData.tipo_vehiculo || 'vehículo'} placa ${currentData.placa}?`, 'reintegrate', 'success');
+        showModal('️ Confirmar Reintegración', `¿Reintegrar vehículo placa ${currentData.placa}? Volverá al sistema activo.`, 'reintegrate', 'success');
     });
-
+    
     btnModalYes.addEventListener('click', ejecutarAccion);
 };
