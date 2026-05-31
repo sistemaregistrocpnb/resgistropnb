@@ -1,0 +1,259 @@
+<style>
+:root {
+  --primary: #002b5c; --secondary: #c5a028;
+  --beige-border: #d4c9a8; --bg: #f4f7fa;
+}
+.registro-form fieldset { border: 1px solid var(--beige-border); border-radius: 8px; padding: 16px; margin-bottom: 18px; background: #fafbfc; }
+.registro-form legend { font-weight: 600; color: var(--primary); font-size: 0.95rem; padding: 0 8px; }
+.hidden-field { display: none; margin-top: 8px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.registro-form label { font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; display: block; }
+.registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; }
+.registro-form input:focus, .registro-form select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,43,92,0.1); }
+.btn-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 15px; font-size: 1rem; }
+.btn-submit:hover { background: var(--secondary); }
+.btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+.msg { padding: 10px; margin-top: 12px; border-radius: 5px; text-align: center; display: none; }
+.msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.img-preview { width: 100%; height: auto; max-height: 200px; object-fit: contain; border: 1px solid var(--beige-border); border-radius: 5px; margin-top: 8px; display: none; background: #f8fafc; }
+
+/* Separadores */
+.section-title { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin: 25px 0 10px 0; padding-bottom: 5px; border-bottom: 2px solid var(--secondary); display: flex; align-items: center; gap: 8px; }
+
+/* Dropdown Teléfono */
+.phone-dropdown-wrapper { position: relative; width: 100%; }
+.phone-options { max-height: 240px; overflow-y: auto; position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1.5px solid var(--beige-border); border-radius: 0 0 5px 5px; z-index: 20; box-shadow: 0 6px 16px rgba(0,0,0,0.12); display: none; margin-top: 2px; }
+.phone-option { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: 0.15s; }
+.phone-option:hover { background: #f8fafc; }
+.phone-option img { width: 20px; height: 14px; object-fit: contain; border-radius: 2px; }
+.phone-option .code { font-weight: 600; min-width: 35px; color: #334155; }
+.phone-option .country { color: #475569; font-size: 0.85rem; }
+.phone-display { border: 1.5px solid var(--beige-border); border-radius: 5px; padding: 9px 10px; background: #fff; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; user-select: none; height: 42px; box-sizing: border-box; }
+
+@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+</style>
+
+<div class="card">
+    <h3>🔗 Registro Vinculado: Persona + Vehículo</h3>
+    <form id="form-reg-vinculado" class="registro-form" novalidate>
+        
+        <!-- ========================================== -->
+        <!-- 🔹 SECCIÓN 1: PERSONA -->
+        <!-- ========================================== -->
+        <div class="section-title">👤 Datos de la Persona</div>
+        
+        <fieldset>
+            <legend>📸 Fotografías de la Persona (3 obligatorias)</legend>
+            <div class="form-grid">
+                <div class="form-group"><label>Frontal</label><input type="file" id="pv_foto_p_frontal" accept="image/*" required><img id="prev_p_frontal" class="img-preview"></div>
+                <div class="form-group"><label>Perfil Izquierdo</label><input type="file" id="pv_foto_p_izq" accept="image/*" required><img id="prev_p_izq" class="img-preview"></div>
+                <div class="form-group"><label>Perfil Derecho</label><input type="file" id="pv_foto_p_der" accept="image/*" required><img id="prev_p_der" class="img-preview"></div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Identificación y Contacto</legend>
+            <div class="form-grid">
+                <div class="form-group"><label>Primer Nombre</label><input type="text" id="pv_p_nombre1" required></div>
+                <div class="form-group"><label>Segundo Nombre</label><input type="text" id="pv_p_nombre2"></div>
+                <div class="form-group"><label>Primer Apellido</label><input type="text" id="pv_p_apellido1" required></div>
+                <div class="form-group"><label>Segundo Apellido</label><input type="text" id="pv_p_apellido2"></div>
+                <div class="form-group"><label>Cédula (7-8 dígitos)</label><input type="text" id="pv_p_cedula" maxlength="8" required></div>
+                <div class="form-group"><label>Apodo</label><input type="text" id="pv_p_apodo"></div>
+                <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" id="pv_p_fecha_nac" required></div>
+                <div class="form-group"><label>Edad (Auto)</label><input type="number" id="pv_p_edad" readonly required></div>
+                <div class="form-group"><label>Nacionalidad</label>
+                    <select id="pv_p_nacionalidad" required>
+                        <option value="">Seleccione...</option>
+                        <option value="Venezolana">🇻🇪 Venezolana</option>
+                        <option value="Colombiana">🇨🇴 Colombiana</option>
+                        <option value="Estadounidense">🇺🇸 Estadounidense</option>
+                        <option value="Otra">🌍 Otra</option>
+                        <!-- Aquí puedes agregar más nacionalidades si es necesario -->
+                    </select>
+                </div>
+                <div class="form-group"><label>Sexo</label>
+                    <select id="pv_p_sexo" required>
+                        <option value="">Seleccione...</option>
+                        <option value="Masculino">Masculino</option>
+                        <option value="Femenino">Femenino</option>
+                    </select>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Teléfono (Opcional)</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <div class="phone-dropdown-wrapper" style="width: 210px; flex-shrink: 0;">
+                            <select id="pv_p_tlf_pais" style="position: absolute; opacity: 0; pointer-events: none; width: 100%; height: 100%; z-index: 1;">
+                                <option value="">--</option>
+                                <option value="+58">Venezuela</option>
+                                <option value="+57">Colombia</option>
+                                <option value="+1">Estados Unidos</option>
+                                <!-- Agrega más códigos si es necesario -->
+                            </select>
+                            <div class="phone-display">
+                                <img id="pv_tlf-flag-img" src="https://flagcdn.com/w20/xx.png" style="width: 18px; height: 13px; object-fit: contain; border-radius: 2px;">
+                                <span id="pv_tlf-code-text" style="font-weight: 600; min-width: 30px;">+XX</span>
+                                <span style="color: #cbd5e1;">|</span>
+                                <span id="pv_tlf-country-text" style="color: #475569; font-size: 0.8rem;">País</span>
+                            </div>
+                            <div class="phone-options"></div>
+                        </div>
+                        <input type="text" id="pv_p_tlf_num" placeholder="Número de teléfono" style="flex: 1;">
+                    </div>
+                </div>
+                <div class="form-group" style="grid-column: span 2;"><label>Dirección</label><input type="text" id="pv_p_direccion" required></div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>📏 Características Físicas</legend>
+            <div class="form-grid">
+                <div class="form-group"><label>Estatura (metros)</label><input type="number" id="pv_p_estatura" min="0.50" max="2.30" step="0.01" placeholder="Ej: 1.60" required><small style="color:#64748b; font-size:0.75rem;">Ingrese en metros (1.60 = 160 cm)</small><input type="hidden" id="pv_p_estatura_cm"></div>
+                <div class="form-group"><label>Color de Piel</label><select id="pv_p_color_piel" required><option value="">Seleccione...</option><option value="Clara">Clara</option><option value="Morena">Morena</option><option value="Trigueña">Trigueña</option><option value="Oscura">Oscura</option></select></div>
+                <div class="form-group"><label>Color de Ojos</label><select id="pv_p_color_ojos" required><option value="">Seleccione...</option><option value="Negros">Negros</option><option value="Café">Café</option><option value="Verdes">Verdes</option><option value="Azules">Azules</option><option value="Gris">Gris</option></select></div>
+                <div class="form-group"><label>Color de Cabello</label><select id="pv_p_color_cabello" required><option value="">Seleccione...</option><option value="Negro">Negro</option><option value="Castaño">Castaño</option><option value="Rubio">Rubio</option><option value="Pelirrojo">Pelirrojo</option><option value="Gris/Canoso">Gris/Canoso</option><option value="Calvo">Calvo</option></select></div>
+                <div class="form-group"><label>Complexión</label><select id="pv_p_complexion" required><option value="">Seleccione...</option><option value="Delgada">Delgada</option><option value="Media">Media</option><option value="Atlética">Atlética</option><option value="Robusta">Robusta</option><option value="Obesa">Obesa</option></select></div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>🏥 Salud y Marcas</legend>
+            <div class="form-group"><label>¿Usa Lentes?</label><select id="pv_p_lentes" required onchange="toggleCampo(this, 'pv_det-lentes')"><option value="false">No</option><option value="true">Sí</option></select></div>
+            <div id="pv_det-lentes" class="hidden-field"><label>Tipo/Descripción</label><input type="text" id="pv_txt_lentes"></div>
+            
+            <div class="form-group" style="margin-top:14px;"><label>¿Perforaciones?</label><select id="pv_p_perforaciones" required onchange="activarCampoPerforacion(this)"><option value="false">No</option><option value="true">Sí</option></select></div>
+            <div id="pv_box-lugar-perforacion" class="hidden-field" style="margin-top:10px;"><label>Lugar de la perforación</label><input type="text" id="pv_txt_lugar_perforacion"></div>
+
+            <div class="form-grid" style="margin-top:16px; padding-top:12px; border-top:1px dashed #d4c9a8;">
+                <div class="form-group"><label>¿Condición Médica?</label><select id="pv_p_cond_medica" required onchange="toggleCampo(this, 'pv_det-cond')"><option value="false">No</option><option value="true">Sí</option></select></div>
+                <div id="pv_det-cond" class="hidden-field" style="grid-column: span 2;"><label>Describa condición</label><input type="text" id="pv_txt_cond"></div>
+            </div>
+            
+            <div class="form-grid" style="margin-top:12px;">
+                <div class="form-group"><label>¿Consume Medicamento?</label><select id="pv_p_medicamento" required onchange="toggleCampo(this, 'pv_det-med')"><option value="false">No</option><option value="true">Sí</option></select></div>
+                <div id="pv_det-med" class="hidden-field" style="grid-column: span 2;"><label>Nombre del medicamento</label><input type="text" id="pv_txt_med"></div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>️ Antecedentes Judiciales</legend>
+            <div class="form-group"><label>¿Problema judicial?</label><select id="pv_p_judicial" required onchange="toggleCampo(this, 'pv_det-jud')"><option value="false">No</option><option value="true">Sí</option></select></div>
+            <div id="pv_det-jud" class="hidden-field"><label>Detalle</label><input type="text" id="pv_txt_jud"></div>
+        </fieldset>
+
+        <!-- ========================================== -->
+        <!-- 🔹 SECCIÓN 2: VEHÍCULO -->
+        <!-- ========================================== -->
+        <div class="section-title">🚗 Datos del Vehículo</div>
+
+        <fieldset>
+            <legend>Tipo y Identificación</legend>
+            <div class="form-grid">
+                <div class="form-group"><label>Tipo de Vehículo</label>
+                    <select id="pv_v_tipo" required onchange="window.cargarMarcasPV()">
+                        <option value="">Seleccione...</option>
+                        <option value="Motocicleta">🏍️ Motocicleta</option>
+                        <option value="Automóvil"> Automóvil</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Placa</label><input type="text" id="pv_v_placa" style="text-transform: uppercase;" required></div>
+                <div class="form-group"><label>Serial Carrocería</label><input type="text" id="pv_v_serial_carro" required></div>
+                <div class="form-group"><label>Serial Motor</label><input type="text" id="pv_v_serial_motor"></div>
+                <div class="form-group" id="pv_box_cilindro" style="display:none;"><label>Cilindraje</label>
+                    <select id="pv_v_cilindraje">
+                        <option value="Baja">Baja (hasta 250cc)</option>
+                        <option value="Media">Media (251-750cc)</option>
+                        <option value="Alta">Alta (+750cc)</option>
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Detalles Técnicos</legend>
+            <div class="form-grid">
+                <div class="form-group"><label>Marca</label><select id="pv_v_marca" required onchange="window.cargarModelosPV()"></select></div>
+                <div class="form-group"><label>Modelo</label><select id="pv_v_modelo" required></select></div>
+                <div class="form-group"><label>Año</label><select id="pv_v_anio" required></select></div>
+                <div class="form-group"><label>Color</label>
+                    <select id="pv_v_color">
+                        <option value="">Seleccione color...</option>
+                        <option value="Blanco">Blanco</option><option value="Blanco Perla">Blanco Perla</option>
+                        <option value="Negro">Negro</option><option value="Negro Azabache">Negro Azabache</option><option value="Negro Mate">Negro Mate</option>
+                        <option value="Gris">Gris</option><option value="Gris Plata">Gris Plata</option><option value="Gris Carbón">Gris Carbón</option><option value="Plata">Plata</option>
+                        <option value="Rojo">Rojo</option><option value="Rojo Vino">Rojo Vino</option><option value="Borgoña">Borgoña</option>
+                        <option value="Azul">Azul</option><option value="Azul Marino">Azul Marino</option><option value="Azul Eléctrico">Azul Eléctrico</option>
+                        <option value="Verde">Verde</option><option value="Verde Militar">Verde Militar</option>
+                        <option value="Amarillo">Amarillo</option><option value="Naranja">Naranja</option>
+                        <option value="Marrón">Marrón</option><option value="Beige">Beige</option><option value="Dorado">Dorado</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>📸 Fotografías del Vehículo (4 obligatorias)</legend>
+            <div class="form-grid">
+                <div class="form-group"><label>Frontal</label><input type="file" id="pv_foto_v_frontal" accept="image/*" required><img id="prev_v_frontal" class="img-preview"></div>
+                <div class="form-group"><label>Trasera</label><input type="file" id="pv_foto_v_trasera" accept="image/*" required><img id="prev_v_trasera" class="img-preview"></div>
+                <div class="form-group"><label>Lado Derecho</label><input type="file" id="pv_foto_v_der" accept="image/*" required><img id="prev_v_der" class="img-preview"></div>
+                <div class="form-group"><label>Lado Izquierdo</label><input type="file" id="pv_foto_v_izq" accept="image/*" required><img id="prev_v_izq" class="img-preview"></div>
+            </div>
+        </fieldset>
+
+        <!-- ========================================== -->
+        <!-- 🔹 DATOS REGISTRO -->
+        <!-- ========================================== -->
+        <div class="section-title">🏛️ Datos del Registro</div>
+
+        <fieldset>
+            <legend>Ubicación y Estación</legend>
+            <div class="form-grid">
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Estación Policial</label>
+                    <select id="pv_estacion" required>
+                        <option value="">Seleccione estación...</option>
+                        <option value="EPM MARACAIBO">EPM MARACAIBO</option>
+                        <option value="EPM SAN FRANCISCO">EPM SAN FRANCISCO</option>
+                        <option value="EPM LA CAÑADA">EPM LA CAÑADA</option>
+                        <option value="EPM ESTACION POLICIAL JESUS E. LOSADA">EPM ESTACION POLICIAL JESUS E. LOSADA</option>
+                        <option value="EPP CRISTO DE ARANZA">EPP CRISTO DE ARANZA</option>
+                        <option value="EPP LUIS HURTADO">EPP LUIS HURTADO</option>
+                        <option value="EPP DAGNINO">EPP DAGNINO</option>
+                        <option value="EPP OLEGARIO VILLALOBOS">EPP OLEGARIO VILLALOBOS</option>
+                        <option value="EPP CHIQUINQUIRA">EPP CHIQUINQUIRA</option>
+                        <option value="EPP FRANCISCO EUGENIO">EPP FRANCISCO EUGENIO</option>
+                        <option value="EPP CARACCIOLO">EPP CARACCIOLO</option>
+                        <option value="EPP IDELFONSO">EPP IDELFONSO</option>
+                        <option value="EPP VENANCIO PULGAR">EPP VENANCIO PULGAR</option>
+                        <option value="EPP COQUIVACOA-ZAPARA">EPP COQUIVACOA-ZAPARA</option>
+                        <option value="EPP RAUL LEONI">EPP RAUL LEONI</option>
+                        <option value="EPP ANTONIO BORJAS ROMERO">EPP ANTONIO BORJAS ROMERO</option>
+                        <option value="EPP JUANA DE AVILA">EPP JUANA DE AVILA</option>
+                        <option value="EPP SAN ISIDRO">EPP SAN ISIDRO</option>
+                        <option value="EPP CASIQUE MARA">EPP CASIQUE MARA</option>
+                        <option value="EPP BOLIVAR">EPP BOLIVAR</option>
+                        <option value="EPP EL BAJO">EPP EL BAJO</option>
+                        <option value="EPP DOMITILA">EPP DOMITILA</option>
+                        <option value="EPP CORTIJOS">EPP CORTIJOS</option>
+                        <option value="EPP MARCIAL HERNANDEZ">EPP MARCIAL HERNANDEZ</option>
+                        <option value="EPP POTRERITO">EPP POTRERITO</option>
+                        <option value="EPP ANDRES BELLO">EPP ANDRES BELLO</option>
+                        <option value="EPP SANTA LUCIA">EPP SANTA LUCIA</option>
+                    </select>
+                </div>
+                <div class="form-group" style="grid-column: span 2;"><label>Dirección de Detención</label><input type="text" id="pv_dir_detencion"></div>
+            </div>
+        </fieldset>
+        
+        <fieldset>
+            <legend>Observaciones</legend>
+            <textarea id="pv_observaciones" rows="2"></textarea>
+        </fieldset>
+
+        <button type="submit" class="btn-submit">✅ Registrar Persona y Vehículo</button>
+        <div id="msg-reg-vinculado" class="msg"></div>
+    </form>
+</div>
