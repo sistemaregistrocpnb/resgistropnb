@@ -3,10 +3,9 @@ window.initElimVehiculos = function() {
     const buscarInput = document.getElementById('buscar-input-elim');
     const buscarBtn = document.getElementById('btn-buscar-elim');
     const msgBuscar = document.getElementById('buscar-msg-elim');
-    const archivedNotice = document.getElementById('archived-notice'); // Aviso amarillo pequeño
+    const selectionPanel = document.getElementById('selection-panel');
+    const archivedBanner = document.getElementById('archived-banner');
     const dataContainer = document.getElementById('elim-data-container');
-    const archivedBanner = document.getElementById('archived-banner'); // Banner grande
-    const selectionPanel = document.getElementById('selection-panel'); // Panel de selección para duplicados
     const btnEliminar = document.getElementById('btn-eliminar');
     const btnReintegrar = document.getElementById('btn-reintegrar');
     const msgElim = document.getElementById('msg-elim');
@@ -24,19 +23,19 @@ window.initElimVehiculos = function() {
     let pendingAction = null;
 
     // 🔹 Helpers UI
-    const showMsg = (el, txt, type) => { el.textContent = txt; el.className = `search-msg ${type}`; el.style.display = 'block'; };
+    const showMsg = (el, txt, type) => { el.textContent = txt; el.className = `msg ${type}`; el.style.display = 'block'; };
     const hideMsg = (el) => { el.style.display = 'none'; };
     const showMsgElim = (txt, type) => { msgElim.textContent = txt; msgElim.className = `msg ${type}`; msgElim.style.display = 'block'; };
     const hideMsgElim = () => { msgElim.style.display = 'none'; };
     const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = (val !== null && val !== undefined && val !== '') ? val : '-'; };
     const setPhoto = (imgId, url) => { const img = document.getElementById(imgId); if (img) { img.src = url || ''; img.style.display = url ? 'block' : 'none'; } };
 
-    // 🔹 Mostrar datos + UI según estado (IDÉNTICO A ELIM-PERSONAS)
-    function renderUI(data, source) {
+    // 🔹 Mostrar datos + UI según estado
+    function cargarDatos(data, source) {
         currentData = data;
         isArchived = (source === 'archive');
         
-        // Determinar tabla de origen para reintegrar
+        // Determinar tabla de origen para reintegrar o editar
         currentTable = isArchived ? (data.tabla_origen || 'registro_motos') : source;
         
         dataContainer.style.display = 'block';
@@ -79,23 +78,25 @@ window.initElimVehiculos = function() {
         setPhoto('elim-foto-der', data.foto_lado_derecho);
         setPhoto('elim-foto-izq', data.foto_lado_izquierdo);
 
-        // 🔔 LÓGICA DE UI SEGÚN ESTADO (IDÉNTICA A ELIM-PERSONAS)
+        // 🔔 LÓGICA DE UI SEGÚN ESTADO (Banners y Botones)
         if (isArchived) {
-            // Mostrar Banners
-            archivedBanner.style.display = 'block';
-            if (archivedNotice) archivedNotice.style.display = 'block';
+            // Mostrar Banners de Archivado
+            if (archivedBanner) archivedBanner.style.display = 'block';
+            const notice = document.getElementById('archived-notice');
+            if (notice) notice.style.display = 'block';
             
             // Fecha y Usuario
-            document.getElementById('archived-date').textContent = data.eliminado_en ? new Date(data.eliminado_en).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : '-';
-            document.getElementById('archived-by').textContent = data.eliminado_por || 'Sistema';
+            document.getElementById('archive-date').textContent = data.eliminado_en ? new Date(data.eliminado_en).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : '-';
+            document.getElementById('archive-by').textContent = data.eliminado_por || 'Sistema';
             
             // Botones
             btnEliminar.style.display = 'none';
             btnReintegrar.style.display = 'block';
         } else {
             // Estado Activo
-            archivedBanner.style.display = 'none';
-            if (archivedNotice) archivedNotice.style.display = 'none';
+            if (archivedBanner) archivedBanner.style.display = 'none';
+            const notice = document.getElementById('archived-notice');
+            if (notice) notice.style.display = 'none';
             btnEliminar.style.display = 'block';
             btnReintegrar.style.display = 'none';
         }
@@ -103,8 +104,14 @@ window.initElimVehiculos = function() {
 
     // 🔹 Función Global para seleccionar (llamada desde HTML)
     window.seleccionarRegistro = function(tipo) {
-        if (tipo === 'moto' && pendingData.moto) cargarDatos(pendingData.moto, 'registro_motos');
-        else if (tipo === 'auto' && pendingData.auto) cargarDatos(pendingData.auto, 'registro_automoviles');
+        if (tipo === 'moto' && pendingData.moto) {
+            // Si tiene fecha de eliminación, viene del archivo
+            const source = pendingData.moto.eliminado_en ? 'archive' : 'registro_motos';
+            cargarDatos(pendingData.moto, source);
+        } else if (tipo === 'auto' && pendingData.auto) {
+            const source = pendingData.auto.eliminado_en ? 'archive' : 'registro_automoviles';
+            cargarDatos(pendingData.auto, source);
+        }
         selectionPanel.classList.remove('active');
         isSelectionMode = false;
     };
@@ -112,14 +119,15 @@ window.initElimVehiculos = function() {
     // 🔍 BUSCADOR PRINCIPAL CON LÓGICA DE SELECCIÓN Y ARCHIVO
     buscarBtn.addEventListener('click', async () => {
         const val = buscarInput.value.trim().toUpperCase();
-        if (val.length < 5) return showMsg(msgBuscar, '️ Ingrese un dato válido (mín. 5 caracteres).', 'error');
+        console.log('🔍 Iniciando búsqueda para:', val);
+        
+        if (val.length < 5) return showMsg(msgBuscar, '⚠️ Ingrese un dato válido (mín. 5 caracteres).', 'error');
 
         showMsg(msgBuscar, '🔍 Buscando...', 'success');
         buscarBtn.disabled = true;
         dataContainer.style.display = 'none';
         selectionPanel.classList.remove('active');
-        archivedBanner.style.display = 'none';
-        if (archivedNotice) archivedNotice.style.display = 'none';
+        if (archivedBanner) archivedBanner.style.display = 'none';
         hideMsg(msgElim);
         pendingData = { moto: null, auto: null };
         currentData = null;
@@ -128,46 +136,82 @@ window.initElimVehiculos = function() {
         try {
             // 1. Búsqueda en tablas activas (Motos y Autos)
             const query = `placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`;
+            console.log('📝 Query Activos:', query);
             
             const [resMoto, resAuto] = await Promise.all([
                 window.supabaseClient.from('registro_motos').select('*').or(query).maybeSingle(),
                 window.supabaseClient.from('registro_automoviles').select('*').or(query).maybeSingle()
             ]);
 
-            // 2. Consolidar datos encontrados en activos
-            if (resMoto.data) pendingData.moto = resMoto.data;
-            if (resAuto.data) pendingData.auto = resAuto.data;
+            // 2. Búsqueda en Historial (Vehículos Eliminados)
+            // Usamos limit(1) y orden para obtener el más reciente si hay duplicados
+            const { data: resArchive, error: errArchive } = await window.supabaseClient
+                .from('vehiculos_eliminados')
+                .select('*')
+                .or(query)
+                .order('eliminado_en', { ascending: false })
+                .limit(1);
+            
+            if (errArchive) {
+                console.error('❌ Error Supabase en historial:', errArchive);
+                throw errArchive;
+            }
+            
+            const archiveRecord = resArchive && resArchive.length > 0 ? resArchive[0] : null;
+            console.log('📊 Resultado Historial:', archiveRecord);
 
-            // 3. Lógica de visualización
-            if (pendingData.moto && pendingData.auto) {
-                // ¡Duplicidad detectada! Mostrar panel
+            // 3. Consolidar datos encontrados
+            // Clasificamos el resultado del historial según su tabla_origen
+            let archiveMoto = null;
+            let archiveAuto = null;
+            
+            if (archiveRecord) {
+                if (archiveRecord.tabla_origen === 'registro_motos') archiveMoto = archiveRecord;
+                else if (archiveRecord.tabla_origen === 'registro_automoviles') archiveAuto = archiveRecord;
+            }
+
+            const activeMoto = resMoto.data;
+            const activeAuto = resAuto.data;
+
+            // Lógica de Duplicidad y Selección
+            const hasMoto = activeMoto || archiveMoto;
+            const hasAuto = activeAuto || archiveAuto;
+
+            if (hasMoto && hasAuto) {
+                // ¡Duplicidad detectada! (Moto y Auto encontrados en cualquier estado)
                 isSelectionMode = true;
+                pendingData = {
+                    moto: activeMoto || archiveMoto,
+                    auto: activeAuto || archiveAuto
+                };
                 selectionPanel.classList.add('active');
                 hideMsg(msgBuscar);
-            } else if (pendingData.moto) {
-                cargarDatos(pendingData.moto, 'registro_motos');
-            } else if (pendingData.auto) {
-                cargarDatos(pendingData.auto, 'registro_automoviles');
+                console.log('️ Duplicidad detectada. Mostrando panel de selección.');
+            } else if (hasMoto) {
+                // Solo Moto encontrada (Activa o Archivada)
+                const dataToShow = activeMoto || archiveMoto;
+                const source = activeMoto ? 'registro_motos' : 'archive';
+                console.log('✅ Encontrado Moto (Fuente:', source, ')');
+                cargarDatos(dataToShow, source);
+            } else if (hasAuto) {
+                // Solo Auto encontrado (Activo o Archivado)
+                const dataToShow = activeAuto || archiveAuto;
+                const source = activeAuto ? 'registro_automoviles' : 'archive';
+                console.log('✅ Encontrado Auto (Fuente:', source, ')');
+                cargarDatos(dataToShow, source);
             } else {
-                // 4. Si no está activo, buscar en Historial (Independiente de tipo)
-                const queryArchive = `placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`;
-                const resArchive = await window.supabaseClient.from('vehiculos_eliminados').select('*').or(queryArchive).maybeSingle();
-                
-                if (resArchive.data) {
-                    cargarDatos(resArchive.data, 'archive');
-                } else {
-                    showMsg(msgBuscar, '❌ Vehículo no encontrado.', 'error');
-                }
+                console.log('❌ No encontrado en ninguna tabla');
+                showMsg(msgBuscar, '❌ Vehículo no encontrado.', 'error');
             }
         } catch (err) {
-            console.error('Error búsqueda:', err);
-            showMsg(msgBuscar, '❌ Error de conexión.', 'error');
+            console.error('❌ Error general:', err);
+            showMsg(msgBuscar, '❌ Error: ' + err.message, 'error');
         } finally { 
             buscarBtn.disabled = false; 
         }
     });
 
-    //  Modal
+    // 🔹 Modal
     function showModal(titulo, texto, accion, tipo) {
         pendingAction = accion;
         modalTitle.textContent = titulo;
@@ -191,7 +235,7 @@ window.initElimVehiculos = function() {
     // 🔹 Eliminar (Activa → Eliminados)
     async function eliminarRegistro() {
         btnEliminar.disabled = true; 
-        btnEliminar.textContent = '⏳ Archivando...'; 
+        btnEliminar.textContent = ' Archivando...'; 
         hideMsgElim();
         
         try {
@@ -222,9 +266,11 @@ window.initElimVehiculos = function() {
                 foto_lado_izquierdo: currentData.foto_lado_izquierdo
             };
 
+            console.log(' Archivando:', dataToArchive);
             const { error: insErr } = await window.supabaseClient.from('vehiculos_eliminados').insert([dataToArchive]);
             if (insErr) throw new Error('Error archivando: ' + insErr.message);
 
+            console.log('🗑️ Eliminando de:', currentTable, 'ID:', currentData.id);
             const { error: delErr } = await window.supabaseClient.from(currentTable).delete().eq('id', currentData.id);
             if (delErr) throw new Error('Error eliminando: ' + delErr.message);
 
@@ -234,12 +280,11 @@ window.initElimVehiculos = function() {
                 buscarInput.value = ''; 
                 hideMsg(msgBuscar); 
                 hideMsg(msgElim); 
-                if (archivedNotice) archivedNotice.style.display = 'none';
-                archivedBanner.style.display = 'none';
+                if (archivedBanner) archivedBanner.style.display = 'none';
                 selectionPanel.classList.remove('active');
             }, 4000);
         } catch (err) {
-            console.error('Error eliminando:', err);
+            console.error('❌ Error eliminando:', err);
             showMsgElim('❌ ' + err.message, 'error');
         } finally { 
             btnEliminar.disabled = false; 
@@ -254,7 +299,9 @@ window.initElimVehiculos = function() {
         hideMsgElim();
         
         try {
-            const tablaDestino = currentData.tabla_origen || currentTable;
+            // Usar tabla_origen guardada en el historial para saber dónde devolverlo
+            const tablaDestino = currentData.tabla_origen || currentTable; 
+            console.log('♻️ Reintegrando a tabla:', tablaDestino);
 
             const dataToRestore = {
                 estatus: currentData.estatus,
@@ -278,16 +325,18 @@ window.initElimVehiculos = function() {
             const { error: insErr } = await window.supabaseClient.from(tablaDestino).insert([dataToRestore]);
             if (insErr) throw new Error('Error restaurando: ' + insErr.message);
 
-            await window.supabaseClient.from('vehiculos_eliminados').delete().eq('id', currentData.id);
+            console.log('🗑️ Eliminando del historial ID:', currentData.id);
+            const { error: delError } = await window.supabaseClient.from('vehiculos_eliminados').delete().eq('id', currentData.id);
+            if (delError) throw new Error('Error limpiando historial: ' + delError.message);
 
+            console.log('✅ Eliminación del historial exitosa');
             showMsgElim('✅ Vehículo reintegrado al sistema activo.', 'success');
             setTimeout(() => { 
                 dataContainer.style.display = 'none'; 
                 buscarInput.value = ''; 
                 hideMsg(msgBuscar); 
                 hideMsg(msgElim); 
-                if (archivedNotice) archivedNotice.style.display = 'none';
-                archivedBanner.style.display = 'none';
+                if (archivedBanner) archivedBanner.style.display = 'none';
             }, 4000);
         } catch (err) {
             console.error('Error reintegrando:', err);
@@ -305,7 +354,13 @@ window.initElimVehiculos = function() {
     }
 
     // 🔹 Listeners
-    buscarInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); buscarBtn.click(); } });
+    buscarInput.addEventListener('keydown', e => { 
+        if (e.key === 'Enter') { 
+            e.preventDefault(); 
+            buscarBtn.click(); 
+        } 
+    });
+    
     btnModalNo.addEventListener('click', closeModal);
     modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 
@@ -313,7 +368,7 @@ window.initElimVehiculos = function() {
         if (isSelectionMode) return showMsg(msgElim, '⚠️ Seleccione qué registro desea eliminar.', 'error');
         if (!currentData) return;
         const tipoVeh = currentTable === 'registro_motos' ? 'Motocicleta' : 'Automóvil';
-        showModal('⚠️ Confirmar Eliminación', `¿Eliminar ${tipoVeh} placa ${currentData.placa}? Se archivará permanentemente.`, 'delete', 'danger');
+        showModal('⚠️ Confirmar Eliminación', `¿Eliminar ${tipoVeh} placa ${currentData.placa}? Se archivará.`, 'delete', 'danger');
     });
     
     btnReintegrar.addEventListener('click', () => {
