@@ -1,5 +1,5 @@
 window.initElimVehiculos = function() {
-    // 🔹 Referencias DOM
+    //  Referencias DOM
     const buscarInput = document.getElementById('buscar-input-elim');
     const buscarBtn = document.getElementById('btn-buscar-elim');
     const msgBuscar = document.getElementById('buscar-msg-elim');
@@ -31,9 +31,9 @@ window.initElimVehiculos = function() {
         if (img) { img.src = url || ''; img.style.display = url ? 'block' : 'none'; } 
     };
 
-    // 🔍 FUNCIÓN DE BÚSQUEDA COMPLETA (Activos -> Historial)
+    // 🔍 FUNCIÓN DE BÚSQUEDA ROBUSTA
     async function buscarVehiculo() {
-        const val = buscarInput.value.trim().toUpperCase();
+        const val = buscarInput.value.trim().toUpperCase(); // Limpiamos entrada
         if (val.length < 5) return showMsg(msgBuscar, '⚠️ Ingrese un dato válido (mín. 5 caracteres).', 'error');
 
         showMsg(msgBuscar, '🔍 Buscando...', 'success');
@@ -45,7 +45,8 @@ window.initElimVehiculos = function() {
         isArchived = false;
 
         try {
-            // 1. Búsqueda en Tablas Activas (Motos y Autos) con ilike para flexibilidad
+            // 1. Búsqueda en Tablas Activas (Motos y Autos)
+            // Usamos ilike para ser flexibles con mayúsculas/minúsculas
             const query = `placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`;
             
             const [resMoto, resAuto] = await Promise.all([
@@ -58,21 +59,28 @@ window.initElimVehiculos = function() {
             } else if (resAuto.data) {
                 renderUI(resAuto.data, 'registro_automoviles', false);
             } else {
-                // 2. Si no está activo, buscar en Historial (Vehículos Eliminados)
-                // 🔑 CORRECCIÓN: Usamos ilike explícito para asegurar que encuentre el registro archivado
+                // 2. Si no está activo, buscar en Historial
+                console.log('Buscando en vehiculos_eliminados con valor:', val);
+                
+                // Intentamos búsqueda insensible a mayúsculas
                 const queryArchive = `placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`;
                 const resArchive = await window.supabaseClient.from('vehiculos_eliminados').select('*').or(queryArchive).maybeSingle();
                 
                 if (resArchive.data) {
+                    console.log('Vehículo encontrado en historial:', resArchive.data);
                     renderUI(resArchive.data, 'archive');
                 } else {
-                    showMsg(msgBuscar, '❌ Vehículo no encontrado.', 'error');
+                    // Si falla, mostramos error y sugerimos verificar el ID
+                    console.error('No se encontró el vehículo en el historial. Verifique que la tabla vehiculos_eliminados exista y tenga datos.');
+                    showMsg(msgBuscar, '❌ Vehículo no encontrado en activos ni en historial.', 'error');
                 }
             }
         } catch (e) {
-            console.error(e);
-            showMsg(msgBuscar, '❌ Error de conexión.', 'error');
-        } finally { buscarBtn.disabled = false; }
+            console.error('Error durante la búsqueda:', e);
+            showMsg(msgBuscar, '❌ Error de conexión: ' + e.message, 'error');
+        } finally { 
+            buscarBtn.disabled = false; 
+        }
     }
 
     // 🔹 RENDERIZAR UI (Activo vs Archivado)
@@ -85,7 +93,6 @@ window.initElimVehiculos = function() {
         
         dataContainer.style.display = 'block';
         hideMsg(msgBuscar);
-        archivedBanner.style.display = 'none'; // Se mostrará solo si es archived abajo
         hideMsg(msgElim);
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -121,11 +128,17 @@ window.initElimVehiculos = function() {
         setPhoto('elim-foto-der', data.foto_lado_derecho);
         setPhoto('elim-foto-izq', data.foto_lado_izquierdo);
 
-        // 🔔 LÓGICA DE UI SEGÚN ESTADO (Activo vs Archivado)
+        // 🔔 LÓGICA DE UI SEGÚN ESTADO
         if (isArchived) {
             // Mostrar Banner de Archivado
             archivedBanner.style.display = 'block';
-            document.getElementById('archive-date').textContent = new Date(data.eliminado_en).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+            // Formato de fecha seguro
+            let fechaStr = 'Fecha desconocida';
+            try {
+                fechaStr = new Date(data.eliminado_en).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+            } catch(e) { console.warn('Error formateando fecha', e); }
+            
+            document.getElementById('archive-date').textContent = fechaStr;
             document.getElementById('archive-user').textContent = data.eliminado_por || 'Sistema';
             
             // Ocultar Eliminar, Mostrar Reintegrar
@@ -221,7 +234,7 @@ window.initElimVehiculos = function() {
             showMsg(msgElim, '❌ Error al eliminar: ' + err.message, 'error');
         } finally {
             btnEliminar.disabled = false;
-            btnEliminar.textContent = '🗑️ Eliminar Vehículo del Sistema';
+            btnEliminar.textContent = '️ Eliminar Vehículo del Sistema';
         }
     }
 
@@ -233,6 +246,7 @@ window.initElimVehiculos = function() {
         try {
             // Determinar tabla destino desde el registro archivado
             const tablaDestino = currentData.tabla_origen; 
+            if (!tablaDestino) throw new Error('No se puede determinar la tabla de origen.');
 
             const dataActiva = {
                 estatus: currentData.estatus,
@@ -272,11 +286,11 @@ window.initElimVehiculos = function() {
         } catch (err) {
             console.error('Error reintegrando:', err);
             let msg = 'Error al reintegrar.';
-            if (err.message.includes('23505')) msg = '❌ Esta placa ya existe en el sistema activo.';
+            if (err.message.includes('23505')) msg = ' Esta placa ya existe en el sistema activo.';
             showMsg(msgElim, msg, 'error');
         } finally {
             btnReintegrar.disabled = false;
-            btnReintegrar.textContent = '️ Reintegrar al Sistema Activo';
+            btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo';
         }
     }
 };
