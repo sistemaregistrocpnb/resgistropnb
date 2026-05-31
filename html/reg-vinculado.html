@@ -127,13 +127,25 @@
             </div>
         </fieldset>
 
-        <fieldset>
-            <legend>🏥 Salud y Marcas</legend>
-            <div class="form-group"><label>¿Usa Lentes?</label><select id="pv_p_lentes" required onchange="window.toggleCampo(this, 'pv_det-lentes')"><option value="false">No</option><option value="true">Sí</option></select></div>
-            <div id="pv_det-lentes" class="hidden-field"><label>Tipo/Descripción</label><input type="text" id="pv_txt_lentes"></div>
-            <div class="form-group" style="margin-top:14px;"><label>¿Perforaciones?</label><select id="pv_p_perforaciones" required onchange="window.activarCampoPerforacion(this)"><option value="false">No</option><option value="true">Sí</option></select></div>
-            <div id="pv_box-lugar-perforacion" class="hidden-field" style="margin-top:10px;"><label>Lugar de la perforación</label><input type="text" id="pv_txt_lugar_perforacion"></div>
-        </fieldset>
+       <fieldset>
+    <legend>🏥 Salud y Marcas</legend>
+    <div class="form-group"><label>¿Usa Lentes?</label><select id="pv_p_lentes" required onchange="window.toggleCampo(this, 'pv_det-lentes')"><option value="false">No</option><option value="true">Sí</option></select></div>
+    <div id="pv_det-lentes" class="hidden-field"><label>Tipo/Descripción</label><input type="text" id="pv_txt_lentes"></div>
+    
+    <div class="form-group" style="margin-top:14px;"><label>¿Perforaciones?</label><select id="pv_p_perforaciones" required onchange="window.activarCampoPerforacion(this)"><option value="false">No</option><option value="true">Sí</option></select></div>
+    <div id="pv_box-lugar-perforacion" class="hidden-field" style="margin-top:10px;"><label>Lugar de la perforación</label><input type="text" id="pv_txt_lugar_perforacion"></div>
+    
+    <!-- ✅ CAMPOS AGREGADOS: Condición Médica y Medicamento -->
+    <div class="form-grid" style="margin-top:16px; padding-top:12px; border-top:1px dashed #d4c9a8;">
+        <div class="form-group"><label>¿Condición Médica?</label><select id="pv_p_cond_medica" required onchange="window.toggleCampo(this, 'pv_det-cond')"><option value="false">No</option><option value="true">Sí</option></select></div>
+        <div id="pv_det-cond" class="hidden-field" style="grid-column: span 2;"><label>Describa condición</label><input type="text" id="pv_txt_cond"></div>
+    </div>
+    
+    <div class="form-grid" style="margin-top:12px;">
+        <div class="form-group"><label>¿Consume Medicamento?</label><select id="pv_p_medicamento" required onchange="window.toggleCampo(this, 'pv_det-med')"><option value="false">No</option><option value="true">Sí</option></select></div>
+        <div id="pv_det-med" class="hidden-field" style="grid-column: span 2;"><label>Nombre del medicamento</label><input type="text" id="pv_txt_med"></div>
+    </div>
+</fieldset>
 
         <!-- ========================================== -->
         <!-- 🔹 SECCIÓN 2: DATOS DEL VEHÍCULO -->
