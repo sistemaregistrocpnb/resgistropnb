@@ -84,6 +84,7 @@ window.initRegVinculado = function() {
         return null;
     };
 
+    // 🔹 Cargar Marcas y Modelos
     window.cargarMarcasPV = function() {
         const tipo = document.getElementById('pv_v_tipo').value;
         const marcaSelect = document.getElementById('pv_v_marca');
@@ -120,6 +121,25 @@ window.initRegVinculado = function() {
         });
     };
 
+    // 🔹 Cargar Estaciones Policiales
+    const estacionesList = [
+        "EPM MARACAIBO", "EPM SAN FRANCISCO", "EPM LA CAÑADA", "EPM ESTACION POLICIAL JESUS E. LOSADA",
+        "EPP CRISTO DE ARANZA", "EPP LUIS HURTADO", "EPP DAGNINO", "EPP OLEGARIO VILLALOBOS",
+        "EPP CHIQUINQUIRA", "EPP FRANCISCO EUGENIO", "EPP CARACCIOLO", "EPP IDELFONSO",
+        "EPP VENANCIO PULGAR", "EPP COQUIVACOA-ZAPARA", "EPP RAUL LEONI", "EPP ANTONIO BORJAS ROMERO",
+        "EPP JUANA DE AVILA", "EPP SAN ISIDRO", "EPP CASIQUE MARA", "EPP BOLIVAR", "EPP EL BAJO",
+        "EPP DOMITILA", "EPP CORTIJOS", "EPP MARCIAL HERNANDEZ", "EPP POTRERITO", "EPP ANDRES BELLO", "EPP SANTA LUCIA"
+    ];
+
+    function cargarEstaciones() {
+        const select = document.getElementById('pv_estacion');
+        if (!select) return;
+        select.innerHTML = '<option value="">Seleccione estación...</option>';
+        estacionesList.sort().forEach(est => {
+            select.innerHTML += `<option value="${est}">${est}</option>`;
+        });
+    }
+
     // Llenar Años
     const anioSelect = document.getElementById('pv_v_anio');
     if (anioSelect) {
@@ -140,6 +160,47 @@ window.initRegVinculado = function() {
             if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
             edadInput.value = (edad >= 0 && edad <= 120) ? edad : '';
         });
+    }
+
+    // Estatura en tiempo real
+    const estaturaInput = document.getElementById('pv_p_estatura');
+    if (estaturaInput) {
+        estaturaInput.addEventListener('input', window.convertirEstatura);
+        estaturaInput.addEventListener('blur', window.convertirEstatura);
+    }
+
+    // Dropdown de Banderas
+    const nativeSelect = document.getElementById('pv_p_tlf_pais');
+    const displayBox = document.querySelector('.phone-display');
+    const optionsBox = document.querySelector('.phone-options');
+    const flagImg = document.getElementById('pv_tlf-flag-img');
+    const codeText = document.getElementById('pv_tlf-code-text');
+    const countryText = document.getElementById('pv_tlf-country-text');
+    
+    const isoMap = { "Venezuela":"ve", "Colombia":"co", "Estados Unidos":"us" };
+
+    if (optionsBox && nativeSelect && displayBox) {
+        optionsBox.innerHTML = '';
+        Array.from(nativeSelect.options).forEach(opt => {
+            if (!opt.value) return;
+            const iso = isoMap[opt.text] || opt.value.replace('+','').toLowerCase();
+            const div = document.createElement('div');
+            div.className = 'phone-option';
+            div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.8rem;">${opt.text}</span>`;
+            div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:0.15s;';
+            div.onmouseenter = () => div.style.background = '#f8fafc';
+            div.onmouseleave = () => div.style.background = '';
+            div.addEventListener('click', () => {
+                nativeSelect.value = opt.value;
+                flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
+                codeText.textContent = opt.value;
+                countryText.textContent = opt.text;
+                optionsBox.style.display = 'none';
+            });
+            optionsBox.appendChild(div);
+        });
+        displayBox.addEventListener('click', (e) => { e.stopPropagation(); optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block'; });
+        document.addEventListener('click', (e) => { if (!e.target.closest('.phone-dropdown-wrapper')) optionsBox.style.display = 'none'; });
     }
 
     // Vista Previa de Fotos
@@ -166,50 +227,68 @@ window.initRegVinculado = function() {
     setupPreview('pv_foto_v_der', 'prev_v_der');
     setupPreview('pv_foto_v_izq', 'prev_v_izq');
 
-    // Estatura en tiempo real
-    const estaturaInput = document.getElementById('pv_p_estatura');
-    if (estaturaInput) {
-        estaturaInput.addEventListener('input', window.convertirEstatura);
-        estaturaInput.addEventListener('blur', window.convertirEstatura);
+    // ==========================================
+    // 🔹 3. VALIDACIÓN EN TIEMPO REAL (Placa, Seriales)
+    // ==========================================
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
     }
 
-    // Dropdown de Banderas
-    const nativeSelect = document.getElementById('pv_p_tlf_pais');
-    const displayBox = document.querySelector('.phone-display');
-    const optionsBox = document.querySelector('.phone-options');
-    const flagImg = document.getElementById('pv_tlf-flag-img');
-    const codeText = document.getElementById('pv_tlf-code-text');
-    const countryText = document.getElementById('pv_tlf-country-text');
-    
-    // Mapa ISO para banderas
-    const isoMap = { "Venezuela":"ve", "Colombia":"co", "Estados Unidos":"us" }; // Agrega más si es necesario
+    async function verificarDuplicado(inputId, msgId) {
+        const val = document.getElementById(inputId).value.trim().toUpperCase();
+        const msgEl = document.getElementById(msgId);
+        const input = document.getElementById(inputId);
+        
+        if (!val) {
+            input.classList.remove('input-valid', 'input-error');
+            if(msgEl) msgEl.textContent = '';
+            return;
+        }
 
-    if (optionsBox && nativeSelect && displayBox) {
-        optionsBox.innerHTML = '';
-        Array.from(nativeSelect.options).forEach(opt => {
-            if (!opt.value) return;
-            const iso = isoMap[opt.text] || opt.value.replace('+','').toLowerCase();
-            const div = document.createElement('div');
-            div.className = 'phone-option';
-            div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.8rem;">${opt.text}</span>`;
-            div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:0.15s;';
-            div.onmouseenter = () => div.style.background = '#f8fafc';
-            div.onmouseleave = () => div.style.background = '';
-            div.addEventListener('click', () => {
-                nativeSelect.value = opt.value;
-                flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
-                codeText.textContent = opt.value;
-                countryText.textContent = opt.text;
-                optionsBox.style.display = 'none';
-            });
-            optionsBox.appendChild(div);
-        });
-        displayBox.addEventListener('click', (e) => { e.stopPropagation(); optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block'; });
-        document.addEventListener('click', (e) => { if (!e.target.closest('.phone-dropdown-wrapper')) optionsBox.style.display = 'none'; });
+        if(msgEl) { msgEl.textContent = '🔍 Verificando...'; msgEl.className = 'status-msg'; }
+        
+        try {
+            let col = '';
+            if (inputId === 'pv_v_placa') col = 'placa';
+            else if (inputId === 'pv_v_serial_carro') col = 'serial_carroceria';
+            else if (inputId === 'pv_v_serial_motor') col = 'serial_motor';
+
+            const checkTable = async (tabla) => {
+                const { data } = await window.supabaseClient.from(tabla).select('id').ilike(col, val).limit(1);
+                return data && data.length > 0;
+            };
+
+            const foundMoto = await checkTable('registro_motos');
+            const foundAuto = await checkTable('registro_automoviles');
+
+            if (foundMoto || foundAuto) {
+                input.classList.add('input-error');
+                input.classList.remove('input-valid');
+                if(msgEl) { msgEl.textContent = '❌ Ya registrado'; msgEl.className = 'status-msg error'; }
+            } else {
+                input.classList.add('input-valid');
+                input.classList.remove('input-error');
+                if(msgEl) { msgEl.textContent = '✅ Disponible'; msgEl.className = 'status-msg valid'; }
+            }
+        } catch (e) {
+            if(msgEl) msgEl.textContent = '️ Error de conexión';
+        }
     }
+
+    const validatePlaca = debounce(() => verificarDuplicado('pv_v_placa', 'pv-msg-placa'), 600);
+    const validateCarro = debounce(() => verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro'), 600);
+    const validateMotor = debounce(() => verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor'), 600);
+
+    document.getElementById('pv_v_placa')?.addEventListener('input', validatePlaca);
+    document.getElementById('pv_v_serial_carro')?.addEventListener('input', validateCarro);
+    document.getElementById('pv_v_serial_motor')?.addEventListener('input', validateMotor);
 
     // ==========================================
-    // 🔹 3. ENVÍO DEL FORMULARIO
+    // 🔹 4. ENVÍO DEL FORMULARIO
     // ==========================================
     const form = document.getElementById('form-reg-vinculado');
     const btn = form?.querySelector('.btn-submit');
@@ -218,21 +297,29 @@ window.initRegVinculado = function() {
 
     if (!form || !btn) return;
 
+    // Inicializar
+    cargarEstaciones();
+    window.cargarMarcasPV(); // Carga inicial de marcas vacía o por defecto
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!form.checkValidity()) { form.reportValidity(); return; }
 
+        // Verificar si hay errores de validación activos
+        const inputsValidar = ['pv_v_placa', 'pv_v_serial_carro', 'pv_v_serial_motor'];
+        const hasError = inputsValidar.some(id => document.getElementById(id)?.classList.contains('input-error'));
+        if (hasError) return mostrarError('Por favor corrija los campos de vehículo marcados en rojo.');
+
         const cedula = document.getElementById('pv_p_cedula').value.trim();
         if (cedula.length < 7) return mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
 
-        btn.disabled = true; btn.textContent = '⏳ Subiendo y Registrando...'; msg.style.display = 'none';
+        btn.disabled = true; btn.textContent = ' Subiendo y Registrando...'; msg.style.display = 'none';
 
         try {
-            const bucket = window.supabaseClient.storage.from('fotos_personas'); // Usamos bucket existente o crea uno nuevo
+            const bucket = window.supabaseClient.storage.from('fotos_personas');
             const uid = sessionStorage.getItem('pnb_user_id') || 'user';
             const ts = Date.now();
 
-            // Función auxiliar de subida
             const uploadFile = async (inputId, suffix) => {
                 const file = document.getElementById(inputId).files[0];
                 if (!file) throw new Error('Falta fotografía: ' + inputId);
@@ -242,7 +329,6 @@ window.initRegVinculado = function() {
                 return bucket.getPublicUrl(path).data.publicUrl;
             };
 
-            // Subir TODAS las fotos en paralelo (7 fotos)
             const [
                 fp_frontal, fp_izq, fp_der,
                 fv_frontal, fv_trasera, fv_der, fv_izq
@@ -256,7 +342,6 @@ window.initRegVinculado = function() {
                 uploadFile('pv_foto_v_izq', 'pv_ri')
             ]);
 
-            // Construir Objeto Completo
             const data = {
                 // Persona
                 primer_nombre: document.getElementById('pv_p_nombre1').value.trim(),
@@ -276,16 +361,12 @@ window.initRegVinculado = function() {
                 color_piel: document.getElementById('pv_p_color_piel').value,
                 color_ojos: document.getElementById('pv_p_color_ojos').value,
                 color_cabello: document.getElementById('pv_p_color_cabello').value,
-                complexion: document.getElementById('pv_p_complexion').value,
+                
                 usa_lentes: document.getElementById('pv_p_lentes').value === 'true',
                 detalle_lentes: document.getElementById('pv_p_lentes').value === 'true' ? document.getElementById('pv_txt_lentes').value.trim() : null,
                 perforaciones: document.getElementById('pv_p_perforaciones').value === 'true',
                 detalle_perforaciones: document.getElementById('pv_p_perforaciones').value === 'true' ? document.getElementById('pv_txt_lugar_perforacion').value.trim() : null,
-                condicion_medica: document.getElementById('pv_p_cond_medica').value === 'true' ? document.getElementById('pv_txt_cond').value.trim() : null,
-                consume_medicamento: document.getElementById('pv_p_medicamento').value === 'true' ? document.getElementById('pv_txt_med').value.trim() : null,
-                problema_judicial: document.getElementById('pv_p_judicial').value === 'true' ? document.getElementById('pv_txt_jud').value.trim() : null,
                 
-                // Fotos Persona
                 foto_frontal_persona: fp_frontal,
                 foto_perfil_izq_persona: fp_izq,
                 foto_perfil_der_persona: fp_der,
@@ -323,12 +404,14 @@ window.initRegVinculado = function() {
             form.reset();
             document.querySelectorAll('.img-preview').forEach(i => i.style.display = 'none');
             document.querySelectorAll('.hidden-field').forEach(e => e.style.display = 'none');
+            document.querySelectorAll('.input-valid, .input-error').forEach(i => i.classList.remove('input-valid', 'input-error'));
+            document.querySelectorAll('.status-msg').forEach(m => m.textContent = '');
             
         } catch (err) {
             console.error('Error:', err);
             let m = 'Error inesperado.';
             if (err.message.includes('23505')) m = '❌ Esta cédula ya tiene un registro vinculado.';
-            else if (err.message.includes('storage')) m = '❌ Error subiendo fotografías.';
+            else if (err.message.includes('storage')) m = ' Error subiendo fotografías.';
             else m = '❌ ' + err.message;
             mostrarError(m);
         } finally {
