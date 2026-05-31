@@ -228,7 +228,7 @@ window.initRegVinculado = function() {
     setupPreview('pv_foto_v_izq', 'prev_v_izq');
 
     // ==========================================
-    // 🔹 3. VALIDACIÓN EN TIEMPO REAL (Placa, Seriales)
+    //  3. VALIDACIÓN EN TIEMPO REAL (CRUCIAL)
     // ==========================================
     function debounce(func, wait) {
         let timeout;
@@ -238,7 +238,7 @@ window.initRegVinculado = function() {
         };
     }
 
-    async function verificarDuplicado(inputId, msgId) {
+    async function verificarDuplicado(inputId, msgId, tablas, columna) {
         const val = document.getElementById(inputId).value.trim().toUpperCase();
         const msgEl = document.getElementById(msgId);
         const input = document.getElementById(inputId);
@@ -252,20 +252,17 @@ window.initRegVinculado = function() {
         if(msgEl) { msgEl.textContent = '🔍 Verificando...'; msgEl.className = 'status-msg'; }
         
         try {
-            let col = '';
-            if (inputId === 'pv_v_placa') col = 'placa';
-            else if (inputId === 'pv_v_serial_carro') col = 'serial_carroceria';
-            else if (inputId === 'pv_v_serial_motor') col = 'serial_motor';
+            let found = false;
+            // Buscar en todas las tablas especificadas
+            for (const tabla of tablas) {
+                const { data } = await window.supabaseClient.from(tabla).select('id').ilike(columna, val).limit(1);
+                if (data && data.length > 0) {
+                    found = true;
+                    break; 
+                }
+            }
 
-            const checkTable = async (tabla) => {
-                const { data } = await window.supabaseClient.from(tabla).select('id').ilike(col, val).limit(1);
-                return data && data.length > 0;
-            };
-
-            const foundMoto = await checkTable('registro_motos');
-            const foundAuto = await checkTable('registro_automoviles');
-
-            if (foundMoto || foundAuto) {
+            if (found) {
                 input.classList.add('input-error');
                 input.classList.remove('input-valid');
                 if(msgEl) { msgEl.textContent = '❌ Ya registrado'; msgEl.className = 'status-msg error'; }
@@ -275,20 +272,29 @@ window.initRegVinculado = function() {
                 if(msgEl) { msgEl.textContent = '✅ Disponible'; msgEl.className = 'status-msg valid'; }
             }
         } catch (e) {
-            if(msgEl) msgEl.textContent = '️ Error de conexión';
+            if(msgEl) msgEl.textContent = '⚠️ Error de conexión';
         }
     }
 
-    const validatePlaca = debounce(() => verificarDuplicado('pv_v_placa', 'pv-msg-placa'), 600);
-    const validateCarro = debounce(() => verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro'), 600);
-    const validateMotor = debounce(() => verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor'), 600);
+    // Listeners de Validación
+    // 🔹 Validar Cédula en registro_personas
+    const validateCedula = debounce(() => verificarDuplicado('pv_p_cedula', 'pv-msg-cedula', ['registro_personas'], 'cedula'), 600);
+    document.getElementById('pv_p_cedula')?.addEventListener('input', validateCedula);
 
+    // 🔹 Validar Placa en registro_motos y registro_automoviles
+    const validatePlaca = debounce(() => verificarDuplicado('pv_v_placa', 'pv-msg-placa', ['registro_motos', 'registro_automoviles'], 'placa'), 600);
     document.getElementById('pv_v_placa')?.addEventListener('input', validatePlaca);
+
+    // 🔹 Validar Serial Carrocería en registro_motos y registro_automoviles
+    const validateCarro = debounce(() => verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', ['registro_motos', 'registro_automoviles'], 'serial_carroceria'), 600);
     document.getElementById('pv_v_serial_carro')?.addEventListener('input', validateCarro);
+
+    // 🔹 Validar Serial Motor en registro_motos y registro_automoviles
+    const validateMotor = debounce(() => verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', ['registro_motos', 'registro_automoviles'], 'serial_motor'), 600);
     document.getElementById('pv_v_serial_motor')?.addEventListener('input', validateMotor);
 
     // ==========================================
-    // 🔹 4. ENVÍO DEL FORMULARIO
+    //  4. ENVÍO DEL FORMULARIO
     // ==========================================
     const form = document.getElementById('form-reg-vinculado');
     const btn = form?.querySelector('.btn-submit');
@@ -306,9 +312,9 @@ window.initRegVinculado = function() {
         if (!form.checkValidity()) { form.reportValidity(); return; }
 
         // Verificar si hay errores de validación activos
-        const inputsValidar = ['pv_v_placa', 'pv_v_serial_carro', 'pv_v_serial_motor'];
+        const inputsValidar = ['pv_p_cedula', 'pv_v_placa', 'pv_v_serial_carro', 'pv_v_serial_motor'];
         const hasError = inputsValidar.some(id => document.getElementById(id)?.classList.contains('input-error'));
-        if (hasError) return mostrarError('Por favor corrija los campos de vehículo marcados en rojo.');
+        if (hasError) return mostrarError('Por favor corrija los campos marcados en rojo antes de registrar.');
 
         const cedula = document.getElementById('pv_p_cedula').value.trim();
         if (cedula.length < 7) return mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
@@ -411,7 +417,7 @@ window.initRegVinculado = function() {
             console.error('Error:', err);
             let m = 'Error inesperado.';
             if (err.message.includes('23505')) m = '❌ Esta cédula ya tiene un registro vinculado.';
-            else if (err.message.includes('storage')) m = ' Error subiendo fotografías.';
+            else if (err.message.includes('storage')) m = '❌ Error subiendo fotografías.';
             else m = '❌ ' + err.message;
             mostrarError(m);
         } finally {
