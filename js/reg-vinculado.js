@@ -231,7 +231,7 @@ window.initRegVinculado = function() {
     setupPreview('pv_foto_v_izq', 'prev_v_izq');
 
     // ==========================================
-    // 🔹 3. VALIDACIÓN EN TIEMPO REAL
+    // 🔹 3. VALIDACIÓN EN TIEMPO REAL (MULTI-TABLA)
     // ==========================================
     function debounce(func, wait) {
         let timeout;
@@ -259,6 +259,7 @@ window.initRegVinculado = function() {
         
         try {
             let found = false;
+            // Iterar por todas las tablas especificadas
             for (const tabla of tablas) {
                 const { data, error } = await window.supabaseClient.from(tabla).select('id').ilike(columna, val).limit(1);
                 if (error) throw error;
@@ -286,19 +287,24 @@ window.initRegVinculado = function() {
     }
 
     // Listeners de Validación
-    const validateCedula = debounce(() => verificarDuplicado('pv_p_cedula', 'pv-msg-cedula', ['registro_personas'], 'cedula'), 600);
+    
+    // 🔹 Validar Cédula: Busca en registro_personas Y registro_vinculado
+    const validateCedula = debounce(() => verificarDuplicado('pv_p_cedula', 'pv-msg-cedula', ['registro_personas', 'registro_vinculado'], 'cedula'), 600);
     const elCedula = document.getElementById('pv_p_cedula');
     if (elCedula) elCedula.addEventListener('input', validateCedula);
 
-    const validatePlaca = debounce(() => verificarDuplicado('pv_v_placa', 'pv-msg-placa', ['registro_motos', 'registro_automoviles'], 'placa'), 600);
+    // 🔹 Validar Placa: Busca en motos, autos Y registro_vinculado
+    const validatePlaca = debounce(() => verificarDuplicado('pv_v_placa', 'pv-msg-placa', ['registro_motos', 'registro_automoviles', 'registro_vinculado'], 'placa'), 600);
     const elPlaca = document.getElementById('pv_v_placa');
     if (elPlaca) elPlaca.addEventListener('input', validatePlaca);
 
-    const validateCarro = debounce(() => verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', ['registro_motos', 'registro_automoviles'], 'serial_carroceria'), 600);
+    // 🔹 Validar Serial Carrocería: Busca en motos, autos Y registro_vinculado
+    const validateCarro = debounce(() => verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', ['registro_motos', 'registro_automoviles', 'registro_vinculado'], 'serial_carroceria'), 600);
     const elCarro = document.getElementById('pv_v_serial_carro');
     if (elCarro) elCarro.addEventListener('input', validateCarro);
 
-    const validateMotor = debounce(() => verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', ['registro_motos', 'registro_automoviles'], 'serial_motor'), 600);
+    // 🔹 Validar Serial Motor: Busca en motos, autos Y registro_vinculado
+    const validateMotor = debounce(() => verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', ['registro_motos', 'registro_automoviles', 'registro_vinculado'], 'serial_motor'), 600);
     const elMotor = document.getElementById('pv_v_serial_motor');
     if (elMotor) elMotor.addEventListener('input', validateMotor);
 
@@ -339,7 +345,7 @@ window.initRegVinculado = function() {
         e.preventDefault();
         if (!form.checkValidity()) { form.reportValidity(); return; }
 
-        // Verificar errores de validación
+        // Verificar errores de validación activos
         const inputsValidar = ['pv_p_cedula', 'pv_v_placa', 'pv_v_serial_carro', 'pv_v_serial_motor'];
         const hasError = inputsValidar.some(id => document.getElementById(id)?.classList.contains('input-error'));
         if (hasError) return mostrarError('Por favor corrija los campos marcados en rojo antes de registrar.');
@@ -347,21 +353,14 @@ window.initRegVinculado = function() {
         const cedula = document.getElementById('pv_p_cedula').value.trim();
         if (cedula.length < 7) return mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
 
-        // ✅ LEER VALORES CORRECTAMENTE AL MOMENTO DEL ENVÍO
-        const complexionVal = document.getElementById('pv_p_complexion')?.value || null;
-        const marcaCorporalVal = document.getElementById('pv_p_marca')?.value.trim() || null;
-        
-        const condMedicaSel = document.getElementById('pv_p_cond_medica')?.value;
-        const condMedicaTxt = document.getElementById('pv_txt_cond')?.value.trim() || null;
-        
-        const medSel = document.getElementById('pv_p_medicamento')?.value;
-        const medTxt = document.getElementById('pv_txt_med')?.value.trim() || null;
-        
-        const judSel = document.getElementById('pv_p_judicial')?.value;
-        const judTxt = document.getElementById('pv_txt_jud')?.value.trim() || null;
+        // Validación de campos condicionales de salud
+        const condMedica = document.getElementById('pv_p_cond_medica')?.value;
+        const txtCond = document.getElementById('pv_txt_cond')?.value.trim();
+        const medicamento = document.getElementById('pv_p_medicamento')?.value;
+        const txtMed = document.getElementById('pv_txt_med')?.value.trim();
 
-        if (condMedicaSel === 'true' && !condMedicaTxt) return mostrarError('Describa la condición médica.');
-        if (medSel === 'true' && !medTxt) return mostrarError('Ingrese el nombre del medicamento.');
+        if (condMedica === 'true' && !txtCond) return mostrarError('Describa la condición médica.');
+        if (medicamento === 'true' && !txtMed) return mostrarError('Ingrese el nombre del medicamento.');
 
         btn.disabled = true; btn.textContent = '⏳ Subiendo y Registrando...'; msg.style.display = 'none';
 
@@ -411,13 +410,15 @@ window.initRegVinculado = function() {
                 color_piel: document.getElementById('pv_p_color_piel').value,
                 color_ojos: document.getElementById('pv_p_color_ojos').value,
                 color_cabello: document.getElementById('pv_p_color_cabello').value,
+                complexion: document.getElementById('pv_p_complexion').value,
                 
-                // ✅ MAPEO EXACTO Y SEGURO PARA CAMPOS QUE DABAN NULL
-                complexion: complexionVal,
-                marca_corporal: marcaCorporalVal,
-                condicion_medica: condMedicaSel === 'true' ? condMedicaTxt : null,
-                consume_medicamento: medSel === 'true' ? medTxt : null,
-                problema_judicial: judSel === 'true' ? judTxt : null,
+                // ✅ CAMPOS QUE FALTABAN - AHORA INCLUIDOS
+                marca_corporal: document.getElementById('pv_p_marca')?.value.trim() || null,
+                condicion_medica: condMedica === 'true' ? txtCond : null,
+                consume_medicamento: medicamento === 'true' ? txtMed : null,
+                problema_judicial: document.getElementById('pv_p_judicial')?.value === 'true' 
+                    ? document.getElementById('pv_txt_jud')?.value.trim() || null 
+                    : null,
 
                 usa_lentes: document.getElementById('pv_p_lentes').value === 'true',
                 detalle_lentes: document.getElementById('pv_p_lentes').value === 'true' ? document.getElementById('pv_txt_lentes').value.trim() : null,
@@ -470,7 +471,7 @@ window.initRegVinculado = function() {
             if (err.message.includes('23505')) m = '❌ Esta cédula ya tiene un registro vinculado.';
             else if (err.message.includes('storage')) m = '❌ Error subiendo fotografías.';
             else if (err.message.includes('marca_corporal') || err.message.includes('complexion') || err.message.includes('condicion_medica')) {
-                m = '❌ Error: La tabla en la base de datos no tiene todas las columnas necesarias. Ejecute el SQL de actualización.';
+                m = '❌ Error: La tabla en la base de datos no tiene todas las columnas necesarias. Contacte al administrador.';
             }
             else m = '❌ ' + err.message;
             mostrarError(m);
