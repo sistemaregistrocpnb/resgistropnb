@@ -1,6 +1,24 @@
 window.initModVinculado = function() {
     console.log("✅ Módulo mod-vinculado.js cargado correctamente.");
 
+    // 🔹 0. FUNCIÓN PARA PREVISUALIZAR FOTOS (Soluciona miniaturas)
+    const setupPhotoPreview = (inputId, imgId) => {
+        const input = document.getElementById(inputId);
+        const img = document.getElementById(imgId);
+        if (!input || !img) return;
+
+        input.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+    };
+
     // ==========================================
     // 🔹 1. MAPA DE BANDERAS PARA TELÉFONOS
     // ==========================================
@@ -116,10 +134,9 @@ window.initModVinculado = function() {
         const input = el?.querySelector('input');
         if (select.value === 'true') {
             if (el) el.style.display = 'block';
-            if (input) input.required = true;
         } else {
             if (el) el.style.display = 'none';
-            if (input) { input.value = ''; input.required = false; }
+            if (input) input.value = '';
         }
     };
 
@@ -127,8 +144,8 @@ window.initModVinculado = function() {
         const caja = document.getElementById('pv_box-lugar-perforacion');
         const input = document.getElementById('pv_txt_lugar_perforacion');
         if (!caja || !input) return;
-        if (select.value === 'true') { caja.style.display = 'block'; input.required = true; }
-        else { caja.style.display = 'none'; input.value = ''; input.required = false; }
+        if (select.value === 'true') { caja.style.display = 'block'; }
+        else { caja.style.display = 'none'; input.value = ''; }
     };
 
     window.convertirEstatura = function() {
@@ -200,7 +217,9 @@ window.initModVinculado = function() {
         }
     };
 
+    // ==========================================
     // 🔹 4. INICIALIZACIÓN DE DROPDOWN DE TELÉFONOS (BANDERAS)
+    // ==========================================
     const initPhoneDropdown = () => {
         const nativeSelect = document.getElementById('pv_p_tlf_pais');
         const displayBox = document.querySelector('.phone-display');
@@ -213,7 +232,7 @@ window.initModVinculado = function() {
             optionsBox.innerHTML = '';
             Array.from(nativeSelect.options).forEach(opt => {
                 if (!opt.value || opt.value === '--') return;
-                const iso = isoMap[opt.text] || 'xx'; // Usa el mapa definido arriba
+                const iso = isoMap[opt.text] || 'xx';
                 const div = document.createElement('div');
                 div.className = 'phone-option';
                 div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.8rem;">${opt.text}</span>`;
@@ -565,5 +584,22 @@ window.initModVinculado = function() {
     cargarAnios();
     setupEdad();
     setupValidation();
-    initPhoneDropdown(); // <-- Esto activa las banderas
+    initPhoneDropdown();
+
+    // 🔹 ACTIVAR MINIATURAS DE FOTOS
+    setupPhotoPreview('pv_foto_p_frontal', 'prev_p_frontal');
+    setupPhotoPreview('pv_foto_p_izq', 'prev_p_izq');
+    setupPhotoPreview('pv_foto_p_der', 'prev_p_der');
+    setupPhotoPreview('pv_foto_v_frontal', 'prev_v_frontal');
+    setupPhotoPreview('pv_foto_v_trasera', 'prev_v_trasera');
+    setupPhotoPreview('pv_foto_v_der', 'prev_v_der');
+    setupPhotoPreview('pv_foto_v_izq', 'prev_v_izq');
+
+    // 🔹 VALIDACIÓN DE TELÉFONO (SOLO NÚMEROS)
+    const tlfNumInput = document.getElementById('pv_p_tlf_num');
+    if (tlfNumInput) {
+        tlfNumInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+    }
 };
