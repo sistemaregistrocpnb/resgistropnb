@@ -1,6 +1,52 @@
 window.initModVinculado = function() {
     console.log("✅ Módulo mod-vinculado.js cargado correctamente.");
 
+        // 🔹 Mapa de Países para las Banderas (Agrega esto dentro de la función)
+    const isoMap = {
+        "Afganistán": "af", "Albania": "al", "Alemania": "de", "Andorra": "ad", "Angola": "ao",
+        "Antigua y Barbuda": "ag", "Arabia Saudita": "sa", "Argelia": "dz", "Argentina": "ar",
+        "Armenia": "am", "Australia": "au", "Austria": "at", "Azerbaiyán": "az", "Bahamas": "bs",
+        "Baréin": "bh", "Bangladés": "bd", "Barbados": "bb", "Bélgica": "be", "Belice": "bz",
+        "Benín": "bj", "Bielorrusia": "by", "Birmania": "mm", "Bolivia": "bo",
+        "Bosnia y Herzegovina": "ba", "Botsuana": "bw", "Brasil": "br", "Brunéi": "bn",
+        "Bulgaria": "bg", "Burkina Faso": "bf", "Burundi": "bi", "Bután": "bt", "Cabo Verde": "cv",
+        "Camboya": "kh", "Camerún": "cm", "Canadá": "ca", "Catar": "qa", "Rep. Centroafricana": "cf",
+        "Chad": "td", "Rep. Checa": "cz", "Chile": "cl", "China": "cn", "Chipre": "cy",
+        "Colombia": "co", "Comoras": "km", "Congo (Rep.)": "cg", "Congo (R.D.)": "cd",
+        "Corea del Norte": "kp", "Corea del Sur": "kr", "Costa de Marfil": "ci",
+        "Costa Rica": "cr", "Croacia": "hr", "Cuba": "cu", "Dinamarca": "dk", "Dominica": "dm",
+        "Ecuador": "ec", "Egipto": "eg", "El Salvador": "sv", "Emiratos Árabes Unidos": "ae",
+        "Eritrea": "er", "Eslovaquia": "sk", "Eslovenia": "si", "España": "es",
+        "Estados Unidos": "us", "Estonia": "ee", "Etiopía": "et", "Filipinas": "ph",
+        "Finlandia": "fi", "Fiyi": "fj", "Francia": "fr", "Gabón": "ga", "Gambia": "gm",
+        "Georgia": "ge", "Ghana": "gh", "Granada": "gd", "Grecia": "gr", "Guatemala": "gt",
+        "Guinea": "gn", "Guinea Ecuatorial": "gq", "Guinea-Bisáu": "gw", "Guyana": "gy",
+        "Haití": "ht", "Honduras": "hn", "Hungría": "hu", "India": "in", "Indonesia": "id",
+        "Irak": "iq", "Irán": "ir", "Irlanda": "ie", "Islandia": "is", "Israel": "il", "Italia": "it",
+        "Jamaica": "jm", "Japón": "jp", "Jordania": "jo", "Kazajistán": "kz", "Kenia": "ke",
+        "Kirguistán": "kg", "Kiribati": "ki", "Kuwait": "kw", "Laos": "la", "Lesoto": "ls",
+        "Letonia": "lv", "Líbano": "lb", "Liberia": "lr", "Libia": "ly", "Liechtenstein": "li",
+        "Lituania": "lt", "Luxemburgo": "lu", "Macedonia del Norte": "mk", "Madagascar": "mg",
+        "Malasia": "my", "Malaui": "mw", "Maldivas": "mv", "Malí": "ml", "Malta": "mt",
+        "Marruecos": "ma", "Mauricio": "mu", "Mauritania": "mr", "México": "mx", "Micronesia": "fm",
+        "Moldavia": "md", "Mónaco": "mc", "Mongolia": "mn", "Montenegro": "me", "Mozambique": "mz",
+        "Namibia": "na", "Nauru": "nr", "Nepal": "np", "Nicaragua": "ni", "Níger": "ne",
+        "Nigeria": "ng", "Noruega": "no", "Nueva Zelanda": "nz", "Omán": "om",
+        "Países Bajos": "nl", "Pakistán": "pk", "Palaos": "pw", "Palestina": "ps", "Panamá": "pa",
+        "Papúa Nueva Guinea": "pg", "Paraguay": "py", "Perú": "pe", "Polonia": "pl",
+        "Portugal": "pt", "Puerto Rico": "pr", "Reino Unido": "gb", "Rep. Dominicana": "do",
+        "Ruanda": "rw", "Rumania": "ro", "Rusia": "ru", "Samoa": "ws", "San Marino": "sm",
+        "Santa Lucía": "lc", "Santo Tomé y Príncipe": "st", "San Vicente y las Granadinas": "vc",
+        "Senegal": "sn", "Serbia": "rs", "Seychelles": "sc", "Sierra Leona": "sl", "Singapur": "sg",
+        "Siria": "sy", "Somalia": "so", "Sudáfrica": "za", "Sudán": "sd", "Sudán del Sur": "ss",
+        "Suecia": "se", "Suiza": "ch", "Surinam": "sr", "Esuatini": "sz", "Tayikistán": "tj",
+        "Tanzania": "tz", "Tailandia": "th", "Timor Oriental": "tl", "Togo": "tg", "Tonga": "to",
+        "Trinidad y Tobago": "tt", "Túnez": "tn", "Turquía": "tr", "Turkmenistán": "tm",
+        "Tuvalu": "tv", "Ucrania": "ua", "Uganda": "ug", "Uruguay": "uy", "Uzbekistán": "uz",
+        "Vanuatu": "vu", "Ciudad del Vaticano": "va", "Venezuela": "ve", "Vietnam": "vn",
+        "Yemen": "ye", "Yibuti": "dj", "Zambia": "zm", "Zimbabue": "zw"
+    };
+
     // ==========================================
     // 🔹 1. LISTAS COMPLETAS (Igual que en Registro)
     // ==========================================
