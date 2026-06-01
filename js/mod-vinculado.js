@@ -123,7 +123,7 @@ window.initModVinculado = function() {
 
             try {
                 // Buscar en registro_vinculado por cédula O placa
-                const { data, error } = await window.supabaseClient
+               const { data, error } = await window.supabaseClient.from('registro_vinculado').select('*').or(query).limit(1).maybeSingle();
                     .from('registro_vinculado')
                     .select('*')
                     .or(`cedula.eq.${val},placa.eq.${val}`)
