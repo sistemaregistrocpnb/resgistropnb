@@ -45,6 +45,24 @@
             <input type="text" id="mod_busqueda_input" placeholder="Ingrese Cédula o Placa..." maxlength="20">
             <button id="btn_buscar_mod">Buscar</button>
         </div>
+<!-- 🔍 PANEL DE SELECCIÓN MÚLTIPLE (aparece cuando hay duplicados entre tablas) -->
+<div id="selection-panel" style="display: none; margin-top: 20px;">
+    <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+        <h4 style="margin: 0 0 8px; color: #1e40af;">🔎 Múltiples coincidencias encontradas</h4>
+        <p style="margin: 0; color: #1e40af; font-size: 0.9rem;">
+            Se encontraron <strong><span id="result-count">0</span> registros</strong> con ese dato. 
+            Seleccione cuál desea editar:
+        </p>
+    </div>
+    <div id="selection-list" style="display: grid; gap: 12px;"></div>
+    <button id="btn-cancelar-seleccion" style="margin-top: 16px; padding: 10px 20px; background: #64748b; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; display: block; margin-left: auto; margin-right: auto;">
+        ❌ Cancelar búsqueda
+    </button>
+</div>
+
+<!-- ⚠️ ALERTA CRUZADA (cuando la misma placa/serial existe en moto Y auto) -->
+<div id="cross-plate-warning" class="msg" style="margin-top:8px; background:#fffbeb; color:#92400e; border:1px solid #fcd34d; text-align:left; display:none;"></div>
+        
         <div id="mod_msg_busqueda" class="msg" style="margin-top:8px;"></div>
     </div>
 
