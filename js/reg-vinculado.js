@@ -2,7 +2,55 @@ window.initRegVinculado = function() {
     console.log("✅ Módulo reg-vinculado.js cargado correctamente.");
 
     // ==========================================
-    // 🔹 1. LISTAS COMPLETAS DE MARCAS Y MODELOS
+    // 🔹 1. MAPA DE BANDERAS
+    // ==========================================
+    const isoMap = {
+        "Afganistán": "af", "Albania": "al", "Alemania": "de", "Andorra": "ad", "Angola": "ao",
+        "Antigua y Barbuda": "ag", "Arabia Saudita": "sa", "Argelia": "dz", "Argentina": "ar",
+        "Armenia": "am", "Australia": "au", "Austria": "at", "Azerbaiyán": "az", "Bahamas": "bs",
+        "Baréin": "bh", "Bangladés": "bd", "Barbados": "bb", "Bélgica": "be", "Belice": "bz",
+        "Benín": "bj", "Bielorrusia": "by", "Birmania": "mm", "Bolivia": "bo",
+        "Bosnia y Herzegovina": "ba", "Botsuana": "bw", "Brasil": "br", "Brunéi": "bn",
+        "Bulgaria": "bg", "Burkina Faso": "bf", "Burundi": "bi", "Bután": "bt", "Cabo Verde": "cv",
+        "Camboya": "kh", "Camerún": "cm", "Canadá": "ca", "Catar": "qa", "Rep. Centroafricana": "cf",
+        "Chad": "td", "Rep. Checa": "cz", "Chile": "cl", "China": "cn", "Chipre": "cy",
+        "Colombia": "co", "Comoras": "km", "Congo (Rep.)": "cg", "Congo (R.D.)": "cd",
+        "Corea del Norte": "kp", "Corea del Sur": "kr", "Costa de Marfil": "ci",
+        "Costa Rica": "cr", "Croacia": "hr", "Cuba": "cu", "Dinamarca": "dk", "Dominica": "dm",
+        "Ecuador": "ec", "Egipto": "eg", "El Salvador": "sv", "Emiratos Árabes Unidos": "ae",
+        "Eritrea": "er", "Eslovaquia": "sk", "Eslovenia": "si", "España": "es",
+        "Estados Unidos": "us", "Estonia": "ee", "Etiopía": "et", "Filipinas": "ph",
+        "Finlandia": "fi", "Fiyi": "fj", "Francia": "fr", "Gabón": "ga", "Gambia": "gm",
+        "Georgia": "ge", "Ghana": "gh", "Granada": "gd", "Grecia": "gr", "Guatemala": "gt",
+        "Guinea": "gn", "Guinea Ecuatorial": "gq", "Guinea-Bisáu": "gw", "Guyana": "gy",
+        "Haití": "ht", "Honduras": "hn", "Hungría": "hu", "India": "in", "Indonesia": "id",
+        "Irak": "iq", "Irán": "ir", "Irlanda": "ie", "Islandia": "is", "Israel": "il", "Italia": "it",
+        "Jamaica": "jm", "Japón": "jp", "Jordania": "jo", "Kazajistán": "kz", "Kenia": "ke",
+        "Kirguistán": "kg", "Kiribati": "ki", "Kuwait": "kw", "Laos": "la", "Lesoto": "ls",
+        "Letonia": "lv", "Líbano": "lb", "Liberia": "lr", "Libia": "ly", "Liechtenstein": "li",
+        "Lituania": "lt", "Luxemburgo": "lu", "Macedonia del Norte": "mk", "Madagascar": "mg",
+        "Malasia": "my", "Malaui": "mw", "Maldivas": "mv", "Malí": "ml", "Malta": "mt",
+        "Marruecos": "ma", "Mauricio": "mu", "Mauritania": "mr", "México": "mx", "Micronesia": "fm",
+        "Moldavia": "md", "Mónaco": "mc", "Mongolia": "mn", "Montenegro": "me", "Mozambique": "mz",
+        "Namibia": "na", "Nauru": "nr", "Nepal": "np", "Nicaragua": "ni", "Níger": "ne",
+        "Nigeria": "ng", "Noruega": "no", "Nueva Zelanda": "nz", "Omán": "om",
+        "Países Bajos": "nl", "Pakistán": "pk", "Palaos": "pw", "Palestina": "ps", "Panamá": "pa",
+        "Papúa Nueva Guinea": "pg", "Paraguay": "py", "Perú": "pe", "Polonia": "pl",
+        "Portugal": "pt", "Puerto Rico": "pr", "Reino Unido": "gb", "Rep. Dominicana": "do",
+        "Ruanda": "rw", "Rumania": "ro", "Rusia": "ru", "Samoa": "ws", "San Marino": "sm",
+        "Santa Lucía": "lc", "Santo Tomé y Príncipe": "st", "San Vicente y las Granadinas": "vc",
+        "Senegal": "sn", "Serbia": "rs", "Seychelles": "sc", "Sierra Leona": "sl", "Singapur": "sg",
+        "Siria": "sy", "Somalia": "so", "Sudáfrica": "za", "Sudán": "sd", "Sudán del Sur": "ss",
+        "Suecia": "se", "Suiza": "ch", "Surinam": "sr", "Esuatini": "sz", "Tayikistán": "tj",
+        "Tanzania": "tz", "Tailandia": "th", "Timor Oriental": "tl", "Togo": "tg", "Tonga": "to",
+        "Trinidad y Tobago": "tt", "Túnez": "tn", "Turquía": "tr", "Turkmenistán": "tm",
+        "Tuvalu": "tv", "Ucrania": "ua", "Uganda": "ug", "Uruguay": "uy", "Uzbekistán": "uz",
+        "Vanuatu": "vu", "Ciudad del Vaticano": "va", "Venezuela": "ve", "Vietnam": "vn",
+        "Yemen": "ye", "Yibuti": "dj", "Zambia": "zm", "Zimbabue": "zw"
+    };
+
+    // ==========================================
+    // 🔹 2. LISTAS COMPLETAS
     // ==========================================
     const marcasModelosMoto = {
         "Empire Keeway": ["Matrix Lite", "Matrix II 150", "EK Xpress Lite", "QJ Fort", "Horse (EK Horse 2 SE)", "EK Arsen II 200", "EK Atlas", "EK Atlas HD/HDS 200", "Owen 200", "Thunder EK", "TX II 150", "TX 250GS", "QJ Motor SRT 550", "QJ Motor SRT 550X", "QJ Motor SRT 700S", "QJ Motor SRT 700SX", "Superlight 200S", "V302C"],
@@ -51,27 +99,31 @@ window.initRegVinculado = function() {
         "Otra": ["Otra (Especificar en observaciones)"]
     };
 
+    const estacionesList = [
+        "EPM MARACAIBO", "EPM SAN FRANCISCO", "EPM LA CAÑADA", "EPM ESTACION POLICIAL JESUS E. LOSADA",
+        "EPP CRISTO DE ARANZA", "EPP LUIS HURTADO", "EPP DAGNINO", "EPP OLEGARIO VILLALOBOS",
+        "EPP CHIQUINQUIRA", "EPP FRANCISCO EUGENIO", "EPP CARACCIOLO", "EPP IDELFONSO",
+        "EPP VENANCIO PULGAR", "EPP COQUIVACOA-ZAPARA", "EPP RAUL LEONI", "EPP ANTONIO BORJAS ROMERO",
+        "EPP JUANA DE AVILA", "EPP SAN ISIDRO", "EPP CASIQUE MARA", "EPP BOLIVAR", "EPP EL BAJO",
+        "EPP DOMITILA", "EPP CORTIJOS", "EPP MARCIAL HERNANDEZ", "EPP POTRERITO", "EPP ANDRES BELLO", "EPP SANTA LUCIA"
+    ];
+
     // ==========================================
-    // 🔹 2. FUNCIONES DE UI
+    // 🔹 3. FUNCIONES DE UI
     // ==========================================
     window.toggleCampo = function(select, targetId) {
         const el = document.getElementById(targetId);
         const input = el?.querySelector('input');
-        if (select.value === 'true') {
-            if (el) el.style.display = 'block';
-            if (input) input.required = true;
-        } else {
-            if (el) el.style.display = 'none';
-            if (input) { input.value = ''; input.required = false; }
-        }
+        if (select.value === 'true') { if (el) el.style.display = 'block'; }
+        else { if (el) el.style.display = 'none'; if (input) input.value = ''; }
     };
 
     window.activarCampoPerforacion = function(select) {
         const caja = document.getElementById('pv_box-lugar-perforacion');
         const input = document.getElementById('pv_txt_lugar_perforacion');
         if (!caja || !input) return;
-        if (select.value === 'true') { caja.style.display = 'block'; input.required = true; }
-        else { caja.style.display = 'none'; input.value = ''; input.required = false; }
+        if (select.value === 'true') { caja.style.display = 'block'; }
+        else { caja.style.display = 'none'; input.value = ''; }
     };
 
     window.convertirEstatura = function() {
@@ -80,8 +132,8 @@ window.initRegVinculado = function() {
         if (!inputM) return null;
         const metros = parseFloat(inputM.value);
         if (!isNaN(metros) && metros >= 0.50 && metros <= 2.30) {
-            const cm = Math.round(metros * 100);
-            if (inputCm) inputCm.value = cm; return cm;
+            if (inputCm) inputCm.value = Math.round(metros * 100);
+            return parseInt(inputCm.value);
         }
         return null;
     };
@@ -96,175 +148,185 @@ window.initRegVinculado = function() {
         modeloSelect.innerHTML = '<option value="">Seleccione modelo...</option>';
 
         if (tipo === 'Motocicleta') {
-            Object.keys(marcasModelosMoto).sort().forEach(m => {
-                marcaSelect.innerHTML += `<option value="${m}">${m}</option>`;
-            });
+            Object.keys(marcasModelosMoto).sort().forEach(m => marcaSelect.innerHTML += `<option value="${m}">${m}</option>`);
             boxCilindro.style.display = 'block';
         } else if (tipo === 'Automóvil') {
-            Object.keys(marcasModelosAuto).sort().forEach(m => {
-                marcaSelect.innerHTML += `<option value="${m}">${m}</option>`;
-            });
+            Object.keys(marcasModelosAuto).sort().forEach(m => marcaSelect.innerHTML += `<option value="${m}">${m}</option>`);
             boxCilindro.style.display = 'none';
         }
+        
+        // 🔑 IMPORTANTE: Al cambiar tipo, re-validar placa y seriales
+        reValidarCamposVehiculo();
     };
 
     window.cargarModelosPV = function() {
         const tipo = document.getElementById('pv_v_tipo').value;
         const marca = document.getElementById('pv_v_marca').value;
         const modeloSelect = document.getElementById('pv_v_modelo');
-        
         modeloSelect.innerHTML = '<option value="">Seleccione modelo...</option>';
-        
         let lista = tipo === 'Motocicleta' ? marcasModelosMoto[marca] : marcasModelosAuto[marca];
-        
-        if (lista) lista.forEach(mod => {
-            modeloSelect.innerHTML += `<option value="${mod}">${mod}</option>`;
-        });
+        if (lista) lista.forEach(mod => modeloSelect.innerHTML += `<option value="${mod}">${mod}</option>`);
     };
 
-    // 🔹 Cargar Estaciones Policiales
-    const estacionesList = [
-        "EPM MARACAIBO", "EPM SAN FRANCISCO", "EPM LA CAÑADA", "EPM ESTACION POLICIAL JESUS E. LOSADA",
-        "EPP CRISTO DE ARANZA", "EPP LUIS HURTADO", "EPP DAGNINO", "EPP OLEGARIO VILLALOBOS",
-        "EPP CHIQUINQUIRA", "EPP FRANCISCO EUGENIO", "EPP CARACCIOLO", "EPP IDELFONSO",
-        "EPP VENANCIO PULGAR", "EPP COQUIVACOA-ZAPARA", "EPP RAUL LEONI", "EPP ANTONIO BORJAS ROMERO",
-        "EPP JUANA DE AVILA", "EPP SAN ISIDRO", "EPP CASIQUE MARA", "EPP BOLIVAR", "EPP EL BAJO",
-        "EPP DOMITILA", "EPP CORTIJOS", "EPP MARCIAL HERNANDEZ", "EPP POTRERITO", "EPP ANDRES BELLO", "EPP SANTA LUCIA"
-    ];
-
-    function cargarEstaciones() {
+    const cargarEstaciones = () => {
         const select = document.getElementById('pv_estacion');
-        if (!select) return;
-        select.innerHTML = '<option value="">Seleccione estación...</option>';
-        estacionesList.sort().forEach(est => {
-            select.innerHTML += `<option value="${est}">${est}</option>`;
-        });
-    }
-
-    // Llenar Años
-    const anioSelect = document.getElementById('pv_v_anio');
-    if (anioSelect) {
-        const currentYear = new Date().getFullYear();
-        anioSelect.innerHTML = '<option value="">Seleccione año...</option>';
-        for (let y = currentYear; y >= 1990; y--) anioSelect.innerHTML += `<option value="${y}">${y}</option>`;
-    }
-
-    // Cálculo de Edad
-    const fechaNac = document.getElementById('pv_p_fecha_nac');
-    const edadInput = document.getElementById('pv_p_edad');
-    if (fechaNac && edadInput) {
-        fechaNac.addEventListener('change', () => {
-            if (!fechaNac.value) return;
-            const hoy = new Date(), nac = new Date(fechaNac.value);
-            let edad = hoy.getFullYear() - nac.getFullYear();
-            const m = hoy.getMonth() - nac.getMonth();
-            if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
-            edadInput.value = (edad >= 0 && edad <= 120) ? edad : '';
-        });
-    }
-
-    // Estatura en tiempo real
-    const estaturaInput = document.getElementById('pv_p_estatura');
-    if (estaturaInput) {
-        estaturaInput.addEventListener('input', window.convertirEstatura);
-        estaturaInput.addEventListener('blur', window.convertirEstatura);
-    }
-
-    // Dropdown de Banderas
-    const nativeSelect = document.getElementById('pv_p_tlf_pais');
-    const displayBox = document.querySelector('.phone-display');
-    const optionsBox = document.querySelector('.phone-options');
-    const flagImg = document.getElementById('pv_tlf-flag-img');
-    const codeText = document.getElementById('pv_tlf-code-text');
-    const countryText = document.getElementById('pv_tlf-country-text');
-    
-    const isoMap = {
-        "Afganistán":"af", "Albania":"al", "Alemania":"de", "Andorra":"ad", "Angola":"ao", "Antigua y Barbuda":"ag", "Arabia Saudita":"sa", "Argelia":"dz", "Argentina":"ar", "Armenia":"am", "Australia":"au", "Austria":"at", "Azerbaiyán":"az", "Bahamas":"bs", "Baréin":"bh", "Bangladés":"bd", "Barbados":"bb", "Bélgica":"be", "Belice":"bz", "Benín":"bj", "Bielorrusia":"by", "Birmania":"mm", "Bolivia":"bo", "Bosnia y Herzegovina":"ba", "Botsuana":"bw", "Brasil":"br", "Brunéi":"bn", "Bulgaria":"bg", "Burkina Faso":"bf", "Burundi":"bi", "Bután":"bt", "Cabo Verde":"cv", "Camboya":"kh", "Camerún":"cm", "Canadá":"ca", "Catar":"qa", "Rep. Centroafricana":"cf", "Chad":"td", "Rep. Checa":"cz", "Chile":"cl", "China":"cn", "Chipre":"cy", "Colombia":"co", "Comoras":"km", "Corea del Norte":"kp", "Corea del Sur":"kr", "Costa de Marfil":"ci", "Costa Rica":"cr", "Croacia":"hr", "Cuba":"cu", "Dinamarca":"dk", "Dominica":"dm", "Ecuador":"ec", "Egipto":"eg", "El Salvador":"sv", "Emiratos Árabes":"ae", "Eritrea":"er", "Eslovaquia":"sk", "Eslovenia":"si", "España":"es", "Estados Unidos":"us", "Estonia":"ee", "Etiopía":"et", "Filipinas":"ph", "Finlandia":"fi", "Fiyi":"fj", "Francia":"fr", "Gabón":"ga", "Gambia":"gm", "Georgia":"ge", "Ghana":"gh", "Granada":"gd", "Grecia":"gr", "Guatemala":"gt", "Guinea":"gn", "Guinea Ecuatorial":"gq", "Guinea-Bisáu":"gw", "Guyana":"gy", "Haití":"ht", "Honduras":"hn", "Hungría":"hu", "India":"in", "Indonesia":"id", "Irak":"iq", "Irán":"ir", "Irlanda":"ie", "Islandia":"is", "Israel":"il", "Italia":"it", "Jamaica":"jm", "Japón":"jp", "Jordania":"jo", "Kazajistán":"kz", "Kenia":"ke", "Kirguistán":"kg", "Kiribati":"ki", "Kuwait":"kw", "Laos":"la", "Lesoto":"ls", "Letonia":"lv", "Líbano":"lb", "Liberia":"lr", "Libia":"ly", "Liechtenstein":"li", "Lituania":"lt", "Luxemburgo":"lu", "Macedonia del Norte":"mk", "Madagascar":"mg", "Malasia":"my", "Malaui":"mw", "Maldivas":"mv", "Malí":"ml", "Malta":"mt", "Marruecos":"ma", "Mauricio":"mu", "Mauritania":"mr", "México":"mx", "Micronesia":"fm", "Moldavia":"md", "Mónaco":"mc", "Mongolia":"mn", "Montenegro":"me", "Mozambique":"mz", "Namibia":"na", "Nauru":"nr", "Nepal":"np", "Nicaragua":"ni", "Níger":"ne", "Nigeria":"ng", "Nueva Zelanda":"nz", "Noruega":"no", "Omán":"om", "Países Bajos":"nl", "Pakistán":"pk", "Palaos":"pw", "Palestina":"ps", "Panamá":"pa", "Papúa Nueva Guinea":"pg", "Paraguay":"py", "Perú":"pe", "Polonia":"pl", "Portugal":"pt", "Reino Unido":"gb", "Puerto Rico":"pr", "Ruanda":"rw", "Rumania":"ro", "Rusia":"ru", "Samoa":"ws", "San Marino":"sm", "Santa Lucía":"lc", "Santo Tomé y Príncipe":"st", "San Vicente y las Granadinas":"vc", "Senegal":"sn", "Serbia":"rs", "Seychelles":"sc", "Sierra Leona":"sl", "Singapur":"sg", "Siria":"sy", "Somalia":"so", "Sudáfrica":"za", "Sudán":"sd", "Sudán del Sur":"ss", "Suecia":"se", "Suiza":"ch", "Surinam":"sr", "Esuatini":"sz", "Tayikistán":"tj", "Tanzania":"tz", "Tailandia":"th", "Timor Oriental":"tl", "Togo":"tg", "Tonga":"to", "Trinidad y Tobago":"tt", "Túnez":"tn", "Turquía":"tr", "Turkmenistán":"tm", "Tuvalu":"tv", "Ucrania":"ua", "Uganda":"ug", "Uruguay":"uy", "Uzbekistán":"uz", "Vanuatu":"vu", "Vaticano":"va", "Venezuela":"ve", "Vietnam":"vn", "Yemen":"ye", "Yibuti":"dj", "Zambia":"zm", "Zimbabue":"zw"
+        if(select) {
+            select.innerHTML = '<option value="">Seleccione estación...</option>';
+            estacionesList.forEach(est => select.innerHTML += `<option value="${est}">${est}</option>`);
+        }
     };
 
-    if (optionsBox && nativeSelect && displayBox) {
-        optionsBox.innerHTML = '';
-        Array.from(nativeSelect.options).forEach(opt => {
-            if (!opt.value) return;
-            const iso = isoMap[opt.text] || opt.value.replace('+','').toLowerCase();
-            const div = document.createElement('div');
-            div.className = 'phone-option';
-            div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.8rem;">${opt.text}</span>`;
-            div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:0.15s;';
-            div.onmouseenter = () => div.style.background = '#f8fafc';
-            div.onmouseleave = () => div.style.background = '';
-            div.addEventListener('click', () => {
-                nativeSelect.value = opt.value;
-                flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
-                codeText.textContent = opt.value;
-                countryText.textContent = opt.text;
-                optionsBox.style.display = 'none';
+    const cargarAnios = () => {
+        const anioSelect = document.getElementById('pv_v_anio');
+        if (anioSelect) {
+            const currentYear = new Date().getFullYear();
+            anioSelect.innerHTML = '<option value="">Seleccione año...</option>';
+            for (let y = currentYear; y >= 1990; y--) anioSelect.innerHTML += `<option value="${y}">${y}</option>`;
+        }
+    };
+
+    const setupEdad = () => {
+        const fechaNac = document.getElementById('pv_p_fecha_nac');
+        const edadInput = document.getElementById('pv_p_edad');
+        if (fechaNac && edadInput) {
+            fechaNac.addEventListener('change', () => {
+                if (!fechaNac.value) return;
+                const hoy = new Date(), nac = new Date(fechaNac.value);
+                let edad = hoy.getFullYear() - nac.getFullYear();
+                const m = hoy.getMonth() - nac.getMonth();
+                if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
+                edadInput.value = (edad >= 0 && edad <= 120) ? edad : '';
             });
-            optionsBox.appendChild(div);
-        });
-        displayBox.addEventListener('click', (e) => { e.stopPropagation(); optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block'; });
-        document.addEventListener('click', (e) => { if (!e.target.closest('.phone-dropdown-wrapper')) optionsBox.style.display = 'none'; });
-    }
+        }
+    };
 
-    // Vista Previa de Fotos
-    const setupPreview = (idIn, idImg) => {
-        const input = document.getElementById(idIn), preview = document.getElementById(idImg);
-        if (!input || !preview) return;
+    // ==========================================
+    // 🔹 4. DROPDOWN TELÉFONOS (BANDERAS)
+    // ==========================================
+    const initPhoneDropdown = () => {
+        const nativeSelect = document.getElementById('pv_p_tlf_pais');
+        const displayBox = document.querySelector('.phone-display');
+        const optionsBox = document.querySelector('.phone-options');
+        const flagImg = document.getElementById('pv_tlf-flag-img');
+        const codeText = document.getElementById('pv_tlf-code-text');
+        const countryText = document.getElementById('pv_tlf-country-text');
+
+        if (optionsBox && nativeSelect && displayBox) {
+            optionsBox.innerHTML = '';
+            Array.from(nativeSelect.options).forEach(opt => {
+                if (!opt.value || opt.value === '--') return;
+                const iso = isoMap[opt.text] || 'xx';
+                const div = document.createElement('div');
+                div.className = 'phone-option';
+                div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.8rem;">${opt.text}</span>`;
+                div.addEventListener('click', () => {
+                    nativeSelect.value = opt.value;
+                    flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
+                    codeText.textContent = opt.value;
+                    countryText.textContent = opt.text;
+                    optionsBox.style.display = 'none';
+                });
+                optionsBox.appendChild(div);
+            });
+            displayBox.addEventListener('click', (e) => { e.stopPropagation(); optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block'; });
+            document.addEventListener('click', (e) => { if (!e.target.closest('.phone-dropdown-wrapper')) optionsBox.style.display = 'none'; });
+        }
+    };
+
+    // ==========================================
+    // 🔹 5. PREVISUALIZACIÓN DE FOTOS
+    // ==========================================
+    const setupPhotoPreview = (inputId, imgId) => {
+        const input = document.getElementById(inputId);
+        const img = document.getElementById(imgId);
+        if (!input || !img) return;
         input.addEventListener('change', function() {
-            const f = this.files[0];
-            if (f) { 
-                const r = new FileReader(); 
-                r.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; }; 
-                r.readAsDataURL(f); 
-            } else preview.style.display = 'none';
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => { img.src = e.target.result; img.style.display = 'block'; };
+                reader.readAsDataURL(this.files[0]);
+            }
         });
     };
 
-    // Fotos Persona
-    setupPreview('pv_foto_p_frontal', 'prev_p_frontal');
-    setupPreview('pv_foto_p_izq', 'prev_p_izq');
-    setupPreview('pv_foto_p_der', 'prev_p_der');
-    // Fotos Vehículo
-    setupPreview('pv_foto_v_frontal', 'prev_v_frontal');
-    setupPreview('pv_foto_v_trasera', 'prev_v_trasera');
-    setupPreview('pv_foto_v_der', 'prev_v_der');
-    setupPreview('pv_foto_v_izq', 'prev_v_izq');
-
     // ==========================================
-    // 🔹 3. VALIDACIÓN EN TIEMPO REAL (MULTI-TABLA)
+    // 🔹 6. VALIDACIÓN EN TIEMPO REAL (FILTRADA POR TIPO)
     // ==========================================
-    function debounce(func, wait) {
-        let timeout;
-        return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
-    }
+    
+    // 🔑 FUNCIÓN CLAVE: Devuelve las tablas a validar según el campo y el tipo de vehículo
+    const getTablasParaCampo = (campo) => {
+        const tipo = document.getElementById('pv_v_tipo')?.value;
+        
+        if (campo === 'cedula') {
+            // La cédula SIEMPRE se valida contra TODAS las tablas (es única por persona)
+            return ['registro_personas', 'registro_vinculado'];
+        }
+        
+        // Para placa, serial carrocería, serial motor: validar SOLO contra el mismo tipo
+        const tablas = [];
+        
+        if (tipo === 'Motocicleta') {
+            tablas.push('registro_motos');
+            // Buscar en registro_vinculado FILTRADO por tipo
+        } else if (tipo === 'Automóvil') {
+            tablas.push('registro_automoviles');
+            // Buscar en registro_vinculado FILTRADO por tipo
+        } else {
+            // Si no hay tipo seleccionado, no validar (esperar selección)
+            return [];
+        }
+        
+        // Siempre incluir registro_vinculado (se filtrará por tipo_vehiculo)
+        tablas.push('registro_vinculado');
+        
+        return tablas;
+    };
 
-    async function verificarDuplicado(inputId, msgId, tablas, columna) {
+    // 🔑 FUNCIÓN DE VALIDACIÓN: ahora acepta tipo de vehículo para filtrar registro_vinculado
+    async function verificarDuplicado(inputId, msgId, tablas, columna, tipoVehiculo) {
         const input = document.getElementById(inputId);
         const msgEl = document.getElementById(msgId);
         if (!input || !msgEl) return;
 
         const val = input.value.trim().toUpperCase();
-        
-        if (!val) {
+        if (!val || val.length < 5) {
             input.classList.remove('input-valid', 'input-error');
             msgEl.textContent = '';
             return;
         }
 
-        msgEl.textContent = '🔍 Verificando...'; 
+        // Si no hay tablas (ej: no hay tipo seleccionado), esperar
+        if (tablas.length === 0) {
+            input.classList.remove('input-valid', 'input-error');
+            msgEl.textContent = '';
+            return;
+        }
+
+        msgEl.textContent = '🔍 Verificando...';
         msgEl.className = 'status-msg';
         
         try {
             let found = false;
-            // Iterar por todas las tablas especificadas
+            let tablaEncontrada = '';
+            
             for (const tabla of tablas) {
-                const { data, error } = await window.supabaseClient.from(tabla).select('id').ilike(columna, val).limit(1);
+                let query = window.supabaseClient.from(tabla).select('id');
+                
+                // 🔑 CLAVE: Si es registro_vinculado Y no es cédula, filtrar por tipo_vehiculo
+                if (tabla === 'registro_vinculado' && columna !== 'cedula' && tipoVehiculo) {
+                    query = query.eq('tipo_vehiculo', tipoVehiculo);
+                    console.log(`🔎 Buscando en ${tabla} con filtro tipo_vehiculo=${tipoVehiculo}`);
+                } else {
+                    console.log(`🔎 Buscando en ${tabla} SIN filtro`);
+                }
+                
+                const { data, error } = await query.ilike(columna, val).limit(1);
+                
                 if (error) throw error;
+                
                 if (data && data.length > 0) {
                     found = true;
+                    tablaEncontrada = tabla;
                     break;
                 }
             }
@@ -272,211 +334,231 @@ window.initRegVinculado = function() {
             if (found) {
                 input.classList.add('input-error');
                 input.classList.remove('input-valid');
-                msgEl.textContent = '❌ Ya registrado'; 
+                msgEl.textContent = `❌ Ya registrado en ${tablaEncontrada}`;
                 msgEl.className = 'status-msg error';
             } else {
                 input.classList.add('input-valid');
                 input.classList.remove('input-error');
-                msgEl.textContent = '✅ Disponible'; 
+                msgEl.textContent = '✅ Disponible';
                 msgEl.className = 'status-msg valid';
             }
         } catch (e) {
-            console.error("Error en validación:", e);
+            console.error('Error validación:', e);
             msgEl.textContent = '⚠️ Error';
         }
     }
 
-    // Listeners de Validación
-    
-    // 🔹 Validar Cédula: Busca en registro_personas Y registro_vinculado
-    const validateCedula = debounce(() => verificarDuplicado('pv_p_cedula', 'pv-msg-cedula', ['registro_personas', 'registro_vinculado'], 'cedula'), 600);
-    const elCedula = document.getElementById('pv_p_cedula');
-    if (elCedula) elCedula.addEventListener('input', validateCedula);
+    // Función para re-validar campos de vehículo cuando cambia el tipo
+    const reValidarCamposVehiculo = () => {
+        const placa = document.getElementById('pv_v_placa')?.value;
+        const serialCarro = document.getElementById('pv_v_serial_carro')?.value;
+        const serialMotor = document.getElementById('pv_v_serial_motor')?.value;
+        
+        if (placa) document.getElementById('pv_v_placa').dispatchEvent(new Event('input'));
+        if (serialCarro) document.getElementById('pv_v_serial_carro').dispatchEvent(new Event('input'));
+        if (serialMotor) document.getElementById('pv_v_serial_motor').dispatchEvent(new Event('input'));
+    };
 
-    // 🔹 Validar Placa: Busca en motos, autos Y registro_vinculado
-    const validatePlaca = debounce(() => verificarDuplicado('pv_v_placa', 'pv-msg-placa', ['registro_motos', 'registro_automoviles', 'registro_vinculado'], 'placa'), 600);
-    const elPlaca = document.getElementById('pv_v_placa');
-    if (elPlaca) elPlaca.addEventListener('input', validatePlaca);
+    const setupValidation = () => {
+        const cedulaInput = document.getElementById('pv_p_cedula');
+        const placaInput = document.getElementById('pv_v_placa');
+        const serialCarroInput = document.getElementById('pv_v_serial_carro');
+        const serialMotorInput = document.getElementById('pv_v_serial_motor');
+        const tipoVehInput = document.getElementById('pv_v_tipo');
 
-    // 🔹 Validar Serial Carrocería: Busca en motos, autos Y registro_vinculado
-    const validateCarro = debounce(() => verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', ['registro_motos', 'registro_automoviles', 'registro_vinculado'], 'serial_carroceria'), 600);
-    const elCarro = document.getElementById('pv_v_serial_carro');
-    if (elCarro) elCarro.addEventListener('input', validateCarro);
-
-    // 🔹 Validar Serial Motor: Busca en motos, autos Y registro_vinculado
-    const validateMotor = debounce(() => verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', ['registro_motos', 'registro_automoviles', 'registro_vinculado'], 'serial_motor'), 600);
-    const elMotor = document.getElementById('pv_v_serial_motor');
-    if (elMotor) elMotor.addEventListener('input', validateMotor);
+        // Cédula: se valida siempre contra todas las tablas
+        if (cedulaInput) {
+            cedulaInput.addEventListener('input', () => {
+                cedulaInput.value = cedulaInput.value.replace(/\D/g, '').slice(0, 8);
+                const tablas = getTablasParaCampo('cedula');
+                verificarDuplicado('pv_p_cedula', 'pv-msg-cedula', tablas, 'cedula', null);
+            });
+        }
+        
+        // Placa: se valida solo contra el tipo de vehículo seleccionado
+        if (placaInput) {
+            placaInput.addEventListener('input', () => {
+                const tipo = tipoVehInput?.value;
+                const tablas = getTablasParaCampo('placa');
+                if (tablas.length === 0) {
+                    placaInput.classList.remove('input-valid', 'input-error');
+                    const msg = document.getElementById('pv-msg-placa');
+                    if (msg) msg.textContent = '⚠️ Seleccione tipo de vehículo primero';
+                    return;
+                }
+                verificarDuplicado('pv_v_placa', 'pv-msg-placa', tablas, 'placa', tipo);
+            });
+        }
+        
+        // Serial Carrocería
+        if (serialCarroInput) {
+            serialCarroInput.addEventListener('input', () => {
+                const tipo = tipoVehInput?.value;
+                const tablas = getTablasParaCampo('serial');
+                if (tablas.length === 0) return;
+                verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', tablas, 'serial_carroceria', tipo);
+            });
+        }
+        
+        // Serial Motor
+        if (serialMotorInput) {
+            serialMotorInput.addEventListener('input', () => {
+                const tipo = tipoVehInput?.value;
+                const tablas = getTablasParaCampo('serial');
+                if (tablas.length === 0) return;
+                verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', tablas, 'serial_motor', tipo);
+            });
+        }
+    };
 
     // ==========================================
-    // 🔹 4. ENVÍO DEL FORMULARIO
+    // 🔹 7. ENVÍO DEL FORMULARIO
     // ==========================================
     const form = document.getElementById('form-reg-vinculado');
-    const btn = form?.querySelector('.btn-submit');
-    const msg = document.getElementById('msg-reg-vinculado');
-    const mostrarError = (t) => { if(msg){msg.textContent='❌ '+t; msg.className='msg error'; msg.style.display='block';} };
+    const msgForm = document.getElementById('msg-reg-vinculado');
+    const btnSubmit = form?.querySelector('.btn-submit');
 
-    if (!form || !btn) return;
-
-    // Inicializar
-    cargarEstaciones();
-    window.cargarMarcasPV();
-
-    // ✅ VALIDACIÓN DE CAMPOS NUMÉRICOS (Cédula y Teléfono)
-    const cedulaInput = document.getElementById('pv_p_cedula');
-    const tlfNumInput = document.getElementById('pv_p_tlf_num');
-
-    if (cedulaInput) {
-        cedulaInput.addEventListener('input', e => {
-            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
-        });
-        cedulaInput.setAttribute('inputmode', 'numeric');
-        cedulaInput.setAttribute('pattern', '\\d{7,8}');
+    function mostrarError(t) { 
+        if(msgForm){msgForm.textContent='❌ '+t; msgForm.className='msg error'; msgForm.style.display='block';} 
     }
 
-    if (tlfNumInput) {
-        tlfNumInput.addEventListener('input', e => {
-            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 20);
-        });
-        tlfNumInput.setAttribute('inputmode', 'numeric');
-    }
+    if (form && btnSubmit) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!form.checkValidity()) { form.reportValidity(); return; }
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!form.checkValidity()) { form.reportValidity(); return; }
+            const inputsValidar = ['pv_p_cedula', 'pv_v_placa', 'pv_v_serial_carro', 'pv_v_serial_motor'];
+            const hasError = inputsValidar.some(id => document.getElementById(id)?.classList.contains('input-error'));
+            if (hasError) return mostrarError('Por favor corrija los campos marcados en rojo.');
 
-        // Verificar errores de validación activos
-        const inputsValidar = ['pv_p_cedula', 'pv_v_placa', 'pv_v_serial_carro', 'pv_v_serial_motor'];
-        const hasError = inputsValidar.some(id => document.getElementById(id)?.classList.contains('input-error'));
-        if (hasError) return mostrarError('Por favor corrija los campos marcados en rojo antes de registrar.');
+            const cedula = document.getElementById('pv_p_cedula').value.trim();
+            if (cedula.length < 7) return mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
 
-        const cedula = document.getElementById('pv_p_cedula').value.trim();
-        if (cedula.length < 7) return mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
+            btnSubmit.disabled = true; btnSubmit.textContent = '⏳ Registrando...';
+            msgForm.style.display = 'none';
 
-        // Validación de campos condicionales de salud
-        const condMedica = document.getElementById('pv_p_cond_medica')?.value;
-        const txtCond = document.getElementById('pv_txt_cond')?.value.trim();
-        const medicamento = document.getElementById('pv_p_medicamento')?.value;
-        const txtMed = document.getElementById('pv_txt_med')?.value.trim();
+            try {
+                const bucket = window.supabaseClient.storage.from('fotos_personas');
+                const uid = sessionStorage.getItem('pnb_user_id') || 'user';
+                const ts = Date.now();
 
-        if (condMedica === 'true' && !txtCond) return mostrarError('Describa la condición médica.');
-        if (medicamento === 'true' && !txtMed) return mostrarError('Ingrese el nombre del medicamento.');
+                const uploadFile = async (inputId, suffix) => {
+                    const file = document.getElementById(inputId).files[0];
+                    if (!file) return null;
+                    const path = `${uid}/${ts}_${suffix}.jpg`;
+                    const { error } = await bucket.upload(path, file, { cacheControl: '3600' });
+                    if (error) throw error;
+                    return bucket.getPublicUrl(path).data.publicUrl;
+                };
 
-        btn.disabled = true; btn.textContent = '⏳ Subiendo y Registrando...'; msg.style.display = 'none';
+                const [fp_frontal, fp_izq, fp_der, fv_frontal, fv_trasera, fv_der, fv_izq] = await Promise.all([
+                    uploadFile('pv_foto_p_frontal', 'pp_f'),
+                    uploadFile('pv_foto_p_izq', 'pp_i'),
+                    uploadFile('pv_foto_p_der', 'pp_d'),
+                    uploadFile('pv_foto_v_frontal', 'pv_f'),
+                    uploadFile('pv_foto_v_trasera', 'pv_t'),
+                    uploadFile('pv_foto_v_der', 'pv_rd'),
+                    uploadFile('pv_foto_v_izq', 'pv_ri')
+                ]);
 
-        try {
-            const bucket = window.supabaseClient.storage.from('fotos_personas');
-            const uid = sessionStorage.getItem('pnb_user_id') || 'user';
-            const ts = Date.now();
+                const data = {
+                    primer_nombre: document.getElementById('pv_p_nombre1').value.trim(),
+                    segundo_nombre: document.getElementById('pv_p_nombre2').value.trim() || null,
+                    primer_apellido: document.getElementById('pv_p_apellido1').value.trim(),
+                    segundo_apellido: document.getElementById('pv_p_apellido2').value.trim() || null,
+                    cedula: cedula,
+                    fecha_nacimiento: document.getElementById('pv_p_fecha_nac').value,
+                    edad: parseInt(document.getElementById('pv_p_edad').value) || 0,
+                    apodo: document.getElementById('pv_p_apodo').value.trim() || null,
+                    marca_corporal: document.getElementById('pv_p_marca').value.trim() || null,
+                    nacionalidad: document.getElementById('pv_p_nacionalidad').value,
+                    sexo: document.getElementById('pv_p_sexo').value,
+                    direccion: document.getElementById('pv_p_direccion').value.trim() || null,
+                    tlf_pais: document.getElementById('pv_p_tlf_pais').value || null,
+                    tlf_numero: document.getElementById('pv_p_tlf_num').value.trim() || null,
+                    estatura_cm: window.convertirEstatura(),
+                    color_piel: document.getElementById('pv_p_color_piel').value,
+                    color_ojos: document.getElementById('pv_p_color_ojos').value,
+                    color_cabello: document.getElementById('pv_p_color_cabello').value,
+                    complexion: document.getElementById('pv_p_complexion').value,
+                    condicion_medica: document.getElementById('pv_p_cond_medica').value === 'true' ? document.getElementById('pv_txt_cond').value.trim() : null,
+                    consume_medicamento: document.getElementById('pv_p_medicamento').value === 'true' ? document.getElementById('pv_txt_med').value.trim() : null,
+                    problema_judicial: document.getElementById('pv_p_judicial').value === 'true' ? document.getElementById('pv_txt_jud').value.trim() : null,
+                    usa_lentes: document.getElementById('pv_p_lentes').value === 'true',
+                    detalle_lentes: document.getElementById('pv_p_lentes').value === 'true' ? document.getElementById('pv_txt_lentes').value.trim() : null,
+                    perforaciones: document.getElementById('pv_p_perforaciones').value === 'true',
+                    detalle_perforaciones: document.getElementById('pv_p_perforaciones').value === 'true' ? document.getElementById('pv_txt_lugar_perforacion').value.trim() : null,
+                    tipo_vehiculo: document.getElementById('pv_v_tipo').value,
+                    placa: document.getElementById('pv_v_placa').value.trim().toUpperCase(),
+                    serial_carroceria: document.getElementById('pv_v_serial_carro').value.trim(),
+                    serial_motor: document.getElementById('pv_v_serial_motor').value.trim() || null,
+                    cilindraje: document.getElementById('pv_v_cilindraje').value || null,
+                    color_vehiculo: document.getElementById('pv_v_color').value,
+                    anio_vehiculo: parseInt(document.getElementById('pv_v_anio').value),
+                    marca_vehiculo: document.getElementById('pv_v_marca').value,
+                    modelo_vehiculo: document.getElementById('pv_v_modelo').value,
+                    foto_frontal_persona: fp_frontal,
+                    foto_perfil_izq_persona: fp_izq,
+                    foto_perfil_der_persona: fp_der,
+                    foto_frontal_vehiculo: fv_frontal,
+                    foto_trasera_vehiculo: fv_trasera,
+                    foto_lado_der_vehiculo: fv_der,
+                    foto_lado_izq_vehiculo: fv_izq,
+                    estacion_policial: document.getElementById('pv_estacion').value,
+                    direccion_detencion: document.getElementById('pv_dir_detencion').value.trim() || null,
+                    observaciones: document.getElementById('pv_observaciones').value.trim() || null
+                };
 
-            const uploadFile = async (inputId, suffix) => {
-                const file = document.getElementById(inputId).files[0];
-                if (!file) throw new Error('Falta fotografía: ' + inputId);
-                const path = `${uid}/${ts}_${suffix}.jpg`;
-                const { error } = await bucket.upload(path, file, { cacheControl: '3600' });
+                const { error } = await window.supabaseClient.from('registro_vinculado').insert([data]);
                 if (error) throw error;
-                return bucket.getPublicUrl(path).data.publicUrl;
-            };
 
-            const [
-                fp_frontal, fp_izq, fp_der,
-                fv_frontal, fv_trasera, fv_der, fv_izq
-            ] = await Promise.all([
-                uploadFile('pv_foto_p_frontal', 'pp_f'),
-                uploadFile('pv_foto_p_izq', 'pp_i'),
-                uploadFile('pv_foto_p_der', 'pp_d'),
-                uploadFile('pv_foto_v_frontal', 'pv_f'),
-                uploadFile('pv_foto_v_trasera', 'pv_t'),
-                uploadFile('pv_foto_v_der', 'pv_rd'),
-                uploadFile('pv_foto_v_izq', 'pv_ri')
-            ]);
+                msgForm.textContent = '✅ Registro vinculado creado exitosamente.';
+                msgForm.className = 'msg success';
+                msgForm.style.display = 'block';
 
-            const data = {
-                // Persona
-                primer_nombre: document.getElementById('pv_p_nombre1').value.trim(),
-                segundo_nombre: document.getElementById('pv_p_nombre2').value.trim() || null,
-                primer_apellido: document.getElementById('pv_p_apellido1').value.trim(),
-                segundo_apellido: document.getElementById('pv_p_apellido2').value.trim() || null,
-                cedula: cedula,
-                fecha_nacimiento: document.getElementById('pv_p_fecha_nac').value,
-                edad: parseInt(document.getElementById('pv_p_edad').value) || 0,
-                apodo: document.getElementById('pv_p_apodo').value.trim() || null,
-                nacionalidad: document.getElementById('pv_p_nacionalidad').value,
-                sexo: document.getElementById('pv_p_sexo').value,
-                direccion: document.getElementById('pv_p_direccion').value.trim() || null,
-                tlf_pais: document.getElementById('pv_p_tlf_pais').value || null,
-                tlf_numero: document.getElementById('pv_p_tlf_num').value.trim() || null,
-                estatura_cm: window.convertirEstatura(),
-                color_piel: document.getElementById('pv_p_color_piel').value,
-                color_ojos: document.getElementById('pv_p_color_ojos').value,
-                color_cabello: document.getElementById('pv_p_color_cabello').value,
-                complexion: document.getElementById('pv_p_complexion').value,
-                
-                // ✅ CAMPOS QUE FALTABAN - AHORA INCLUIDOS
-                marca_corporal: document.getElementById('pv_p_marca')?.value.trim() || null,
-                condicion_medica: condMedica === 'true' ? txtCond : null,
-                consume_medicamento: medicamento === 'true' ? txtMed : null,
-                problema_judicial: document.getElementById('pv_p_judicial')?.value === 'true' 
-                    ? document.getElementById('pv_txt_jud')?.value.trim() || null 
-                    : null,
+                setTimeout(() => {
+                    form.reset();
+                    msgForm.style.display = 'none';
+                    document.querySelectorAll('.img-preview').forEach(i => i.style.display = 'none');
+                    document.querySelectorAll('.input-valid, .input-error').forEach(i => i.classList.remove('input-valid', 'input-error'));
+                    document.querySelectorAll('.status-msg').forEach(m => m.textContent = '');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 3000);
 
-                usa_lentes: document.getElementById('pv_p_lentes').value === 'true',
-                detalle_lentes: document.getElementById('pv_p_lentes').value === 'true' ? document.getElementById('pv_txt_lentes').value.trim() : null,
-                perforaciones: document.getElementById('pv_p_perforaciones').value === 'true',
-                detalle_perforaciones: document.getElementById('pv_p_perforaciones').value === 'true' ? document.getElementById('pv_txt_lugar_perforacion').value.trim() : null,
-                
-                foto_frontal_persona: fp_frontal,
-                foto_perfil_izq_persona: fp_izq,
-                foto_perfil_der_persona: fp_der,
-
-                // Vehículo
-                tipo_vehiculo: document.getElementById('pv_v_tipo').value,
-                placa: document.getElementById('pv_v_placa').value.trim().toUpperCase(),
-                serial_carroceria: document.getElementById('pv_v_serial_carro').value.trim(),
-                serial_motor: document.getElementById('pv_v_serial_motor').value.trim() || null,
-                cilindraje: document.getElementById('pv_v_cilindraje').value || null,
-                color_vehiculo: document.getElementById('pv_v_color').value,
-                anio_vehiculo: parseInt(document.getElementById('pv_v_anio').value),
-                marca_vehiculo: document.getElementById('pv_v_marca').value,
-                modelo_vehiculo: document.getElementById('pv_v_modelo').value,
-
-                // Fotos Vehículo
-                foto_frontal_vehiculo: fv_frontal,
-                foto_trasera_vehiculo: fv_trasera,
-                foto_lado_der_vehiculo: fv_der,
-                foto_lado_izq_vehiculo: fv_izq,
-
-                // Registro
-                estacion_policial: document.getElementById('pv_estacion').value,
-                direccion_detencion: document.getElementById('pv_dir_detencion').value.trim() || null,
-                observaciones: document.getElementById('pv_observaciones').value.trim() || null
-            };
-
-            const { error } = await window.supabaseClient.from('registro_vinculado').insert([data]);
-            if (error) throw error;
-
-            msg.textContent = '✅ Registro vinculado creado exitosamente.'; 
-            msg.className = 'msg success'; msg.style.display = 'block';
-            setTimeout(() => msg.style.display = 'none', 4000);
-            
-            form.reset();
-            document.querySelectorAll('.img-preview').forEach(i => i.style.display = 'none');
-            document.querySelectorAll('.hidden-field').forEach(e => e.style.display = 'none');
-            document.querySelectorAll('.input-valid, .input-error').forEach(i => i.classList.remove('input-valid', 'input-error'));
-            document.querySelectorAll('.status-msg').forEach(m => m.textContent = '');
-            
-        } catch (err) {
-            console.error('Error:', err);
-            let m = 'Error inesperado.';
-            if (err.message.includes('23505')) m = '❌ Esta cédula ya tiene un registro vinculado.';
-            else if (err.message.includes('storage')) m = '❌ Error subiendo fotografías.';
-            else if (err.message.includes('marca_corporal') || err.message.includes('complexion') || err.message.includes('condicion_medica')) {
-                m = '❌ Error: La tabla en la base de datos no tiene todas las columnas necesarias. Contacte al administrador.';
+            } catch (err) {
+                console.error('Error al registrar:', err);
+                mostrarError('❌ Error al registrar: ' + err.message);
+            } finally {
+                btnSubmit.disabled = false; btnSubmit.textContent = '✅ Registrar Persona y Vehículo';
             }
-            else m = '❌ ' + err.message;
-            mostrarError(m);
-        } finally {
-            btn.disabled = false; btn.textContent = '✅ Registrar Persona y Vehículo';
-        }
-    });
+        });
+    }
+
+    // Validación numérica en teléfono
+    const tlfNumInput = document.getElementById('pv_p_tlf_num');
+    if (tlfNumInput) {
+        tlfNumInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+    }
+
+    // ==========================================
+    // 🔹 INICIALIZACIÓN FINAL
+    // ==========================================
+    cargarEstaciones();
+    cargarAnios();
+    setupEdad();
+    setupValidation();
+    initPhoneDropdown();
+
+    // Activar previsualización de fotos
+    setupPhotoPreview('pv_foto_p_frontal', 'prev_p_frontal');
+    setupPhotoPreview('pv_foto_p_izq', 'prev_p_izq');
+    setupPhotoPreview('pv_foto_p_der', 'prev_p_der');
+    setupPhotoPreview('pv_foto_v_frontal', 'prev_v_frontal');
+    setupPhotoPreview('pv_foto_v_trasera', 'prev_v_trasera');
+    setupPhotoPreview('pv_foto_v_der', 'prev_v_der');
+    setupPhotoPreview('pv_foto_v_izq', 'prev_v_izq');
+    
+    console.log("✅ Módulo inicializado. La validación ahora permite que motos y autos compartan seriales.");
 };
