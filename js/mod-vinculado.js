@@ -1,26 +1,8 @@
-window.initModVinculado = function() {
-    console.log("✅ Módulo mod-vinculado.js cargado correctamente.");
-
-    // 🔹 0. FUNCIÓN PARA PREVISUALIZAR FOTOS (Soluciona miniaturas)
-    const setupPhotoPreview = (inputId, imgId) => {
-        const input = document.getElementById(inputId);
-        const img = document.getElementById(imgId);
-        if (!input || !img) return;
-
-        input.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    img.src = e.target.result;
-                    img.style.display = 'block';
-                };
-                reader.readAsDataURL(this.files[0]);
-            }
-        });
-    };
+window.initRegVinculado = function() {
+    console.log("✅ Módulo reg-vinculado.js cargado correctamente.");
 
     // ==========================================
-    // 🔹 1. MAPA DE BANDERAS PARA TELÉFONOS
+    // 🔹 1. MAPA DE BANDERAS
     // ==========================================
     const isoMap = {
         "Afganistán": "af", "Albania": "al", "Alemania": "de", "Andorra": "ad", "Angola": "ao",
@@ -68,7 +50,7 @@ window.initModVinculado = function() {
     };
 
     // ==========================================
-    // 🔹 2. LISTAS COMPLETAS (Marcas, Modelos, Estaciones)
+    // 🔹 2. LISTAS COMPLETAS
     // ==========================================
     const marcasModelosMoto = {
         "Empire Keeway": ["Matrix Lite", "Matrix II 150", "EK Xpress Lite", "QJ Fort", "Horse (EK Horse 2 SE)", "EK Arsen II 200", "EK Atlas", "EK Atlas HD/HDS 200", "Owen 200", "Thunder EK", "TX II 150", "TX 250GS", "QJ Motor SRT 550", "QJ Motor SRT 550X", "QJ Motor SRT 700S", "QJ Motor SRT 700SX", "Superlight 200S", "V302C"],
@@ -132,12 +114,8 @@ window.initModVinculado = function() {
     window.toggleCampo = function(select, targetId) {
         const el = document.getElementById(targetId);
         const input = el?.querySelector('input');
-        if (select.value === 'true') {
-            if (el) el.style.display = 'block';
-        } else {
-            if (el) el.style.display = 'none';
-            if (input) input.value = '';
-        }
+        if (select.value === 'true') { if (el) el.style.display = 'block'; }
+        else { if (el) el.style.display = 'none'; if (input) input.value = ''; }
     };
 
     window.activarCampoPerforacion = function(select) {
@@ -218,7 +196,7 @@ window.initModVinculado = function() {
     };
 
     // ==========================================
-    // 🔹 4. INICIALIZACIÓN DE DROPDOWN DE TELÉFONOS (BANDERAS)
+    // 🔹 4. DROPDOWN TELÉFONOS (BANDERAS)
     // ==========================================
     const initPhoneDropdown = () => {
         const nativeSelect = document.getElementById('pv_p_tlf_pais');
@@ -236,7 +214,6 @@ window.initModVinculado = function() {
                 const div = document.createElement('div');
                 div.className = 'phone-option';
                 div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.8rem;">${opt.text}</span>`;
-                
                 div.addEventListener('click', () => {
                     nativeSelect.value = opt.value;
                     flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
@@ -252,136 +229,25 @@ window.initModVinculado = function() {
     };
 
     // ==========================================
-    // 🔹 5. BARRA DE BÚSQUEDA Y LLENADO
+    // 🔹 5. PREVISUALIZACIÓN DE FOTOS
     // ==========================================
-    const btnBuscar = document.getElementById('btn_buscar_mod');
-    const inputBusqueda = document.getElementById('mod_busqueda_input');
-    const msgBusqueda = document.getElementById('mod_msg_busqueda');
-    const form = document.getElementById('form-mod-vinculado');
-
-    if (btnBuscar && inputBusqueda) {
-        btnBuscar.addEventListener('click', async () => {
-            const val = inputBusqueda.value.trim().toUpperCase();
-            if (val.length < 5) {
-                msgBusqueda.textContent = '⚠️ Ingrese un dato válido (mín. 5 caracteres).';
-                msgBusqueda.className = 'msg error';
-                msgBusqueda.style.display = 'block';
-                return;
-            }
-
-            msgBusqueda.textContent = '🔍 Buscando...';
-            msgBusqueda.className = 'msg';
-            msgBusqueda.style.display = 'block';
-            form.style.display = 'none';
-
-            try {
-                const query = `cedula.ilike.${val},placa.ilike.${val}`;
-                const { data, error } = await window.supabaseClient.from('registro_vinculado').select('*').or(query).maybeSingle();
-
-                if (error) throw error;
-
-                if (data) {
-                    msgBusqueda.textContent = '✅ Registro encontrado. Cargando formulario...';
-                    msgBusqueda.className = 'msg success';
-                    
-                    document.getElementById('mod_vinculado_id').value = data.id;
-                    
-                    document.getElementById('pv_p_nombre1').value = data.primer_nombre || '';
-                    document.getElementById('pv_p_nombre2').value = data.segundo_nombre || '';
-                    document.getElementById('pv_p_apellido1').value = data.primer_apellido || '';
-                    document.getElementById('pv_p_apellido2').value = data.segundo_apellido || '';
-                    document.getElementById('pv_p_cedula').value = data.cedula || '';
-                    document.getElementById('pv_p_fecha_nac').value = data.fecha_nacimiento || '';
-                    document.getElementById('pv_p_edad').value = data.edad || '';
-                    document.getElementById('pv_p_apodo').value = data.apodo || '';
-                    document.getElementById('pv_p_marca').value = data.marca_corporal || '';
-                    document.getElementById('pv_p_nacionalidad').value = data.nacionalidad || '';
-                    document.getElementById('pv_p_sexo').value = data.sexo || '';
-                    document.getElementById('pv_p_direccion').value = data.direccion || '';
-                    document.getElementById('pv_p_tlf_pais').value = data.tlf_pais || '';
-                    document.getElementById('pv_p_tlf_num').value = data.tlf_numero || '';
-                    
-                    document.getElementById('pv_p_fecha_nac').dispatchEvent(new Event('change'));
-
-                    const prevFrontal = document.getElementById('prev_p_frontal');
-                    if(data.foto_frontal_persona) { prevFrontal.src = data.foto_frontal_persona; prevFrontal.style.display = 'block'; }
-                    const prevIzq = document.getElementById('prev_p_izq');
-                    if(data.foto_perfil_izq_persona) { prevIzq.src = data.foto_perfil_izq_persona; prevIzq.style.display = 'block'; }
-                    const prevDer = document.getElementById('prev_p_der');
-                    if(data.foto_perfil_der_persona) { prevDer.src = data.foto_perfil_der_persona; prevDer.style.display = 'block'; }
-
-                    document.getElementById('pv_p_estatura').value = data.estatura_cm ? (data.estatura_cm / 100).toFixed(2) : '';
-                    document.getElementById('pv_p_color_piel').value = data.color_piel || '';
-                    document.getElementById('pv_p_color_ojos').value = data.color_ojos || '';
-                    document.getElementById('pv_p_color_cabello').value = data.color_cabello || '';
-                    document.getElementById('pv_p_complexion').value = data.complexion || '';
-
-                    document.getElementById('pv_p_lentes').value = data.usa_lentes ? 'true' : 'false';
-                    window.toggleCampo(document.getElementById('pv_p_lentes'), 'pv_det-lentes');
-                    document.getElementById('pv_txt_lentes').value = data.detalle_lentes || '';
-                    
-                    document.getElementById('pv_p_perforaciones').value = data.perforaciones ? 'true' : 'false';
-                    window.activarCampoPerforacion(document.getElementById('pv_p_perforaciones'));
-                    document.getElementById('pv_txt_lugar_perforacion').value = data.detalle_perforaciones || '';
-
-                    document.getElementById('pv_p_cond_medica').value = data.condicion_medica ? 'true' : 'false';
-                    window.toggleCampo(document.getElementById('pv_p_cond_medica'), 'pv_det-cond');
-                    document.getElementById('pv_txt_cond').value = data.condicion_medica || '';
-
-                    document.getElementById('pv_p_medicamento').value = data.consume_medicamento ? 'true' : 'false';
-                    window.toggleCampo(document.getElementById('pv_p_medicamento'), 'pv_det-med');
-                    document.getElementById('pv_txt_med').value = data.consume_medicamento || '';
-
-                    document.getElementById('pv_p_judicial').value = data.problema_judicial ? 'true' : 'false';
-                    window.toggleCampo(document.getElementById('pv_p_judicial'), 'pv_det-jud');
-                    document.getElementById('pv_txt_jud').value = data.problema_judicial || '';
-
-                    document.getElementById('pv_v_tipo').value = data.tipo_vehiculo || '';
-                    window.cargarMarcasPV();
-                    document.getElementById('pv_v_placa').value = data.placa || '';
-                    document.getElementById('pv_v_serial_carro').value = data.serial_carroceria || '';
-                    document.getElementById('pv_v_serial_motor').value = data.serial_motor || '';
-                    document.getElementById('pv_v_cilindraje').value = data.cilindraje || '';
-                    document.getElementById('pv_v_marca').value = data.marca_vehiculo || '';
-                    window.cargarModelosPV();
-                    document.getElementById('pv_v_modelo').value = data.modelo_vehiculo || '';
-                    document.getElementById('pv_v_anio').value = data.anio_vehiculo || '';
-                    document.getElementById('pv_v_color').value = data.color_vehiculo || '';
-
-                    const prevVFrontal = document.getElementById('prev_v_frontal');
-                    if(data.foto_frontal_vehiculo) { prevVFrontal.src = data.foto_frontal_vehiculo; prevVFrontal.style.display = 'block'; }
-                    const prevVTrasera = document.getElementById('prev_v_trasera');
-                    if(data.foto_trasera_vehiculo) { prevVTrasera.src = data.foto_trasera_vehiculo; prevVTrasera.style.display = 'block'; }
-                    const prevVDer = document.getElementById('prev_v_der');
-                    if(data.foto_lado_der_vehiculo) { prevVDer.src = data.foto_lado_der_vehiculo; prevVDer.style.display = 'block'; }
-                    const prevVIzq = document.getElementById('prev_v_izq');
-                    if(data.foto_lado_izq_vehiculo) { prevVIzq.src = data.foto_lado_izq_vehiculo; prevVIzq.style.display = 'block'; }
-
-                    document.getElementById('pv_estacion').value = data.estacion_policial || '';
-                    document.getElementById('pv_dir_detencion').value = data.direccion_detencion || '';
-                    document.getElementById('pv_observaciones').value = data.observaciones || '';
-
-                    setTimeout(() => {
-                        form.style.display = 'block';
-                        msgBusqueda.style.display = 'none';
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }, 500);
-                } else {
-                    msgBusqueda.textContent = '❌ No se encontró ningún registro vinculado con ese dato.';
-                    msgBusqueda.className = 'msg error';
-                }
-            } catch (err) {
-                console.error(err);
-                msgBusqueda.textContent = '❌ Error al buscar: ' + err.message;
-                msgBusqueda.className = 'msg error';
+    const setupPhotoPreview = (inputId, imgId) => {
+        const input = document.getElementById(inputId);
+        const img = document.getElementById(imgId);
+        if (!input || !img) return;
+        input.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => { img.src = e.target.result; img.style.display = 'block'; };
+                reader.readAsDataURL(this.files[0]);
             }
         });
-    }
+    };
 
     // ==========================================
-    // 🔹 6. VALIDACIÓN EN TIEMPO REAL
+    // 🔹 6. VALIDACIÓN EN TIEMPO REAL (FILTRADA POR TIPO)
     // ==========================================
-    async function verificarDuplicado(inputId, msgId, tablas, columna, currentId) {
+    async function verificarDuplicado(inputId, msgId, tablas, columna) {
         const input = document.getElementById(inputId);
         const msgEl = document.getElementById(msgId);
         if (!input || !msgEl) return;
@@ -393,13 +259,21 @@ window.initModVinculado = function() {
             return;
         }
 
-        msgEl.textContent = '🔍 Verificando...'; 
+        msgEl.textContent = '🔍 Verificando...';
         try {
             let found = false;
             for (const tabla of tablas) {
-                const { data, error } = await window.supabaseClient.from(tabla).select('id').ilike(columna, val).limit(1);
+                let query = window.supabaseClient.from(tabla).select('id');
+                
+                // Si es tabla registro_vinculado, necesitamos saber el tipo
+                if (tabla === 'registro_vinculado' && columna !== 'cedula') {
+                    const tipoVeh = document.getElementById('pv_v_tipo')?.value;
+                    if (tipoVeh) query = query.eq('tipo_vehiculo', tipoVeh);
+                }
+                
+                const { data, error } = await query.ilike(columna, val).limit(1);
                 if (error) throw error;
-                if (data && data.length > 0 && data[0].id !== currentId) {
+                if (data && data.length > 0) {
                     found = true;
                     break;
                 }
@@ -407,14 +281,17 @@ window.initModVinculado = function() {
 
             if (found) {
                 input.classList.add('input-error');
-                msgEl.textContent = '❌ Ya registrado en otra tabla'; 
+                input.classList.remove('input-valid');
+                msgEl.textContent = '❌ Ya registrado';
                 msgEl.className = 'status-msg error';
             } else {
                 input.classList.add('input-valid');
-                msgEl.textContent = '✅ Disponible'; 
+                input.classList.remove('input-error');
+                msgEl.textContent = '✅ Disponible';
                 msgEl.className = 'status-msg valid';
             }
         } catch (e) {
+            console.error('Error validación:', e);
             msgEl.textContent = '⚠️ Error';
         }
     }
@@ -425,35 +302,57 @@ window.initModVinculado = function() {
         const serialCarroInput = document.getElementById('pv_v_serial_carro');
         const serialMotorInput = document.getElementById('pv_v_serial_motor');
 
+        // Cédula: única en todas las tablas
         if (cedulaInput) {
             cedulaInput.addEventListener('input', () => {
-                const currentId = document.getElementById('mod_vinculado_id').value;
-                verificarDuplicado('pv_p_cedula', 'pv-msg-cedula', ['registro_personas', 'registro_vinculado'], 'cedula', currentId);
+                cedulaInput.value = cedulaInput.value.replace(/\D/g, '').slice(0, 8);
+                verificarDuplicado('pv_p_cedula', 'pv-msg-cedula', ['registro_personas', 'registro_vinculado'], 'cedula');
             });
         }
+        
+        // Placa, Serial Carrocería, Serial Motor: solo validan contra el MISMO tipo
         if (placaInput) {
             placaInput.addEventListener('input', () => {
-                const currentId = document.getElementById('mod_vinculado_id').value;
-                verificarDuplicado('pv_v_placa', 'pv-msg-placa', ['registro_motos', 'registro_automoviles', 'registro_vinculado'], 'placa', currentId);
+                const tipo = document.getElementById('pv_v_tipo')?.value;
+                if (!tipo) {
+                    placaInput.classList.remove('input-valid', 'input-error');
+                    document.getElementById('pv-msg-placa').textContent = '';
+                    return;
+                }
+                const tablas = ['registro_vinculado'];
+                if (tipo === 'Motocicleta') tablas.unshift('registro_motos');
+                else if (tipo === 'Automóvil') tablas.unshift('registro_automoviles');
+                verificarDuplicado('pv_v_placa', 'pv-msg-placa', tablas, 'placa');
             });
         }
+        
         if (serialCarroInput) {
             serialCarroInput.addEventListener('input', () => {
-                const currentId = document.getElementById('mod_vinculado_id').value;
-                verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', ['registro_motos', 'registro_automoviles', 'registro_vinculado'], 'serial_carroceria', currentId);
+                const tipo = document.getElementById('pv_v_tipo')?.value;
+                if (!tipo) return;
+                const tablas = ['registro_vinculado'];
+                if (tipo === 'Motocicleta') tablas.unshift('registro_motos');
+                else if (tipo === 'Automóvil') tablas.unshift('registro_automoviles');
+                verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', tablas, 'serial_carroceria');
             });
         }
+        
         if (serialMotorInput) {
             serialMotorInput.addEventListener('input', () => {
-                const currentId = document.getElementById('mod_vinculado_id').value;
-                verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', ['registro_motos', 'registro_automoviles', 'registro_vinculado'], 'serial_motor', currentId);
+                const tipo = document.getElementById('pv_v_tipo')?.value;
+                if (!tipo) return;
+                const tablas = ['registro_vinculado'];
+                if (tipo === 'Motocicleta') tablas.unshift('registro_motos');
+                else if (tipo === 'Automóvil') tablas.unshift('registro_automoviles');
+                verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', tablas, 'serial_motor');
             });
         }
     };
 
     // ==========================================
-    // 🔹 7. ENVÍO DEL FORMULARIO (UPDATE)
+    // 🔹 7. ENVÍO DEL FORMULARIO
     // ==========================================
+    const form = document.getElementById('form-reg-vinculado');
     const msgForm = document.getElementById('msg-reg-vinculado');
     const btnSubmit = form?.querySelector('.btn-submit');
 
@@ -473,12 +372,32 @@ window.initModVinculado = function() {
             const cedula = document.getElementById('pv_p_cedula').value.trim();
             if (cedula.length < 7) return mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
 
-            btnSubmit.disabled = true; btnSubmit.textContent = '⏳ Guardando cambios...';
+            btnSubmit.disabled = true; btnSubmit.textContent = '⏳ Registrando...';
             msgForm.style.display = 'none';
 
             try {
-                const idRegistro = document.getElementById('mod_vinculado_id').value;
-                if (!idRegistro) throw new Error('No se encontró el ID del registro a modificar.');
+                const bucket = window.supabaseClient.storage.from('fotos_personas');
+                const uid = sessionStorage.getItem('pnb_user_id') || 'user';
+                const ts = Date.now();
+
+                const uploadFile = async (inputId, suffix) => {
+                    const file = document.getElementById(inputId).files[0];
+                    if (!file) return null;
+                    const path = `${uid}/${ts}_${suffix}.jpg`;
+                    const { error } = await bucket.upload(path, file, { cacheControl: '3600' });
+                    if (error) throw error;
+                    return bucket.getPublicUrl(path).data.publicUrl;
+                };
+
+                const [fp_frontal, fp_izq, fp_der, fv_frontal, fv_trasera, fv_der, fv_izq] = await Promise.all([
+                    uploadFile('pv_foto_p_frontal', 'pp_f'),
+                    uploadFile('pv_foto_p_izq', 'pp_i'),
+                    uploadFile('pv_foto_p_der', 'pp_d'),
+                    uploadFile('pv_foto_v_frontal', 'pv_f'),
+                    uploadFile('pv_foto_v_trasera', 'pv_t'),
+                    uploadFile('pv_foto_v_der', 'pv_rd'),
+                    uploadFile('pv_foto_v_izq', 'pv_ri')
+                ]);
 
                 const data = {
                     primer_nombre: document.getElementById('pv_p_nombre1').value.trim(),
@@ -516,77 +435,59 @@ window.initModVinculado = function() {
                     anio_vehiculo: parseInt(document.getElementById('pv_v_anio').value),
                     marca_vehiculo: document.getElementById('pv_v_marca').value,
                     modelo_vehiculo: document.getElementById('pv_v_modelo').value,
+                    foto_frontal_persona: fp_frontal,
+                    foto_perfil_izq_persona: fp_izq,
+                    foto_perfil_der_persona: fp_der,
+                    foto_frontal_vehiculo: fv_frontal,
+                    foto_trasera_vehiculo: fv_trasera,
+                    foto_lado_der_vehiculo: fv_der,
+                    foto_lado_izq_vehiculo: fv_izq,
                     estacion_policial: document.getElementById('pv_estacion').value,
                     direccion_detencion: document.getElementById('pv_dir_detencion').value.trim() || null,
                     observaciones: document.getElementById('pv_observaciones').value.trim() || null
                 };
 
-                const bucket = window.supabaseClient.storage.from('fotos_personas');
-                const uid = sessionStorage.getItem('pnb_user_id') || 'user';
-                const ts = Date.now();
-
-                const uploadIfChanged = async (inputId, currentUrl, suffix) => {
-                    const fileInput = document.getElementById(inputId);
-                    if (fileInput && fileInput.files.length > 0) {
-                        const file = fileInput.files[0];
-                        const path = `${uid}/mod_${ts}_${suffix}.jpg`;
-                        const { error } = await bucket.upload(path, file, { cacheControl: '3600' });
-                        if (error) throw error;
-                        return bucket.getPublicUrl(path).data.publicUrl;
-                    }
-                    return currentUrl;
-                };
-
-                const newFotoFrontal = await uploadIfChanged('pv_foto_p_frontal', null, 'p_f');
-                if(newFotoFrontal) data.foto_frontal_persona = newFotoFrontal;
-                const newFotoIzq = await uploadIfChanged('pv_foto_p_izq', null, 'p_i');
-                if(newFotoIzq) data.foto_perfil_izq_persona = newFotoIzq;
-                const newFotoDer = await uploadIfChanged('pv_foto_p_der', null, 'p_d');
-                if(newFotoDer) data.foto_perfil_der_persona = newFotoDer;
-
-                const newVFotoFrontal = await uploadIfChanged('pv_foto_v_frontal', null, 'v_f');
-                if(newVFotoFrontal) data.foto_frontal_vehiculo = newVFotoFrontal;
-                const newVFotoTrasera = await uploadIfChanged('pv_foto_v_trasera', null, 'v_t');
-                if(newVFotoTrasera) data.foto_trasera_vehiculo = newVFotoTrasera;
-                const newVFotoDer = await uploadIfChanged('pv_foto_v_der', null, 'v_rd');
-                if(newVFotoDer) data.foto_lado_der_vehiculo = newVFotoDer;
-                const newVFotoIzq = await uploadIfChanged('pv_foto_v_izq', null, 'v_ri');
-                if(newVFotoIzq) data.foto_lado_izq_vehiculo = newVFotoIzq;
-
-                const { error } = await window.supabaseClient.from('registro_vinculado').update(data).eq('id', idRegistro);
+                const { error } = await window.supabaseClient.from('registro_vinculado').insert([data]);
                 if (error) throw error;
 
-                msgForm.textContent = '✅ Cambios guardados exitosamente.'; 
-                msgForm.className = 'msg success'; 
+                msgForm.textContent = '✅ Registro vinculado creado exitosamente.';
+                msgForm.className = 'msg success';
                 msgForm.style.display = 'block';
-                
+
                 setTimeout(() => {
                     form.reset();
-                    form.style.display = 'none';
-                    inputBusqueda.value = '';
-                    msgBusqueda.style.display = 'none';
                     msgForm.style.display = 'none';
                     document.querySelectorAll('.img-preview').forEach(i => i.style.display = 'none');
+                    document.querySelectorAll('.input-valid, .input-error').forEach(i => i.classList.remove('input-valid', 'input-error'));
+                    document.querySelectorAll('.status-msg').forEach(m => m.textContent = '');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 3000);
 
             } catch (err) {
-                console.error('Error al guardar:', err);
-                mostrarError('❌ Error al guardar: ' + err.message);
+                console.error('Error al registrar:', err);
+                mostrarError('❌ Error al registrar: ' + err.message);
             } finally {
-                btnSubmit.disabled = false; btnSubmit.textContent = '💾 Guardar Cambios';
+                btnSubmit.disabled = false; btnSubmit.textContent = '✅ Registrar Persona y Vehículo';
             }
         });
     }
 
-    // ✅ INICIALIZACIÓN FINAL
+    // Validación numérica en teléfono
+    const tlfNumInput = document.getElementById('pv_p_tlf_num');
+    if (tlfNumInput) {
+        tlfNumInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+    }
+
+    // Inicialización
     cargarEstaciones();
     cargarAnios();
     setupEdad();
     setupValidation();
     initPhoneDropdown();
 
-    // 🔹 ACTIVAR MINIATURAS DE FOTOS
+    // Activar previsualización de fotos
     setupPhotoPreview('pv_foto_p_frontal', 'prev_p_frontal');
     setupPhotoPreview('pv_foto_p_izq', 'prev_p_izq');
     setupPhotoPreview('pv_foto_p_der', 'prev_p_der');
@@ -594,12 +495,4 @@ window.initModVinculado = function() {
     setupPhotoPreview('pv_foto_v_trasera', 'prev_v_trasera');
     setupPhotoPreview('pv_foto_v_der', 'prev_v_der');
     setupPhotoPreview('pv_foto_v_izq', 'prev_v_izq');
-
-    // 🔹 VALIDACIÓN DE TELÉFONO (SOLO NÚMEROS)
-    const tlfNumInput = document.getElementById('pv_p_tlf_num');
-    if (tlfNumInput) {
-        tlfNumInput.addEventListener('input', (e) => {
-            e.target.value = e.target.value.replace(/\D/g, '');
-        });
-    }
 };
