@@ -1,224 +1,54 @@
 <style>
-:root { 
-  --primary: #002b5c; 
-  --secondary: #c5a028; 
-  --beige-border: #d4c9a8; 
-  --bg: #f4f7fa;
-}
-.search-box { 
-  padding: 16px; 
-  background: #f8fafc; 
-  border: 1.5px dashed var(--beige-border); 
-  border-radius: 8px; 
-  margin-bottom: 20px; 
-}
-.registro-form fieldset { 
-  border: 1px solid var(--beige-border); 
-  border-radius: 8px; 
-  padding: 16px; 
-  margin-bottom: 18px; 
-  background: #fafbfc; 
-}
-.registro-form legend { 
-  font-weight: 600; 
-  color: var(--primary); 
-  font-size: 0.95rem; 
-  padding: 0 8px; 
-}
-.hidden-field { 
-  display: none; 
-  margin-top: 8px; 
-}
-.form-grid { 
-  display: grid; 
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-  gap: 14px; 
-}
-.registro-form label { 
-  font-weight: 500; 
-  font-size: 0.85rem; 
-  margin-bottom: 4px; 
-  display: block; 
-}
-.registro-form input, 
-.registro-form select, 
-.registro-form textarea { 
-  width: 100%; 
-  padding: 9px 10px; 
-  border: 1.5px solid var(--beige-border); 
-  border-radius: 5px; 
-  font-size: 0.9rem; 
-  background: #fff; 
-}
-.registro-form input:focus, 
-.registro-form select:focus { 
-  outline: none; 
-  border-color: var(--primary); 
-  box-shadow: 0 0 0 2px rgba(0,43,92,0.1); 
-}
-.btn-submit { 
-  width: 100%; 
-  padding: 14px; 
-  background: var(--primary); 
-  color: white; 
-  border: none; 
-  border-radius: 6px; 
-  font-weight: 700; 
-  cursor: pointer; 
-  margin-top: 15px; 
-  font-size: 1rem; 
-}
-.btn-submit:hover { 
-  background: var(--secondary); 
-}
-.btn-submit:disabled { 
-  background: #9ca3af; 
-  cursor: not-allowed; 
-}
-.btn-search { 
-  padding: 10px 20px; 
-  background: var(--primary); 
-  color: white; 
-  border: none; 
-  border-radius: 5px; 
-  cursor: pointer; 
-  font-weight: 600; 
-}
-.msg { 
-  padding: 10px; 
-  margin-top: 12px; 
-  border-radius: 5px; 
-  text-align: center; 
-  display: none; 
-}
-.msg.success { 
-  background: #dcfce7; 
-  color: #15803d; 
-  border: 1px solid #86efac; 
-}
-.msg.error { 
-  background: #fde2e2; 
-  color: #b91c1c; 
-  border: 1px solid #fca5a5; 
-}
-.img-preview { 
-  width: 100%; 
-  height: auto; 
-  max-height: 180px; 
-  object-fit: contain; 
-  border: 1px solid var(--beige-border); 
-  border-radius: 5px; 
-  margin-top: 8px; 
-  display: none; 
-  background: #f8fafc; 
-}
-.section-title { 
-  font-size: 1.1rem; 
-  font-weight: 700; 
-  color: var(--primary); 
-  margin: 25px 0 10px 0; 
-  padding-bottom: 5px; 
-  border-bottom: 2px solid var(--secondary); 
-  display: flex; 
-  align-items: center; 
-  gap: 8px; 
-}
-/* 🔹 Estilos Dropdown Teléfono */
-.phone-dropdown-wrapper { 
-  position: relative; 
-  width: 100%; 
-}
-.phone-options { 
-  max-height: 240px; 
-  overflow-y: auto; 
-  position: absolute; 
-  top: 100%; 
-  left: 0; 
-  right: 0; 
-  background: #fff; 
-  border: 1.5px solid var(--beige-border); 
-  border-radius: 0 0 5px 5px; 
-  z-index: 20; 
-  box-shadow: 0 6px 16px rgba(0,0,0,0.12); 
-  display: none; 
-  margin-top: 2px; 
-}
-.phone-option { 
-  display: flex; 
-  align-items: center; 
-  gap: 8px; 
-  padding: 8px 12px; 
-  cursor: pointer; 
-  border-bottom: 1px solid #f1f5f9; 
-  transition: 0.15s; 
-}
-.phone-option:hover { 
-  background: #f8fafc; 
-}
-.phone-option img { 
-  width: 20px; 
-  height: 14px; 
-  object-fit: contain; 
-  border-radius: 2px; 
-}
-.phone-option .code { 
-  font-weight: 600; 
-  min-width: 35px; 
-  color: #334155; 
-}
-.phone-option .country { 
-  color: #475569; 
-  font-size: 0.85rem; 
-}
-.phone-display { 
-  border: 1.5px solid var(--beige-border); 
-  border-radius: 5px; 
-  padding: 9px 10px; 
-  background: #fff; 
-  display: flex; 
-  align-items: center; 
-  gap: 8px; 
-  cursor: pointer; 
-  font-size: 0.9rem; 
-  user-select: none; 
-  height: 42px; 
-  box-sizing: border-box; 
-}
-/* 🔹 Estilos de Validación */
-.status-msg { 
-  display: block; 
-  font-size: 0.75rem; 
-  margin-top: 4px; 
-  font-weight: 600; 
-  min-height: 16px; 
-}
+:root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; }
+.search-box { padding: 16px; background: #f8fafc; border: 1.5px dashed var(--beige-border); border-radius: 8px; margin-bottom: 20px; }
+.search-box label { font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; display: block; }
+.search-row { display: flex; gap: 10px; }
+.search-row input { flex: 1; padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; text-transform: uppercase; }
+.search-row button { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
+.msg { padding: 10px; margin-top: 12px; border-radius: 5px; text-align: center; display: none; }
+.msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.registro-form fieldset { border: 1px solid var(--beige-border); border-radius: 8px; padding: 16px; margin-bottom: 18px; background: #fafbfc; }
+.registro-form legend { font-weight: 600; color: var(--primary); font-size: 0.95rem; padding: 0 8px; }
+.hidden-field { display: none; margin-top: 8px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.registro-form label { font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; display: block; }
+.registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; }
+.registro-form input:focus, .registro-form select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,43,92,0.1); }
+.btn-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 15px; font-size: 1rem; }
+.btn-submit:hover { background: var(--secondary); }
+.btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+.img-preview { width: 100%; height: auto; max-height: 180px; object-fit: contain; border: 1px solid var(--beige-border); border-radius: 5px; margin-top: 8px; display: none; background: #f8fafc; }
+.section-title { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin: 25px 0 10px 0; padding-bottom: 5px; border-bottom: 2px solid var(--secondary); display: flex; align-items: center; gap: 8px; }
+.phone-dropdown-wrapper { position: relative; width: 100%; }
+.phone-options { max-height: 240px; overflow-y: auto; position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1.5px solid var(--beige-border); border-radius: 0 0 5px 5px; z-index: 20; box-shadow: 0 6px 16px rgba(0,0,0,0.12); display: none; margin-top: 2px; }
+.phone-option { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+.phone-option:hover { background: #f8fafc; }
+.phone-option img { width: 20px; height: 14px; object-fit: contain; border-radius: 2px; }
+.phone-option .code { font-weight: 600; min-width: 35px; color: #334155; }
+.phone-option .country { color: #475569; font-size: 0.85rem; }
+.phone-display { border: 1.5px solid var(--beige-border); border-radius: 5px; padding: 9px 10px; background: #fff; display: flex; align-items: center; gap: 8px; cursor: pointer; height: 42px; box-sizing: border-box; }
+.status-msg { display: block; font-size: 0.75rem; margin-top: 4px; font-weight: 600; min-height: 16px; }
 .status-msg.valid { color: #15803d; }
 .status-msg.error { color: #dc2626; }
 .input-valid { border-color: #22c55e !important; background-color: #f0fdf4; }
 .input-error { border-color: #ef4444 !important; background-color: #fef2f2; }
-
-@media (max-width: 600px) { 
-  .form-grid { grid-template-columns: 1fr; } 
-  .search-row { flex-direction: column; }
-}
+@media (max-width: 600px) { .form-grid, .search-row { grid-template-columns: 1fr; flex-direction: column; } }
 </style>
 
 <div class="card">
-    <h3>✏️ Modificar Registro Vinculado</h3>
+    <h3>✏️ Modificar Registro Vinculado (Persona + Vehículo)</h3>
     
-    <!-- 🔍 BARRA DE BÚSQUEDA -->
     <div class="search-box">
-        <label style="font-weight:700; display:block; margin-bottom:8px;">Buscar por Cédula o Placa:</label>
-        <div class="search-row" style="display: flex; gap: 10px;">
-            <input type="text" id="mod_busqueda_input" placeholder="Ej: Cédula o Placa..." maxlength="20" style="flex: 1; padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; text-transform: uppercase;">
-            <button id="btn_buscar_mod" class="btn-search">🔍 Buscar</button>
+        <label>🔍 Buscar por Cédula o Placa:</label>
+        <div class="search-row">
+            <input type="text" id="mod_busqueda_input" placeholder="Ingrese Cédula o Placa..." maxlength="20">
+            <button id="btn_buscar_mod">Buscar</button>
         </div>
         <div id="mod_msg_busqueda" class="msg" style="margin-top:8px;"></div>
     </div>
 
-    <!--  FORMULARIO (Oculto hasta buscar) -->
     <form id="form-mod-vinculado" class="registro-form" novalidate style="display: none;">
-        <!-- ID Oculto para saber qué registro actualizar -->
         <input type="hidden" id="mod_vinculado_id">
 
         <div class="section-title">👤 Datos de la Persona</div>
@@ -239,20 +69,12 @@
                 <div class="form-group"><label>Segundo Nombre</label><input type="text" id="pv_p_nombre2"></div>
                 <div class="form-group"><label>Primer Apellido</label><input type="text" id="pv_p_apellido1" required></div>
                 <div class="form-group"><label>Segundo Apellido</label><input type="text" id="pv_p_apellido2"></div>
-                
-                <!-- ✅ CÉDULA EDITABLE -->
                 <div class="form-group">
                     <label>Cédula (Editable)</label>
                     <input type="text" id="pv_p_cedula" maxlength="8" required>
                     <small id="pv-msg-cedula" class="status-msg"></small>
                 </div>
-                
-                <!-- ✅ MARCA CORPORAL -->
-                <div class="form-group">
-                    <label>Marca Corporal</label>
-                    <input type="text" id="pv_p_marca">
-                </div>
-                
+                <div class="form-group"><label>Marca Corporal</label><input type="text" id="pv_p_marca"></div>
                 <div class="form-group"><label>Apodo</label><input type="text" id="pv_p_apodo"></div>
                 <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" id="pv_p_fecha_nac" required></div>
                 <div class="form-group"><label>Edad (Auto)</label><input type="number" id="pv_p_edad" readonly></div>
@@ -261,8 +83,8 @@
                     <label>Nacionalidad</label>
                     <select id="pv_p_nacionalidad" required>
                         <option value="">Seleccione...</option>
-                        <!-- Lista completa de nacionalidades -->
-                        <option value="Afgana">🇦 Afgana</option><option value="Albanesa">🇦🇱 Albanesa</option><option value="Alemana">🇩🇪 Alemana</option><option value="Andorrana">🇦🇩 Andorrana</option><option value="Angoleña">🇴 Angoleña</option><option value="Antiguana">🇦🇬 Antiguana</option><option value="Saudí">🇸🇦 Saudí</option><option value="Argelina">🇩 Argelina</option><option value="Argentina">🇦🇷 Argentina</option><option value="Armenia">🇦🇲 Armenia</option><option value="Australiana">🇺 Australiana</option><option value="Austriaca">🇦🇹 Austriaca</option><option value="Azerbaiyana">🇦🇿 Azerbaiyana</option><option value="Bahameña">🇧🇸 Bahameña</option><option value="Bareiní">🇧🇭 Bareiní</option><option value="Bangladesí">🇧🇩 Bangladesí</option><option value="Barbadense">🇧 Barbadense</option><option value="Belga">🇧🇪 Belga</option><option value="Beliceña">🇿 Beliceña</option><option value="Beninesa">🇧🇯 Beninesa</option><option value="Bielorrusa">🇧🇾 Bielorrusa</option><option value="Birmana">🇲🇲 Birmana</option><option value="Boliviana">🇧🇴 Boliviana</option><option value="Bosnia">🇧🇦 Bosnia</option><option value="Botsuana">🇧 Botsuana</option><option value="Brasileña">🇧🇷 Brasileña</option><option value="Bruneiana">🇳 Bruneiana</option><option value="Búlgara">🇧 Búlgara</option><option value="Burkinesa">🇧🇫 Burkinesa</option><option value="Burundesa">🇧🇮 Burundesa</option><option value="Butanesa">🇧🇹 Butanesa</option><option value="Caboverdiana">🇨🇻 Caboverdiana</option><option value="Camboyana">🇭 Camboyana</option><option value="Camerunesa">🇨🇲 Camerunesa</option><option value="Canadiense">🇨🇦 Canadiense</option><option value="Catari">🇦 Catari</option><option value="Centroafricana">🇨 Centroafricana</option><option value="Chadiana">🇹🇩 Chadiana</option><option value="Checa">🇨🇿 Checa</option><option value="Chilena">🇨🇱 Chilena</option><option value="China">🇨🇳 China</option><option value="Chipriota">🇨 Chipriota</option><option value="Colombiana">🇨🇴 Colombiana</option><option value="Comorense">🇰 Comorense</option><option value="Congoleña (RC)">🇨🇬 Congoleña (RC)</option><option value="Congoleña (RDC)">🇨🇩 Congoleña (RDC)</option><option value="Norcoreana">🇰🇵 Norcoreana</option><option value="Surcoreana">🇰🇷 Surcoreana</option><option value="Marfileña">🇨 Marfileña</option><option value="Costarricense">🇨🇷 Costarricense</option><option value="Croata">🇭🇷 Croata</option><option value="Cubana">🇨 Cubana</option><option value="Danesa">🇩🇰 Danesa</option><option value="Dominicana">🇩🇴 Dominicana</option><option value="Dominiquesa">🇲 Dominiquesa</option><option value="Ecuatoriana">🇪🇨 Ecuatoriana</option><option value="Egipcia">🇪🇬 Egipcia</option><option value="Salvadoreña">🇻 Salvadoreña</option><option value="Emiratí">🇦🇪 Emiratí</option><option value="Eritrea">🇪🇷 Eritrea</option><option value="Eslovaca">🇸🇰 Eslovaca</option><option value="Eslovena">🇸🇮 Eslovena</option><option value="Española">🇪🇸 Española</option><option value="Estadounidense">🇺🇸 Estadounidense</option><option value="Estonia">🇪🇪 Estonia</option><option value="Etíope">🇹 Etíope</option><option value="Filipina">🇵🇭 Filipina</option><option value="Finlandesa">🇫🇮 Finlandesa</option><option value="Fiyiana">🇫🇯 Fiyiana</option><option value="Francesa">🇫🇷 Francesa</option><option value="Gabonesa">🇦 Gabonesa</option><option value="Gambiana">🇬🇲 Gambiana</option><option value="Georgiana">🇬🇪 Georgiana</option><option value="Ghanesa">🇬 Ghanesa</option><option value="Granadina">🇬🇩 Granadina</option><option value="Griega">🇬🇷 Griega</option><option value="Guatemalteca">🇬🇹 Guatemalteca</option><option value="Guineana">🇬🇳 Guineana</option><option value="Guineana Ecuatorial">🇬🇶 Guineana Ecuatorial</option><option value="Guineana-Bissau">🇬 Guineana-Bissau</option><option value="Guyanesa">🇬 Guyanesa</option><option value="Haitiana">🇭🇹 Haitiana</option><option value="Hondureña">🇳 Hondureña</option><option value="Húngara">🇭🇺 Húngara</option><option value="India">🇳 India</option><option value="Indonesia">🇮🇩 Indonesia</option><option value="Irakí">🇶 Irakí</option><option value="Iraní">🇮🇷 Iraní</option><option value="Irlandesa">🇮🇪 Irlandesa</option><option value="Islandesa">🇮🇸 Islandesa</option><option value="Israelí">🇮🇱 Israelí</option><option value="Italiana">🇮 Italiana</option><option value="Jamaicana">🇯🇲 Jamaicana</option><option value="Japonesa">🇯🇵 Japonesa</option><option value="Jordana">🇯🇴 Jordana</option><option value="Kazaja">🇰🇿 Kazaja</option><option value="Keniana">🇰🇪 Keniana</option><option value="Kirguís">🇰🇬 Kirguís</option><option value="Kiribatiana">🇮 Kiribatiana</option><option value="Kuwatí">🇰🇼 Kuwatí</option><option value="Laosiana">🇱🇦 Laosiana</option><option value="Lesotense">🇱🇸 Lesotense</option><option value="Letona">🇱 Letona</option><option value="Libanesa">🇱🇧 Libanesa</option><option value="Liberiana">🇱🇷 Liberiana</option><option value="Libia">🇱🇾 Libia</option><option value="Liechtensteiniana">🇱🇮 Liechtensteiniana</option><option value="Lituaniana">🇹 Lituaniana</option><option value="Luxemburguesa">🇱🇺 Luxemburguesa</option><option value="Macedonia">🇲🇰 Macedonia</option><option value="Malgache">🇲🇬 Malgache</option><option value="Malasia">🇲🇾 Malasia</option><option value="Malauí">🇲🇼 Malauí</option><option value="Maldiveña">🇲 Maldiveña</option><option value="Maliense">🇲🇱 Maliense</option><option value="Maltesa">🇹 Maltesa</option><option value="Marroquí">🇲 Marroquí</option><option value="Mauriciana">🇲🇺 Mauriciana</option><option value="Mauritana">🇲🇷 Mauritana</option><option value="Mexicana">🇲 Mexicana</option><option value="Micronesia">🇫🇲 Micronesia</option><option value="Moldava">🇲🇩 Moldava</option><option value="Monegasca">🇲🇨 Monegasca</option><option value="Mongola">🇲🇳 Mongola</option><option value="Montenegrina">🇪 Montenegrina</option><option value="Mozambiqueña">🇲 Mozambiqueña</option><option value="Namibia">🇳🇦 Namibia</option><option value="Nauruana">🇳🇷 Nauruana</option><option value="Nepalí">🇳 Nepalí</option><option value="Nicaragüense">🇳🇮 Nicaragüense</option><option value="Nigerina">🇳🇪 Nigerina</option><option value="Nigeriana">🇬 Nigeriana</option><option value="Noruega">🇳🇴 Noruega</option><option value="Neozelandesa">🇳🇿 Neozelandesa</option><option value="Omaní">🇲 Omaní</option><option value="Neerlandesa">🇳🇱 Neerlandesa</option><option value="Pakistaní">🇰 Pakistaní</option><option value="Palauana">🇵 Palauana</option><option value="Palestina">🇵🇸 Palestina</option><option value="Panameña">🇦 Panameña</option><option value="Papú">🇵🇬 Papú</option><option value="Paraguaya">🇵🇾 Paraguaya</option><option value="Peruana">🇵🇪 Peruana</option><option value="Polaca">🇱 Polaca</option><option value="Portuguesa">🇵🇹 Portuguesa</option><option value="Británica">🇧 Británica</option><option value="Ruandesa">🇷🇼 Ruandesa</option><option value="Rumana">🇴 Rumana</option><option value="Rusa">🇷🇺 Rusa</option><option value="Salomonense">🇸🇧 Salomonense</option><option value="Samoana">🇼 Samoana</option><option value="Sanmarinense">🇸🇲 Sanmarinense</option><option value="Santalucense">🇱🇨 Santalucense</option><option value="Santotomense">🇸🇹 Santotomense</option><option value="Sanvicentina">🇨 Sanvicentina</option><option value="Senegalesa">🇸🇳 Senegalesa</option><option value="Serbia">🇷 Serbia</option><option value="Seychelense">🇸🇨 Seychelense</option><option value="Sierraleonesa">🇸🇱 Sierraleonesa</option><option value="Singapurense">🇬 Singapurense</option><option value="Siria">🇸🇾 Siria</option><option value="Somalí">🇴 Somalí</option><option value="Sudafricana">🇿🇦 Sudafricana</option><option value="Sudanesa">🇸🇩 Sudanesa</option><option value="Sursudanesa">🇸🇸 Sursudanesa</option><option value="Sueca">🇸🇪 Sueca</option><option value="Suiza">🇨🇭 Suiza</option><option value="Surinamesa">🇸🇷 Surinamesa</option><option value="Suazi">🇸 Suazi</option><option value="Tayika">🇹🇯 Tayika</option><option value="Tanzana">🇿 Tanzana</option><option value="Tailandesa">🇹🇭 Tailandesa</option><option value="Timorense">🇹🇱 Timorense</option><option value="Togolesa">🇹🇬 Togolesa</option><option value="Tongana">🇹🇴 Tongana</option><option value="Trinitense">🇹🇹 Trinitense</option><option value="Tunecina">🇳 Tunecina</option><option value="Turca">🇹🇷 Turca</option><option value="Turcomana">🇲 Turcomana</option><option value="Tuvaluana">🇹 Tuvaluana</option><option value="Ucraniana">🇺🇦 Ucraniana</option><option value="Ugandesa">🇺🇬 Ugandesa</option><option value="Uruguaya">🇺🇾 Uruguaya</option><option value="Uzbeka">🇺 Uzbeka</option><option value="Vanuatuense">🇻🇺 Vanuatuense</option><option value="Vaticana">🇻🇦 Vaticana</option><option value="Venezolana">🇻🇪 Venezolana</option><option value="Vietnamita">🇻 Vietnamita</option><option value="Yemení">🇾🇪 Yemení</option><option value="Yibutiana">🇩🇯 Yibutiana</option><option value="Zambiana">🇿🇲 Zambiana</option><option value="Zimbabuense">🇿🇼 Zimbabuense</option><option value="Otra"> Otra</option>
+                        <option value="Afgana">🇦🇫 Afgana</option><option value="Albanesa">🇦🇱 Albanesa</option><option value="Alemana">🇩🇪 Alemana</option><option value="Andorrana">🇦🇩 Andorrana</option><option value="Angoleña">🇦🇴 Angoleña</option><option value="Antiguana">🇦🇬 Antiguana</option><option value="Saudí">🇸🇦 Saudí</option><option value="Argelina">🇩🇿 Argelina</option><option value="Argentina">🇦🇷 Argentina</option><option value="Armenia">🇦🇲 Armenia</option><option value="Australiana">🇦🇺 Australiana</option><option value="Austriaca">🇦🇹 Austriaca</option><option value="Azerbaiyana">🇦🇿 Azerbaiyana</option><option value="Bahameña">🇧🇸 Bahameña</option><option value="Bareiní">🇧🇭 Bareiní</option><option value="Bangladesí">🇧🇩 Bangladesí</option><option value="Barbadense">🇧🇧 Barbadense</option><option value="Belga">🇧🇪 Belga</option><option value="Beliceña">🇧🇿 Beliceña</option><option value="Beninesa">🇧🇯 Beninesa</option><option value="Bielorrusa">🇧🇾 Bielorrusa</option><option value="Birmana">🇲🇲 Birmana</option><option value="Boliviana">🇧🇴 Boliviana</option><option value="Bosnia">🇧🇦 Bosnia</option><option value="Botsuana">🇧🇼 Botsuana</option><option value="Brasileña">🇧🇷 Brasileña</option><option value="Bruneiana">🇧🇳 Bruneiana</option><option value="Búlgara">🇧🇬 Búlgara</option><option value="Burkinesa">🇧🇫 Burkinesa</option><option value="Burundesa">🇧🇮 Burundesa</option><option value="Butanesa">🇧🇹 Butanesa</option><option value="Caboverdiana">🇨🇻 Caboverdiana</option><option value="Camboyana">🇰🇭 Camboyana</option><option value="Camerunesa">🇨🇲 Camerunesa</option><option value="Canadiense">🇨🇦 Canadiense</option><option value="Catari">🇶🇦 Catari</option><option value="Centroafricana">🇨🇫 Centroafricana</option><option value="Chadiana">🇹🇩 Chadiana</option><option value="Checa">🇨🇿 Checa</option><option value="Chilena">🇨🇱 Chilena</option><option value="China">🇨🇳 China</option><option value="Chipriota">🇨🇾 Chipriota</option><option value="Colombiana">🇨🇴 Colombiana</option><option value="Comorense">🇰🇲 Comorense</option><option value="Congoleña (RC)">🇨🇬 Congoleña (RC)</option><option value="Congoleña (RDC)">🇨🇩 Congoleña (RDC)</option><option value="Norcoreana">🇰🇵 Norcoreana</option><option value="Surcoreana">🇰🇷 Surcoreana</option><option value="Marfileña">🇨🇮 Marfileña</option><option value="Costarricense">🇨🇷 Costarricense</option><option value="Croata">🇭🇷 Croata</option><option value="Cubana">🇨🇺 Cubana</option><option value="Danesa">🇩🇰 Danesa</option><option value="Dominicana">🇩🇴 Dominicana</option><option value="Dominiquesa">🇩🇲 Dominiquesa</option><option value="Ecuatoriana">🇪🇨 Ecuatoriana</option><option value="Egipcia">🇪🇬 Egipcia</option><option value="Salvadoreña">🇸🇻 Salvadoreña</option><option value="Emiratí">🇦🇪 Emiratí</option><option value="Eritrea">🇪🇷 Eritrea</option><option value="Eslovaca">🇸🇰 Eslovaca</option><option value="Eslovena">🇸🇮 Eslovena</option><option value="Española">🇪🇸 Española</option><option value="Estadounidense">🇺🇸 Estadounidense</option><option value="Estonia">🇪🇪 Estonia</option><option value="Etíope">🇪🇹 Etíope</option><option value="Filipina">🇵🇭 Filipina</option><option value="Finlandesa">🇫🇮 Finlandesa</option><option value="Fiyiana">🇫🇯 Fiyiana</option><option value="Francesa">🇫🇷 Francesa</option><option value="Gabonesa">🇬🇦 Gabonesa</option><option value="Gambiana">🇬🇲 Gambiana</option><option value="Georgiana">🇬🇪 Georgiana</option><option value="Ghanesa">🇬🇭 Ghanesa</option><option value="Granadina">🇬🇩 Granadina</option><option value="Griega">🇬🇷 Griega</option><option value="Guatemalteca">🇬🇹 Guatemalteca</option><option value="Guineana">🇬🇳 Guineana</option><option value="Guineana Ecuatorial">🇬🇶 Guineana Ecuatorial</option><option value="Guineana-Bissau">🇬🇼 Guineana-Bissau</option><option value="Guyanesa">🇬🇾 Guyanesa</option><option value="Haitiana">🇭🇹 Haitiana</option><option value="Hondureña">🇭🇳 Hondureña</option><option value="Húngara">🇭🇺 Húngara</option><option value="India">🇮🇳 India</option><option value="Indonesia">🇮🇩 Indonesia</option><option value="Irakí">🇮🇶 Irakí</option><option value="Iraní">🇮🇷 Iraní</option><option value="Irlandesa">🇮🇪 Irlandesa</option><option value="Islandesa">🇮🇸 Islandesa</option><option value="Israelí">🇮🇱 Israelí</option><option value="Italiana">🇮🇹 Italiana</option><option value="Jamaicana">🇯🇲 Jamaicana</option><option value="Japonesa">🇯🇵 Japonesa</option><option value="Jordana">🇯🇴 Jordana</option><option value="Kazaja">🇰🇿 Kazaja</option><option value="Keniana">🇰🇪 Keniana</option><option value="Kirguís">🇰🇬 Kirguís</option><option value="Kiribatiana">🇰🇮 Kiribatiana</option><option value="Kuwatí">🇰🇼 Kuwatí</option><option value="Laosiana">🇱🇦 Laosiana</option><option value="Lesotense">🇱🇸 Lesotense</option><option value="Letona">🇱🇻 Letona</option><option value="Libanesa">🇱🇧 Libanesa</option><option value="Liberiana">🇱🇷 Liberiana</option><option value="Libia">🇱🇾 Libia</option><option value="Liechtensteiniana">🇱🇮 Liechtensteiniana</option><option value="Lituaniana">🇱🇹 Lituaniana</option><option value="Luxemburguesa">🇱🇺 Luxemburguesa</option><option value="Macedonia">🇲🇰 Macedonia</option><option value="Malgache">🇲🇬 Malgache</option><option value="Malasia">🇲🇾 Malasia</option><option value="Malauí">🇲🇼 Malauí</option><option value="Maldiveña">🇲🇻 Maldiveña</option><option value="Maliense">🇲🇱 Maliense</option><option value="Maltesa">🇲🇹 Maltesa</option><option value="Marroquí">🇲🇦 Marroquí</option><option value="Mauriciana">🇲🇺 Mauriciana</option><option value="Mauritana">🇲🇷 Mauritana</option><option value="Mexicana">🇲🇽 Mexicana</option><option value="Micronesia">🇫🇲 Micronesia</option><option value="Moldava">🇲🇩 Moldava</option><option value="Monegasca">🇲🇨 Monegasca</option><option value="Mongola">🇲🇳 Mongola</option><option value="Montenegrina">🇲🇪 Montenegrina</option><option value="Mozambiqueña">🇲🇿 Mozambiqueña</option><option value="Namibia">🇳🇦 Namibia</option><option value="Nauruana">🇳🇷 Nauruana</option><option value="Nepalí">🇳🇵 Nepalí</option><option value="Nicaragüense">🇳🇮 Nicaragüense</option><option value="Nigerina">🇳🇪 Nigerina</option><option value="Nigeriana">🇳🇬 Nigeriana</option><option value="Noruega">🇳🇴 Noruega</option><option value="Neozelandesa">🇳🇿 Neozelandesa</option><option value="Omaní">🇴🇲 Omaní</option><option value="Neerlandesa">🇳🇱 Neerlandesa</option><option value="Pakistaní">🇵🇰 Pakistaní</option><option value="Palauana">🇵🇼 Palauana</option><option value="Palestina">🇵🇸 Palestina</option><option value="Panameña">🇵🇦 Panameña</option><option value="Papú">🇵🇬 Papú</option><option value="Paraguaya">🇵🇾 Paraguaya</option><option value="Peruana">🇵🇪 Peruana</option><option value="Polaca">🇵🇱 Polaca</option><option value="Portuguesa">🇵🇹 Portuguesa</option><option value="Británica">🇬🇧 Británica</option><option value="Ruandesa">🇷🇼 Ruandesa</option><option value="Rumana">🇷🇴 Rumana</option><option value="Rusa">🇷🇺 Rusa</option><option value="Salomonense">🇸🇧 Salomonense</option><option value="Samoana">🇼🇸 Samoana</option><option value="Sanmarinense">🇸🇲 Sanmarinense</option><option value="Santalucense">🇱🇨 Santalucense</option><option value="Santotomense">🇸🇹 Santotomense</option><option value="Sanvicentina">🇻🇨 Sanvicentina</option><option value="Senegalesa">🇸🇳 Senegalesa</option><option value="Serbia">🇷🇸 Serbia</option><option value="Seychelense">🇸🇨 Seychelense</option><option value="Sierraleonesa">🇸🇱 Sierraleonesa</option><option value="Singapurense">🇸🇬 Singapurense</option><option value="Siria">🇸🇾 Siria</option><option value="Somalí">🇸🇴 Somalí</option><option value="Sudafricana">🇿🇦 Sudafricana</option><option value="Sudanesa">🇸🇩 Sudanesa</option><option value="Sursudanesa">🇸🇸 Sursudanesa</option><option value="Sueca">🇸🇪 Sueca</option><option value="Suiza">🇨🇭 Suiza</option><option value="Surinamesa">🇸🇷 Surinamesa</option><option value="Suazi">🇸🇿 Suazi</option><option value="Tayika">🇹🇯 Tayika</option><option value="Tanzana">🇹🇿 Tanzana</option><option value="Tailandesa">🇹🇭 Tailandesa</option><option value="Timorense">🇹🇱 Timorense</option><option value="Togolesa">🇹🇬 Togolesa</option><option value="Tongana">🇹🇴 Tongana</option><option value="Trinitense">🇹🇹 Trinitense</option><option value="Tunecina">🇹🇳 Tunecina</option><option value="Turca">🇹🇷 Turca</option><option value="Turcomana">🇹🇲 Turcomana</option><option value="Tuvaluana">🇹🇻 Tuvaluana</option><option value="Ucraniana">🇺🇦 Ucraniana</option><option value="Ugandesa">🇺🇬 Ugandesa</option><option value="Uruguaya">🇺🇾 Uruguaya</option><option value="Uzbeka">🇺🇿 Uzbeka</option><option value="Vanuatuense">🇻🇺 Vanuatuense</option><option value="Vaticana">🇻🇦 Vaticana</option><option value="Venezolana">🇻🇪 Venezolana</option><option value="Vietnamita">🇻🇳 Vietnamita</option><option value="Yemení">🇾🇪 Yemení</option><option value="Yibutiana">🇩🇯 Yibutiana</option><option value="Zambiana">🇿🇲 Zambiana</option><option value="Zimbabuense">🇿🇼 Zimbabuense</option>
+                        <option value="Otra">🌍 Otra</option>
                     </select>
                 </div>
                 
@@ -275,206 +97,14 @@
                     </select>
                 </div>
 
-                <!-- ✅ TELÉFONO CON DROPDOWN DE BANDERAS -->
                 <div class="form-group" style="grid-column: span 2;">
                     <label>Teléfono</label>
                     <div style="display: flex; gap: 10px; align-items: center;">
                         <div class="phone-dropdown-wrapper" style="width: 210px; flex-shrink: 0;">
                             <select id="pv_p_tlf_pais" style="position: absolute; opacity: 0; pointer-events: none; width: 100%; height: 100%; z-index: 1;">
-    <option value="">--</option>
-    <option value="+93">Afganistán</option>
-    <option value="+355">Albania</option>
-    <option value="+49">Alemania</option>
-    <option value="+376">Andorra</option>
-    <option value="+244">Angola</option>
-    <option value="+1-268">Antigua y Barbuda</option>
-    <option value="+966">Arabia Saudita</option>
-    <option value="+213">Argelia</option>
-    <option value="+54">Argentina</option>
-    <option value="+374">Armenia</option>
-    <option value="+61">Australia</option>
-    <option value="+43">Austria</option>
-    <option value="+994">Azerbaiyán</option>
-    <option value="+1-242">Bahamas</option>
-    <option value="+973">Baréin</option>
-    <option value="+880">Bangladés</option>
-    <option value="+1-246">Barbados</option>
-    <option value="+32">Bélgica</option>
-    <option value="+501">Belice</option>
-    <option value="+229">Benín</option>
-    <option value="+375">Bielorrusia</option>
-    <option value="+95">Birmania</option>
-    <option value="+591">Bolivia</option>
-    <option value="+387">Bosnia y Herzegovina</option>
-    <option value="+267">Botsuana</option>
-    <option value="+55">Brasil</option>
-    <option value="+673">Brunéi</option>
-    <option value="+359">Bulgaria</option>
-    <option value="+226">Burkina Faso</option>
-    <option value="+257">Burundi</option>
-    <option value="+975">Bután</option>
-    <option value="+238">Cabo Verde</option>
-    <option value="+855">Camboya</option>
-    <option value="+237">Camerún</option>
-    <option value="+1">Canadá</option>
-    <option value="+974">Catar</option>
-    <option value="+236">Rep. Centroafricana</option>
-    <option value="+235">Chad</option>
-    <option value="+420">Rep. Checa</option>
-    <option value="+56">Chile</option>
-    <option value="+86">China</option>
-    <option value="+357">Chipre</option>
-    <option value="+57">Colombia</option>
-    <option value="+269">Comoras</option>
-    <option value="+242">Congo (Rep.)</option>
-    <option value="+243">Congo (R.D.)</option>
-    <option value="+850">Corea del Norte</option>
-    <option value="+82">Corea del Sur</option>
-    <option value="+225">Costa de Marfil</option>
-    <option value="+506">Costa Rica</option>
-    <option value="+385">Croacia</option>
-    <option value="+53">Cuba</option>
-    <option value="+45">Dinamarca</option>
-    <option value="+1-767">Dominica</option>
-    <option value="+593">Ecuador</option>
-    <option value="+20">Egipto</option>
-    <option value="+503">El Salvador</option>
-    <option value="+971">Emiratos Árabes Unidos</option>
-    <option value="+291">Eritrea</option>
-    <option value="+421">Eslovaquia</option>
-    <option value="+386">Eslovenia</option>
-    <option value="+34">España</option>
-    <option value="+1">Estados Unidos</option>
-    <option value="+372">Estonia</option>
-    <option value="+251">Etiopía</option>
-    <option value="+63">Filipinas</option>
-    <option value="+358">Finlandia</option>
-    <option value="+679">Fiyi</option>
-    <option value="+33">Francia</option>
-    <option value="+241">Gabón</option>
-    <option value="+220">Gambia</option>
-    <option value="+995">Georgia</option>
-    <option value="+233">Ghana</option>
-    <option value="+1-473">Granada</option>
-    <option value="+30">Grecia</option>
-    <option value="+502">Guatemala</option>
-    <option value="+224">Guinea</option>
-    <option value="+240">Guinea Ecuatorial</option>
-    <option value="+245">Guinea-Bisáu</option>
-    <option value="+592">Guyana</option>
-    <option value="+509">Haití</option>
-    <option value="+504">Honduras</option>
-    <option value="+36">Hungría</option>
-    <option value="+91">India</option>
-    <option value="+62">Indonesia</option>
-    <option value="+964">Irak</option>
-    <option value="+98">Irán</option>
-    <option value="+353">Irlanda</option>
-    <option value="+354">Islandia</option>
-    <option value="+972">Israel</option>
-    <option value="+39">Italia</option>
-    <option value="+1-876">Jamaica</option>
-    <option value="+81">Japón</option>
-    <option value="+962">Jordania</option>
-    <option value="+7">Kazajistán</option>
-    <option value="+254">Kenia</option>
-    <option value="+996">Kirguistán</option>
-    <option value="+686">Kiribati</option>
-    <option value="+965">Kuwait</option>
-    <option value="+856">Laos</option>
-    <option value="+266">Lesoto</option>
-    <option value="+371">Letonia</option>
-    <option value="+961">Líbano</option>
-    <option value="+231">Liberia</option>
-    <option value="+218">Libia</option>
-    <option value="+423">Liechtenstein</option>
-    <option value="+370">Lituania</option>
-    <option value="+352">Luxemburgo</option>
-    <option value="+389">Macedonia del Norte</option>
-    <option value="+261">Madagascar</option>
-    <option value="+60">Malasia</option>
-    <option value="+265">Malaui</option>
-    <option value="+960">Maldivas</option>
-    <option value="+223">Malí</option>
-    <option value="+356">Malta</option>
-    <option value="+212">Marruecos</option>
-    <option value="+230">Mauricio</option>
-    <option value="+222">Mauritania</option>
-    <option value="+52">México</option>
-    <option value="+691">Micronesia</option>
-    <option value="+373">Moldavia</option>
-    <option value="+377">Mónaco</option>
-    <option value="+976">Mongolia</option>
-    <option value="+382">Montenegro</option>
-    <option value="+258">Mozambique</option>
-    <option value="+264">Namibia</option>
-    <option value="+674">Nauru</option>
-    <option value="+977">Nepal</option>
-    <option value="+505">Nicaragua</option>
-    <option value="+227">Níger</option>
-    <option value="+234">Nigeria</option>
-    <option value="+47">Noruega</option>
-    <option value="+64">Nueva Zelanda</option>
-    <option value="+968">Omán</option>
-    <option value="+31">Países Bajos</option>
-    <option value="+92">Pakistán</option>
-    <option value="+680">Palaos</option>
-    <option value="+970">Palestina</option>
-    <option value="+507">Panamá</option>
-    <option value="+675">Papúa Nueva Guinea</option>
-    <option value="+595">Paraguay</option>
-    <option value="+51">Perú</option>
-    <option value="+48">Polonia</option>
-    <option value="+351">Portugal</option>
-    <option value="+1-787">Puerto Rico</option>
-    <option value="+44">Reino Unido</option>
-    <option value="+1-809">Rep. Dominicana</option>
-    <option value="+250">Ruanda</option>
-    <option value="+40">Rumania</option>
-    <option value="+7">Rusia</option>
-    <option value="+685">Samoa</option>
-    <option value="+378">San Marino</option>
-    <option value="+1-758">Santa Lucía</option>
-    <option value="+239">Santo Tomé y Príncipe</option>
-    <option value="+1-784">San Vicente y las Granadinas</option>
-    <option value="+221">Senegal</option>
-    <option value="+381">Serbia</option>
-    <option value="+248">Seychelles</option>
-    <option value="+232">Sierra Leona</option>
-    <option value="+65">Singapur</option>
-    <option value="+963">Siria</option>
-    <option value="+252">Somalia</option>
-    <option value="+27">Sudáfrica</option>
-    <option value="+249">Sudán</option>
-    <option value="+211">Sudán del Sur</option>
-    <option value="+46">Suecia</option>
-    <option value="+41">Suiza</option>
-    <option value="+597">Surinam</option>
-    <option value="+268">Esuatini</option>
-    <option value="+992">Tayikistán</option>
-    <option value="+255">Tanzania</option>
-    <option value="+66">Tailandia</option>
-    <option value="+670">Timor Oriental</option>
-    <option value="+228">Togo</option>
-    <option value="+676">Tonga</option>
-    <option value="+1-868">Trinidad y Tobago</option>
-    <option value="+216">Túnez</option>
-    <option value="+90">Turquía</option>
-    <option value="+993">Turkmenistán</option>
-    <option value="+688">Tuvalu</option>
-    <option value="+380">Ucrania</option>
-    <option value="+256">Uganda</option>
-    <option value="+598">Uruguay</option>
-    <option value="+998">Uzbekistán</option>
-    <option value="+678">Vanuatu</option>
-    <option value="+379">Ciudad del Vaticano</option>
-    <option value="+58">Venezuela</option>
-    <option value="+84">Vietnam</option>
-    <option value="+967">Yemen</option>
-    <option value="+253">Yibuti</option>
-    <option value="+260">Zambia</option>
-    <option value="+263">Zimbabue</option>
-</select>
+                                <option value="">--</option>
+                                <option value="+93">Afganistán</option><option value="+355">Albania</option><option value="+49">Alemania</option><option value="+376">Andorra</option><option value="+244">Angola</option><option value="+1-268">Antigua y Barbuda</option><option value="+966">Arabia Saudita</option><option value="+213">Argelia</option><option value="+54">Argentina</option><option value="+374">Armenia</option><option value="+61">Australia</option><option value="+43">Austria</option><option value="+994">Azerbaiyán</option><option value="+1-242">Bahamas</option><option value="+973">Baréin</option><option value="+880">Bangladés</option><option value="+1-246">Barbados</option><option value="+32">Bélgica</option><option value="+501">Belice</option><option value="+229">Benín</option><option value="+375">Bielorrusia</option><option value="+95">Birmania</option><option value="+591">Bolivia</option><option value="+387">Bosnia y Herzegovina</option><option value="+267">Botsuana</option><option value="+55">Brasil</option><option value="+673">Brunéi</option><option value="+359">Bulgaria</option><option value="+226">Burkina Faso</option><option value="+257">Burundi</option><option value="+975">Bután</option><option value="+238">Cabo Verde</option><option value="+855">Camboya</option><option value="+237">Camerún</option><option value="+1">Canadá</option><option value="+974">Catar</option><option value="+236">Rep. Centroafricana</option><option value="+235">Chad</option><option value="+420">Rep. Checa</option><option value="+56">Chile</option><option value="+86">China</option><option value="+357">Chipre</option><option value="+57">Colombia</option><option value="+269">Comoras</option><option value="+242">Congo (Rep.)</option><option value="+243">Congo (R.D.)</option><option value="+850">Corea del Norte</option><option value="+82">Corea del Sur</option><option value="+225">Costa de Marfil</option><option value="+506">Costa Rica</option><option value="+385">Croacia</option><option value="+53">Cuba</option><option value="+45">Dinamarca</option><option value="+1-767">Dominica</option><option value="+593">Ecuador</option><option value="+20">Egipto</option><option value="+503">El Salvador</option><option value="+971">Emiratos Árabes Unidos</option><option value="+291">Eritrea</option><option value="+421">Eslovaquia</option><option value="+386">Eslovenia</option><option value="+34">España</option><option value="+1">Estados Unidos</option><option value="+372">Estonia</option><option value="+251">Etiopía</option><option value="+63">Filipinas</option><option value="+358">Finlandia</option><option value="+679">Fiyi</option><option value="+33">Francia</option><option value="+241">Gabón</option><option value="+220">Gambia</option><option value="+995">Georgia</option><option value="+233">Ghana</option><option value="+1-473">Granada</option><option value="+30">Grecia</option><option value="+502">Guatemala</option><option value="+224">Guinea</option><option value="+240">Guinea Ecuatorial</option><option value="+245">Guinea-Bisáu</option><option value="+592">Guyana</option><option value="+509">Haití</option><option value="+504">Honduras</option><option value="+36">Hungría</option><option value="+91">India</option><option value="+62">Indonesia</option><option value="+964">Irak</option><option value="+98">Irán</option><option value="+353">Irlanda</option><option value="+354">Islandia</option><option value="+972">Israel</option><option value="+39">Italia</option><option value="+1-876">Jamaica</option><option value="+81">Japón</option><option value="+962">Jordania</option><option value="+7">Kazajistán</option><option value="+254">Kenia</option><option value="+996">Kirguistán</option><option value="+686">Kiribati</option><option value="+965">Kuwait</option><option value="+856">Laos</option><option value="+266">Lesoto</option><option value="+371">Letonia</option><option value="+961">Líbano</option><option value="+231">Liberia</option><option value="+218">Libia</option><option value="+423">Liechtenstein</option><option value="+370">Lituania</option><option value="+352">Luxemburgo</option><option value="+389">Macedonia del Norte</option><option value="+261">Madagascar</option><option value="+60">Malasia</option><option value="+265">Malaui</option><option value="+960">Maldivas</option><option value="+223">Malí</option><option value="+356">Malta</option><option value="+212">Marruecos</option><option value="+230">Mauricio</option><option value="+222">Mauritania</option><option value="+52">México</option><option value="+691">Micronesia</option><option value="+373">Moldavia</option><option value="+377">Mónaco</option><option value="+976">Mongolia</option><option value="+382">Montenegro</option><option value="+258">Mozambique</option><option value="+264">Namibia</option><option value="+674">Nauru</option><option value="+977">Nepal</option><option value="+505">Nicaragua</option><option value="+227">Níger</option><option value="+234">Nigeria</option><option value="+47">Noruega</option><option value="+64">Nueva Zelanda</option><option value="+968">Omán</option><option value="+31">Países Bajos</option><option value="+92">Pakistán</option><option value="+680">Palaos</option><option value="+970">Palestina</option><option value="+507">Panamá</option><option value="+675">Papúa Nueva Guinea</option><option value="+595">Paraguay</option><option value="+51">Perú</option><option value="+48">Polonia</option><option value="+351">Portugal</option><option value="+1-787">Puerto Rico</option><option value="+44">Reino Unido</option><option value="+1-809">Rep. Dominicana</option><option value="+250">Ruanda</option><option value="+40">Rumania</option><option value="+7">Rusia</option><option value="+685">Samoa</option><option value="+378">San Marino</option><option value="+1-758">Santa Lucía</option><option value="+239">Santo Tomé y Príncipe</option><option value="+1-784">San Vicente y las Granadinas</option><option value="+221">Senegal</option><option value="+381">Serbia</option><option value="+248">Seychelles</option><option value="+232">Sierra Leona</option><option value="+65">Singapur</option><option value="+963">Siria</option><option value="+252">Somalia</option><option value="+27">Sudáfrica</option><option value="+249">Sudán</option><option value="+211">Sudán del Sur</option><option value="+46">Suecia</option><option value="+41">Suiza</option><option value="+597">Surinam</option><option value="+268">Esuatini</option><option value="+992">Tayikistán</option><option value="+255">Tanzania</option><option value="+66">Tailandia</option><option value="+670">Timor Oriental</option><option value="+228">Togo</option><option value="+676">Tonga</option><option value="+1-868">Trinidad y Tobago</option><option value="+216">Túnez</option><option value="+90">Turquía</option><option value="+993">Turkmenistán</option><option value="+688">Tuvalu</option><option value="+380">Ucrania</option><option value="+256">Uganda</option><option value="+598">Uruguay</option><option value="+998">Uzbekistán</option><option value="+678">Vanuatu</option><option value="+379">Ciudad del Vaticano</option><option value="+58">Venezuela</option><option value="+84">Vietnam</option><option value="+967">Yemen</option><option value="+253">Yibuti</option><option value="+260">Zambia</option><option value="+263">Zimbabue</option>
+                            </select>
                             <div class="phone-display">
                                 <img id="pv_tlf-flag-img" src="https://flagcdn.com/w20/xx.png" style="width: 18px; height: 13px; object-fit: contain; border-radius: 2px;">
                                 <span id="pv_tlf-code-text" style="font-weight: 600; min-width: 30px;">+XX</span>
@@ -486,7 +116,6 @@
                         <input type="tel" id="pv_p_tlf_num" placeholder="Ej: 4121234567" style="flex: 1;" inputmode="numeric">
                     </div>
                 </div>
-                
                 <div class="form-group" style="grid-column: span 2;"><label>Dirección</label><input type="text" id="pv_p_direccion"></div>
             </div>
         </fieldset>
@@ -494,128 +123,34 @@
         <fieldset>
             <legend>📏 Características Físicas</legend>
             <div class="form-grid">
-                <div class="form-group">
-                    <label>Estatura (metros)</label>
-                    <input type="number" id="pv_p_estatura" step="0.01" placeholder="Ej: 1.60">
-                    <input type="hidden" id="pv_p_estatura_cm">
-                </div>
-                <div class="form-group">
-                    <label>Color Piel</label>
-                    <select id="pv_p_color_piel">
-                        <option value="">Seleccione...</option>
-                        <option value="Clara">Clara</option>
-                        <option value="Morena">Morena</option>
-                        <option value="Trigueña">Trigueña</option>
-                        <option value="Oscura">Oscura</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Color Ojos</label>
-                    <select id="pv_p_color_ojos">
-                        <option value="">Seleccione...</option>
-                        <option value="Negros">Negros</option>
-                        <option value="Café">Café</option>
-                        <option value="Verdes">Verdes</option>
-                        <option value="Azules">Azules</option>
-                        <option value="Gris">Gris</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Color Cabello</label>
-                    <select id="pv_p_color_cabello">
-                        <option value="">Seleccione...</option>
-                        <option value="Negro">Negro</option>
-                        <option value="Castaño">Castaño</option>
-                        <option value="Rubio">Rubio</option>
-                        <option value="Pelirrojo">Pelirrojo</option>
-                        <option value="Gris/Canoso">Gris/Canoso</option>
-                        <option value="Calvo">Calvo</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Complexión</label>
-                    <select id="pv_p_complexion">
-                        <option value="">Seleccione...</option>
-                        <option value="Delgada">Delgada</option>
-                        <option value="Media">Media</option>
-                        <option value="Atlética">Atlética</option>
-                        <option value="Robusta">Robusta</option>
-                        <option value="Obesa">Obesa</option>
-                    </select>
-                </div>
+                <div class="form-group"><label>Estatura (metros)</label><input type="number" id="pv_p_estatura" step="0.01" placeholder="Ej: 1.60"><input type="hidden" id="pv_p_estatura_cm"></div>
+                <div class="form-group"><label>Color Piel</label><select id="pv_p_color_piel"><option value="">Seleccione...</option><option value="Clara">Clara</option><option value="Morena">Morena</option><option value="Trigueña">Trigueña</option><option value="Oscura">Oscura</option></select></div>
+                <div class="form-group"><label>Color Ojos</label><select id="pv_p_color_ojos"><option value="">Seleccione...</option><option value="Negros">Negros</option><option value="Café">Café</option><option value="Verdes">Verdes</option><option value="Azules">Azules</option><option value="Gris">Gris</option></select></div>
+                <div class="form-group"><label>Color Cabello</label><select id="pv_p_color_cabello"><option value="">Seleccione...</option><option value="Negro">Negro</option><option value="Castaño">Castaño</option><option value="Rubio">Rubio</option><option value="Pelirrojo">Pelirrojo</option><option value="Gris/Canoso">Gris/Canoso</option><option value="Calvo">Calvo</option></select></div>
+                <div class="form-group"><label>Complexión</label><select id="pv_p_complexion"><option value="">Seleccione...</option><option value="Delgada">Delgada</option><option value="Media">Media</option><option value="Atlética">Atlética</option><option value="Robusta">Robusta</option><option value="Obesa">Obesa</option></select></div>
             </div>
         </fieldset>
 
         <fieldset>
             <legend>🏥 Salud y Antecedentes</legend>
-            <div class="form-group">
-                <label>¿Usa Lentes?</label>
-                <select id="pv_p_lentes" onchange="window.toggleCampo(this, 'pv_det-lentes')">
-                    <option value="false">No</option>
-                    <option value="true">Sí</option>
-                </select>
-            </div>
-            <div id="pv_det-lentes" class="hidden-field">
-                <label>Tipo/Descripción</label>
-                <input type="text" id="pv_txt_lentes">
-            </div>
-            
-            <div class="form-group" style="margin-top:14px;">
-                <label>¿Perforaciones?</label>
-                <select id="pv_p_perforaciones" onchange="window.activarCampoPerforacion(this)">
-                    <option value="false">No</option>
-                    <option value="true">Sí</option>
-                </select>
-            </div>
-            <div id="pv_box-lugar-perforacion" class="hidden-field" style="margin-top:10px;">
-                <label>Lugar de la perforación</label>
-                <input type="text" id="pv_txt_lugar_perforacion">
-            </div>
-            
+            <div class="form-group"><label>¿Usa Lentes?</label><select id="pv_p_lentes" onchange="window.toggleCampo(this, 'pv_det-lentes')"><option value="false">No</option><option value="true">Sí</option></select></div>
+            <div id="pv_det-lentes" class="hidden-field"><label>Tipo/Descripción</label><input type="text" id="pv_txt_lentes"></div>
+            <div class="form-group" style="margin-top:14px;"><label>¿Perforaciones?</label><select id="pv_p_perforaciones" onchange="window.activarCampoPerforacion(this)"><option value="false">No</option><option value="true">Sí</option></select></div>
+            <div id="pv_box-lugar-perforacion" class="hidden-field" style="margin-top:10px;"><label>Lugar</label><input type="text" id="pv_txt_lugar_perforacion"></div>
             <div class="form-grid" style="margin-top:16px; padding-top:12px; border-top:1px dashed #d4c9a8;">
-                <div class="form-group">
-                    <label>¿Condición Médica?</label>
-                    <select id="pv_p_cond_medica" onchange="window.toggleCampo(this, 'pv_det-cond')">
-                        <option value="false">No</option>
-                        <option value="true">Sí</option>
-                    </select>
-                </div>
-                <div id="pv_det-cond" class="hidden-field" style="grid-column: span 2;">
-                    <label>Describa condición</label>
-                    <input type="text" id="pv_txt_cond">
-                </div>
+                <div class="form-group"><label>¿Condición Médica?</label><select id="pv_p_cond_medica" onchange="window.toggleCampo(this, 'pv_det-cond')"><option value="false">No</option><option value="true">Sí</option></select></div>
+                <div id="pv_det-cond" class="hidden-field" style="grid-column: span 2;"><label>Describa condición</label><input type="text" id="pv_txt_cond"></div>
             </div>
-            
             <div class="form-grid" style="margin-top:12px;">
-                <div class="form-group">
-                    <label>¿Consume Medicamento?</label>
-                    <select id="pv_p_medicamento" onchange="window.toggleCampo(this, 'pv_det-med')">
-                        <option value="false">No</option>
-                        <option value="true">Sí</option>
-                    </select>
-                </div>
-                <div id="pv_det-med" class="hidden-field" style="grid-column: span 2;">
-                    <label>Nombre del medicamento</label>
-                    <input type="text" id="pv_txt_med">
-                </div>
+                <div class="form-group"><label>¿Consume Medicamento?</label><select id="pv_p_medicamento" onchange="window.toggleCampo(this, 'pv_det-med')"><option value="false">No</option><option value="true">Sí</option></select></div>
+                <div id="pv_det-med" class="hidden-field" style="grid-column: span 2;"><label>Nombre del medicamento</label><input type="text" id="pv_txt_med"></div>
             </div>
-            
             <div class="form-grid" style="margin-top:12px;">
-                <div class="form-group">
-                    <label>¿Problema Judicial?</label>
-                    <select id="pv_p_judicial" onchange="window.toggleCampo(this, 'pv_det-jud')">
-                        <option value="false">No</option>
-                        <option value="true">Sí</option>
-                    </select>
-                </div>
-                <div id="pv_det-jud" class="hidden-field" style="grid-column: span 2;">
-                    <label>Detalle</label>
-                    <input type="text" id="pv_txt_jud">
-                </div>
+                <div class="form-group"><label>¿Problema Judicial?</label><select id="pv_p_judicial" onchange="window.toggleCampo(this, 'pv_det-jud')"><option value="false">No</option><option value="true">Sí</option></select></div>
+                <div id="pv_det-jud" class="hidden-field" style="grid-column: span 2;"><label>Detalle</label><input type="text" id="pv_txt_jud"></div>
             </div>
         </fieldset>
 
-        <!-- 🔹 SECCIÓN 2: DATOS DEL VEHÍCULO -->
         <div class="section-title">🚗 Datos del Vehículo</div>
 
         <fieldset>
@@ -625,73 +160,24 @@
                     <label>Tipo de Vehículo</label>
                     <select id="pv_v_tipo" onchange="window.cargarMarcasPV()">
                         <option value="">Seleccione...</option>
-                        <option value="Motocicleta">️ Motocicleta</option>
+                        <option value="Motocicleta">🏍️ Motocicleta</option>
                         <option value="Automóvil">🚙 Automóvil</option>
                     </select>
                 </div>
-                
-                <!-- ✅ PLACA EDITABLE -->
-                <div class="form-group">
-                    <label>Placa (Editable)</label>
-                    <input type="text" id="pv_v_placa" style="text-transform: uppercase;">
-                    <small id="pv-msg-placa" class="status-msg"></small>
-                </div>
-                
-                <!-- ✅ SERIAL CARROCERÍA EDITABLE -->
-                <div class="form-group">
-                    <label>Serial Carrocería (Editable)</label>
-                    <input type="text" id="pv_v_serial_carro">
-                    <small id="pv-msg-carro" class="status-msg"></small>
-                </div>
-                
-                <!-- ✅ SERIAL MOTOR EDITABLE -->
-                <div class="form-group">
-                    <label>Serial Motor (Editable)</label>
-                    <input type="text" id="pv_v_serial_motor">
-                    <small id="pv-msg-motor" class="status-msg"></small>
-                </div>
-                
-                <div class="form-group" id="pv_box_cilindro" style="display:none;">
-                    <label>Cilindraje</label>
-                    <select id="pv_v_cilindraje">
-                        <option value="Baja">Baja (hasta 250cc)</option>
-                        <option value="Media">Media (251-750cc)</option>
-                        <option value="Alta">Alta (+750cc)</option>
-                    </select>
-                </div>
+                <div class="form-group"><label>Placa (Editable)</label><input type="text" id="pv_v_placa" style="text-transform: uppercase;"><small id="pv-msg-placa" class="status-msg"></small></div>
+                <div class="form-group"><label>Serial Carrocería (Editable)</label><input type="text" id="pv_v_serial_carro"><small id="pv-msg-carro" class="status-msg"></small></div>
+                <div class="form-group"><label>Serial Motor (Editable)</label><input type="text" id="pv_v_serial_motor"><small id="pv-msg-motor" class="status-msg"></small></div>
+                <div class="form-group" id="pv_box_cilindro" style="display:none;"><label>Cilindraje</label><select id="pv_v_cilindraje"><option value="Baja">Baja (hasta 250cc)</option><option value="Media">Media (251-750cc)</option><option value="Alta">Alta (+750cc)</option></select></div>
             </div>
         </fieldset>
 
         <fieldset>
             <legend>Detalles Técnicos</legend>
             <div class="form-grid">
-                <div class="form-group">
-                    <label>Marca</label>
-                    <select id="pv_v_marca" onchange="window.cargarModelosPV()"></select>
-                </div>
-                <div class="form-group">
-                    <label>Modelo</label>
-                    <select id="pv_v_modelo"></select>
-                </div>
-                <div class="form-group">
-                    <label>Año</label>
-                    <select id="pv_v_anio"></select>
-                </div>
-                <div class="form-group">
-                    <label>Color</label>
-                    <select id="pv_v_color">
-                        <option value="">Seleccione color...</option>
-                        <option value="Blanco">Blanco</option><option value="Blanco Perla">Blanco Perla</option>
-                        <option value="Negro">Negro</option><option value="Negro Azabache">Negro Azabache</option><option value="Negro Mate">Negro Mate</option>
-                        <option value="Gris">Gris</option><option value="Gris Plata">Gris Plata</option><option value="Gris Carbón">Gris Carbón</option><option value="Plata">Plata</option>
-                        <option value="Rojo">Rojo</option><option value="Rojo Vino">Rojo Vino</option><option value="Borgoña">Borgoña</option>
-                        <option value="Azul">Azul</option><option value="Azul Marino">Azul Marino</option><option value="Azul Eléctrico">Azul Eléctrico</option>
-                        <option value="Verde">Verde</option><option value="Verde Militar">Verde Militar</option>
-                        <option value="Amarillo">Amarillo</option><option value="Naranja">Naranja</option>
-                        <option value="Marrón">Marrón</option><option value="Beige">Beige</option><option value="Dorado">Dorado</option>
-                        <option value="Otro">Otro</option>
-                    </select>
-                </div>
+                <div class="form-group"><label>Marca</label><select id="pv_v_marca" onchange="window.cargarModelosPV()"></select></div>
+                <div class="form-group"><label>Modelo</label><select id="pv_v_modelo"></select></div>
+                <div class="form-group"><label>Año</label><select id="pv_v_anio"></select></div>
+                <div class="form-group"><label>Color</label><select id="pv_v_color"><option value="">Seleccione color...</option><option value="Blanco">Blanco</option><option value="Blanco Perla">Blanco Perla</option><option value="Negro">Negro</option><option value="Negro Azabache">Negro Azabache</option><option value="Negro Mate">Negro Mate</option><option value="Gris">Gris</option><option value="Gris Plata">Gris Plata</option><option value="Gris Carbón">Gris Carbón</option><option value="Plata">Plata</option><option value="Rojo">Rojo</option><option value="Rojo Vino">Rojo Vino</option><option value="Borgoña">Borgoña</option><option value="Azul">Azul</option><option value="Azul Marino">Azul Marino</option><option value="Azul Eléctrico">Azul Eléctrico</option><option value="Verde">Verde</option><option value="Verde Militar">Verde Militar</option><option value="Amarillo">Amarillo</option><option value="Naranja">Naranja</option><option value="Marrón">Marrón</option><option value="Beige">Beige</option><option value="Dorado">Dorado</option><option value="Otro">Otro</option></select></div>
             </div>
         </fieldset>
 
@@ -705,9 +191,7 @@
             </div>
         </fieldset>
 
-        <!-- 🔹 DATOS DEL REGISTRO -->
         <div class="section-title">🏛️ Datos del Registro</div>
-
         <fieldset>
             <legend>Ubicación y Estación</legend>
             <div class="form-grid">
@@ -715,45 +199,16 @@
                     <label>Estación Policial</label>
                     <select id="pv_estacion">
                         <option value="">Seleccione estación...</option>
-                        <option value="EPM MARACAIBO">EPM MARACAIBO</option>
-                        <option value="EPM SAN FRANCISCO">EPM SAN FRANCISCO</option>
-                        <option value="EPM LA CAÑADA">EPM LA CAÑADA</option>
-                        <option value="EPM ESTACION POLICIAL JESUS E. LOSADA">EPM ESTACION POLICIAL JESUS E. LOSADA</option>
-                        <option value="EPP CRISTO DE ARANZA">EPP CRISTO DE ARANZA</option>
-                        <option value="EPP LUIS HURTADO">EPP LUIS HURTADO</option>
-                        <option value="EPP DAGNINO">EPP DAGNINO</option>
-                        <option value="EPP OLEGARIO VILLALOBOS">EPP OLEGARIO VILLALOBOS</option>
-                        <option value="EPP CHIQUINQUIRA">EPP CHIQUINQUIRA</option>
-                        <option value="EPP FRANCISCO EUGENIO">EPP FRANCISCO EUGENIO</option>
-                        <option value="EPP CARACCIOLO">EPP CARACCIOLO</option>
-                        <option value="EPP IDELFONSO">EPP IDELFONSO</option>
-                        <option value="EPP VENANCIO PULGAR">EPP VENANCIO PULGAR</option>
-                        <option value="EPP COQUIVACOA-ZAPARA">EPP COQUIVACOA-ZAPARA</option>
-                        <option value="EPP RAUL LEONI">EPP RAUL LEONI</option>
-                        <option value="EPP ANTONIO BORJAS ROMERO">EPP ANTONIO BORJAS ROMERO</option>
-                        <option value="EPP JUANA DE AVILA">EPP JUANA DE AVILA</option>
-                        <option value="EPP SAN ISIDRO">EPP SAN ISIDRO</option>
-                        <option value="EPP CASIQUE MARA">EPP CASIQUE MARA</option>
-                        <option value="EPP BOLIVAR">EPP BOLIVAR</option>
-                        <option value="EPP EL BAJO">EPP EL BAJO</option>
-                        <option value="EPP DOMITILA">EPP DOMITILA</option>
-                        <option value="EPP CORTIJOS">EPP CORTIJOS</option>
-                        <option value="EPP MARCIAL HERNANDEZ">EPP MARCIAL HERNANDEZ</option>
-                        <option value="EPP POTRERITO">EPP POTRERITO</option>
-                        <option value="EPP ANDRES BELLO">EPP ANDRES BELLO</option>
-                        <option value="EPP SANTA LUCIA">EPP SANTA LUCIA</option>
+                        <option value="EPM MARACAIBO">EPM MARACAIBO</option><option value="EPM SAN FRANCISCO">EPM SAN FRANCISCO</option><option value="EPM LA CAÑADA">EPM LA CAÑADA</option><option value="EPM ESTACION POLICIAL JESUS E. LOSADA">EPM ESTACION POLICIAL JESUS E. LOSADA</option><option value="EPP CRISTO DE ARANZA">EPP CRISTO DE ARANZA</option><option value="EPP LUIS HURTADO">EPP LUIS HURTADO</option><option value="EPP DAGNINO">EPP DAGNINO</option><option value="EPP OLEGARIO VILLALOBOS">EPP OLEGARIO VILLALOBOS</option><option value="EPP CHIQUINQUIRA">EPP CHIQUINQUIRA</option><option value="EPP FRANCISCO EUGENIO">EPP FRANCISCO EUGENIO</option><option value="EPP CARACCIOLO">EPP CARACCIOLO</option><option value="EPP IDELFONSO">EPP IDELFONSO</option><option value="EPP VENANCIO PULGAR">EPP VENANCIO PULGAR</option><option value="EPP COQUIVACOA-ZAPARA">EPP COQUIVACOA-ZAPARA</option><option value="EPP RAUL LEONI">EPP RAUL LEONI</option><option value="EPP ANTONIO BORJAS ROMERO">EPP ANTONIO BORJAS ROMERO</option><option value="EPP JUANA DE AVILA">EPP JUANA DE AVILA</option><option value="EPP SAN ISIDRO">EPP SAN ISIDRO</option><option value="EPP CASIQUE MARA">EPP CASIQUE MARA</option><option value="EPP BOLIVAR">EPP BOLIVAR</option><option value="EPP EL BAJO">EPP EL BAJO</option><option value="EPP DOMITILA">EPP DOMITILA</option><option value="EPP CORTIJOS">EPP CORTIJOS</option><option value="EPP MARCIAL HERNANDEZ">EPP MARCIAL HERNANDEZ</option><option value="EPP POTRERITO">EPP POTRERITO</option><option value="EPP ANDRES BELLO">EPP ANDRES BELLO</option><option value="EPP SANTA LUCIA">EPP SANTA LUCIA</option>
                     </select>
                 </div>
                 <div class="form-group" style="grid-column: span 2;"><label>Dirección de Detención</label><input type="text" id="pv_dir_detencion"></div>
             </div>
         </fieldset>
         
-        <fieldset>
-            <legend>Observaciones</legend>
-            <textarea id="pv_observaciones" rows="2"></textarea>
-        </fieldset>
+        <fieldset><legend>Observaciones</legend><textarea id="pv_observaciones" rows="2"></textarea></fieldset>
 
         <button type="submit" class="btn-submit">💾 Guardar Cambios</button>
-        <div id="msg-reg-vinculado" class="msg"></div>
+        <div id="msg-mod-vinculado" class="msg"></div>
     </form>
 </div>
