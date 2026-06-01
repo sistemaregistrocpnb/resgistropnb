@@ -2,7 +2,7 @@ window.initModVinculado = function() {
     console.log("✅ Módulo mod-vinculado.js cargado correctamente.");
 
         // 🔹 Mapa de Países para las Banderas (Agrega esto dentro de la función)
-    const isoMap = {
+      const iso = isoMap[opt.text] || 'xx'; // 'xx' es un fallback si no encuentra el país
         "Afganistán": "af", "Albania": "al", "Alemania": "de", "Andorra": "ad", "Angola": "ao",
         "Antigua y Barbuda": "ag", "Arabia Saudita": "sa", "Argelia": "dz", "Argentina": "ar",
         "Armenia": "am", "Australia": "au", "Austria": "at", "Azerbaiyán": "az", "Bahamas": "bs",
