@@ -23,14 +23,54 @@
 .input-error { border-color: #ef4444 !important; background-color: #fef2f2; }
 
 /* 🔹 PANEL DE SELECCIÓN (Idéntico a mod-vehiculos.html) */
-#selection-panel { display: none; margin-top: 20px; }
-.selection-header { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-.selection-header h4 { margin: 0 0 8px; color: #1e40af; font-size: 1.05rem; }
-.selection-header p { margin: 0; color: #1e40af; font-size: 0.9rem; }
-#selection-list { display: grid; gap: 12px; }
-.btn-cancel-search { margin-top: 16px; padding: 10px 20px; background: #64748b; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; display: block; margin-left: auto; margin-right: auto; }
-.btn-cancel-search:hover { background: #475569; }
+/* 🔹 PANEL DE SELECCIÓN (Idéntico a mod-vehiculos.html) */
+#selection-panel { 
+    display: none; 
+    margin-top: 20px; 
+}
 
+.selection-header { 
+    background: #eff6ff; 
+    border: 2px solid #3b82f6; 
+    border-radius: 8px; 
+    padding: 16px; 
+    margin-bottom: 16px; 
+}
+
+.selection-header h4 { 
+    margin: 0 0 8px; 
+    color: #1e40af; 
+    font-size: 1.05rem; 
+}
+
+.selection-header p { 
+    margin: 0; 
+    color: #1e40af; 
+    font-size: 0.9rem; 
+}
+
+#selection-list { 
+    display: grid; 
+    gap: 12px; 
+}
+
+.btn-cancel-search { 
+    margin-top: 16px; 
+    padding: 10px 20px; 
+    background: #64748b; 
+    color: white; 
+    border: none; 
+    border-radius: 5px; 
+    cursor: pointer; 
+    font-weight: 600; 
+    display: block; 
+    margin-left: auto; 
+    margin-right: auto; 
+}
+
+.btn-cancel-search:hover { 
+    background: #475569; 
+}
 /* 🔹 Dropdown Teléfono */
 .phone-dropdown-wrapper { position: relative; width: 100%; }
 .phone-options { max-height: 240px; overflow-y: auto; position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1.5px solid var(--beige-border); border-radius: 0 0 5px 5px; z-index: 20; box-shadow: 0 6px 16px rgba(0,0,0,0.12); display: none; margin-top: 2px; }
