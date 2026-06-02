@@ -6,6 +6,7 @@
 .registro-form label { font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; display: block; }
 .registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; transition: border 0.2s; }
 .registro-form input:focus, .registro-form select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,43,92,0.1); }
+/* 🔹 Indicadores de Validación */
 .status-msg { display: block; font-size: 0.75rem; margin-top: 4px; font-weight: 600; min-height: 16px; }
 .status-msg.valid { color: #15803d; }
 .status-msg.error { color: #dc2626; }
@@ -20,20 +21,86 @@
 .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 .img-preview { width: 100%; height: auto; max-height: 200px; object-fit: contain; border: 1px solid var(--beige-border); border-radius: 5px; margin-top: 8px; display: none; background: #f8fafc; }
 
-/* 🔹 Panel de Selección Dinámico */
+/* 🔹 Panel de Selección Mejorado */
 #selection-panel { display: none; margin-top: 20px; }
 .selection-header { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
 .selection-header h4 { margin: 0 0 8px; color: #1e40af; font-size: 1.05rem; }
 .selection-header p { margin: 0; color: #1e40af; font-size: 0.9rem; }
 #selection-list { display: grid; gap: 12px; }
-.btn-cancel-search { margin-top: 16px; padding: 10px 20px; background: #64748b; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; display: block; margin-left: auto; margin-right: auto; }
+.selection-card {
+    background: white;
+    border: 2px solid #cbd5e1;
+    border-left: 6px solid #64748b;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.selection-card:hover { transform: translateX(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.selection-card.moto { border-color: #dc2626; background: #fef2f2; }
+.selection-card.auto { border-color: #059669; background: #ecfdf5; }
+.selection-card.vinculado { border-color: #002b5c; background: #eff6ff; }
+.selection-card-info { flex: 1; }
+.selection-card-title { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.selection-card-title .icon { font-size: 1.5rem; }
+.selection-card-title .title { font-weight: 700; font-size: 0.95rem; }
+.selection-card.moto .title { color: #dc2626; }
+.selection-card.auto .title { color: #059669; }
+.selection-card.vinculado .title { color: #002b5c; }
+.selection-card-line { font-size: 0.88rem; color: #334155; margin-bottom: 3px; }
+.selection-card-line.small { font-size: 0.8rem; color: #64748b; }
+.selection-card-badge {
+    font-size: 0.75rem;
+    color: #0369a1;
+    background: #e0f2fe;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 6px;
+}
+.btn-select-card {
+    padding: 12px 24px;
+    background: #64748b;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+}
+.btn-select-card:hover { filter: brightness(0.9); }
+.selection-card.moto .btn-select-card { background: #dc2626; }
+.selection-card.auto .btn-select-card { background: #059669; }
+.selection-card.vinculado .btn-select-card { background: #002b5c; }
+.btn-cancel-search {
+    margin-top: 16px;
+    padding: 10px 20px;
+    background: #64748b;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
 .btn-cancel-search:hover { background: #475569; }
 
 .tipo-selector { display: flex; gap: 12px; margin-bottom: 20px; opacity: 0.7; pointer-events: none; }
 .tipo-btn { flex: 1; padding: 12px; border: 2px solid var(--beige-border); border-radius: 8px; background: #fff; text-align: center; font-weight: 600; color: #64748b; }
 .tipo-btn.active { border-color: var(--primary); background: #f0f4f8; color: var(--primary); box-shadow: 0 2px 8px rgba(0,43,92,0.1); }
 .hidden-view { display: none; }
-@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .selection-card { flex-direction: column; align-items: stretch; }
+    .btn-select-card { width: 100%; }
+}
 </style>
 
 <div class="card">
@@ -47,10 +114,12 @@
             <button id="btn_buscar_mod" class="btn-search">🔍 Buscar</button>
         </div>
         <div id="mod_msg_busqueda" class="msg" style="margin-top:8px;"></div>
+
+        <!-- 🔔 ALERTA CRUZADA DE PLACA -->
         <div id="cross-plate-warning" class="msg" style="margin-top:8px; background:#fffbeb; color:#92400e; border:1px solid #fcd34d; text-align:left; display:none;"></div>
     </div>
 
-    <!-- 🔹 PANEL DE SELECCIÓN DINÁMICO -->
+    <!-- 🔹 PANEL DE SELECCIÓN MEJORADO (Tarjetas dinámicas) -->
     <div id="selection-panel">
         <div class="selection-header">
             <h4>🔎 Múltiples coincidencias encontradas</h4>
@@ -60,7 +129,7 @@
         <button id="btn-cancel-search" class="btn-cancel-search">❌ Cancelar búsqueda</button>
     </div>
 
-    <!-- 📝 FORMULARIO -->
+    <!-- 📝 FORMULARIO (Oculto hasta seleccionar) -->
     <form id="form-mod-vehiculos" class="registro-form" novalidate style="display: none;">
         <input type="hidden" id="mod_id_original">
         <input type="hidden" id="mod_tipo_vehiculo">
@@ -68,9 +137,10 @@
 
         <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
             <label style="font-weight: 600;">Estatus Actual:</label>
-            <span id="mod_estatus_badge" style="background:#dcfce7; color:#15803d; font-weight:700; padding:6px 12px; border-radius:6px; border:1px solid #86efac; display:inline-block;">Verificación</span>
+            <span id="mod_estatus_badge" class="status-badge" style="background:#dcfce7; color:#15803d; font-weight:700; padding:6px 12px; border-radius:6px; border:1px solid #86efac; display:inline-block;">Verificación</span>
         </div>
 
+        <!-- 🔹 1. TIPO (Informativo) -->
         <fieldset>
             <legend>🚗 Tipo de Vehículo</legend>
             <div class="tipo-selector">
@@ -80,14 +150,19 @@
             <small style="color:#64748b;">El tipo de vehículo no se puede cambiar en la edición.</small>
         </fieldset>
 
+        <!-- 🔹 2. FOTOS -->
         <fieldset id="sec-fotos">
             <legend>📸 Fotografías (Suba una nueva para reemplazar)</legend>
+
+            <!-- FOTOS MOTO -->
             <div class="form-grid" id="grid-fotos-moto">
                 <div class="form-group"><label>Frontal</label><input type="file" id="m_foto_frontal" accept="image/*" onchange="window.previewFile(this, 'm_prev_frontal')"><img id="m_prev_frontal" class="img-preview"></div>
                 <div class="form-group"><label>Trasera</label><input type="file" id="m_foto_trasera" accept="image/*" onchange="window.previewFile(this, 'm_prev_trasera')"><img id="m_prev_trasera" class="img-preview"></div>
                 <div class="form-group"><label>Lado Derecho</label><input type="file" id="m_foto_der" accept="image/*" onchange="window.previewFile(this, 'm_prev_der')"><img id="m_prev_der" class="img-preview"></div>
                 <div class="form-group"><label>Lado Izquierdo</label><input type="file" id="m_foto_izq" accept="image/*" onchange="window.previewFile(this, 'm_prev_izq')"><img id="m_prev_izq" class="img-preview"></div>
             </div>
+
+            <!-- FOTOS AUTO -->
             <div class="form-grid hidden-view" id="grid-fotos-auto">
                 <div class="form-group"><label>Frontal</label><input type="file" id="m_foto_frontal_a" accept="image/*" onchange="window.previewFile(this, 'm_prev_frontal_a')"><img id="m_prev_frontal_a" class="img-preview"></div>
                 <div class="form-group"><label>Trasera</label><input type="file" id="m_foto_trasera_a" accept="image/*" onchange="window.previewFile(this, 'm_prev_trasera_a')"><img id="m_prev_trasera_a" class="img-preview"></div>
@@ -96,12 +171,13 @@
             </div>
         </fieldset>
 
+        <!-- 🔹 3. IDENTIFICACIÓN -->
         <fieldset>
             <legend>📋 Datos de Identificación</legend>
             <div class="form-grid">
                 <div class="form-group"><label>Placa</label><input type="text" id="m_placa" required style="text-transform: uppercase;"></div>
                 <div class="form-group"><label>Serial de Carrocería</label><input type="text" id="m_serial_carroceria" required></div>
-                <div class="form-group"><label>Serial de Motor</label><input type="text" id="m_serial_motor"></div>
+                <div class="form-group"><label>Serial de Motor</label><input type="text" id="m_serial_motor" placeholder="Opcional en autos"></div>
                 <div class="form-group">
                     <label>Color</label>
                     <select id="m_color" required>
@@ -120,6 +196,7 @@
             </div>
         </fieldset>
 
+        <!-- 🔹 4. CARACTERÍSTICAS -->
         <fieldset>
             <legend>⚙️ Características</legend>
             <div class="form-grid">
@@ -137,6 +214,7 @@
             </div>
         </fieldset>
 
+        <!-- 🔹 5. REGISTRO -->
         <fieldset>
             <legend>🏛️ Datos del Registro</legend>
             <div class="form-grid">
