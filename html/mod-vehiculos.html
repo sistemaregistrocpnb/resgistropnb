@@ -98,10 +98,21 @@
 
         <fieldset>
             <legend>📋 Datos de Identificación</legend>
-            <div class="form-grid">
-                <div class="form-group"><label>Placa</label><input type="text" id="m_placa" required style="text-transform: uppercase;"></div>
-                <div class="form-group"><label>Serial de Carrocería</label><input type="text" id="m_serial_carroceria" required></div>
-                <div class="form-group"><label>Serial de Motor</label><input type="text" id="m_serial_motor"></div>
+            <div class="form-group">
+    <label>Placa</label>
+    <input type="text" id="m_placa" required style="text-transform: uppercase;">
+    <small id="msg-m-placa" class="status-msg"></small>
+</div>
+<div class="form-group">
+    <label>Serial de Carrocería</label>
+    <input type="text" id="m_serial_carroceria" required>
+    <small id="msg-m-carroceria" class="status-msg"></small>
+</div>
+<div class="form-group">
+    <label>Serial de Motor</label>
+    <input type="text" id="m_serial_motor">
+    <small id="msg-m-motor" class="status-msg"></small>
+</div>
                 <div class="form-group">
                     <label>Color</label>
                     <select id="m_color" required>
