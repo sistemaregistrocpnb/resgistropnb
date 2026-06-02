@@ -282,72 +282,65 @@ window.initRegVinculado = function() {
         return tablas;
     };
 
-    // 🔑 FUNCIÓN DE VALIDACIÓN: ahora acepta tipo de vehículo para filtrar registro_vinculado
-    async function verificarDuplicado(inputId, msgId, tablas, columna, tipoVehiculo) {
-        const input = document.getElementById(inputId);
-        const msgEl = document.getElementById(msgId);
-        if (!input || !msgEl) return;
+   // 🔑 FUNCIÓN DE VALIDACIÓN: ahora acepta tipo de vehículo para filtrar registro_vinculado
+async function verificarDuplicado(inputId, msgId, tablas, columna, tipoVehiculo) {
+    const input = document.getElementById(inputId);
+    const msgEl = document.getElementById(msgId);
+    if (!input || !msgEl) return;
 
-        const val = input.value.trim().toUpperCase();
-        if (!val || val.length < 5) {
-            input.classList.remove('input-valid', 'input-error');
-            msgEl.textContent = '';
-            return;
-        }
-
-        // Si no hay tablas (ej: no hay tipo seleccionado), esperar
-        if (tablas.length === 0) {
-            input.classList.remove('input-valid', 'input-error');
-            msgEl.textContent = '';
-            return;
-        }
-
-        msgEl.textContent = '🔍 Verificando...';
-        msgEl.className = 'status-msg';
-        
-        try {
-            let found = false;
-            let tablaEncontrada = '';
-            
-            for (const tabla of tablas) {
-                let query = window.supabaseClient.from(tabla).select('id');
-                
-                // 🔑 CLAVE: Si es registro_vinculado Y no es cédula, filtrar por tipo_vehiculo
-                if (tabla === 'registro_vinculado' && columna !== 'cedula' && tipoVehiculo) {
-                    query = query.eq('tipo_vehiculo', tipoVehiculo);
-                    console.log(`🔎 Buscando en ${tabla} con filtro tipo_vehiculo=${tipoVehiculo}`);
-                } else {
-                    console.log(`🔎 Buscando en ${tabla} SIN filtro`);
-                }
-                
-                const { data, error } = await query.ilike(columna, val).limit(1);
-                
-                if (error) throw error;
-                
-                if (data && data.length > 0) {
-                    found = true;
-                    tablaEncontrada = tabla;
-                    break;
-                }
-            }
-
-            if (found) {
-                input.classList.add('input-error');
-                input.classList.remove('input-valid');
-                msgEl.textContent = `❌ Ya registrado en ${tablaEncontrada}`;
-                msgEl.className = 'status-msg error';
-            } else {
-                input.classList.add('input-valid');
-                input.classList.remove('input-error');
-                msgEl.textContent = '✅ Disponible';
-                msgEl.className = 'status-msg valid';
-            }
-        } catch (e) {
-            console.error('Error validación:', e);
-            msgEl.textContent = '⚠️ Error';
-        }
+    const val = input.value.trim().toUpperCase();
+    if (!val || val.length < 5) {
+        input.classList.remove('input-valid', 'input-error');
+        msgEl.textContent = '';
+        return;
     }
 
+    if (tablas.length === 0) {
+        input.classList.remove('input-valid', 'input-error');
+        msgEl.textContent = '';
+        return;
+    }
+
+    msgEl.textContent = '🔍 Verificando...';
+    msgEl.className = 'status-msg';
+    
+    try {
+        let found = false;
+        
+        for (const tabla of tablas) {
+            let query = window.supabaseClient.from(tabla).select('id');
+            
+            // Si es registro_vinculado Y no es cédula, filtrar por tipo_vehiculo
+            if (tabla === 'registro_vinculado' && columna !== 'cedula' && tipoVehiculo) {
+                query = query.eq('tipo_vehiculo', tipoVehiculo);
+            }
+            
+            const { data, error } = await query.ilike(columna, val).limit(1);
+            
+            if (error) throw error;
+            
+            if (data && data.length > 0) {
+                found = true;
+                break;
+            }
+        }
+
+        if (found) {
+            input.classList.add('input-error');
+            input.classList.remove('input-valid');
+            msgEl.textContent = '❌ Ya registrado';  // ✅ MENSAJE LIMPIO
+            msgEl.className = 'status-msg error';
+        } else {
+            input.classList.add('input-valid');
+            input.classList.remove('input-error');
+            msgEl.textContent = '✅ Disponible';
+            msgEl.className = 'status-msg valid';
+        }
+    } catch (e) {
+        console.error('Error validación:', e);
+        msgEl.textContent = '⚠️ Error';
+    }
+}
     // Función para re-validar campos de vehículo cuando cambia el tipo
     const reValidarCamposVehiculo = () => {
         const placa = document.getElementById('pv_v_placa')?.value;
