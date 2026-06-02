@@ -39,14 +39,14 @@ window.initElimPersonas = function() {
         img.style.display = url ? 'block' : 'none';
     };
 
-    // 🔹 Mostrar datos + UI según estado (CORREGIDO)
+    // 🔹 Mostrar datos + UI según estado
     function renderUI(data, isArchived) {
         // Fotos
         setPhoto('elim-foto-frontal', data.foto_frontal);
         setPhoto('elim-foto-izq', data.foto_perfil_izq);
         setPhoto('elim-foto-der', data.foto_perfil_der);
         
-        // ✅ Asignación directa y correcta de los campos de la base de datos
+        // Campos de texto
         setVal('elim-n1', data.primer_nombre);
         setVal('elim-n2', data.segundo_nombre);
         setVal('elim-a1', data.primer_apellido);
@@ -55,10 +55,9 @@ window.initElimPersonas = function() {
         setVal('elim-fnac', data.fecha_nacimiento);
         setVal('elim-edad', data.edad);
         setVal('elim-apodo', data.apodo);
-        setVal('elim-marca', data.marca_corporal); // ✅ Marca Corporal
+        setVal('elim-marca', data.marca_corporal);
         setVal('elim-nac', data.nacionalidad);
         setVal('elim-sexo', data.sexo);
-        
         setVal('elim-tlf-pais', data.tlf_pais);
         setVal('elim-tlf-num', data.tlf_numero);
         setVal('elim-dir', data.direccion);
@@ -68,7 +67,7 @@ window.initElimPersonas = function() {
         setVal('elim-ojos', data.color_ojos);
         setVal('elim-cabello', data.color_cabello);
         setVal('elim-comp', data.complexion);
-        
+
         setVal('elim-lentes', data.usa_lentes ? 'Sí' : 'No');
         if (data.usa_lentes && data.detalle_lentes) { showField('box-lentes-det'); setVal('elim-lentes-det', data.detalle_lentes); } 
         else { hideField('box-lentes-det'); }
@@ -95,7 +94,7 @@ window.initElimPersonas = function() {
         if (isArchived) {
             archivedBanner.style.display = 'block';
             archivedNotice.style.display = 'block';
-            document.getElementById('archived-date').textContent = data.eliminado_en ? new Date(data.eliminado_en).toLocaleDateString('es-VE') : '-';
+            document.getElementById('archived-date').textContent = data.eliminado_en ? new Date(data.eliminado_en).toLocaleString('es-VE') : '-';
             document.getElementById('archived-by').textContent = data.eliminado_por || 'Sistema';
             btnEliminar.style.display = 'none';
             btnReintegrar.style.display = 'block';
@@ -107,7 +106,7 @@ window.initElimPersonas = function() {
         }
     }
 
-    // 🔹 Búsqueda principal
+    // 🔹 Búsqueda principal (CORREGIDA para manejar múltiples eliminaciones)
     async function buscarPersona() {
         const cedula = buscarInput.value.trim().replace(/\D/g, '');
         if (cedula.length < 7) return showMsg(msgBuscar, '⚠️ Ingrese entre 7 y 8 dígitos', 'error');
@@ -139,11 +138,14 @@ window.initElimPersonas = function() {
             }
             
             // 2. Buscar en eliminados/archivados
+            // ✅ CORRECCIÓN CLAVE: Ordenar por fecha descendente y limitar a 1 para obtener la ÚLTIMA eliminación
             let { data: archivado, error: errArch } = await window.supabaseClient
                 .from('eliminados')
                 .select('*')
                 .eq('cedula', cedula)
-                .maybeSingle();
+                .order('eliminado_en', { ascending: false }) // La más reciente primero
+                .limit(1) // Solo traemos esa
+                .maybeSingle(); // maybeSingle funciona perfecto con limit(1)
                 
             if (errArch) throw errArch;
 
@@ -265,144 +267,88 @@ window.initElimPersonas = function() {
         }
     }
 
-   // 🔹 Reintegrar (Eliminados → Activa) CON RESPALDO EN HISTÓRICO
-async function reintegrarRegistro() {
-    btnReintegrar.disabled = true;
-    btnReintegrar.textContent = '⏳ Procesando...';
-    hideMsgElim();
-    try {
-        const { data: { user } } = await window.supabaseClient.auth.getUser();
-        const reintegradoPor = user?.email || 'usuario@sistema';
-
-        // ✅ PASO 1: CREAR RESPALDO EN HISTÓRICO ANTES DE PERDER LOS DATOS
-        const datosCompletos = {
-            id_original: currentData.id,
-            eliminado_por: currentData.eliminado_por || 'Sistema',
-            eliminado_en: currentData.eliminado_en,
-            estatus: currentData.estatus,
-            estacion_policial: currentData.estacion_policial,
-            direccion_detencion: currentData.direccion_detencion,
-            foto_frontal: currentData.foto_frontal,
-            foto_perfil_izq: currentData.foto_perfil_izq,
-            foto_perfil_der: currentData.foto_perfil_der,
-            primer_nombre: currentData.primer_nombre,
-            segundo_nombre: currentData.segundo_nombre,
-            primer_apellido: currentData.primer_apellido,
-            segundo_apellido: currentData.segundo_apellido,
-            cedula: currentData.cedula,
-            fecha_nacimiento: currentData.fecha_nacimiento,
-            edad: currentData.edad,
-            tlf_pais: currentData.tlf_pais,
-            tlf_numero: currentData.tlf_numero,
-            direccion: currentData.direccion,
-            apodo: currentData.apodo,
-            marca_corporal: currentData.marca_corporal,
-            nacionalidad: currentData.nacionalidad,
-            sexo: currentData.sexo,
-            estatura_cm: currentData.estatura_cm,
-            color_piel: currentData.color_piel,
-            color_ojos: currentData.color_ojos,
-            color_cabello: currentData.color_cabello,
-            complexion: currentData.complexion,
-            usa_lentes: currentData.usa_lentes,
-            detalle_lentes: currentData.detalle_lentes,
-            perforaciones: currentData.perforaciones,
-            detalle_perforaciones: currentData.detalle_perforaciones,
-            condicion_medica: currentData.condicion_medica,
-            consume_medicamento: currentData.consume_medicamento,
-            problema_judicial: currentData.problema_judicial,
-            observaciones: currentData.observaciones
-        };
-
-        const { error: histErr } = await window.supabaseClient
-            .from('historial_eliminaciones')
-            .insert([{
-                id_persona_original: currentData.id_original || currentId,
-                cedula: currentData.cedula,
-                eliminado_por: currentData.eliminado_por || 'Sistema',
-                eliminado_en: currentData.eliminado_en,
-                reintegrado_por: reintegradoPor,
-                datos_completos: datosCompletos
-            }]);
-
-        if (histErr) {
-            console.warn('⚠️ No se pudo guardar en histórico, pero se continuará la reintegración:', histErr.message);
+    // 🔹 Reintegrar (Eliminados → Activa)
+    async function reintegrarRegistro() {
+        btnReintegrar.disabled = true; 
+        btnReintegrar.textContent = '⏳ Procesando...'; 
+        hideMsgElim();
+        
+        try {
+            const dataToRestore = {
+                estatus: currentData.estatus, 
+                estacion_policial: currentData.estacion_policial, 
+                direccion_detencion: currentData.direccion_detencion,
+                foto_frontal: currentData.foto_frontal, 
+                foto_perfil_izq: currentData.foto_perfil_izq, 
+                foto_perfil_der: currentData.foto_perfil_der,
+                primer_nombre: currentData.primer_nombre, 
+                segundo_nombre: currentData.segundo_nombre, 
+                primer_apellido: currentData.primer_apellido, 
+                segundo_apellido: currentData.segundo_apellido,
+                cedula: currentData.cedula, 
+                fecha_nacimiento: currentData.fecha_nacimiento, 
+                edad: currentData.edad,
+                tlf_pais: currentData.tlf_pais, 
+                tlf_numero: currentData.tlf_numero, 
+                direccion: currentData.direccion,
+                apodo: currentData.apodo, 
+                marca_corporal: currentData.marca_corporal, 
+                nacionalidad: currentData.nacionalidad, 
+                sexo: currentData.sexo,
+                estatura_cm: currentData.estatura_cm, 
+                color_piel: currentData.color_piel, 
+                color_ojos: currentData.color_ojos, 
+                color_cabello: currentData.color_cabello, 
+                complexion: currentData.complexion,
+                usa_lentes: currentData.usa_lentes, 
+                detalle_lentes: currentData.detalle_lentes, 
+                perforaciones: currentData.perforaciones, 
+                detalle_perforaciones: currentData.detalle_perforaciones,
+                condicion_medica: currentData.condicion_medica, 
+                consume_medicamento: currentData.consume_medicamento, 
+                problema_judicial: currentData.problema_judicial, 
+                observaciones: currentData.observaciones
+            };
+            
+            const { error: insErr } = await window.supabaseClient.from('registro_personas').insert([dataToRestore]);
+            if (insErr) throw new Error('Error restaurando: ' + insErr.message);
+            
+            // ✅ CORRECCIÓN CLAVE: Eliminar SOLO el registro específico por su ID único
+            // Esto deja intactas las eliminaciones anteriores de la misma persona como respaldo histórico
+            await window.supabaseClient
+                .from('eliminados')
+                .delete()
+                .eq('id', currentData.id); // currentData.id es el ID de la fila en 'eliminados'
+            
+            showMsgElim('✅ Persona reintegrada al sistema activo.', 'success');
+            setTimeout(() => { 
+                dataContainer.style.display = 'none'; 
+                buscarInput.value = ''; 
+                hideMsg(msgBuscar); 
+                hideMsgElim(); 
+                archivedNotice.style.display = 'none'; 
+            }, 4000);
+            
+        } catch (err) {
+            console.error('Error reintegrando:', err);
+            let msg = 'Error al reintegrar.';
+            if (err.message.includes('23505') || err.message.includes('unique')) {
+                msg = '❌ Esta cédula ya existe en el sistema activo.';
+            } else {
+                msg = '❌ ' + err.message;
+            }
+            showMsgElim(msg, 'error');
+        } finally { 
+            btnReintegrar.disabled = false; 
+            btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo'; 
         }
-
-        // ✅ PASO 2: RESTAURAR EN TABLA ACTIVA (como ya estaba)
-        const dataToRestore = {
-            estatus: currentData.estatus,
-            estacion_policial: currentData.estacion_policial,
-            direccion_detencion: currentData.direccion_detencion,
-            foto_frontal: currentData.foto_frontal,
-            foto_perfil_izq: currentData.foto_perfil_izq,
-            foto_perfil_der: currentData.foto_perfil_der,
-            primer_nombre: currentData.primer_nombre,
-            segundo_nombre: currentData.segundo_nombre,
-            primer_apellido: currentData.primer_apellido,
-            segundo_apellido: currentData.segundo_apellido,
-            cedula: currentData.cedula,
-            fecha_nacimiento: currentData.fecha_nacimiento,
-            edad: currentData.edad,
-            tlf_pais: currentData.tlf_pais,
-            tlf_numero: currentData.tlf_numero,
-            direccion: currentData.direccion,
-            apodo: currentData.apodo,
-            marca_corporal: currentData.marca_corporal,
-            nacionalidad: currentData.nacionalidad,
-            sexo: currentData.sexo,
-            estatura_cm: currentData.estatura_cm,
-            color_piel: currentData.color_piel,
-            color_ojos: currentData.color_ojos,
-            color_cabello: currentData.color_cabello,
-            complexion: currentData.complexion,
-            usa_lentes: currentData.usa_lentes,
-            detalle_lentes: currentData.detalle_lentes,
-            perforaciones: currentData.perforaciones,
-            detalle_perforaciones: currentData.detalle_perforaciones,
-            condicion_medica: currentData.condicion_medica,
-            consume_medicamento: currentData.consume_medicamento,
-            problema_judicial: currentData.problema_judicial,
-            observaciones: currentData.observaciones
-        };
-
-        const { error: insErr } = await window.supabaseClient
-            .from('registro_personas')
-            .insert([dataToRestore]);
-
-        if (insErr) throw new Error('Error restaurando: ' + insErr.message);
-
-        await window.supabaseClient
-            .from('eliminados')
-            .delete()
-            .eq('id', currentData.id);
-
-        showMsgElim('✅ Persona reintegrada al sistema activo. Se guardó respaldo histórico.', 'success');
-        setTimeout(() => {
-            dataContainer.style.display = 'none';
-            buscarInput.value = '';
-            hideMsg(msgBuscar);
-            hideMsgElim();
-            archivedNotice.style.display = 'none';
-        }, 4000);
-    } catch (err) {
-        console.error('Error reintegrando:', err);
-        let msg = 'Error al reintegrar.';
-        if (err.message.includes('23505') || err.message.includes('unique')) {
-            msg = '❌ Esta cédula ya existe en el sistema activo.';
-        } else {
-            msg = '❌ ' + err.message;
-        }
-        showMsgElim(msg, 'error');
-    } finally {
-        btnReintegrar.disabled = false;
-        btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo';
     }
-}
 
     // 🔹 Listeners
     buscarBtn.addEventListener('click', buscarPersona);
-    buscarInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); buscarPersona(); } });
+    buscarInput.addEventListener('keydown', e => { 
+        if (e.key === 'Enter') { e.preventDefault(); buscarPersona(); } 
+    });
     
     btnEliminar.addEventListener('click', () => {
         if (!currentData) return;
