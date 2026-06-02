@@ -352,58 +352,61 @@ async function verificarDuplicado(inputId, msgId, tablas, columna, tipoVehiculo)
         if (serialMotor) document.getElementById('pv_v_serial_motor').dispatchEvent(new Event('input'));
     };
 
-    const setupValidation = () => {
-        const cedulaInput = document.getElementById('pv_p_cedula');
-        const placaInput = document.getElementById('pv_v_placa');
-        const serialCarroInput = document.getElementById('pv_v_serial_carro');
-        const serialMotorInput = document.getElementById('pv_v_serial_motor');
-        const tipoVehInput = document.getElementById('pv_v_tipo');
+  // ✅ MISMA FUNCIÓN verificarDuplicado que arriba (con debounce y cancelación)
+// ... (copia la función completa de arriba) ...
 
-        // Cédula: se valida siempre contra todas las tablas
-        if (cedulaInput) {
-            cedulaInput.addEventListener('input', () => {
-                cedulaInput.value = cedulaInput.value.replace(/\D/g, '').slice(0, 8);
-                const tablas = getTablasParaCampo('cedula');
-                verificarDuplicado('pv_p_cedula', 'pv-msg-cedula', tablas, 'cedula', null);
-            });
-        }
-        
-        // Placa: se valida solo contra el tipo de vehículo seleccionado
-        if (placaInput) {
-            placaInput.addEventListener('input', () => {
-                const tipo = tipoVehInput?.value;
-                const tablas = getTablasParaCampo('placa');
-                if (tablas.length === 0) {
-                    placaInput.classList.remove('input-valid', 'input-error');
-                    const msg = document.getElementById('pv-msg-placa');
-                    if (msg) msg.textContent = '⚠️ Seleccione tipo de vehículo primero';
-                    return;
-                }
-                verificarDuplicado('pv_v_placa', 'pv-msg-placa', tablas, 'placa', tipo);
-            });
-        }
-        
-        // Serial Carrocería
-        if (serialCarroInput) {
-            serialCarroInput.addEventListener('input', () => {
-                const tipo = tipoVehInput?.value;
-                const tablas = getTablasParaCampo('serial');
-                if (tablas.length === 0) return;
-                verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', tablas, 'serial_carroceria', tipo);
-            });
-        }
-        
-        // Serial Motor
-        if (serialMotorInput) {
-            serialMotorInput.addEventListener('input', () => {
-                const tipo = tipoVehInput?.value;
-                const tablas = getTablasParaCampo('serial');
-                if (tablas.length === 0) return;
-                verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', tablas, 'serial_motor', tipo);
-            });
-        }
-    };
+const setupValidation = () => {
+    const cedulaInput = document.getElementById('pv_p_cedula');
+    const placaInput = document.getElementById('pv_v_placa');
+    const serialCarroInput = document.getElementById('pv_v_serial_carro');
+    const serialMotorInput = document.getElementById('pv_v_serial_motor');
+    const tipoVehInput = document.getElementById('pv_v_tipo');
 
+    if (cedulaInput) {
+        cedulaInput.addEventListener('input', () => {
+            cedulaInput.value = cedulaInput.value.replace(/\D/g, '').slice(0, 8);
+            const tablas = ['registro_personas', 'registro_vinculado'];
+            verificarDuplicado('pv_p_cedula', 'pv-msg-cedula', tablas, 'cedula', null);
+        });
+    }
+
+    if (placaInput) {
+        placaInput.addEventListener('input', () => {
+            const tipo = tipoVehInput?.value;
+            if (!tipo) {
+                placaInput.classList.remove('input-valid', 'input-error');
+                document.getElementById('pv-msg-placa').textContent = '';
+                return;
+            }
+            const tablas = ['registro_vinculado'];
+            if (tipo === 'Motocicleta') tablas.unshift('registro_motos');
+            else if (tipo === 'Automóvil') tablas.unshift('registro_automoviles');
+            verificarDuplicado('pv_v_placa', 'pv-msg-placa', tablas, 'placa', null);
+        });
+    }
+
+    if (serialCarroInput) {
+        serialCarroInput.addEventListener('input', () => {
+            const tipo = tipoVehInput?.value;
+            if (!tipo) return;
+            const tablas = ['registro_vinculado'];
+            if (tipo === 'Motocicleta') tablas.unshift('registro_motos');
+            else if (tipo === 'Automóvil') tablas.unshift('registro_automoviles');
+            verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', tablas, 'serial_carroceria', null);
+        });
+    }
+
+    if (serialMotorInput) {
+        serialMotorInput.addEventListener('input', () => {
+            const tipo = tipoVehInput?.value;
+            if (!tipo) return;
+            const tablas = ['registro_vinculado'];
+            if (tipo === 'Motocicleta') tablas.unshift('registro_motos');
+            else if (tipo === 'Automóvil') tablas.unshift('registro_automoviles');
+            verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', tablas, 'serial_motor', null);
+        });
+    }
+};
     // ==========================================
     // 🔹 7. ENVÍO DEL FORMULARIO
     // ==========================================
