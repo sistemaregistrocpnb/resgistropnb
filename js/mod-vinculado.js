@@ -119,13 +119,13 @@ window.initModVinculado = function() {
         if (lista) lista.forEach(mod => modeloSelect.innerHTML += `<option value="${mod}">${mod}</option>`);
     };
 
-    function setUIForType(type) {
-        const isMoto = type === 'Motocicleta';
-        document.getElementById('pv_v_tipo').value = type;
-        document.getElementById('btn_tipo_moto').classList.toggle('active', isMoto);
-        document.getElementById('btn_tipo_auto').classList.toggle('active', !isMoto);
-        window.cargarMarcasPV();
+  function setUIForType(type) {
+    const tipoSelect = document.getElementById('pv_v_tipo');
+    if (tipoSelect) {
+        tipoSelect.value = type;
     }
+    window.cargarMarcasPV();
+}
 
     function mostrarMsg(el, txt, type) {
         if (el) { el.innerHTML = txt; el.className = `msg ${type}`; el.style.display = txt ? 'block' : 'none'; }
