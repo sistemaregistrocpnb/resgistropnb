@@ -1,34 +1,30 @@
 <style>
 :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; }
-.registro-form fieldset { border: 1px solid var(--beige-border); border-radius: 8px; padding: 16px; margin-bottom: 18px; background: #fafbfc; }
-.registro-form legend { font-weight: 600; color: var(--primary); font-size: 0.95rem; padding: 0 8px; }
-.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
-.registro-form label { font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; display: block; }
-.registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; transition: border 0.2s; }
-.registro-form input:focus, .registro-form select:focus, .registro-form textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,43,92,0.1); }
-.btn-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 15px; font-size: 1rem; }
-.btn-submit:hover { background: var(--secondary); }
-.btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
-.btn-search { padding: 9px 15px; background: var(--secondary); color: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
-.msg { padding: 10px; margin-top: 12px; border-radius: 5px; text-align: center; display: none; }
-.msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
-.msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-
-/* 🔹 Búsqueda */
+.card { background: #fff; border-radius: 10px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+.card h3 { color: var(--primary); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--beige-border); }
 .search-box { padding: 16px; background: #f8fafc; border: 1.5px dashed var(--beige-border); border-radius: 8px; margin-bottom: 20px; }
 .search-box label { font-weight: 700; display: block; margin-bottom: 8px; }
 .search-row { display: flex; gap: 10px; }
-.search-row input { flex: 1; padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; }
-
-/* 🔹 Datos del registro actual */
+.search-row input { flex: 1; padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; text-transform: uppercase; }
+.search-row button { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
+.msg { padding: 10px; margin-top: 12px; border-radius: 5px; text-align: center; display: none; }
+.msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 .datos-procesados { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
-.datos-procesados h4 { margin: 0 0 10px; color: #1e40af; }
+.datos-procesados h4 { margin: 0 0 10px; color: #1e40af; font-size: 1.1rem; }
 .dato-fila { display: flex; gap: 10px; padding: 4px 0; border-bottom: 1px dashed #bfdbfe; font-size: 0.9rem; }
 .dato-fila:last-child { border-bottom: none; }
 .dato-label { font-weight: 600; color: #1e40af; min-width: 160px; }
 .dato-valor { color: #0c4a6e; flex: 1; word-break: break-word; }
-
-/* 🔹 Documentos actuales */
+.registro-form fieldset { border: 1px solid var(--beige-border); border-radius: 8px; padding: 16px; margin-bottom: 18px; background: #fafbfc; }
+.registro-form legend { font-weight: 600; color: var(--primary); font-size: 0.95rem; padding: 0 8px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.registro-form label { font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; display: block; }
+.registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; }
+.registro-form input:focus, .registro-form select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,43,92,0.1); }
+.btn-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 15px; font-size: 1rem; }
+.btn-submit:hover { background: var(--secondary); }
+.btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
 .doc-actual { background: #fff; border: 1px solid var(--beige-border); border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 .doc-actual-info { flex: 1; min-width: 200px; }
 .doc-actual-label { font-weight: 600; color: var(--primary); font-size: 0.85rem; }
@@ -36,111 +32,87 @@
 .doc-actual-link:hover { background: #dbeafe; }
 .doc-actual-link.no-doc { color: #94a3b8; background: #f8fafc; border-color: #e2e8f0; cursor: default; }
 .btn-replace { padding: 5px 10px; background: var(--secondary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
-.btn-replace:hover { background: #a68a20; }
 .replace-area { display: none; margin-top: 10px; padding: 10px; background: #fef3c7; border: 1px dashed #fcd34d; border-radius: 5px; }
 .replace-area.active { display: block; }
 .replace-area input[type="file"] { margin-bottom: 8px; }
 .btn-confirm-replace { padding: 5px 10px; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600; margin-right: 5px; }
 .btn-cancel-replace { padding: 5px 10px; background: #64748b; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
-
-/* 🔹 Documentos múltiples */
 .doc-multiple-item { background: #fff; border: 1px solid var(--beige-border); border-radius: 6px; padding: 10px 12px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 0.85rem; }
 .doc-multiple-item a { color: #2563eb; text-decoration: none; font-weight: 500; }
-.doc-multiple-item a:hover { text-decoration: underline; }
 .btn-remove-doc { padding: 4px 8px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
-
-/* 🔹 Botón agregar más */
-.btn-add-more { padding: 6px 12px; background: var(--secondary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 600; margin-top: 6px; }
-.btn-add-more:disabled { background: #9ca3af; cursor: not-allowed; }
-
-/* 🔹 Selector tipo búsqueda */
-#proc_mod_tipo_busqueda { padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; background: #fff; font-size: 0.9rem; }
-
-/* 🔹 Sección de observaciones destacada */
+.btn-add-more { padding: 6px 12px; background: var(--secondary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-top: 6px; font-weight: 600; }
 .observaciones-section { background: #fef3c7; border: 2px solid #fcd34d; border-radius: 8px; padding: 16px; margin-top: 20px; }
 .observaciones-section legend { color: #92400e; font-size: 1rem; }
 .observaciones-section textarea { background: #fffbeb; border: 1px solid #fcd34d; min-height: 80px; }
-
 @media (max-width: 600px) { .form-grid, .search-row { grid-template-columns: 1fr; flex-direction: column; } }
 </style>
 
 <div class="card">
     <h3>✏️ Modificar Registro Procesado</h3>
 
-    <!--  BÚSQUEDA -->
+    <!-- BÚSQUEDA -->
     <div class="search-box">
-        <label> Buscar Registro Procesado:</label>
-        <div class="search-row" style="margin-bottom: 10px;">
-            <select id="proc_mod_tipo_busqueda" style="flex: 0.4; min-width: 150px;">
-                <option value="cédula">Cédula</option>
-                <option value="placa">Placa</option>
-                <option value="serial_carroceria">Serial Carrocería</option>
-                <option value="serial_motor">Serial Motor</option>
-                <option value="delito">Tipo de Delito</option>
-            </select>
-            <input type="text" id="proc_mod_busqueda" placeholder="Ingrese el valor a buscar..." maxlength="50">
-            <button id="proc_mod_btn_buscar" class="btn-search">🔍 Buscar</button>
+        <label>🔍 Buscar por Cédula, Placa, Serial de Carrocería o Serial de Motor:</label>
+        <div class="search-row">
+            <input type="text" id="proc_mod_busqueda" placeholder="Ingrese cédula, placa o serial..." maxlength="50">
+            <button id="proc_mod_btn_buscar">Buscar</button>
         </div>
         <div id="proc_mod_msg_busqueda" class="msg"></div>
     </div>
 
-    <!-- 📋 DATOS DEL REGISTRO ACTUAL (se muestra al encontrar) -->
+    <!-- DATOS ACTUALES -->
     <div id="proc_mod_datos_panel" class="datos-procesados" style="display: none;">
         <h4>📋 Datos del Registro Procesado</h4>
         <div id="proc_mod_datos_contenido"></div>
     </div>
 
-    <!-- 📝 FORMULARIO DE EDICIÓN -->
+    <!-- FORMULARIO EDICIÓN -->
     <form id="form-mod-procesados" class="registro-form" novalidate style="display: none;">
         <input type="hidden" id="proc_mod_id">
 
-        <!-- TIPO DE DELITO (EDITABLE) -->
+        <!-- TIPO DELITO (EDITABLE) -->
         <fieldset>
-            <legend>⚖️ Información del Delito</legend>
+            <legend>⚖️ Tipo de Delito (Editable)</legend>
             <div class="form-grid">
                 <div class="form-group" style="grid-column: span 2;">
                     <label>Tipo de Delito</label>
-                    <input type="text" id="proc_mod_tipo_delito" placeholder="Ej: Robo agravado, Homicidio..." required>
+                    <input type="text" id="proc_mod_tipo_delito" placeholder="Ej: Robo agravado..." required>
                 </div>
             </div>
         </fieldset>
 
-        <!-- DATOS DEL REGISTRO ORIGINAL (SOLO LECTURA) -->
+        <!-- DATOS ORIGINALES (SOLO LECTURA) -->
         <fieldset>
-            <legend>📌 Datos del Registro Original (No Editable)</legend>
+            <legend> Datos del Registro Original (No Editable)</legend>
             <div class="form-grid">
-                <div class="form-group"><label>Tabla Origen</label><input type="text" id="proc_mod_tabla_origen" readonly style="background: #f1f5f9;"></div>
-                <div class="form-group"><label>ID Registro</label><input type="text" id="proc_mod_registro_id_display" readonly style="background: #f1f5f9;"></div>
-                <div class="form-group"><label>Tipo Registro</label><input type="text" id="proc_mod_tipo_registro_display" readonly style="background: #f1f5f9;"></div>
-                <div class="form-group"><label>Identificador</label><input type="text" id="proc_mod_identificador_display" readonly style="background: #f1f5f9;"></div>
-                <div class="form-group"><label>Procesado Por</label><input type="text" id="proc_mod_procesado_por" readonly style="background: #f1f5f9;"></div>
-                <div class="form-group"><label>Fecha Procesamiento</label><input type="text" id="proc_mod_fecha_display" readonly style="background: #f1f5f9;"></div>
+                <div class="form-group"><label>Tabla Origen</label><input type="text" id="proc_mod_tabla_origen" readonly style="background:#f1f5f9;"></div>
+                <div class="form-group"><label>ID Registro</label><input type="text" id="proc_mod_registro_id_display" readonly style="background:#f1f5f9;"></div>
+                <div class="form-group"><label>Tipo Registro</label><input type="text" id="proc_mod_tipo_registro_display" readonly style="background:#f1f5f9;"></div>
+                <div class="form-group"><label>Identificador</label><input type="text" id="proc_mod_identificador_display" readonly style="background:#f1f5f9;"></div>
+                <div class="form-group"><label>Procesado Por</label><input type="text" id="proc_mod_procesado_por" readonly style="background:#f1f5f9;"></div>
+                <div class="form-group"><label>Fecha Procesamiento</label><input type="text" id="proc_mod_fecha_display" readonly style="background:#f1f5f9;"></div>
             </div>
         </fieldset>
 
-        <!-- DOCUMENTOS ÚNICOS (Reemplazables) -->
+        <!-- DOCUMENTOS ÚNICOS (REEMPLAZABLES) -->
         <fieldset>
             <legend>📄 Documentos Únicos (Suba un nuevo PDF para reemplazar)</legend>
-            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">
-                Haga clic en "Reemplazar" para subir un nuevo PDF. El anterior se conservará hasta que confirme.
-            </p>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Haga clic en "Reemplazar" para subir un nuevo PDF.</p>
             <div id="docs-unicos-edit-container"></div>
         </fieldset>
 
         <!-- DOCUMENTOS MÚLTIPLES -->
         <fieldset>
-            <legend>📁 Documentos Múltiples (Entrevista, Cadena de Custodia, Inspecciones)</legend>
-            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">
-                Puede eliminar documentos existentes y agregar nuevos (máx. 10 por categoría).
-            </p>
+            <legend>📁 Documentos Múltiples (Agregar o eliminar)</legend>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Máximo 10 por categoría.</p>
             <div id="docs-multiples-edit-container"></div>
         </fieldset>
 
         <!-- OBSERVACIONES (EDITABLE) -->
         <div class="observaciones-section">
             <fieldset style="background: transparent; border: none; padding: 0; margin: 0;">
-                <legend> Observaciones del Proceso (Editable)</legend>
-                <textarea id="proc_mod_observaciones" rows="4" placeholder="Escriba aquí cualquier observación adicional..."></textarea>
+                <legend>📝 Observaciones (Editable)</legend>
+                <textarea id="proc_mod_observaciones" rows="4" placeholder="Notas adicionales..."></textarea>
             </fieldset>
         </div>
 
