@@ -111,17 +111,60 @@ window.initModVehiculos = function() {
 function setUIForType(type) {
     const isMoto = type === 'moto';
     
-    // ✅ Actualizar campos ocultos (siempre existen)
+    // ✅ Actualizar campos ocultos
     const tipoInput = document.getElementById('mod_tipo_vehiculo');
     const tablaInput = document.getElementById('mod_tabla_destino');
     if (tipoInput) tipoInput.value = isMoto ? 'Motocicleta' : 'Automóvil';
     if (tablaInput) tablaInput.value = isMoto ? 'registro_motos' : 'registro_automoviles';
     
-    // ✅ Actualizar botones de tipo (con verificación de existencia)
+    // ✅ Actualizar botones de tipo con estilos inline
     const btnMoto = document.getElementById('btn_tipo_moto');
     const btnAuto = document.getElementById('btn_tipo_auto');
-    if (btnMoto) btnMoto.classList.toggle('active', isMoto);
-    if (btnAuto) btnAuto.classList.toggle('active', !isMoto);
+    
+    if (btnMoto) {
+        if (isMoto) {
+            btnMoto.style.borderColor = '#002b5c';
+            btnMoto.style.backgroundColor = '#f0f4f8';
+            btnMoto.style.color = '#002b5c';
+            btnMoto.style.boxShadow = '0 2px 8px rgba(0,43,92,0.1)';
+        } else {
+            btnMoto.style.borderColor = '#d4c9a8';
+            btnMoto.style.backgroundColor = '#fff';
+            btnMoto.style.color = '#64748b';
+            btnMoto.style.boxShadow = 'none';
+        }
+    }
+    
+    if (btnAuto) {
+        if (!isMoto) {
+            btnAuto.style.borderColor = '#002b5c';
+            btnAuto.style.backgroundColor = '#f0f4f8';
+            btnAuto.style.color = '#002b5c';
+            btnAuto.style.boxShadow = '0 2px 8px rgba(0,43,92,0.1)';
+        } else {
+            btnAuto.style.borderColor = '#d4c9a8';
+            btnAuto.style.backgroundColor = '#fff';
+            btnAuto.style.color = '#64748b';
+            btnAuto.style.boxShadow = 'none';
+        }
+    }
+    
+    // ✅ Mostrar badge con el tipo de vehículo
+    const badge = document.getElementById('tipo-vehiculo-badge');
+    if (badge) {
+        badge.style.display = 'block';
+        if (isMoto) {
+            badge.style.background = '#fef2f2';
+            badge.style.color = '#dc2626';
+            badge.style.border = '1px solid #fca5a5';
+            badge.innerHTML = '️ Motocicleta';
+        } else {
+            badge.style.background = '#ecfdf5';
+            badge.style.color = '#059669';
+            badge.style.border = '1px solid #86efac';
+            badge.innerHTML = ' Automóvil';
+        }
+    }
     
     // ✅ Mostrar/ocultar grids de fotos
     const gridMoto = document.getElementById('grid-fotos-moto');
