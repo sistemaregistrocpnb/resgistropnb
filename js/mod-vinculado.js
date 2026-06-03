@@ -296,54 +296,105 @@ window.initModVinculado = function() {
     }
 
     function mostrarPanelSeleccion(resultados, valorBuscado) {
-        selectionList.innerHTML = '';
-        resultCount.textContent = resultados.length;
+    selectionList.innerHTML = '';
+    resultCount.textContent = resultados.length;
+    
+    // Alerta cruzada
+    const tieneMoto = resultados.some(r => r.origen === 'registro_motos');
+    const tieneAuto = resultados.some(r => r.origen === 'registro_automoviles');
+    const tieneVinculado = resultados.some(r => r.origen === 'registro_vinculado');
+    
+    if (crossPlateWarning) {
+        if ((tieneMoto && tieneAuto) || (tieneVinculado && (tieneMoto || tieneAuto))) {
+            crossPlateWarning.innerHTML = `
+                <strong>⚠️ ALERTA CRUZADA DETECTADA:</strong><br>
+                El dato <strong>"${valorBuscado}"</strong> aparece en más de un tipo de registro.
+                Esto puede indicar un caso de clonación de placas/seriales. Revise cuidadosamente.
+            `;
+            crossPlateWarning.style.display = 'block';
+        } else {
+            crossPlateWarning.style.display = 'none';
+        }
+    }
+    
+    resultados.forEach((res, index) => {
+        const card = document.createElement('div');
         
-        const tieneMoto = resultados.some(r => r.origen === 'registro_motos');
-        const tieneAuto = resultados.some(r => r.origen === 'registro_automoviles');
-        const tieneVinculado = resultados.some(r => r.origen === 'registro_vinculado');
+        // ✅ APLICAR COLORES SEGÚN EL TIPO
+        let bgColor, borderColor, btnColor;
         
-        if (crossWarning) {
-            if ((tieneMoto && tieneAuto) || (tieneVinculado && (tieneMoto || tieneAuto))) {
-                crossWarning.innerHTML = `<strong>⚠️ ALERTA CRUZADA:</strong> El dato "<strong>${valorBuscado}</strong>" aparece en más de un tipo de registro. Esto puede indicar clonación. Revise cuidadosamente.`;
-                crossWarning.style.display = 'block';
-            } else {
-                crossWarning.style.display = 'none';
-            }
+        if (res.clase === 'moto') {
+            bgColor = '#fef2f2';      // Rojo claro
+            borderColor = '#dc2626';   // Rojo
+            btnColor = '#dc2626';
+        } else if (res.clase === 'auto') {
+            bgColor = '#ecfdf5';      // Verde claro
+            borderColor = '#059669';   // Verde
+            btnColor = '#059669';
+        } else {
+            bgColor = '#eff6ff';      // Azul claro
+            borderColor = '#002b5c';   // Azul
+            btnColor = '#002b5c';
         }
         
-        resultados.forEach((res, index) => {
-            const card = document.createElement('div');
-            card.style.cssText = `background: ${res.colorBg}; border: 2px solid ${res.color}; border-left: 6px solid ${res.color}; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s; margin-bottom: 12px;`;
-            card.onmouseover = () => card.style.transform = 'translateX(4px)';
-            card.onmouseout = () => card.style.transform = 'translateX(0)';
-            card.innerHTML = `
-                <div style="flex: 1;">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                        <span style="font-size: 1.5rem;">${res.icono}</span>
-                        <strong style="color: ${res.color}; font-size: 0.95rem;">${res.tipo}</strong>
-                    </div>
-                    <div style="font-size: 0.9rem; color: #334155; margin-bottom: 3px;">${res.linea1}</div>
-                    <div style="font-size: 0.85rem; color: #475569; margin-bottom: 3px;">${res.linea2}</div>
-                    <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 6px;">${res.linea3}</div>
-                    <div style="font-size: 0.75rem; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; display: inline-block;">🔎 Coincidencia en: <strong>${res.encontrado_por.join(', ')}</strong></div>
+        card.style.cssText = `
+            background: ${bgColor};
+            border: 2px solid ${borderColor};
+            border-left: 6px solid ${borderColor};
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+            margin-bottom: 12px;
+        `;
+        
+        card.onmouseover = () => card.style.transform = 'translateX(4px)';
+        card.onmouseout = () => card.style.transform = 'translateX(0)';
+        
+        card.innerHTML = `
+            <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <span style="font-size: 1.5rem;">${res.icono}</span>
+                    <strong style="color: ${borderColor}; font-size: 0.95rem;">${res.tipo}</strong>
                 </div>
-                <button class="btn-select-card" data-index="${index}" style="padding: 12px 24px; background: ${res.color}; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; white-space: nowrap;">✏️ Editar</button>
-            `;
-            selectionList.appendChild(card);
-        });
+                <div style="font-size: 0.9rem; color: #334155; margin-bottom: 3px;">${res.linea1}</div>
+                <div style="font-size: 0.85rem; color: #475569; margin-bottom: 3px;">${res.linea2}</div>
+                <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 6px;">${res.linea3}</div>
+                <div style="font-size: 0.75rem; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; display: inline-block;">
+                    🔎 Coincidencia en: <strong>${res.encontrado_por.join(', ')}</strong>
+                </div>
+            </div>
+            <button class="btn-seleccionar" data-index="${index}" style="
+                padding: 12px 24px;
+                background: ${btnColor};
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-weight: 700;
+                cursor: pointer;
+                white-space: nowrap;
+                transition: background 0.2s;
+            ">✏️ Editar</button>
+        `;
         
-        document.querySelectorAll('.btn-select-card').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const idx = parseInt(e.target.dataset.index);
-                cargarResultado(resultados[idx]);
-            });
+        selectionList.appendChild(card);
+    });
+    
+    document.querySelectorAll('.btn-seleccionar').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const idx = parseInt(e.target.dataset.index);
+            cargarResultado(resultados[idx]);
         });
-        
-        selectionPanel.style.display = 'block';
-        form.style.display = 'none';
-        msgBusqueda.style.display = 'none';
-    }
+    });
+    
+    selectionPanel.style.display = 'block';
+    form.style.display = 'none';
+    msgBusqueda.style.display = 'none';
+}
 
     async function cargarResultado(resultado) {
         selectionPanel.style.display = 'none';
