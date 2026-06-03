@@ -265,6 +265,16 @@ window.initModPersonas = function() {
     const submitBtn = form?.querySelector('.btn-submit');
     const msgForm = document.getElementById('msg-mod-personas');
     const mostrarError = (txt) => { if(msgForm) { msgForm.textContent = '❌ ' + txt; msgForm.className = 'msg error'; msgForm.style.display = 'block'; } };
+   
+    // ✅ BLOQUEAR ENTER EN EL FORMULARIO (solo permite guardar con clic)
+if (form) {
+    form.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+            return false;
+        }
+    });
+}
 
     if (form && submitBtn) {
         form.addEventListener('submit', async (e) => {
