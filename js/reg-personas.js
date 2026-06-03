@@ -1,4 +1,6 @@
 window.initRegPersonas = function() {
+    console.log("✅ Módulo reg-personas.js cargado correctamente.");
+
     // ==========================================
     // 🔹 1. FUNCIONES GLOBALES
     // ==========================================
@@ -29,7 +31,8 @@ window.initRegPersonas = function() {
         const metros = parseFloat(inputM.value);
         if (!isNaN(metros) && metros >= 0.50 && metros <= 2.30) {
             const cm = Math.round(metros * 100);
-            if (inputCm) inputCm.value = cm; return cm;
+            if (inputCm) inputCm.value = cm;
+            return cm;
         }
         return null;
     };
@@ -57,7 +60,47 @@ window.initRegPersonas = function() {
     const codeText = document.getElementById('tlf-code-text');
     const countryText = document.getElementById('tlf-country-text');
 
-    const isoMap = { "Afganistán":"af","Albania":"al","Alemania":"de","Andorra":"ad","Angola":"ao","Antigua y Barbuda":"ag","Arabia Saudita":"sa","Argelia":"dz","Argentina":"ar","Armenia":"am","Australia":"au","Austria":"at","Azerbaiyán":"az","Bahamas":"bs","Baréin":"bh","Bangladés":"bd","Barbados":"bb","Bélgica":"be","Belice":"bz","Benín":"bj","Bielorrusia":"by","Birmania":"mm","Bolivia":"bo","Bosnia y Herzegovina":"ba","Botsuana":"bw","Brasil":"br","Brunéi":"bn","Bulgaria":"bg","Burkina Faso":"bf","Burundi":"bi","Bután":"bt","Cabo Verde":"cv","Camboya":"kh","Camerún":"cm","Canadá":"ca","Catar":"qa","Rep. Centroafricana":"cf","Chad":"td","Rep. Checa":"cz","Chile":"cl","China":"cn","Chipre":"cy","Colombia":"co","Comoras":"km","Corea del Norte":"kp","Corea del Sur":"kr","Costa de Marfil":"ci","Costa Rica":"cr","Croacia":"hr","Cuba":"cu","Dinamarca":"dk","Dominica":"dm","Ecuador":"ec","Egipto":"eg","El Salvador":"sv","Emiratos Árabes":"ae","Eritrea":"er","Eslovaquia":"sk","Eslovenia":"si","España":"es","Estados Unidos":"us","Estonia":"ee","Etiopía":"et","Filipinas":"ph","Finlandia":"fi","Fiyi":"fj","Francia":"fr","Gabón":"ga","Gambia":"gm","Georgia":"ge","Ghana":"gh","Granada":"gd","Grecia":"gr","Guatemala":"gt","Guinea":"gn","Guinea Ecuatorial":"gq","Guinea-Bisáu":"gw","Guyana":"gy","Haití":"ht","Honduras":"hn","Hungría":"hu","India":"in","Indonesia":"id","Irak":"iq","Irán":"ir","Irlanda":"ie","Islandia":"is","Israel":"il","Italia":"it","Jamaica":"jm","Japón":"jp","Jordania":"jo","Kazajistán":"kz","Kenia":"ke","Kirguistán":"kg","Kiribati":"ki","Kuwait":"kw","Laos":"la","Lesoto":"ls","Letonia":"lv","Líbano":"lb","Liberia":"lr","Libia":"ly","Liechtenstein":"li","Lituania":"lt","Luxemburgo":"lu","Macedonia del Norte":"mk","Madagascar":"mg","Malasia":"my","Malaui":"mw","Maldivas":"mv","Malí":"ml","Malta":"mt","Marruecos":"ma","Mauricio":"mu","Mauritania":"mr","México":"mx","Micronesia":"fm","Moldavia":"md","Mónaco":"mc","Mongolia":"mn","Montenegro":"me","Mozambique":"mz","Namibia":"na","Nauru":"nr","Nepal":"np","Nicaragua":"ni","Níger":"ne","Nigeria":"ng","Nueva Zelanda":"nz","Noruega":"no","Omán":"om","Países Bajos":"nl","Pakistán":"pk","Palaos":"pw","Palestina":"ps","Panamá":"pa","Papúa Nueva Guinea":"pg","Paraguay":"py","Perú":"pe","Polonia":"pl","Portugal":"pt","Reino Unido":"gb","Puerto Rico":"pr","Ruanda":"rw","Rumania":"ro","Rusia":"ru","Samoa":"ws","San Marino":"sm","Santa Lucía":"lc","Santo Tomé y Príncipe":"st","San Vicente y las Granadinas":"vc","Senegal":"sn","Serbia":"rs","Seychelles":"sc","Sierra Leona":"sl","Singapur":"sg","Siria":"sy","Somalia":"so","Sudáfrica":"za","Sudán":"sd","Sudán del Sur":"ss","Suecia":"se","Suiza":"ch","Surinam":"sr","Esuatini":"sz","Tayikistán":"tj","Tanzania":"tz","Tailandia":"th","Timor Oriental":"tl","Togo":"tg","Tonga":"to","Trinidad y Tobago":"tt","Túnez":"tn","Turquía":"tr","Turkmenistán":"tm","Tuvalu":"tv","Ucrania":"ua","Uganda":"ug","Uruguay":"uy","Uzbekistán":"uz","Vanuatu":"vu","Vaticano":"va","Venezuela":"ve","Vietnam":"vn","Yemen":"ye","Yibuti":"dj","Zambia":"zm","Zimbabue":"zw" };
+    const isoMap = {
+        "Afganistán":"af","Albania":"al","Alemania":"de","Andorra":"ad","Angola":"ao",
+        "Antigua y Barbuda":"ag","Arabia Saudita":"sa","Argelia":"dz","Argentina":"ar",
+        "Armenia":"am","Australia":"au","Austria":"at","Azerbaiyán":"az","Bahamas":"bs",
+        "Baréin":"bh","Bangladés":"bd","Barbados":"bb","Bélgica":"be","Belice":"bz",
+        "Benín":"bj","Bielorrusia":"by","Birmania":"mm","Bolivia":"bo","Bosnia y Herzegovina":"ba",
+        "Botsuana":"bw","Brasil":"br","Brunéi":"bn","Bulgaria":"bg","Burkina Faso":"bf",
+        "Burundi":"bi","Bután":"bt","Cabo Verde":"cv","Camboya":"kh","Camerún":"cm",
+        "Canadá":"ca","Catar":"qa","Rep. Centroafricana":"cf","Chad":"td","Rep. Checa":"cz",
+        "Chile":"cl","China":"cn","Chipre":"cy","Colombia":"co","Comoras":"km",
+        "Congo (Rep.)":"cg","Congo (R.D.)":"cd","Corea del Norte":"kp","Corea del Sur":"kr",
+        "Costa de Marfil":"ci","Costa Rica":"cr","Croacia":"hr","Cuba":"cu","Dinamarca":"dk",
+        "Dominica":"dm","Ecuador":"ec","Egipto":"eg","El Salvador":"sv",
+        "Emiratos Árabes":"ae","Eritrea":"er","Eslovaquia":"sk","Eslovenia":"si","España":"es",
+        "Estados Unidos":"us","Estonia":"ee","Etiopía":"et","Filipinas":"ph","Finlandia":"fi",
+        "Fiyi":"fj","Francia":"fr","Gabón":"ga","Gambia":"gm","Georgia":"ge","Ghana":"gh",
+        "Granada":"gd","Grecia":"gr","Guatemala":"gt","Guinea":"gn","Guinea Ecuatorial":"gq",
+        "Guinea-Bisáu":"gw","Guyana":"gy","Haití":"ht","Honduras":"hn","Hungría":"hu",
+        "India":"in","Indonesia":"id","Irak":"iq","Irán":"ir","Irlanda":"ie","Islandia":"is",
+        "Israel":"il","Italia":"it","Jamaica":"jm","Japón":"jp","Jordania":"jo",
+        "Kazajistán":"kz","Kenia":"ke","Kirguistán":"kg","Kiribati":"ki","Kuwait":"kw",
+        "Laos":"la","Lesoto":"ls","Letonia":"lv","Líbano":"lb","Liberia":"lr","Libia":"ly",
+        "Liechtenstein":"li","Lituania":"lt","Luxemburgo":"lu","Macedonia del Norte":"mk",
+        "Madagascar":"mg","Malasia":"my","Malaui":"mw","Maldivas":"mv","Malí":"ml","Malta":"mt",
+        "Marruecos":"ma","Mauricio":"mu","Mauritania":"mr","México":"mx","Micronesia":"fm",
+        "Moldavia":"md","Mónaco":"mc","Mongolia":"mn","Montenegro":"me","Mozambique":"mz",
+        "Namibia":"na","Nauru":"nr","Nepal":"np","Nicaragua":"ni","Níger":"ne","Nigeria":"ng",
+        "Nueva Zelanda":"nz","Noruega":"no","Omán":"om","Países Bajos":"nl","Pakistán":"pk",
+        "Palaos":"pw","Palestina":"ps","Panamá":"pa","Papúa Nueva Guinea":"pg","Paraguay":"py",
+        "Perú":"pe","Polonia":"pl","Portugal":"pt","Reino Unido":"gb","Puerto Rico":"pr",
+        "Ruanda":"rw","Rumania":"ro","Rusia":"ru","Samoa":"ws","San Marino":"sm",
+        "Santa Lucía":"lc","Santo Tomé y Príncipe":"st","San Vicente y las Granadinas":"vc",
+        "Senegal":"sn","Serbia":"rs","Seychelles":"sc","Sierra Leona":"sl","Singapur":"sg",
+        "Siria":"sy","Somalia":"so","Sudáfrica":"za","Sudán":"sd","Sudán del Sur":"ss",
+        "Suecia":"se","Suiza":"ch","Surinam":"sr","Esuatini":"sz","Tayikistán":"tj",
+        "Tanzania":"tz","Tailandia":"th","Timor Oriental":"tl","Togo":"tg","Tonga":"to",
+        "Trinidad y Tobago":"tt","Túnez":"tn","Turquía":"tr","Turkmenistán":"tm","Tuvalu":"tv",
+        "Ucrania":"ua","Uganda":"ug","Uruguay":"uy","Uzbekistán":"uz","Vanuatu":"vu",
+        "Vaticano":"va","Venezuela":"ve","Vietnam":"vn","Yemen":"ye","Yibuti":"dj",
+        "Zambia":"zm","Zimbabue":"zw"
+    };
 
     if (optionsBox && nativeSelect && displayBox) {
         optionsBox.innerHTML = '';
@@ -67,7 +110,7 @@ window.initRegPersonas = function() {
             const div = document.createElement('div');
             div.className = 'phone-option';
             div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.8rem;">${opt.text}</span>`;
-            div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:0.15s;';
+            div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;';
             div.onmouseenter = () => div.style.background = '#f8fafc';
             div.onmouseleave = () => div.style.background = '';
             div.addEventListener('click', () => {
@@ -111,279 +154,262 @@ window.initRegPersonas = function() {
     }
 
     if (cedulaInput) cedulaInput.addEventListener('input', e => e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8));
-    if (tlfNumInput) tlfNumInput.addEventListener('input', e => e.target.value = e.target.value.replace(/\D/g, '').slice(0, 20)); // ✅ Máximo 20 dígitos para coincidir con BD
+    if (tlfNumInput) tlfNumInput.addEventListener('input', e => e.target.value = e.target.value.replace(/\D/g, '').slice(0, 20));
     if (estaturaInput) {
         estaturaInput.addEventListener('input', window.convertirEstatura);
         estaturaInput.addEventListener('blur', window.convertirEstatura);
     }
 
-   // ==========================================
-// 🔹 5. VALIDACIÓN DE CÉDULA (PERSONAS + PROCESADOS)
-// ==========================================
-let cedulaCheckTimeout = null;
+    // ==========================================
+    // 🔹 5. VALIDACIÓN DE CÉDULA (Personas + Procesados)
+    // ==========================================
+    let cedulaCheckTimeout = null;
 
-async function verificarCedula(cedula) {
-    if (!cedulaStatus || !window.supabaseClient) return false;
-    cedulaStatus.className = 'cedula-status checking';
-    cedulaStatus.textContent = '🔍 Verificando...';
-    cedulaInput?.classList.remove('cedula-duplicate');
-    
-    try {
-        // 🔍 Buscar en registro_personas
-        const { data: dataPersonas, error: errPersonas } = await window.supabaseClient
-            .from('registro_personas')
-            .select('cedula, primer_nombre, primer_apellido')
-            .eq('cedula', cedula)
-            .maybeSingle();
-        
-        if (errPersonas) throw errPersonas;
-        
-        if (dataPersonas) {
-            cedulaStatus.className = 'cedula-status error';
-            cedulaStatus.textContent = `⚠️ Cédula ya registrada en el sistema`;
-            cedulaInput?.classList.add('cedula-duplicate');
-            return true; // Duplicada
-        }
-        
-        // 🔍 Buscar en registro_procesados (nueva tabla)
-        const { data: dataProcesados, error: errProcesados } = await window.supabaseClient
-            .from('registro_procesados')
-            .select('cedula, tipo_delito, tipo_registro')
-            .eq('cedula', cedula)
-            .maybeSingle();
-        
-        if (errProcesados) throw errProcesados;
-        
-        if (dataProcesados) {
-            cedulaStatus.className = 'cedula-status error';
-            const delito = dataProcesados.tipo_delito || 'sin especificar';
-            const tipo = dataProcesados.tipo_registro || 'desconocido';
-            cedulaStatus.textContent = `⚠️ Esta cédula ya está PROCESADA (${delito})`;
-            cedulaStatus.title = `Registro procesado como: ${tipo} - Delito: ${delito}`;
-            cedulaInput?.classList.add('cedula-duplicate');
-            return true; // Duplicada
-        }
-        
-        // ✅ Disponible
-        cedulaStatus.className = 'cedula-status success';
-        cedulaStatus.textContent = '✅ Cédula disponible';
+    async function verificarCedula(cedula) {
+        if (!cedulaStatus || !window.supabaseClient) return false;
+        cedulaStatus.className = 'cedula-status checking';
+        cedulaStatus.textContent = '🔍 Verificando...';
         cedulaInput?.classList.remove('cedula-duplicate');
-        return false;
-        
-    } catch (e) {
-        console.warn('⚠️ Error verificando cédula:', e.message);
-        cedulaStatus.className = 'cedula-status';
-        cedulaStatus.textContent = '';
-        return false;
-    }
-}
 
-if (cedulaInput && cedulaStatus) {
-    cedulaInput.addEventListener('input', function() {
-        const val = this.value.trim();
-        if (val.length > 0 && val.length < 7) {
-            cedulaStatus.className = 'cedula-status error';
-            cedulaStatus.textContent = '⚠️ Faltan dígitos (mínimo 7)';
-            this.classList.remove('cedula-duplicate');
-            return;
-        }
-        if (val.length === 0) {
+        try {
+            // 1. Buscar en registro_personas
+            const { data: dataPersonas, error: errPersonas } = await window.supabaseClient
+                .from('registro_personas')
+                .select('cedula')
+                .eq('cedula', cedula)
+                .maybeSingle();
+
+            if (errPersonas) throw errPersonas;
+
+            if (dataPersonas) {
+                cedulaStatus.className = 'cedula-status error';
+                cedulaStatus.textContent = '⚠️ Cédula ya registrada en personas';
+                cedulaInput?.classList.add('cedula-duplicate');
+                return true;
+            }
+
+            // 2. Buscar en registro_procesados
+            const { data: dataProcesados, error: errProcesados } = await window.supabaseClient
+                .from('registro_procesados')
+                .select('cedula, tipo_delito')
+                .eq('cedula', cedula)
+                .maybeSingle();
+
+            if (errProcesados) throw errProcesados;
+
+            if (dataProcesados) {
+                cedulaStatus.className = 'cedula-status error';
+                const delito = dataProcesados.tipo_delito || 'sin especificar';
+                cedulaStatus.textContent = `⚠️ Cédula ya está PROCESADA (${delito})`;
+                cedulaStatus.title = `Esta cédula ya tiene un proceso registrado: ${delito}`;
+                cedulaInput?.classList.add('cedula-duplicate');
+                return true;
+            }
+
+            // ✅ Disponible
+            cedulaStatus.className = 'cedula-status success';
+            cedulaStatus.textContent = '✅ Cédula disponible';
+            cedulaInput?.classList.remove('cedula-duplicate');
+            return false;
+
+        } catch (e) {
+            console.warn('⚠️ Error verificando cédula:', e.message);
             cedulaStatus.className = 'cedula-status';
             cedulaStatus.textContent = '';
-            this.classList.remove('cedula-duplicate');
+            return false;
+        }
+    }
+
+    if (cedulaInput && cedulaStatus) {
+        cedulaInput.addEventListener('input', function() {
+            const val = this.value.trim();
+            if (val.length > 0 && val.length < 7) {
+                cedulaStatus.className = 'cedula-status error';
+                cedulaStatus.textContent = '⚠️ Faltan dígitos (mínimo 7)';
+                this.classList.remove('cedula-duplicate');
+                return;
+            }
+            if (val.length === 0) {
+                cedulaStatus.className = 'cedula-status';
+                cedulaStatus.textContent = '';
+                this.classList.remove('cedula-duplicate');
+                return;
+            }
+            if (cedulaCheckTimeout) clearTimeout(cedulaCheckTimeout);
+            cedulaCheckTimeout = setTimeout(() => verificarCedula(val), 600);
+        });
+
+        cedulaInput.addEventListener('blur', function() {
+            const val = this.value.trim();
+            if (val.length > 0 && val.length < 7) {
+                cedulaStatus.className = 'cedula-status error';
+                cedulaStatus.textContent = '⚠️ Faltan dígitos (mínimo 7)';
+            } else if (val.length >= 7) {
+                verificarCedula(val);
+            }
+        });
+    }
+
+    // ==========================================
+    // 🔹 6. ENVÍO DEL FORMULARIO
+    // ==========================================
+    const mostrarError = (t) => {
+        if(msg){msg.textContent='❌ '+t; msg.className='msg error'; msg.style.display='block';}
+    };
+
+    if (!form || !btn) { console.error('❌ Formulario no encontrado'); return; }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+
+        const cedula = cedulaInput?.value.trim().replace(/\D/g, '') || '';
+        const edad = parseInt(edadInput?.value) || 0;
+        const tlfPais = document.getElementById('p_tlf_pais')?.value;
+        const tlfNumRaw = (document.getElementById('p_tlf_num')?.value.trim().replace(/\D/g, '') || '').slice(0, 20);
+        const estCm = window.convertirEstatura();
+
+        // Validaciones
+        if (cedula.length < 7 || cedula.length > 8) {
+            mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
+            cedulaInput?.focus();
             return;
         }
-        if (cedulaCheckTimeout) clearTimeout(cedulaCheckTimeout);
-        cedulaCheckTimeout = setTimeout(() => verificarCedula(val), 600);
-    });
-    
-    cedulaInput.addEventListener('blur', function() {
-        const val = this.value.trim();
-        if (val.length > 0 && val.length < 7) {
-            cedulaStatus.className = 'cedula-status error';
-            cedulaStatus.textContent = '⚠️ Faltan dígitos (mínimo 7)';
-        } else if (val.length >= 7) {
-            verificarCedula(val);
+        if (!document.getElementById('p_fecha_nac')?.value || edad < 0 || edad > 120) {
+            mostrarError('Verifique la fecha de nacimiento.');
+            document.getElementById('p_fecha_nac')?.focus();
+            return;
+        }
+        if (!estCm || estCm < 50 || estCm > 230) {
+            mostrarError('Estatura inválida (0.50m - 2.30m).');
+            document.getElementById('p_estatura')?.focus();
+            return;
+        }
+        if (tlfPais && tlfNumRaw.length < 1) {
+            mostrarError('Ingrese al menos un dígito para el teléfono.');
+            document.getElementById('p_tlf_num')?.focus();
+            return;
+        }
+
+        // ✅ Verificación final contra ambas tablas
+        const estaDuplicada = await verificarCedula(cedula);
+        if (estaDuplicada) {
+            const { data: dataProc } = await window.supabaseClient
+                .from('registro_procesados')
+                .select('tipo_delito')
+                .eq('cedula', cedula)
+                .maybeSingle();
+
+            if (dataProc) {
+                mostrarError(`Esta cédula ya está en PROCESADOS (${dataProc.tipo_delito || 'sin delito'}).`);
+            } else {
+                mostrarError('Esta cédula ya está registrada en el sistema.');
+            }
+            cedulaInput?.focus();
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = '⏳ Guardando...';
+        if(msg) msg.style.display='none';
+
+        try {
+            const bucket = window.supabaseClient.storage.from('fotos_personas');
+            const files = {
+                f: document.getElementById('foto_frontal').files[0],
+                i: document.getElementById('foto_perfil_izq').files[0],
+                d: document.getElementById('foto_perfil_der').files[0]
+            };
+
+            if (!files.f || !files.i || !files.d) {
+                throw new Error('Las 3 fotografías son obligatorias.');
+            }
+
+            const uid = sessionStorage.getItem('pnb_user_id') || 'user', ts = Date.now();
+            const paths = { f: `${uid}/${ts}_f.jpg`, i: `${uid}/${ts}_i.jpg`, d: `${uid}/${ts}_d.jpg` };
+
+            const upload = async (file, path) => {
+                const { error } = await bucket.upload(path, file, { cacheControl: '3600' });
+                if(error) throw new Error('Error subiendo imágenes.');
+                return bucket.getPublicUrl(path).data.publicUrl;
+            };
+
+            const urls = {
+                f: await upload(files.f, paths.f),
+                i: await upload(files.i, paths.i),
+                d: await upload(files.d, paths.d)
+            };
+
+            const tlfCodigoFinal = (tlfPais && tlfNumRaw.length >= 1) ? tlfPais : null;
+            const tlfNumeroFinal = (tlfPais && tlfNumRaw.length >= 1) ? tlfNumRaw : null;
+
+            const data = {
+                estatus: 'Verificación',
+                estacion_policial: document.getElementById('p_estacion')?.value || null,
+                direccion_detencion: document.getElementById('p_direccion_detencion')?.value.trim() || null,
+                foto_frontal: urls.f, foto_perfil_izq: urls.i, foto_perfil_der: urls.d,
+                primer_nombre: document.getElementById('p_nombre1')?.value.trim(),
+                segundo_nombre: document.getElementById('p_nombre2')?.value.trim() || null,
+                primer_apellido: document.getElementById('p_apellido1')?.value.trim(),
+                segundo_apellido: document.getElementById('p_apellido2')?.value.trim() || null,
+                cedula,
+                fecha_nacimiento: document.getElementById('p_fecha_nac')?.value,
+                edad,
+                tlf_pais: tlfCodigoFinal,
+                tlf_numero: tlfNumeroFinal,
+                direccion: document.getElementById('p_direccion')?.value.trim(),
+                apodo: document.getElementById('p_apodo')?.value.trim() || null,
+                marca_corporal: document.getElementById('p_marca')?.value.trim() || null,
+                nacionalidad: document.getElementById('p_nacionalidad')?.value,
+                sexo: document.getElementById('p_sexo')?.value,
+                estatura_cm: estCm,
+                color_piel: document.getElementById('p_color_piel')?.value,
+                color_ojos: document.getElementById('p_color_ojos')?.value,
+                color_cabello: document.getElementById('p_color_cabello')?.value,
+                complexion: document.getElementById('p_complexion')?.value,
+                usa_lentes: document.getElementById('p_lentes')?.value === 'true',
+                detalle_lentes: document.getElementById('p_lentes')?.value === 'true' ? document.getElementById('txt_lentes')?.value.trim() : null,
+                perforaciones: document.getElementById('p_perforaciones')?.value === 'true',
+                detalle_perforaciones: document.getElementById('p_perforaciones')?.value === 'true' ? document.getElementById('txt_lugar_perforacion')?.value.trim() : null,
+                condicion_medica: document.getElementById('p_cond_medica')?.value === 'true' ? document.getElementById('txt_cond')?.value : null,
+                consume_medicamento: document.getElementById('p_medicamento')?.value === 'true' ? document.getElementById('txt_med')?.value : null,
+                problema_judicial: document.getElementById('p_judicial')?.value === 'true' ? document.getElementById('txt_jud')?.value : null,
+                observaciones: document.getElementById('p_observaciones')?.value.trim() || null
+            };
+
+            const { error } = await window.supabaseClient.from('registro_personas').insert([data]);
+            if (error) throw error;
+
+            if (msg) {
+                msg.textContent = '✅ Registro guardado exitosamente.';
+                msg.className = 'msg success';
+                msg.style.display = 'block';
+                setTimeout(() => msg.style.display = 'none', 4000);
+            }
+
+            form.reset();
+            if(edadInput) edadInput.value = '';
+            document.querySelectorAll('.hidden-field').forEach(e => e.style.display='none');
+            document.querySelectorAll('.img-preview').forEach(e => e.style.display='none');
+            if(cedulaStatus){cedulaStatus.className='cedula-status';cedulaStatus.textContent='';}
+            if(nativeSelect) nativeSelect.value = '';
+            flagImg.src = 'https://flagcdn.com/w20/xx.png';
+            codeText.textContent = '+XX';
+            countryText.textContent = 'País';
+
+        } catch (err) {
+            console.error('Error:', err);
+            let m = 'Error inesperado. Intente nuevamente.';
+            if (err.message.includes('23505') || err.message.includes('cedula')) m = 'Esta cédula ya está registrada.';
+            else if (err.message.includes('storage')) m = 'Error subiendo fotografías.';
+            else if (err.message.includes('22001') || err.message.includes('too long')) m = 'El número de teléfono es demasiado largo (máx. 20 dígitos).';
+            else if (err.message.includes('tlf_numero_check')) m = 'Formato de teléfono inválido.';
+            mostrarError(m);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '✅ Registrar Persona';
         }
     });
-}
-   // ==========================================
-// 🔹 6. ENVÍO DEL FORMULARIO
-// ==========================================
-const mostrarError = (t) => {
-    if(msg){
-        msg.textContent='❌ '+t;
-        msg.className='msg error';
-        msg.style.display='block';
-    }
+
+    console.log("✅ Módulo reg-personas.js inicializado correctamente");
 };
-
-if (!form || !btn) { console.error('❌ Formulario no encontrado'); return; }
-
-form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!form.checkValidity()) { form.reportValidity(); return; }
-    
-    const cedula = cedulaInput?.value.trim().replace(/\D/g, '') || '';
-    const edad = parseInt(edadInput?.value) || 0;
-    const tlfPais = document.getElementById('p_tlf_pais')?.value;
-    const tlfNumRaw = (document.getElementById('p_tlf_num')?.value.trim().replace(/\D/g, '') || '').slice(0, 20);
-    const estCm = window.convertirEstatura();
-    
-    // Validaciones básicas
-    if (cedula.length < 7 || cedula.length > 8) {
-        mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
-        cedulaInput?.focus();
-        return;
-    }
-    if (!document.getElementById('p_fecha_nac')?.value || edad < 0 || edad > 120) {
-        mostrarError('Verifique la fecha de nacimiento.');
-        document.getElementById('p_fecha_nac')?.focus();
-        return;
-    }
-    if (!estCm || estCm < 50 || estCm > 230) {
-        mostrarError('Estatura inválida (0.50m - 2.30m).');
-        document.getElementById('p_estatura')?.focus();
-        return;
-    }
-    if (tlfPais && tlfNumRaw.length < 1) {
-        mostrarError('Ingrese al menos un dígito para el teléfono.');
-        document.getElementById('p_tlf_num')?.focus();
-        return;
-    }
-    
-    // ✅ Verificación final contra ambas tablas (personas + procesados)
-    const estaDuplicada = await verificarCedula(cedula);
-    if (estaDuplicada) {
-        // Verificar si está en procesados para mensaje específico
-        const { data: dataProc } = await window.supabaseClient
-            .from('registro_procesados')
-            .select('tipo_delito')
-            .eq('cedula', cedula)
-            .maybeSingle();
-        
-        if (dataProc) {
-            mostrarError(`Esta cédula ya está registrada en PROCESADOS (Delito: ${dataProc.tipo_delito || 'sin especificar'}). No se permite duplicar.`);
-        } else {
-            mostrarError('Esta cédula ya está registrada en el sistema.');
-        }
-        cedulaInput?.focus();
-        return;
-    }
-    
-    btn.disabled = true;
-    btn.textContent = '⏳ Guardando...';
-    if(msg) msg.style.display='none';
-    
-    try {
-        const bucket = window.supabaseClient.storage.from('fotos_personas');
-        const files = {
-            f: document.getElementById('foto_frontal').files[0],
-            i: document.getElementById('foto_perfil_izq').files[0],
-            d: document.getElementById('foto_perfil_der').files[0]
-        };
-        
-        if (!files.f || !files.i || !files.d) {
-            throw new Error('Las 3 fotografías son obligatorias.');
-        }
-        
-        const uid = sessionStorage.getItem('pnb_user_id') || 'user';
-        const ts = Date.now();
-        const paths = {
-            f: `${uid}/${ts}_f.jpg`,
-            i: `${uid}/${ts}_i.jpg`,
-            d: `${uid}/${ts}_d.jpg`
-        };
-        
-        const upload = async (file, path) => {
-            const { error } = await bucket.upload(path, file, { cacheControl: '3600' });
-            if (error) throw new Error('Error subiendo imágenes.');
-            return bucket.getPublicUrl(path).data.publicUrl;
-        };
-        
-        const urls = {
-            f: await upload(files.f, paths.f),
-            i: await upload(files.i, paths.i),
-            d: await upload(files.d, paths.d)
-        };
-        
-        const tlfCodigoFinal = (tlfPais && tlfNumRaw.length >= 1) ? tlfPais : null;
-        const tlfNumeroFinal = (tlfPais && tlfNumRaw.length >= 1) ? tlfNumRaw : null;
-        
-        const data = {
-            estatus: 'Verificación',
-            estacion_policial: document.getElementById('p_estacion')?.value || null,
-            direccion_detencion: document.getElementById('p_direccion_detencion')?.value.trim() || null,
-            foto_frontal: urls.f,
-            foto_perfil_izq: urls.i,
-            foto_perfil_der: urls.d,
-            primer_nombre: document.getElementById('p_nombre1')?.value.trim(),
-            segundo_nombre: document.getElementById('p_nombre2')?.value.trim() || null,
-            primer_apellido: document.getElementById('p_apellido1')?.value.trim(),
-            segundo_apellido: document.getElementById('p_apellido2')?.value.trim() || null,
-            cedula,
-            fecha_nacimiento: document.getElementById('p_fecha_nac')?.value,
-            edad,
-            tlf_pais: tlfCodigoFinal,
-            tlf_numero: tlfNumeroFinal,
-            direccion: document.getElementById('p_direccion')?.value.trim(),
-            apodo: document.getElementById('p_apodo')?.value.trim() || null,
-            marca_corporal: document.getElementById('p_marca')?.value.trim() || null,
-            nacionalidad: document.getElementById('p_nacionalidad')?.value,
-            sexo: document.getElementById('p_sexo')?.value,
-            estatura_cm: estCm,
-            color_piel: document.getElementById('p_color_piel')?.value,
-            color_ojos: document.getElementById('p_color_ojos')?.value,
-            color_cabello: document.getElementById('p_color_cabello')?.value,
-            complexion: document.getElementById('p_complexion')?.value,
-            usa_lentes: document.getElementById('p_lentes')?.value === 'true',
-            detalle_lentes: document.getElementById('p_lentes')?.value === 'true' ? document.getElementById('txt_lentes')?.value.trim() : null,
-            perforaciones: document.getElementById('p_perforaciones')?.value === 'true',
-            detalle_perforaciones: document.getElementById('p_perforaciones')?.value === 'true' ? document.getElementById('txt_lugar_perforacion')?.value.trim() : null,
-            condicion_medica: document.getElementById('p_cond_medica')?.value === 'true' ? document.getElementById('txt_cond')?.value : null,
-            consume_medicamento: document.getElementById('p_medicamento')?.value === 'true' ? document.getElementById('txt_med')?.value : null,
-            problema_judicial: document.getElementById('p_judicial')?.value === 'true' ? document.getElementById('txt_jud')?.value : null,
-            observaciones: document.getElementById('p_observaciones')?.value.trim() || null
-        };
-        
-        const { error } = await window.supabaseClient.from('registro_personas').insert([data]);
-        if (error) throw error;
-        
-        if (msg) {
-            msg.textContent = '✅ Registro guardado exitosamente.';
-            msg.className = 'msg success';
-            msg.style.display = 'block';
-            setTimeout(() => msg.style.display = 'none', 4000);
-        }
-        
-        form.reset();
-        if(edadInput) edadInput.value = '';
-        document.querySelectorAll('.hidden-field').forEach(e => e.style.display='none');
-        document.querySelectorAll('.img-preview').forEach(e => e.style.display='none');
-        if(cedulaStatus){
-            cedulaStatus.className='cedula-status';
-            cedulaStatus.textContent='';
-        }
-        if(nativeSelect) nativeSelect.value = '';
-        flagImg.src = 'https://flagcdn.com/w20/xx.png';
-        codeText.textContent = '+XX';
-        countryText.textContent = 'País';
-        
-    } catch (err) {
-        console.error('Error:', err);
-        let m = 'Error inesperado. Intente nuevamente.';
-        if (err.message.includes('23505') || err.message.includes('cedula')) {
-            m = 'Esta cédula ya está registrada.';
-        } else if (err.message.includes('storage')) {
-            m = 'Error subiendo fotografías.';
-        } else if (err.message.includes('22001') || err.message.includes('too long')) {
-            m = 'El número de teléfono es demasiado largo (máx. 20 dígitos).';
-        } else if (err.message.includes('tlf_numero_check')) {
-            m = 'Formato de teléfono inválido.';
-        }
-        mostrarError(m);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = '✅ Registrar Persona';
-    }
-});
