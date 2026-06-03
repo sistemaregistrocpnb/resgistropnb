@@ -12,45 +12,63 @@
 .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 #selection-panel, #datos-encontrados-panel { display: none; margin-top: 20px; }
 .selection-header { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-.selection-header h4 { margin: 0 0 8px; color: #1e40af; }
+.selection-header h4 { margin: 0 0 8px; color: #1e40af; font-size: 1.05rem; }
 .selection-header p { margin: 0; color: #1e40af; font-size: 0.9rem; }
 #selection-list { display: grid; gap: 12px; }
 .btn-cancel-search { margin-top: 16px; padding: 10px 20px; background: #64748b; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; display: block; margin-left: auto; margin-right: auto; }
+
+/* ✅ DATOS ENCONTRADOS CON TIPO DE VEHÍCULO AL LADO */
 .datos-encontrados { background: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
-.datos-encontrados h4 { margin: 0 0 10px; color: #15803d; }
+.datos-encontrados-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.datos-encontrados h4 { margin: 0; color: #15803d; font-size: 1.1rem; }
+.tipo-badge { background: #dcfce7; color: #15803d; font-weight: 700; padding: 6px 14px; border-radius: 6px; border: 1px solid #86efac; font-size: 0.9rem; }
 .dato-fila { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px dashed #bbf7d0; }
+.dato-fila:last-child { border-bottom: none; }
 .dato-label { font-weight: 600; color: #166534; min-width: 160px; }
 .dato-valor { color: #14532d; flex: 1; word-break: break-word; }
+
+/* ✅ FOTOS EN GRID */
+.fotos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 8px; }
+.foto-item { text-align: center; }
+.foto-item img { width: 100%; height: 100px; object-fit: contain; border: 1px solid #bbf7d0; border-radius: 6px; background: #f8fafc; }
+.foto-item .foto-label { font-size: 0.75rem; color: #166534; margin-top: 4px; font-weight: 600; }
+.foto-vacia { width: 100%; height: 100px; display: flex; align-items: center; justify-content: center; border: 2px dashed #d1d5db; border-radius: 6px; background: #f9fafb; color: #9ca3af; font-size: 0.8rem; }
+
+/* ✅ DOCUMENTOS CON SELECTOR SÍ/NO */
 .registro-form fieldset { border: 1px solid var(--beige-border); border-radius: 8px; padding: 16px; margin-bottom: 18px; background: #fafbfc; }
 .registro-form legend { font-weight: 600; color: var(--primary); font-size: 0.95rem; padding: 0 8px; }
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
 .registro-form label { font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; display: block; }
-.registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; }
+.registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; transition: border 0.2s; }
 .registro-form input:focus, .registro-form select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,43,92,0.1); }
 .btn-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 15px; font-size: 1rem; }
 .btn-submit:hover { background: var(--secondary); }
 .btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+
 .doc-item { background: #fff; border: 1px solid var(--beige-border); border-radius: 6px; padding: 12px; margin-bottom: 10px; }
 .doc-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
-.doc-header label { font-weight: 600; color: var(--primary); margin: 0; }
+.doc-header label { font-weight: 600; color: var(--primary); margin: 0; flex: 1; }
 .doc-si-no { display: flex; gap: 4px; }
-.doc-si-no label { display: flex; align-items: center; gap: 4px; cursor: pointer; padding: 5px 12px; border: 1px solid var(--beige-border); border-radius: 4px; font-weight: 500; font-size: 0.85rem; transition: all 0.2s; }
+.doc-si-no label { display: flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 500; font-size: 0.85rem; padding: 6px 14px; border: 1px solid var(--beige-border); border-radius: 4px; transition: all 0.2s; background: #fff; color: var(--primary); }
 .doc-si-no input[type="radio"] { display: none; }
 .doc-si-no label:has(input:checked) { background: var(--primary); color: white; border-color: var(--primary); }
 .doc-upload-area { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--beige-border); display: none; }
 .doc-upload-area.active { display: block; }
+.doc-upload-area input[type="file"] { margin-bottom: 8px; padding: 8px; background: #f8fafc; border-radius: 4px; width: 100%; }
 .file-list { margin-top: 8px; }
-.file-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #f8fafc; border-radius: 4px; margin-bottom: 4px; font-size: 0.85rem; }
-.file-item button { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.75rem; }
-.btn-add-file { padding: 6px 12px; background: var(--secondary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-top: 6px; }
-.file-count { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+.file-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #f8fafc; border-radius: 4px; margin-bottom: 4px; font-size: 0.85rem; border: 1px solid #e2e8f0; }
+.file-item button { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.75rem; font-weight: 600; }
+.file-item button:hover { background: #dc2626; }
+.btn-add-file { padding: 6px 14px; background: var(--secondary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-top: 6px; font-weight: 600; }
+.btn-add-file:hover { background: #b8941f; }
+.file-count { font-size: 0.75rem; color: #64748b; margin-top: 4px; font-weight: 600; }
 .campo-obligatorio input { border: 2px solid var(--secondary) !important; }
 .campo-obligatorio label::after { content: ' *'; color: #dc2626; font-weight: 700; }
 @media (max-width: 600px) { .form-grid, .search-row { grid-template-columns: 1fr; flex-direction: column; } }
 </style>
 
 <div class="card">
-    <h3>️ Registrar Procesado</h3>
+    <h3>⚖️ Registrar Procesado</h3>
 
     <!-- 🔍 BÚSQUEDA -->
     <div class="search-box">
@@ -72,22 +90,63 @@
         <button id="btn-cancelar-seleccion" class="btn-cancel-search">❌ Cancelar búsqueda</button>
     </div>
 
-    <!--  DATOS ENCONTRADOS -->
+    <!-- 📋 DATOS ENCONTRADOS (Tipo de vehículo al lado del título) -->
     <div id="datos-encontrados-panel" class="datos-encontrados">
-        <h4>📋 Datos del Registro Seleccionado</h4>
-        <div id="datos-contenido"></div>
-        <button id="btn-cambiar-registro" style="margin-top:12px; padding:8px 16px; background:#64748b; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:600;">🔄 Cambiar registro</button>
+        <div class="datos-encontrados-header">
+            <h4>📋 Datos del Registro Seleccionado</h4>
+            <span id="tipo-vehiculo-badge" class="tipo-badge" style="display: none;"></span>
+        </div>
+
+        <!-- Sección Persona -->
+        <div id="seccion-persona" style="display: none;">
+            <div class="dato-fila"><span class="dato-label"> Nombre Completo:</span><span class="dato-valor" id="val-nombre"></span></div>
+            <div class="dato-fila"><span class="dato-label">🆔 Cédula:</span><span class="dato-valor" id="val-cedula"></span></div>
+            <div class="dato-fila"><span class="dato-label">🎂 Edad:</span><span class="dato-valor" id="val-edad"></span></div>
+            <div class="dato-fila"><span class="dato-label">🌍 Nacionalidad:</span><span class="dato-valor" id="val-nacionalidad"></span></div>
+            <div class="dato-fila"><span class="dato-label">⚧ Sexo:</span><span class="dato-valor" id="val-sexo"></span></div>
+            <div class="dato-fila"><span class="dato-label">🏛️ Estación Policial:</span><span class="dato-valor" id="val-estacion"></span></div>
+            <div class="dato-fila"><span class="dato-label">📍 Lugar de Detención:</span><span class="dato-valor" id="val-detencion"></span></div>
+
+            <!-- ✅ FOTOS PERSONA -->
+            <div style="margin-top: 12px;">
+                <strong style="color: #166534; font-size: 0.9rem;">📸 Fotos de la Persona:</strong>
+                <div class="fotos-grid" id="fotos-persona-grid"></div>
+            </div>
+        </div>
+
+        <!-- Sección Vehículo -->
+        <div id="seccion-vehiculo" style="display: none;">
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 2px dashed #bbf7d0;"></div>
+            <div class="dato-fila"><span class="dato-label"> Placa:</span><span class="dato-valor" id="val-placa"></span></div>
+            <div class="dato-fila"><span class="dato-label">🔢 Serial Carrocería:</span><span class="dato-valor" id="val-carroceria"></span></div>
+            <div class="dato-fila"><span class="dato-label">🔢 Serial Motor:</span><span class="dato-valor" id="val-motor"></span></div>
+            <div class="dato-fila"><span class="dato-label"> Marca:</span><span class="dato-valor" id="val-marca"></span></div>
+            <div class="dato-fila"><span class="dato-label">📦 Modelo:</span><span class="dato-valor" id="val-modelo"></span></div>
+            <div class="dato-fila"><span class="dato-label">📅 Año:</span><span class="dato-valor" id="val-anio"></span></div>
+            <div class="dato-fila"><span class="dato-label"> Color:</span><span class="dato-valor" id="val-color"></span></div>
+            <div class="dato-fila"><span class="dato-label">🏛️ Estación Policial:</span><span class="dato-valor" id="val-estacion-veh"></span></div>
+            <div class="dato-fila"><span class="dato-label">📍 Lugar de Detención:</span><span class="dato-valor" id="val-detencion-veh"></span></div>
+
+            <!-- ✅ FOTOS VEHÍCULO -->
+            <div style="margin-top: 12px;">
+                <strong style="color: #166534; font-size: 0.9rem;">📸 Fotos del Vehículo:</strong>
+                <div class="fotos-grid" id="fotos-vehiculo-grid"></div>
+            </div>
+        </div>
+
+        <button id="btn-cambiar-registro" style="margin-top: 12px; padding: 8px 16px; background: #64748b; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">🔄 Cambiar registro</button>
     </div>
 
-    <!-- 📝 FORMULARIO -->
+    <!-- 📝 FORMULARIO DE PROCESADO -->
     <form id="form-reg-procesados" class="registro-form" novalidate style="display: none;">
         <input type="hidden" id="proc_tabla_origen">
         <input type="hidden" id="proc_registro_id">
         <input type="hidden" id="proc_tipo_registro">
         <input type="hidden" id="proc_identificador">
 
+        <!-- TIPO DE DELITO (OBLIGATORIO) -->
         <fieldset>
-            <legend>️ Información del Delito</legend>
+            <legend>⚖️ Información del Delito</legend>
             <div class="form-grid">
                 <div class="form-group campo-obligatorio" style="grid-column: span 2;">
                     <label>Tipo de Delito</label>
@@ -100,17 +159,17 @@
             </div>
         </fieldset>
 
+        <!-- DOCUMENTOS ÚNICOS -->
         <fieldset>
             <legend>📄 Documentos del Proceso (PDF)</legend>
-            <p style="font-size:0.85rem; color:#64748b; margin-top:-10px; margin-bottom:12px;">Seleccione "Sí" para habilitar la carga del archivo.</p>
-
-            <!-- GENERAR TODOS LOS DOCS ÚNICOS -->
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Seleccione "Sí" para habilitar la carga del archivo PDF. Todos los documentos se guardan vacío si selecciona "No".</p>
             <div id="docs-unicos-container"></div>
+        </fieldset>
 
-            <hr style="margin: 20px 0; border: none; border-top: 2px dashed var(--beige-border);">
-            <p style="font-weight:600; color:var(--primary); margin-bottom:12px;">📁 Documentos Múltiples (1 a 10 archivos cada uno)</p>
-
-            <!-- GENERAR DOCS MÚLTIPLES -->
+        <!-- DOCUMENTOS MÚLTIPLES -->
+        <fieldset>
+            <legend> Documentos Múltiples (1 a 10 archivos PDF cada uno)</legend>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Estos campos permiten subir varios archivos PDF (mínimo 1, máximo 10).</p>
             <div id="docs-multiples-container"></div>
         </fieldset>
 
@@ -121,31 +180,34 @@
 
 <script>
 // ==========================================
-// 🔹 GENERAR DOCS ÚNICOS DINÁMICAMENTE
+// 🔹 LISTAS DE DOCUMENTOS
 // ==========================================
 const docsUnicos = [
-    { id: 'portada', label: '📑 Portada', icon: '📑' },
-    { id: 'oficio_remision', label: '📨 Oficio de Remisión', icon: '' },
-    { id: 'acta_denuncia', label: '📝 Acta de Denuncia', icon: '📝' },
-    { id: 'datos_filiatorios', label: '👤 Datos Filiatorios', icon: '' },
-    { id: 'acta_policial', label: '📋 Acta Policial', icon: '📋' },
-    { id: 'derechos_imputado', label: '⚖️ Derechos del Imputado', icon: '⚖️' },
-    { id: 'evaluacion_medica', label: '🏥 Evaluación Médica', icon: '🏥' },
-    { id: 'identificacion_cedula', label: '🆔 Identificación (Cédula)', icon: '🆔' },
-    { id: 'solicitud_examen_forense', label: '🔬 Solicitud de Examen Forense', icon: '🔬' },
-    { id: 'resultados_examen_forense', label: '🔬 Resultados del Examen Forense', icon: '🔬' },
-    { id: 'asistencia_comdepro', label: '👶 Asistencia de Comdepro', icon: '👶' },
-    { id: 'remision_estacionamiento', label: ' Remisión a Estacionamiento', icon: '🚗' },
-    { id: 'planilla_pvr', label: '🚙 Planilla de Revisión de Vehículo (PVR)', icon: '🚙' },
-    { id: 'otros_documentos', label: ' Otros Documentos', icon: '📎' }
+    { id: 'portada', label: ' Portada' },
+    { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
+    { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
+    { id: 'datos_filiatorios', label: '👤 Datos Filiatorios' },
+    { id: 'acta_policial', label: '📋 Acta Policial' },
+    { id: 'derechos_imputado', label: '⚖️ Derechos del Imputado' },
+    { id: 'evaluacion_medica', label: '🏥 Evaluación Médica' },
+    { id: 'identificacion_cedula', label: '🆔 Identificación (Cédula)' },
+    { id: 'solicitud_examen_forense', label: ' Solicitud de Examen Forense' },
+    { id: 'resultados_examen_forense', label: '🔬 Resultados del Examen Forense' },
+    { id: 'asistencia_comdepro', label: '👶 Asistencia de Comdepro' },
+    { id: 'remision_estacionamiento', label: '🚗 Remisión a Estacionamiento' },
+    { id: 'planilla_pvr', label: ' Planilla de Revisión de Vehículo (PVR)' },
+    { id: 'otros_documentos', label: '📎 Otros Documentos' }
 ];
 
 const docsMultiples = [
-    { id: 'entrevista', label: '🎤 Entrevista' },
-    { id: 'cadena_custodia', label: ' Cadena de Custodia' },
-    { id: 'inspecciones_tecnicas', label: '🔍 Inspecciones Técnicas' }
+    { id: 'entrevista', label: '🎤 Entrevista', max: 10, min: 1 },
+    { id: 'cadena_custodia', label: ' Cadena de Custodia', max: 10, min: 1 },
+    { id: 'inspecciones_tecnicas', label: ' Inspecciones Técnicas', max: 10, min: 1 }
 ];
 
+// ==========================================
+// 🔹 GENERAR DOCUMENTOS ÚNICOS
+// ==========================================
 const contenedorUnicos = document.getElementById('docs-unicos-container');
 docsUnicos.forEach(doc => {
     const div = document.createElement('div');
@@ -165,13 +227,16 @@ docsUnicos.forEach(doc => {
     contenedorUnicos.appendChild(div);
 });
 
+// ==========================================
+// 🔹 GENERAR DOCUMENTOS MÚLTIPLES
+// ==========================================
 const contenedorMultiples = document.getElementById('docs-multiples-container');
 docsMultiples.forEach(doc => {
     const div = document.createElement('div');
     div.className = 'doc-item';
     div.innerHTML = `
         <div class="doc-header">
-            <label>${doc.label}</label>
+            <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Mínimo ${doc.min}, máximo ${doc.max})</span></label>
             <div class="doc-si-no">
                 <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
                 <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
@@ -179,8 +244,8 @@ docsMultiples.forEach(doc => {
         </div>
         <div class="doc-upload-area" id="upload-${doc.id}">
             <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
-            <button type="button" class="btn-add-file" onclick="agregarArchivo('${doc.id}')">➕ Agregar archivo</button>
-            <div class="file-count" id="count-${doc.id}">0 de 10 archivos</div>
+            <button type="button" class="btn-add-file" onclick="agregarArchivo('${doc.id}', ${doc.max})">➕ Agregar archivo(s)</button>
+            <div class="file-count" id="count-${doc.id}">0 de ${doc.max} archivos</div>
             <div class="file-list" id="list-${doc.id}"></div>
         </div>
     `;
@@ -195,13 +260,17 @@ window.toggleDocField = function(campo, mostrar) {
     if (area) area.classList.toggle('active', mostrar);
 };
 
-const archivosMultiples = { entrevista: [], cadena_custodia: [], inspecciones_tecnicas: [] };
+const archivosMultiples = {};
+docsMultiples.forEach(d => archivosMultiples[d.id] = []);
 
-window.agregarArchivo = function(campo) {
+window.agregarArchivo = function(campo, max) {
     const input = document.getElementById(`file_${campo}`);
     if (!input.files || input.files.length === 0) return;
-    const disponibles = 10 - archivosMultiples[campo].length;
-    if (disponibles <= 0) { alert('Máximo 10 archivos permitidos'); return; }
+    const disponibles = max - archivosMultiples[campo].length;
+    if (disponibles <= 0) {
+        alert(`Máximo ${max} archivos permitidos`);
+        return;
+    }
     let agregados = 0;
     for (const file of input.files) {
         if (agregados >= disponibles) break;
@@ -210,11 +279,11 @@ window.agregarArchivo = function(campo) {
             agregados++;
         }
     }
-    actualizarListaArchivos(campo);
+    actualizarListaArchivos(campo, max);
     input.value = '';
 };
 
-function actualizarListaArchivos(campo) {
+function actualizarListaArchivos(campo, max) {
     const list = document.getElementById(`list-${campo}`);
     const count = document.getElementById(`count-${campo}`);
     if (!list || !count) return;
@@ -222,14 +291,14 @@ function actualizarListaArchivos(campo) {
     archivosMultiples[campo].forEach((file, index) => {
         const item = document.createElement('div');
         item.className = 'file-item';
-        item.innerHTML = `<span>📄 ${file.name}</span><button type="button" onclick="eliminarArchivo('${campo}', ${index})">❌</button>`;
+        item.innerHTML = `<span>📄 ${file.name}</span><button type="button" onclick="eliminarArchivo('${campo}', ${max}, ${index})">❌ Eliminar</button>`;
         list.appendChild(item);
     });
-    count.textContent = `${archivosMultiples[campo].length} de 10 archivos`;
+    count.textContent = `${archivosMultiples[campo].length} de ${max} archivos`;
 }
 
-window.eliminarArchivo = function(campo, index) {
+window.eliminarArchivo = function(campo, max, index) {
     archivosMultiples[campo].splice(index, 1);
-    actualizarListaArchivos(campo);
+    actualizarListaArchivos(campo, max);
 };
 </script>
