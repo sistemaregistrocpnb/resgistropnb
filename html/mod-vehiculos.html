@@ -199,14 +199,14 @@
             <span id="mod_estatus_badge" style="background:#dcfce7; color:#15803d; font-weight:700; padding:6px 12px; border-radius:6px; border:1px solid #86efac; display:inline-block;">Verificación</span>
         </div>
 
-        <fieldset>
-            <legend>🚗 Tipo de Vehículo</legend>
-            <div class="tipo-selector">
-                <div class="tipo-btn" id="btn_tipo_moto">🏍️ Motocicleta</div>
-                <div class="tipo-btn" id="btn_tipo_auto">🚙 Automóvil</div>
-            </div>
-            <small style="color:#64748b;">El tipo de vehículo no se puede cambiar en la edición.</small>
-        </fieldset>
+      <!-- Reemplaza el fieldset de "Tipo de Vehículo" por esto: -->
+<fieldset>
+<legend>🚗 Tipo de Vehículo</legend>
+<div style="padding: 12px; background: #f0f4f8; border: 2px solid var(--primary); border-radius: 8px; text-align: center; font-weight: 600; color: var(--primary); font-size: 1.05rem;">
+<span id="display-tipo-vehiculo">-</span>
+</div>
+<small style="color:#64748b;">El tipo de vehículo se detecta automáticamente del registro.</small>
+</fieldset>
 
         <fieldset id="sec-fotos">
             <legend>📸 Fotografías (Suba una nueva para reemplazar)</legend>
