@@ -112,8 +112,23 @@ window.initModVehiculos = function() {
         const isMoto = type === 'moto';
         document.getElementById('mod_tipo_vehiculo').value = isMoto ? 'Motocicleta' : 'Automóvil';
         document.getElementById('mod_tabla_destino').value = isMoto ? 'registro_motos' : 'registro_automoviles';
-        document.getElementById('btn_tipo_moto').classList.toggle('active', isMoto);
-        document.getElementById('btn_tipo_auto').classList.toggle('active', !isMoto);
+        
+        // ✅ MOSTRAR SOLO EL TIPO ENCONTRADO (ocultar el otro)
+        const btnMoto = document.getElementById('btn_tipo_moto');
+        const btnAuto = document.getElementById('btn_tipo_auto');
+        
+        if (isMoto) {
+            btnMoto.classList.add('active');
+            btnMoto.style.display = 'block';
+            btnMoto.style.flex = '1';
+            btnAuto.style.display = 'none'; // Ocultar el botón de auto
+        } else {
+            btnAuto.classList.add('active');
+            btnAuto.style.display = 'block';
+            btnAuto.style.flex = '1';
+            btnMoto.style.display = 'none'; // Ocultar el botón de moto
+        }
+        
         document.getElementById('grid-fotos-moto').style.display = isMoto ? 'grid' : 'none';
         document.getElementById('grid-fotos-auto').style.display = isMoto ? 'none' : 'grid';
         document.getElementById('box-cilindraje').style.display = isMoto ? 'block' : 'none';
@@ -205,7 +220,6 @@ window.initModVehiculos = function() {
     }
 
     async function cargarResultado(resultado) {
-        // ✅ CORRECCIÓN CLAVE: Reiniciar el modo de selección
         isSelectionMode = false; 
         selectionPanel.style.display = 'none';
         crossWarning.style.display = 'none';
@@ -225,25 +239,15 @@ window.initModVehiculos = function() {
     }
 
     // ==========================================
-    // 🔹 CARGAR DATOS EN FORMULARIO
+    // 🔹 CARGAR DATOS EN FORMULARIO (CORREGIDO)
     // ==========================================
-   function cargarDatos(data, tabla, tipo) {
-currentData = data;
-isSelectionMode = false;
-setUIForType(tipo);
-form.style.display = 'block';
-mostrarMsg(msgBusqueda, '✅ Registro cargado. Puede editar y guardar.', 'success');
-window.scrollTo({ top: 0, behavior: 'smooth' });
-
-// ✅ Mostrar solo el tipo de vehículo encontrado
-const displayTipo = document.getElementById('display-tipo-vehiculo');
-if (displayTipo) {
-displayTipo.textContent = tipo === 'moto' ? '🏍️ Motocicleta' : '🚙 Automóvil';
-}
-
-document.getElementById('mod_id_original').value = data.id;
-// ... resto del código
-}
+    function cargarDatos(data, tabla, tipo) {
+        currentData = data;
+        isSelectionMode = false;
+        setUIForType(tipo);
+        form.style.display = 'block';
+        mostrarMsg(msgBusqueda, '✅ Registro cargado. Puede editar y guardar.', 'success');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
 
         document.getElementById('mod_id_original').value = data.id;
         document.getElementById('m_placa').value = data.placa;
@@ -417,12 +421,11 @@ document.getElementById('mod_id_original').value = data.id;
     }
 
     // ==========================================
-    // 🔹 ENVÍO DEL FORMULARIO (CORREGIDO)
+    // 🔹 ENVÍO DEL FORMULARIO
     // ==========================================
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // ✅ CORRECCIÓN CLAVE: Validar que existan datos, no confiar solo en isSelectionMode
         if (!currentData) return mostrarMsg(msgBox, 'Primero debe buscar y seleccionar un vehículo.', 'error');
 
         let hasError = false;
@@ -485,7 +488,7 @@ document.getElementById('mod_id_original').value = data.id;
                 inputBusqueda.value = '';
                 msgBusqueda.style.display = 'none';
                 crossWarning.style.display = 'none';
-                currentData = null; // Limpiar datos actuales
+                currentData = null;
             }, 4000);
         } catch (err) {
             console.error('Error:', err);
