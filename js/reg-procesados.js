@@ -1,6 +1,179 @@
 window.initRegProcesados = function() {
     console.log("✅ Módulo reg-procesados.js cargado correctamente.");
 
+    // ==========================================
+    //  LISTAS DE DOCUMENTOS
+    // ==========================================
+    const docsUnicos = [
+        { id: 'portada', label: ' Portada' },
+        { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
+        { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
+        { id: 'datos_filiatorios', label: '👤 Datos Filiatorios' },
+        { id: 'acta_policial', label: '📋 Acta Policial' },
+        { id: 'derechos_imputado', label: '⚖️ Derechos del Imputado' },
+        { id: 'evaluacion_medica', label: '🏥 Evaluación Médica' },
+        { id: 'identificacion_cedula', label: '🆔 Identificación (Cédula de Identidad)' },
+        { id: 'solicitud_examen_forense', label: ' Solicitud de Examen Forense' },
+        { id: 'resultados_examen_forense', label: '🔬 Resultados del Examen Forense' },
+        { id: 'asistencia_comdepro', label: '👶 Asistencia de Comdepro (Consejo Municipal de Derechos para la Protección del Niño, Niña y Adolescente)' },
+        { id: 'remision_estacionamiento', label: '🚗 Remisión a Estacionamiento' },
+        { id: 'planilla_pvr', label: '🚙 Planilla de Revisión de Vehículo (PVR)' },
+        { id: 'otros_documentos', label: '📎 Otros Documentos' }
+    ];
+
+    const docsMultiples = [
+        { id: 'entrevista', label: '🎤 Entrevista', max: 10, min: 1 },
+        { id: 'cadena_custodia', label: '🔗 Cadena de Custodia', max: 10, min: 1 },
+        { id: 'inspecciones_tecnicas', label: '🔍 Inspecciones Técnicas', max: 10, min: 1 }
+    ];
+
+    const archivosMultiples = {};
+    docsMultiples.forEach(d => archivosMultiples[d.id] = []);
+
+    // ==========================================
+    // 🔹 GENERAR DOCUMENTOS ÚNICOS
+    // ==========================================
+    const contenedorUnicos = document.getElementById('docs-unicos-container');
+    if (contenedorUnicos) {
+        docsUnicos.forEach(doc => {
+            const div = document.createElement('div');
+            div.className = 'doc-item';
+            div.innerHTML = `
+                <div class="doc-header">
+                    <label>${doc.label}</label>
+                    <div class="doc-si-no">
+                        <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
+                        <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                    </div>
+                </div>
+                <div class="doc-upload-area" id="upload-${doc.id}">
+                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="mostrarArchivoCargado('${doc.id}', this)">
+                    <div id="status-${doc.id}" class="file-status-container"></div>
+                </div>
+            `;
+            contenedorUnicos.appendChild(div);
+        });
+    }
+
+    // ==========================================
+    // 🔹 GENERAR DOCUMENTOS MÚLTIPLES
+    // ==========================================
+    const contenedorMultiples = document.getElementById('docs-multiples-container');
+    if (contenedorMultiples) {
+        docsMultiples.forEach(doc => {
+            const div = document.createElement('div');
+            div.className = 'doc-item';
+            div.innerHTML = `
+                <div class="doc-header">
+                    <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Mínimo ${doc.min}, máximo ${doc.max})</span></label>
+                    <div class="doc-si-no">
+                        <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
+                        <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                    </div>
+                </div>
+                <div class="doc-upload-area" id="upload-${doc.id}">
+                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
+                    <button type="button" class="btn-add-file" onclick="agregarArchivo('${doc.id}', ${doc.max})">➕ Agregar archivo(s)</button>
+                    <div class="file-count" id="count-${doc.id}">0 de ${doc.max} archivos</div>
+                    <div class="file-list" id="list-${doc.id}"></div>
+                    <div id="status-${doc.id}" class="file-status-container"></div>
+                </div>
+            `;
+            contenedorMultiples.appendChild(div);
+        });
+    }
+
+    // ==========================================
+    // 🔹 FUNCIONES GLOBALES
+    // ==========================================
+    window.toggleDocField = function(campo, mostrar) {
+        const area = document.getElementById(`upload-${campo}`);
+        if (area) area.classList.toggle('active', mostrar);
+    };
+
+    window.mostrarArchivoCargado = function(docId, input) {
+        const statusContainer = document.getElementById(`status-${docId}`);
+        if (!statusContainer) return;
+        
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            statusContainer.innerHTML = `
+                <div class="file-loaded">
+                    <span class="check-icon">✅</span>
+                    <span class="file-name">${file.name}</span>
+                    <button type="button" class="btn-remove" onclick="removerArchivo('${docId}')">❌ Quitar</button>
+                </div>
+            `;
+        } else {
+            statusContainer.innerHTML = '';
+        }
+    };
+
+    window.removerArchivo = function(docId) {
+        const input = document.getElementById(`file_${docId}`);
+        const statusContainer = document.getElementById(`status-${docId}`);
+        if (input) input.value = '';
+        if (statusContainer) statusContainer.innerHTML = '';
+    };
+
+    window.agregarArchivo = function(campo, max) {
+        const input = document.getElementById(`file_${campo}`);
+        const statusContainer = document.getElementById(`status-${campo}`);
+        if (!input || !input.files || input.files.length === 0) return;
+        
+        const disponibles = max - archivosMultiples[campo].length;
+        if (disponibles <= 0) {
+            alert(`Máximo ${max} archivos permitidos`);
+            return;
+        }
+        
+        let agregados = 0;
+        const archivosAgregados = [];
+        for (const file of input.files) {
+            if (agregados >= disponibles) break;
+            if (file.type === 'application/pdf') {
+                archivosMultiples[campo].push(file);
+                archivosAgregados.push(file.name);
+                agregados++;
+            }
+        }
+        
+        actualizarListaArchivos(campo, max);
+        input.value = '';
+        
+        if (archivosAgregados.length > 0 && statusContainer) {
+            statusContainer.innerHTML = `
+                <div class="file-loaded">
+                    <span class="check-icon">✅</span>
+                    <span class="file-name">${archivosAgregados.length} archivo(s) cargado(s) correctamente</span>
+                </div>
+            `;
+            setTimeout(() => { statusContainer.innerHTML = ''; }, 3000);
+        }
+    };
+
+    function actualizarListaArchivos(campo, max) {
+        const list = document.getElementById(`list-${campo}`);
+        const count = document.getElementById(`count-${campo}`);
+        if (!list || !count) return;
+        list.innerHTML = '';
+        archivosMultiples[campo].forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'file-item-multiple';
+            item.innerHTML = `<span>📄 ${file.name}</span><button type="button" onclick="eliminarArchivoMultiple('${campo}', ${max}, ${index})">❌</button>`;
+            list.appendChild(item);
+        });
+        count.textContent = `${archivosMultiples[campo].length} de ${max} archivos`;
+    }
+
+    window.eliminarArchivoMultiple = function(campo, max, index) {
+        archivosMultiples[campo].splice(index, 1);
+        actualizarListaArchivos(campo, max);
+    };
+
+    // ==========================================
+    // 🔹 REFERENCIAS DOM
+    // ==========================================
     const btnBuscar = document.getElementById('proc_btn_buscar');
     const inputBusqueda = document.getElementById('proc_busqueda_input');
     const msgBusqueda = document.getElementById('proc_msg_busqueda');
@@ -22,24 +195,9 @@ window.initRegProcesados = function() {
         el.style.display = 'block';
     };
 
-    const limpiarFotos = (gridId) => {
-        const grid = document.getElementById(gridId);
-        if (grid) grid.innerHTML = '';
-    };
-
-    const agregarFoto = (gridId, url, label) => {
-        const grid = document.getElementById(gridId);
-        if (!grid) return;
-        const div = document.createElement('div');
-        div.className = 'foto-item';
-        if (url) {
-            div.innerHTML = `<img src="${url}" alt="${label}"><div class="foto-label">${label}</div>`;
-        } else {
-            div.innerHTML = `<div class="foto-vacia">Sin foto</div><div class="foto-label">${label}</div>`;
-        }
-        grid.appendChild(div);
-    };
-
+    // ==========================================
+    // 🔹 BÚSQUEDA MULTI-TABLA
+    // ==========================================
     function detectarCoincidencias(reg, val, tabla) {
         const campos = [];
         const v = val.trim().toUpperCase();
@@ -157,7 +315,6 @@ window.initRegProcesados = function() {
         });
         selectionPanel.style.display = 'block';
         form.style.display = 'none';
-        datosPanel.style.display = 'none';
         msgBusqueda.style.display = 'none';
     }
 
@@ -173,6 +330,24 @@ window.initRegProcesados = function() {
             badge.textContent = `🚗 ${resultado.tipoVehiculo}`;
             badge.style.display = 'inline-block';
         }
+
+        const limpiarFotos = (gridId) => {
+            const grid = document.getElementById(gridId);
+            if (grid) grid.innerHTML = '';
+        };
+        const agregarFoto = (gridId, url, label) => {
+            const grid = document.getElementById(gridId);
+            if (!grid) return;
+            const div = document.createElement('div');
+            div.className = 'foto-item';
+            if (url) {
+                div.innerHTML = `<img src="${url}" alt="${label}"><div class="foto-label">${label}</div>`;
+            } else {
+                div.innerHTML = `<div class="foto-vacia">Sin foto</div><div class="foto-label">${label}</div>`;
+            }
+            grid.appendChild(div);
+        };
+
         limpiarFotos('fotos-persona-grid');
         limpiarFotos('fotos-vehiculo-grid');
 
@@ -235,6 +410,9 @@ window.initRegProcesados = function() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    // ==========================================
+    // 🔹 LISTENERS DE BÚSQUEDA
+    // ==========================================
     if (btnBuscar && inputBusqueda) {
         btnBuscar.addEventListener('click', async () => {
             const val = inputBusqueda.value.trim();
@@ -254,7 +432,7 @@ window.initRegProcesados = function() {
                     mostrarMsg(msgBusqueda, '✅ 1 registro encontrado.', 'success');
                     setTimeout(() => seleccionarRegistro(resultados[0]), 300);
                 } else {
-                    mostrarMsg(msgBusqueda, `🔎 Se encontraron <strong>${resultados.length} registros</strong>. Seleccione cuál procesar:`, 'success');
+                    mostrarMsg(msgBusqueda, ` Se encontraron <strong>${resultados.length} registros</strong>. Seleccione cuál procesar:`, 'success');
                     setTimeout(() => mostrarPanelSeleccion(resultados, val), 300);
                 }
             } catch (err) {
@@ -301,7 +479,6 @@ window.initRegProcesados = function() {
                 return mostrarMsg(msgForm, '❌ El tipo de delito es obligatorio.', 'error');
             }
 
-            // Validar documentos únicos marcados como Sí
             for (const doc of docsUnicos) {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                 if (radio && radio.value === 'si') {
@@ -312,7 +489,6 @@ window.initRegProcesados = function() {
                 }
             }
 
-            // Validar documentos múltiples
             for (const doc of docsMultiples) {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                 if (radio && radio.value === 'si') {
@@ -371,7 +547,6 @@ window.initRegProcesados = function() {
                     observaciones: document.getElementById('proc_observaciones').value.trim() || null
                 };
 
-                // Documentos únicos
                 for (const doc of docsUnicos) {
                     const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                     if (radio && radio.value === 'si') {
@@ -381,7 +556,6 @@ window.initRegProcesados = function() {
                     }
                 }
 
-                // Documentos múltiples
                 for (const doc of docsMultiples) {
                     const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                     if (radio && radio.value === 'si' && archivosMultiples[doc.id].length > 0) {
@@ -421,7 +595,7 @@ window.initRegProcesados = function() {
 
             } catch (err) {
                 console.error('Error al procesar:', err);
-                mostrarMsg(msgForm, '❌ Error: ' + err.message, 'error');
+                mostrarMsg(msgForm, ' Error: ' + err.message, 'error');
             } finally {
                 btnSubmit.disabled = false;
                 btnSubmit.textContent = '💾 Registrar Procesado y Cambiar Estatus';
