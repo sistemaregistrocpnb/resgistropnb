@@ -109,39 +109,8 @@ window.initModVinculado = function() {
     ];
 
     // ==========================================
-    // 🔹 3. REFERENCIAS DOM
+    // 🔹 3. FUNCIONES UI GLOBALES
     // ==========================================
-    const marcaSelect = document.getElementById('pv_v_marca');
-    const modeloSelect = document.getElementById('pv_v_modelo');
-    const anioSelect = document.getElementById('pv_v_anio');
-    const form = document.getElementById('form-mod-vinculado');
-    const btnBuscar = document.getElementById('btn_buscar_mod');
-    const inputBusqueda = document.getElementById('mod_busqueda_input');
-    const msgBox = document.getElementById('msg-mod-vinculado');
-    const msgBusqueda = document.getElementById('mod_msg_busqueda');
-    const crossWarning = document.getElementById('cross-plate-warning');
-    const selectionPanel = document.getElementById('selection-panel');
-    const selectionList = document.getElementById('selection-list');
-    const resultCount = document.getElementById('result-count');
-    const btnCancelSearch = document.getElementById('btn-cancelar-seleccion');
-    const crossPlateWarning = document.getElementById('cross-plate-warning');
-    
-    let currentData = null;
-    let currentId = null;
-
-    // ==========================================
-    // 🔹 4. FUNCIONES UI GLOBALES
-    // ==========================================
-    window.previewFile = function(input, imgId) {
-        const img = document.getElementById(imgId);
-        if (!img) return;
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) { img.src = e.target.result; img.style.display = 'block'; };
-            reader.readAsDataURL(input.files[0]);
-        }
-    };
-
     window.toggleCampo = function(select, targetId) {
         const el = document.getElementById(targetId);
         const input = el?.querySelector('input');
@@ -176,9 +145,13 @@ window.initModVinculado = function() {
 
     window.cargarMarcasPV = function() {
         const tipo = document.getElementById('pv_v_tipo')?.value;
+        const marcaSelect = document.getElementById('pv_v_marca');
+        const modeloSelect = document.getElementById('pv_v_modelo');
+        const boxCilindro = document.getElementById('pv_box_cilindro');
+        
         marcaSelect.innerHTML = '<option value="">Seleccione marca...</option>';
         modeloSelect.innerHTML = '<option value="">Seleccione modelo...</option>';
-        const boxCilindro = document.getElementById('pv_box_cilindro');
+        
         if (tipo === 'Motocicleta') {
             Object.keys(marcasModelosMoto).sort().forEach(m => marcaSelect.innerHTML += `<option value="${m}">${m}</option>`);
             if(boxCilindro) boxCilindro.style.display = 'block';
@@ -190,19 +163,123 @@ window.initModVinculado = function() {
 
     window.cargarModelosPV = function() {
         const tipo = document.getElementById('pv_v_tipo')?.value;
-        const marca = marcaSelect.value;
+        const marca = document.getElementById('pv_v_marca')?.value;
+        const modeloSelect = document.getElementById('pv_v_modelo');
+        
         modeloSelect.innerHTML = '<option value="">Seleccione modelo...</option>';
         const lista = tipo === 'Motocicleta' ? marcasModelosMoto[marca] : marcasModelosAuto[marca];
         if (lista) lista.forEach(mod => modeloSelect.innerHTML += `<option value="${mod}">${mod}</option>`);
     };
 
-    function mostrarMsg(el, txt, type) {
-        if (el) { el.innerHTML = txt; el.className = `msg ${type}`; el.style.display = txt ? 'block' : 'none'; }
-    }
+    const cargarEstaciones = () => {
+        const select = document.getElementById('pv_estacion');
+        if (select) {
+            select.innerHTML = '<option value="">Seleccione estación...</option>';
+            estacionesList.forEach(est => select.innerHTML += `<option value="${est}">${est}</option>`);
+        }
+    };
+
+    const cargarAnios = () => {
+        const anioSelect = document.getElementById('pv_v_anio');
+        if (anioSelect) {
+            const currentYear = new Date().getFullYear();
+            anioSelect.innerHTML = '<option value="">Seleccione año...</option>';
+            for (let y = currentYear; y >= 1990; y--) anioSelect.innerHTML += `<option value="${y}">${y}</option>`;
+        }
+    };
+
+    const setupEdad = () => {
+        const fechaNac = document.getElementById('pv_p_fecha_nac');
+        const edadInput = document.getElementById('pv_p_edad');
+        if (fechaNac && edadInput) {
+            fechaNac.addEventListener('change', () => {
+                if (!fechaNac.value) return;
+                const hoy = new Date(), nac = new Date(fechaNac.value);
+                let edad = hoy.getFullYear() - nac.getFullYear();
+                const m = hoy.getMonth() - nac.getMonth();
+                if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
+                edadInput.value = (edad >= 0 && edad <= 120) ? edad : '';
+            });
+        }
+    };
 
     // ==========================================
-    // 🔹 5. BÚSQUEDA MULTI-TABLA
+    // 🔹 4. DROPDOWN BANDERAS
     // ==========================================
+    const initPhoneDropdown = () => {
+        const nativeSelect = document.getElementById('pv_p_tlf_pais');
+        const displayBox = document.querySelector('.phone-display');
+        const optionsBox = document.querySelector('.phone-options');
+        const flagImg = document.getElementById('pv_tlf-flag-img');
+        const codeText = document.getElementById('pv_tlf-code-text');
+        const countryText = document.getElementById('pv_tlf-country-text');
+        
+        if (optionsBox && nativeSelect && displayBox) {
+            optionsBox.innerHTML = '';
+            Array.from(nativeSelect.options).forEach(opt => {
+                if (!opt.value || opt.value === '--') return;
+                const iso = isoMap[opt.text] || 'xx';
+                const div = document.createElement('div');
+                div.className = 'phone-option';
+                div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.8rem;">${opt.text}</span>`;
+                div.addEventListener('click', () => {
+                    nativeSelect.value = opt.value;
+                    flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
+                    codeText.textContent = opt.value;
+                    countryText.textContent = opt.text;
+                    optionsBox.style.display = 'none';
+                });
+                optionsBox.appendChild(div);
+            });
+            
+            displayBox.addEventListener('click', (e) => {
+                e.stopPropagation();
+                optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block';
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.phone-dropdown-wrapper')) optionsBox.style.display = 'none';
+            });
+        }
+    };
+
+    // ==========================================
+    // 🔹 5. PREVISUALIZACIÓN DE FOTOS
+    // ==========================================
+    const setupPhotoPreview = (inputId, imgId) => {
+        const input = document.getElementById(inputId);
+        const img = document.getElementById(imgId);
+        if (!input || !img) return;
+        
+        input.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => { img.src = e.target.result; img.style.display = 'block'; };
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+    };
+
+    // ==========================================
+    // 🔹 6. BÚSQUEDA MULTI-TABLA CON PANEL DE SELECCIÓN
+    // ==========================================
+    const btnBuscar = document.getElementById('btn_buscar_mod');
+    const inputBusqueda = document.getElementById('mod_busqueda_input');
+    const msgBusqueda = document.getElementById('mod_msg_busqueda');
+    const form = document.getElementById('form-mod-vinculado');
+    const selectionPanel = document.getElementById('selection-panel');
+    const selectionList = document.getElementById('selection-list');
+    const resultCount = document.getElementById('result-count');
+    const crossPlateWarning = document.getElementById('cross-plate-warning');
+    const btnCancelSel = document.getElementById('btn-cancelar-seleccion');
+    
+    const showMsgBusq = (txt, type) => {
+        msgBusqueda.innerHTML = txt;
+        msgBusqueda.className = `msg ${type}`;
+        msgBusqueda.style.display = 'block';
+    };
+
+    // Detectar en qué campos coincide
     function detectarCoincidencias(reg, val, tabla) {
         const campos = [];
         const v = val.trim().toUpperCase();
@@ -213,22 +290,24 @@ window.initModVinculado = function() {
         return campos;
     }
 
+    // Buscar en las 3 tablas
     async function buscarEnTodasLasTablas(valor) {
         const resultados = [];
         const val = valor.trim().toUpperCase();
+        
         try {
             // 1. REGISTRO_VINCULADO
             const { data: vinculados, error: errVinc } = await window.supabaseClient
                 .from('registro_vinculado')
                 .select('*')
                 .or(`cedula.eq.${val},placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`);
-            
+
             if (!errVinc && vinculados && vinculados.length > 0) {
                 vinculados.forEach(reg => {
                     resultados.push({
                         origen: 'registro_vinculado',
                         id: reg.id,
-                        tipo: '🔗 Registro Vinculado',
+                        tipo: '🔗 Registro Vinculado (Persona + Vehículo)',
                         icono: '🔗',
                         color: '#002b5c',
                         colorBg: '#eff6ff',
@@ -246,7 +325,7 @@ window.initModVinculado = function() {
                 .from('registro_motos')
                 .select('*')
                 .or(`placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`);
-            
+
             if (!errMoto && motos && motos.length > 0) {
                 motos.forEach(reg => {
                     resultados.push({
@@ -259,7 +338,7 @@ window.initModVinculado = function() {
                         datos: reg,
                         linea1: `Placa: ${reg.placa || '-'}`,
                         linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
-                        linea3: `Serial: ${reg.serial_carroceria || '-'}`,
+                        linea3: `Serial Carrocería: ${reg.serial_carroceria || '-'}`,
                         encontrado_por: detectarCoincidencias(reg, val, 'registro_motos')
                     });
                 });
@@ -270,7 +349,7 @@ window.initModVinculado = function() {
                 .from('registro_automoviles')
                 .select('*')
                 .or(`placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`);
-            
+
             if (!errAuto && autos && autos.length > 0) {
                 autos.forEach(reg => {
                     resultados.push({
@@ -283,7 +362,7 @@ window.initModVinculado = function() {
                         datos: reg,
                         linea1: `Placa: ${reg.placa || '-'}`,
                         linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
-                        linea3: `Serial: ${reg.serial_carroceria || '-'}`,
+                        linea3: `Serial Carrocería: ${reg.serial_carroceria || '-'}`,
                         encontrado_por: detectarCoincidencias(reg, val, 'registro_automoviles')
                     });
                 });
@@ -296,272 +375,283 @@ window.initModVinculado = function() {
         }
     }
 
+    // Mostrar panel de selección
     function mostrarPanelSeleccion(resultados, valorBuscado) {
-    selectionList.innerHTML = '';
-    resultCount.textContent = resultados.length;
-    
-    // Alerta cruzada
-    const tieneMoto = resultados.some(r => r.origen === 'registro_motos');
-    const tieneAuto = resultados.some(r => r.origen === 'registro_automoviles');
-    const tieneVinculado = resultados.some(r => r.origen === 'registro_vinculado');
-    
-    if (crossPlateWarning) {
-        if ((tieneMoto && tieneAuto) || (tieneVinculado && (tieneMoto || tieneAuto))) {
-            crossPlateWarning.innerHTML = `
-                <strong>⚠️ ALERTA CRUZADA DETECTADA:</strong><br>
-                El dato <strong>"${valorBuscado}"</strong> aparece en más de un tipo de registro.
-                Esto puede indicar un caso de clonación de placas/seriales. Revise cuidadosamente.
+        selectionList.innerHTML = '';
+        resultCount.textContent = resultados.length;
+        
+        // Alerta cruzada
+        const tieneMoto = resultados.some(r => r.origen === 'registro_motos');
+        const tieneAuto = resultados.some(r => r.origen === 'registro_automoviles');
+        const tieneVinculado = resultados.some(r => r.origen === 'registro_vinculado');
+        
+        if (crossPlateWarning) {
+            if ((tieneMoto && tieneAuto) || (tieneVinculado && (tieneMoto || tieneAuto))) {
+                crossPlateWarning.innerHTML = `
+                    <strong>⚠️ ALERTA CRUZADA DETECTADA:</strong><br>
+                    El dato <strong>"${valorBuscado}"</strong> aparece en más de un tipo de registro.
+                    Esto puede indicar un caso de clonación de placas/seriales. Revise cuidadosamente.
+                `;
+                crossPlateWarning.style.display = 'block';
+            } else {
+                crossPlateWarning.style.display = 'none';
+            }
+        }
+        
+        resultados.forEach((res, index) => {
+            const card = document.createElement('div');
+            // ✅ APLICAR COLORES SEGÚN EL TIPO
+            let bgColor, borderColor, btnColor;
+            
+            if (res.clase === 'moto' || res.origen === 'registro_motos') {
+                bgColor = '#fef2f2';      // Rojo claro
+                borderColor = '#dc2626';   // Rojo
+                btnColor = '#dc2626';
+            } else if (res.clase === 'auto' || res.origen === 'registro_automoviles') {
+                bgColor = '#ecfdf5';      // Verde claro
+                borderColor = '#059669';   // Verde
+                btnColor = '#059669';
+            } else {
+                bgColor = '#eff6ff';      // Azul claro
+                borderColor = '#002b5c';   // Azul
+                btnColor = '#002b5c';
+            }
+            
+            card.style.cssText = `
+                background: ${bgColor};
+                border: 2px solid ${borderColor};
+                border-left: 6px solid ${borderColor};
+                border-radius: 8px;
+                padding: 16px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 16px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                transition: transform 0.2s;
+                margin-bottom: 12px;
             `;
-            crossPlateWarning.style.display = 'block';
-        } else {
-            crossPlateWarning.style.display = 'none';
-        }
-    }
-    
-    resultados.forEach((res, index) => {
-        const card = document.createElement('div');
-        
-        // ✅ APLICAR COLORES SEGÚN EL TIPO
-        let bgColor, borderColor, btnColor;
-        
-        if (res.clase === 'moto') {
-            bgColor = '#fef2f2';      // Rojo claro
-            borderColor = '#dc2626';   // Rojo
-            btnColor = '#dc2626';
-        } else if (res.clase === 'auto') {
-            bgColor = '#ecfdf5';      // Verde claro
-            borderColor = '#059669';   // Verde
-            btnColor = '#059669';
-        } else {
-            bgColor = '#eff6ff';      // Azul claro
-            borderColor = '#002b5c';   // Azul
-            btnColor = '#002b5c';
-        }
-        
-        card.style.cssText = `
-            background: ${bgColor};
-            border: 2px solid ${borderColor};
-            border-left: 6px solid ${borderColor};
-            border-radius: 8px;
-            padding: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
-            margin-bottom: 12px;
-        `;
-        
-        card.onmouseover = () => card.style.transform = 'translateX(4px)';
-        card.onmouseout = () => card.style.transform = 'translateX(0)';
-        
-        card.innerHTML = `
-            <div style="flex: 1;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                    <span style="font-size: 1.5rem;">${res.icono}</span>
-                    <strong style="color: ${borderColor}; font-size: 0.95rem;">${res.tipo}</strong>
+            
+            card.onmouseover = () => card.style.transform = 'translateX(4px)';
+            card.onmouseout = () => card.style.transform = 'translateX(0)';
+            
+            card.innerHTML = `
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                        <span style="font-size: 1.5rem;">${res.icono}</span>
+                        <strong style="color: ${borderColor}; font-size: 0.95rem;">${res.tipo}</strong>
+                    </div>
+                    <div style="font-size: 0.9rem; color: #334155; margin-bottom: 3px;">${res.linea1}</div>
+                    <div style="font-size: 0.85rem; color: #475569; margin-bottom: 3px;">${res.linea2}</div>
+                    <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 6px;">${res.linea3}</div>
+                    <div style="font-size: 0.75rem; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; display: inline-block;">
+                        🔎 Coincidencia en: <strong>${res.encontrado_por.join(', ')}</strong>
+                    </div>
                 </div>
-                <div style="font-size: 0.9rem; color: #334155; margin-bottom: 3px;">${res.linea1}</div>
-                <div style="font-size: 0.85rem; color: #475569; margin-bottom: 3px;">${res.linea2}</div>
-                <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 6px;">${res.linea3}</div>
-                <div style="font-size: 0.75rem; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; display: inline-block;">
-                    🔎 Coincidencia en: <strong>${res.encontrado_por.join(', ')}</strong>
-                </div>
-            </div>
-            <button class="btn-seleccionar" data-index="${index}" style="
-                padding: 12px 24px;
-                background: ${btnColor};
-                color: white;
-                border: none;
-                border-radius: 6px;
-                font-weight: 700;
-                cursor: pointer;
-                white-space: nowrap;
-                transition: background 0.2s;
-            ">✏️ Editar</button>
-        `;
-        
-        selectionList.appendChild(card);
-    });
-    
-    document.querySelectorAll('.btn-seleccionar').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const idx = parseInt(e.target.dataset.index);
-            cargarResultado(resultados[idx]);
+                <button class="btn-seleccionar" data-index="${index}" style="
+                    padding: 12px 24px;
+                    background: ${btnColor};
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    white-space: nowrap;
+                    transition: background 0.2s;
+                ">✏️ Editar</button>
+            `;
+            
+            selectionList.appendChild(card);
         });
-    });
-    
-    selectionPanel.style.display = 'block';
-    form.style.display = 'none';
-    msgBusqueda.style.display = 'none';
-}
+        
+        document.querySelectorAll('.btn-seleccionar').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(e.target.dataset.index);
+                cargarResultado(resultados[idx]);
+            });
+        });
+        
+        selectionPanel.style.display = 'block';
+        form.style.display = 'none';
+        msgBusqueda.style.display = 'none';
+    }
 
+    // Cargar un resultado
     async function cargarResultado(resultado) {
         selectionPanel.style.display = 'none';
-        if (crossWarning) crossWarning.style.display = 'none';
-        mostrarMsg(msgBusqueda, '✅ Cargando registro...', 'success');
+        if (crossPlateWarning) crossPlateWarning.style.display = 'none';
+        showMsgBusq('✅ Cargando registro...', 'success');
         
         try {
             if (resultado.origen === 'registro_vinculado') {
                 await cargarVinculado(resultado.datos);
             } else {
-                mostrarMsg(msgBusqueda, `⚠️ Este es un <strong>registro individual</strong> (${resultado.tipo}).<br><span style="font-size:0.85rem;">Para modificarlo, use el módulo de <strong>Registro de Vehículos → Modificar</strong>.</span>`, 'error');
-                setTimeout(() => { msgBusqueda.style.display = 'none'; inputBusqueda.focus(); }, 6000);
+                showMsgBusq(
+                    `⚠️ Este es un <strong>registro individual</strong> (${resultado.tipo}).<br>
+                    <span style="font-size:0.85rem;">Para modificarlo, use el módulo de
+                    <strong>Registro de Vehículos → Modificar</strong>.</span>`,
+                    'error'
+                );
+                setTimeout(() => {
+                    msgBusqueda.style.display = 'none';
+                    inputBusqueda.focus();
+                }, 6000);
             }
         } catch (err) {
             console.error('Error cargando resultado:', err);
-            mostrarMsg(msgBusqueda, '❌ Error al cargar: ' + err.message, 'error');
+            showMsgBusq('❌ Error al cargar: ' + err.message, 'error');
         }
     }
 
-   // Cargar datos de vinculado en el formulario
-function cargarVinculado(data) {
-    // Helper seguro para establecer valores
-    const setVal = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.value = val || '';
-    };
-
-    setVal('mod_vinculado_id', data.id);
-
-    // Persona
-    setVal('pv_p_nombre1', data.primer_nombre);
-    setVal('pv_p_nombre2', data.segundo_nombre);
-    setVal('pv_p_apellido1', data.primer_apellido);
-    setVal('pv_p_apellido2', data.segundo_apellido);
-    setVal('pv_p_cedula', data.cedula);
-    setVal('pv_p_fecha_nac', data.fecha_nacimiento);
-    setVal('pv_p_edad', data.edad);
-    setVal('pv_p_apodo', data.apodo);
-    setVal('pv_p_marca', data.marca_corporal);
-    setVal('pv_p_nacionalidad', data.nacionalidad);
-    setVal('pv_p_sexo', data.sexo);
-    setVal('pv_p_direccion', data.direccion);
-    setVal('pv_p_tlf_pais', data.tlf_pais);
-    setVal('pv_p_tlf_num', data.tlf_numero);
-
-    // Disparar evento de cambio para calcular edad
-    const fechaNac = document.getElementById('pv_p_fecha_nac');
-    if (fechaNac) fechaNac.dispatchEvent(new Event('change'));
-
-    // Fotos persona
-    if (data.foto_frontal_persona) {
-        const p = document.getElementById('prev_p_frontal');
-        if (p) { p.src = data.foto_frontal_persona; p.style.display = 'block'; }
-    }
-    if (data.foto_perfil_izq_persona) {
-        const p = document.getElementById('prev_p_izq');
-        if (p) { p.src = data.foto_perfil_izq_persona; p.style.display = 'block'; }
-    }
-    if (data.foto_perfil_der_persona) {
-        const p = document.getElementById('prev_p_der');
-        if (p) { p.src = data.foto_perfil_der_persona; p.style.display = 'block'; }
-    }
-
-    // Características
-    const estaturaCm = data.estatura_cm;
-    setVal('pv_p_estatura', estaturaCm ? (estaturaCm / 100).toFixed(2) : '');
-    setVal('pv_p_color_piel', data.color_piel);
-    setVal('pv_p_color_ojos', data.color_ojos);
-    setVal('pv_p_color_cabello', data.color_cabello);
-    setVal('pv_p_complexion', data.complexion);
-
-    // Salud - campos simples
-    const lentes = document.getElementById('pv_p_lentes');
-    if (lentes) {
-        lentes.value = data.usa_lentes ? 'true' : 'false';
-        if (window.toggleCampo) window.toggleCampo(lentes, 'pv_det-lentes');
-    }
-    setVal('pv_txt_lentes', data.detalle_lentes);
-
-    const perforaciones = document.getElementById('pv_p_perforaciones');
-    if (perforaciones) {
-        perforaciones.value = data.perforaciones ? 'true' : 'false';
-        if (window.activarCampoPerforacion) window.activarCampoPerforacion(perforaciones);
-    }
-    setVal('pv_txt_lugar_perforacion', data.detalle_perforaciones);
-
-    const condMedica = document.getElementById('pv_p_cond_medica');
-    if (condMedica) {
-        condMedica.value = data.condicion_medica ? 'true' : 'false';
-        if (window.toggleCampo) window.toggleCampo(condMedica, 'pv_det-cond');
-    }
-    setVal('pv_txt_cond', data.condicion_medica);
-
-    const medicamento = document.getElementById('pv_p_medicamento');
-    if (medicamento) {
-        medicamento.value = data.consume_medicamento ? 'true' : 'false';
-        if (window.toggleCampo) window.toggleCampo(medicamento, 'pv_det-med');
-    }
-    setVal('pv_txt_med', data.consume_medicamento);
-
-    const judicial = document.getElementById('pv_p_judicial');
-    if (judicial) {
-        judicial.value = data.problema_judicial ? 'true' : 'false';
-        if (window.toggleCampo) window.toggleCampo(judicial, 'pv_det-jud');
-    }
-    setVal('pv_txt_jud', data.problema_judicial);
-
-    // Vehículo - primero establecer tipo para cargar marcas
-    setVal('pv_v_tipo', data.tipo_vehiculo);
-    if (window.cargarMarcasPV) window.cargarMarcasPV();
-
-    // Luego establecer marca para cargar modelos
-    setVal('pv_v_marca', data.marca_vehiculo);
-    if (window.cargarModelosPV) window.cargarModelosPV();
-
-    // Resto de campos del vehículo
-    setVal('pv_v_placa', data.placa);
-    setVal('pv_v_serial_carro', data.serial_carroceria);
-    setVal('pv_v_serial_motor', data.serial_motor);
-    setVal('pv_v_cilindraje', data.cilindraje);
-    setVal('pv_v_modelo', data.modelo_vehiculo);
-    setVal('pv_v_anio', data.anio_vehiculo);
-    setVal('pv_v_color', data.color_vehiculo);
-
-    // Fotos vehículo
-    if (data.foto_frontal_vehiculo) {
-        const p = document.getElementById('prev_v_frontal');
-        if (p) { p.src = data.foto_frontal_vehiculo; p.style.display = 'block'; }
-    }
-    if (data.foto_trasera_vehiculo) {
-        const p = document.getElementById('prev_v_trasera');
-        if (p) { p.src = data.foto_trasera_vehiculo; p.style.display = 'block'; }
-    }
-    if (data.foto_lado_der_vehiculo) {
-        const p = document.getElementById('prev_v_der');
-        if (p) { p.src = data.foto_lado_der_vehiculo; p.style.display = 'block'; }
-    }
-    if (data.foto_lado_izq_vehiculo) {
-        const p = document.getElementById('prev_v_izq');
-        if (p) { p.src = data.foto_lado_izq_vehiculo; p.style.display = 'block'; }
+    // Cargar datos de vinculado en el formulario
+    async function cargarVinculado(data) {
+        document.getElementById('mod_vinculado_id').value = data.id;
+        
+        // Persona
+        document.getElementById('pv_p_nombre1').value = data.primer_nombre || '';
+        document.getElementById('pv_p_nombre2').value = data.segundo_nombre || '';
+        document.getElementById('pv_p_apellido1').value = data.primer_apellido || '';
+        document.getElementById('pv_p_apellido2').value = data.segundo_apellido || '';
+        document.getElementById('pv_p_cedula').value = data.cedula || '';
+        document.getElementById('pv_p_fecha_nac').value = data.fecha_nacimiento || '';
+        document.getElementById('pv_p_edad').value = data.edad || '';
+        document.getElementById('pv_p_apodo').value = data.apodo || '';
+        document.getElementById('pv_p_marca').value = data.marca_corporal || '';
+        document.getElementById('pv_p_nacionalidad').value = data.nacionalidad || '';
+        document.getElementById('pv_p_sexo').value = data.sexo || '';
+        document.getElementById('pv_p_direccion').value = data.direccion || '';
+        document.getElementById('pv_p_tlf_pais').value = data.tlf_pais || '';
+        document.getElementById('pv_p_tlf_num').value = data.tlf_numero || '';
+        document.getElementById('pv_p_fecha_nac').dispatchEvent(new Event('change'));
+        
+        // Fotos persona
+        if (data.foto_frontal_persona) { const p = document.getElementById('prev_p_frontal'); p.src = data.foto_frontal_persona; p.style.display = 'block'; }
+        if (data.foto_perfil_izq_persona) { const p = document.getElementById('prev_p_izq'); p.src = data.foto_perfil_izq_persona; p.style.display = 'block'; }
+        if (data.foto_perfil_der_persona) { const p = document.getElementById('prev_p_der'); p.src = data.foto_perfil_der_persona; p.style.display = 'block'; }
+        
+        // Características
+        document.getElementById('pv_p_estatura').value = data.estatura_cm ? (data.estatura_cm / 100).toFixed(2) : '';
+        document.getElementById('pv_p_color_piel').value = data.color_piel || '';
+        document.getElementById('pv_p_color_ojos').value = data.color_ojos || '';
+        document.getElementById('pv_p_color_cabello').value = data.color_cabello || '';
+        document.getElementById('pv_p_complexion').value = data.complexion || '';
+        
+        // Salud (usando window.toggleCampo que ahora SÍ existe)
+        document.getElementById('pv_p_lentes').value = data.usa_lentes ? 'true' : 'false';
+        window.toggleCampo(document.getElementById('pv_p_lentes'), 'pv_det-lentes');
+        document.getElementById('pv_txt_lentes').value = data.detalle_lentes || '';
+        
+        document.getElementById('pv_p_perforaciones').value = data.perforaciones ? 'true' : 'false';
+        window.activarCampoPerforacion(document.getElementById('pv_p_perforaciones'));
+        document.getElementById('pv_txt_lugar_perforacion').value = data.detalle_perforaciones || '';
+        
+        document.getElementById('pv_p_cond_medica').value = data.condicion_medica ? 'true' : 'false';
+        window.toggleCampo(document.getElementById('pv_p_cond_medica'), 'pv_det-cond');
+        document.getElementById('pv_txt_cond').value = data.condicion_medica || '';
+        
+        document.getElementById('pv_p_medicamento').value = data.consume_medicamento ? 'true' : 'false';
+        window.toggleCampo(document.getElementById('pv_p_medicamento'), 'pv_det-med');
+        document.getElementById('pv_txt_med').value = data.consume_medicamento || '';
+        
+        document.getElementById('pv_p_judicial').value = data.problema_judicial ? 'true' : 'false';
+        window.toggleCampo(document.getElementById('pv_p_judicial'), 'pv_det-jud');
+        document.getElementById('pv_txt_jud').value = data.problema_judicial || '';
+        
+        // Vehículo
+        document.getElementById('pv_v_tipo').value = data.tipo_vehiculo || '';
+        window.cargarMarcasPV();
+        
+        document.getElementById('pv_v_placa').value = data.placa || '';
+        document.getElementById('pv_v_serial_carro').value = data.serial_carroceria || '';
+        document.getElementById('pv_v_serial_motor').value = data.serial_motor || '';
+        document.getElementById('pv_v_cilindraje').value = data.cilindraje || '';
+        
+        document.getElementById('pv_v_marca').value = data.marca_vehiculo || '';
+        window.cargarModelosPV();
+        document.getElementById('pv_v_modelo').value = data.modelo_vehiculo || '';
+        
+        document.getElementById('pv_v_anio').value = data.anio_vehiculo || '';
+        document.getElementById('pv_v_color').value = data.color_vehiculo || '';
+        
+        // Fotos vehículo
+        if (data.foto_frontal_vehiculo) { const p = document.getElementById('prev_v_frontal'); p.src = data.foto_frontal_vehiculo; p.style.display = 'block'; }
+        if (data.foto_trasera_vehiculo) { const p = document.getElementById('prev_v_trasera'); p.src = data.foto_trasera_vehiculo; p.style.display = 'block'; }
+        if (data.foto_lado_der_vehiculo) { const p = document.getElementById('prev_v_der'); p.src = data.foto_lado_der_vehiculo; p.style.display = 'block'; }
+        if (data.foto_lado_izq_vehiculo) { const p = document.getElementById('prev_v_izq'); p.src = data.foto_lado_izq_vehiculo; p.style.display = 'block'; }
+        
+        // Registro
+        document.getElementById('pv_estacion').value = data.estacion_policial || '';
+        document.getElementById('pv_dir_detencion').value = data.direccion_detencion || '';
+        document.getElementById('pv_observaciones').value = data.observaciones || '';
+        
+        setTimeout(() => {
+            form.style.display = 'block';
+            msgBusqueda.style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 300);
     }
 
-    // Registro
-    setVal('pv_estacion', data.estacion_policial);
-    setVal('pv_dir_detencion', data.direccion_detencion);
-    setVal('pv_observaciones', data.observaciones);
+    // Listener del botón buscar
+    if (btnBuscar && inputBusqueda) {
+        btnBuscar.addEventListener('click', async () => {
+            const val = inputBusqueda.value.trim();
+            if (val.length < 5) {
+                showMsgBusq('⚠️ Ingrese al menos 5 caracteres (cédula, placa, serial de carrocería o motor)', 'error');
+                return;
+            }
+            
+            showMsgBusq('🔍 Buscando en todos los registros...', 'success');
+            btnBuscar.disabled = true;
+            form.style.display = 'none';
+            if (selectionPanel) selectionPanel.style.display = 'none';
+            if (crossPlateWarning) crossPlateWarning.style.display = 'none';
+            
+            try {
+                const resultados = await buscarEnTodasLasTablas(val);
+                
+                if (resultados.length === 0) {
+                    showMsgBusq('❌ No se encontró ningún registro con ese dato.', 'error');
+                } else if (resultados.length === 1) {
+                    showMsgBusq('✅ 1 registro encontrado. Cargando...', 'success');
+                    setTimeout(() => cargarResultado(resultados[0]), 300);
+                } else {
+                    showMsgBusq(
+                        `🔎 Se encontraron <strong>${resultados.length} coincidencias</strong>. Seleccione cuál editar:`,
+                        'success'
+                    );
+                    setTimeout(() => mostrarPanelSeleccion(resultados, val), 300);
+                }
+            } catch (err) {
+                console.error('Error en búsqueda:', err);
+                showMsgBusq('❌ Error al buscar: ' + err.message, 'error');
+            } finally {
+                btnBuscar.disabled = false;
+            }
+        });
 
-    // Mostrar formulario
-    setTimeout(() => {
-        form.style.display = 'block';
-        msgBusqueda.style.display = 'none';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 300);
-}
+        inputBusqueda.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                btnBuscar.click();
+            }
+        });
+    }
+
+    // Botón cancelar selección
+    if (btnCancelSel) {
+        btnCancelSel.addEventListener('click', () => {
+            if (selectionPanel) selectionPanel.style.display = 'none';
+            if (crossPlateWarning) crossPlateWarning.style.display = 'none';
+            msgBusqueda.style.display = 'none';
+            inputBusqueda.value = '';
+            inputBusqueda.focus();
+        });
+    }
+
     // ==========================================
-    // 🔹 6. VALIDACIÓN EN TIEMPO REAL
+    // 🔹 7. VALIDACIÓN FILTRADA POR TIPO (CORREGIDA)
     // ==========================================
-    function debounce(func, wait) {
-        let timeout;
-        return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
-    }
-
-    async function verificarDuplicado(inputId, msgId, tablas, columna, currentId) {
+    async function verificarDuplicado(inputId, msgId, tipoVehiculo, columna, currentId) {
         const input = document.getElementById(inputId);
         const msgEl = document.getElementById(msgId);
         if (!input || !msgEl) return;
@@ -574,26 +664,73 @@ function cargarVinculado(data) {
         }
         
         msgEl.textContent = '🔍 Verificando...';
+        
         try {
             let found = false;
-            for (const tabla of tablas) {
-                let query = window.supabaseClient.from(tabla).select('id');
-                if (tabla === 'registro_vinculado' && columna !== 'cedula') {
-                    const tipoVeh = document.getElementById('pv_v_tipo')?.value;
-                    if (tipoVeh) query = query.eq('tipo_vehiculo', tipoVeh);
+            
+            // Determinar qué tablas buscar según el tipo de vehículo
+            if (tipoVehiculo === 'Motocicleta') {
+                // Para motos: buscar en registro_motos y registro_vinculado (solo motos)
+                const { data: dataMotos } = await window.supabaseClient
+                    .from('registro_motos')
+                    .select('id')
+                    .ilike(columna, val)
+                    .limit(1);
+                
+                if (dataMotos && dataMotos.length > 0) {
+                    if (!currentId || dataMotos[0].id !== currentId) {
+                        found = true;
+                    }
                 }
-                const { data, error } = await query.ilike(columna, val).limit(1);
-                if (error) throw error;
-                if (data && data.length > 0 && data[0].id !== currentId) {
-                    found = true;
-                    break;
+                
+                if (!found) {
+                    const { data: dataVinc } = await window.supabaseClient
+                        .from('registro_vinculado')
+                        .select('id')
+                        .eq('tipo_vehiculo', 'Motocicleta')
+                        .ilike(columna, val)
+                        .limit(1);
+                    
+                    if (dataVinc && dataVinc.length > 0) {
+                        if (!currentId || dataVinc[0].id !== currentId) {
+                            found = true;
+                        }
+                    }
+                }
+            } else if (tipoVehiculo === 'Automóvil') {
+                // Para autos: buscar en registro_automoviles y registro_vinculado (solo autos)
+                const { data: dataAutos } = await window.supabaseClient
+                    .from('registro_automoviles')
+                    .select('id')
+                    .ilike(columna, val)
+                    .limit(1);
+                
+                if (dataAutos && dataAutos.length > 0) {
+                    if (!currentId || dataAutos[0].id !== currentId) {
+                        found = true;
+                    }
+                }
+                
+                if (!found) {
+                    const { data: dataVinc } = await window.supabaseClient
+                        .from('registro_vinculado')
+                        .select('id')
+                        .eq('tipo_vehiculo', 'Automóvil')
+                        .ilike(columna, val)
+                        .limit(1);
+                    
+                    if (dataVinc && dataVinc.length > 0) {
+                        if (!currentId || dataVinc[0].id !== currentId) {
+                            found = true;
+                        }
+                    }
                 }
             }
             
             if (found) {
                 input.classList.add('input-error');
                 input.classList.remove('input-valid');
-                msgEl.textContent = '❌ Ya registrado';
+                msgEl.textContent = '❌ Ya registrado en el mismo tipo de vehículo';
                 msgEl.className = 'status-msg error';
             } else {
                 input.classList.add('input-valid');
@@ -607,12 +744,48 @@ function cargarVinculado(data) {
         }
     }
 
+    const setupValidation = () => {
+        const placaInput = document.getElementById('pv_v_placa');
+        const serialCarroInput = document.getElementById('pv_v_serial_carro');
+        const serialMotorInput = document.getElementById('pv_v_serial_motor');
+        
+        if (placaInput) {
+            placaInput.addEventListener('input', () => {
+                const tipo = document.getElementById('pv_v_tipo')?.value;
+                if (!tipo) { 
+                    placaInput.classList.remove('input-valid','input-error'); 
+                    return; 
+                }
+                const currentId = document.getElementById('mod_vinculado_id')?.value;
+                verificarDuplicado('pv_v_placa', 'pv-msg-placa', tipo, 'placa', currentId);
+            });
+        }
+        
+        if (serialCarroInput) {
+            serialCarroInput.addEventListener('input', () => {
+                const tipo = document.getElementById('pv_v_tipo')?.value;
+                if (!tipo) return;
+                const currentId = document.getElementById('mod_vinculado_id')?.value;
+                verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', tipo, 'serial_carroceria', currentId);
+            });
+        }
+        
+        if (serialMotorInput) {
+            serialMotorInput.addEventListener('input', () => {
+                const tipo = document.getElementById('pv_v_tipo')?.value;
+                if (!tipo) return;
+                const currentId = document.getElementById('mod_vinculado_id')?.value;
+                verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', tipo, 'serial_motor', currentId);
+            });
+        }
+    };
+
     // ==========================================
-    // 🔹 7. ENVÍO DEL FORMULARIO
+    // 🔹 8. ENVÍO DEL FORMULARIO
     // ==========================================
     const msgForm = document.getElementById('msg-mod-vinculado');
     const btnSubmit = form?.querySelector('.btn-submit');
-
+    
     function mostrarError(t) {
         if (msgForm) {
             msgForm.innerHTML = '❌ ' + t;
@@ -624,28 +797,24 @@ function cargarVinculado(data) {
     if (form && btnSubmit) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!currentData) return mostrarError('Primero debe buscar y seleccionar un registro.');
             if (!form.checkValidity()) { form.reportValidity(); return; }
-
-            const inputsValidar = ['pv_p_cedula', 'pv_v_placa', 'pv_v_serial_carro', 'pv_v_serial_motor'];
+            
+            const inputsValidar = ['pv_v_placa', 'pv_v_serial_carro', 'pv_v_serial_motor'];
             const hasError = inputsValidar.some(id => document.getElementById(id)?.classList.contains('input-error'));
             if (hasError) return mostrarError('Por favor corrija los campos marcados en rojo.');
-
-            const cedula = document.getElementById('pv_p_cedula').value.trim();
-            if (cedula.length < 7) return mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
-
-            const idRegistro = document.getElementById('mod_vinculado_id').value;
+            
+            const idRegistro = document.getElementById('mod_vinculado_id')?.value;
             if (!idRegistro) return mostrarError('No hay registro seleccionado.');
-
+            
             btnSubmit.disabled = true; btnSubmit.textContent = '⏳ Guardando...';
             msgForm.style.display = 'none';
-
+            
             try {
                 const bucket = window.supabaseClient.storage.from('fotos_personas');
                 const uid = sessionStorage.getItem('pnb_user_id') || 'user';
                 const ts = Date.now();
-
-                const uploadIfChanged = async (inputId, currentUrl, suffix) => {
+                
+                const uploadIfChanged = async (inputId, suffix) => {
                     const fileInput = document.getElementById(inputId);
                     if (fileInput && fileInput.files.length > 0) {
                         const file = fileInput.files[0];
@@ -654,15 +823,15 @@ function cargarVinculado(data) {
                         if (error) throw error;
                         return bucket.getPublicUrl(path).data.publicUrl;
                     }
-                    return currentUrl;
+                    return null;
                 };
-
+                
                 const data = {
                     primer_nombre: document.getElementById('pv_p_nombre1').value.trim(),
                     segundo_nombre: document.getElementById('pv_p_nombre2').value.trim() || null,
                     primer_apellido: document.getElementById('pv_p_apellido1').value.trim(),
                     segundo_apellido: document.getElementById('pv_p_apellido2').value.trim() || null,
-                    cedula: cedula,
+                    cedula: document.getElementById('pv_p_cedula').value.trim(),
                     fecha_nacimiento: document.getElementById('pv_p_fecha_nac').value,
                     edad: parseInt(document.getElementById('pv_p_edad').value) || 0,
                     apodo: document.getElementById('pv_p_apodo').value.trim() || null,
@@ -693,29 +862,30 @@ function cargarVinculado(data) {
                     anio_vehiculo: parseInt(document.getElementById('pv_v_anio').value),
                     marca_vehiculo: document.getElementById('pv_v_marca').value,
                     modelo_vehiculo: document.getElementById('pv_v_modelo').value,
-                    foto_frontal_persona: await uploadIfChanged('pv_foto_p_frontal', currentData.foto_frontal_persona, 'p_f'),
-                    foto_perfil_izq_persona: await uploadIfChanged('pv_foto_p_izq', currentData.foto_perfil_izq_persona, 'p_i'),
-                    foto_perfil_der_persona: await uploadIfChanged('pv_foto_p_der', currentData.foto_perfil_der_persona, 'p_d'),
-                    foto_frontal_vehiculo: await uploadIfChanged('pv_foto_v_frontal', currentData.foto_frontal_vehiculo, 'v_f'),
-                    foto_trasera_vehiculo: await uploadIfChanged('pv_foto_v_trasera', currentData.foto_trasera_vehiculo, 'v_t'),
-                    foto_lado_der_vehiculo: await uploadIfChanged('pv_foto_v_der', currentData.foto_lado_der_vehiculo, 'v_rd'),
-                    foto_lado_izq_vehiculo: await uploadIfChanged('pv_foto_v_izq', currentData.foto_lado_izq_vehiculo, 'v_ri'),
                     estacion_policial: document.getElementById('pv_estacion').value,
                     direccion_detencion: document.getElementById('pv_dir_detencion').value.trim() || null,
                     observaciones: document.getElementById('pv_observaciones').value.trim() || null
                 };
-
+                
+                const n1 = await uploadIfChanged('pv_foto_p_frontal', 'p_f'); if (n1) data.foto_frontal_persona = n1;
+                const n2 = await uploadIfChanged('pv_foto_p_izq', 'p_i'); if (n2) data.foto_perfil_izq_persona = n2;
+                const n3 = await uploadIfChanged('pv_foto_p_der', 'p_d'); if (n3) data.foto_perfil_der_persona = n3;
+                const n4 = await uploadIfChanged('pv_foto_v_frontal', 'v_f'); if (n4) data.foto_frontal_vehiculo = n4;
+                const n5 = await uploadIfChanged('pv_foto_v_trasera', 'v_t'); if (n5) data.foto_trasera_vehiculo = n5;
+                const n6 = await uploadIfChanged('pv_foto_v_der', 'v_rd'); if (n6) data.foto_lado_der_vehiculo = n6;
+                const n7 = await uploadIfChanged('pv_foto_v_izq', 'v_ri'); if (n7) data.foto_lado_izq_vehiculo = n7;
+                
                 const { error } = await window.supabaseClient
                     .from('registro_vinculado')
                     .update(data)
                     .eq('id', idRegistro);
-                
+                    
                 if (error) throw error;
-
+                
                 msgForm.innerHTML = '✅ Cambios guardados exitosamente.';
                 msgForm.className = 'msg success';
                 msgForm.style.display = 'block';
-
+                
                 setTimeout(() => {
                     form.style.display = 'none';
                     inputBusqueda.value = '';
@@ -724,124 +894,16 @@ function cargarVinculado(data) {
                     document.querySelectorAll('.img-preview').forEach(i => i.style.display = 'none');
                     document.querySelectorAll('.input-valid, .input-error').forEach(i => i.classList.remove('input-valid', 'input-error'));
                     document.querySelectorAll('.status-msg').forEach(m => m.textContent = '');
-                    currentData = null;
-                    currentId = null;
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 3000);
-
             } catch (err) {
                 console.error('Error al guardar:', err);
-                let msg = 'Error al guardar: ' + err.message;
-                if (err.message.includes('23505') || err.message.includes('unique_constraint')) {
-                    msg = '❌ Esa cédula o placa ya está registrada para otro registro.';
-                }
-                mostrarError(msg);
+                mostrarError('Error al guardar: ' + err.message);
             } finally {
                 btnSubmit.disabled = false;
                 btnSubmit.textContent = '💾 Guardar Cambios';
             }
         });
-    }
-
-    // ==========================================
-    // 🔹 8. LISTENERS
-    // ==========================================
-    if (btnBuscar && inputBusqueda) {
-        btnBuscar.addEventListener('click', async () => {
-            const val = inputBusqueda.value.trim();
-            if (val.length < 5) {
-                mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 5 caracteres (cédula, placa, serial de carrocería o motor)', 'error');
-                return;
-            }
-            
-            mostrarMsg(msgBusqueda, '🔍 Buscando en todos los registros...', 'success');
-            btnBuscar.disabled = true;
-            form.style.display = 'none';
-            if (selectionPanel) selectionPanel.style.display = 'none';
-            if (crossWarning) crossWarning.style.display = 'none';
-            
-            try {
-                const resultados = await buscarEnTodasLasTablas(val);
-                
-                if (resultados.length === 0) {
-                    mostrarMsg(msgBusqueda, '❌ No se encontró ningún registro con ese dato.', 'error');
-                } else if (resultados.length === 1) {
-                    mostrarMsg(msgBusqueda, '✅ 1 registro encontrado. Cargando...', 'success');
-                    setTimeout(() => cargarResultado(resultados[0]), 300);
-                } else {
-                    mostrarMsg(msgBusqueda, `🔎 Se encontraron <strong>${resultados.length} coincidencias</strong>. Seleccione cuál editar:`, 'success');
-                    setTimeout(() => mostrarPanelSeleccion(resultados, val), 300);
-                }
-            } catch (err) {
-                console.error('Error en búsqueda:', err);
-                mostrarMsg(msgBusqueda, '❌ Error al buscar: ' + err.message, 'error');
-            } finally {
-                btnBuscar.disabled = false;
-            }
-        });
-
-        inputBusqueda.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                btnBuscar.click();
-            }
-        });
-    }
-
-    if (btnCancelSearch) {
-        btnCancelSearch.addEventListener('click', () => {
-            if (selectionPanel) selectionPanel.style.display = 'none';
-            if (crossWarning) crossWarning.style.display = 'none';
-            msgBusqueda.style.display = 'none';
-            inputBusqueda.value = '';
-            inputBusqueda.focus();
-        });
-    }
-
-    // Validación en tiempo real
-    const cedulaInput = document.getElementById('pv_p_cedula');
-    const placaInput = document.getElementById('pv_v_placa');
-    const serialCarroInput = document.getElementById('pv_v_serial_carro');
-    const serialMotorInput = document.getElementById('pv_v_serial_motor');
-
-    if (cedulaInput) {
-        cedulaInput.addEventListener('input', debounce(() => {
-            cedulaInput.value = cedulaInput.value.replace(/\D/g, '').slice(0, 8);
-            verificarDuplicado('pv_p_cedula', 'pv-msg-cedula', ['registro_personas', 'registro_vinculado'], 'cedula', currentId);
-        }, 600));
-    }
-
-    if (placaInput) {
-        placaInput.addEventListener('input', debounce(() => {
-            const tipo = document.getElementById('pv_v_tipo')?.value;
-            if (!tipo) { placaInput.classList.remove('input-valid', 'input-error'); return; }
-            const tablas = ['registro_vinculado'];
-            if (tipo === 'Motocicleta') tablas.unshift('registro_motos');
-            else if (tipo === 'Automóvil') tablas.unshift('registro_automoviles');
-            verificarDuplicado('pv_v_placa', 'pv-msg-placa', tablas, 'placa', currentId);
-        }, 600));
-    }
-
-    if (serialCarroInput) {
-        serialCarroInput.addEventListener('input', debounce(() => {
-            const tipo = document.getElementById('pv_v_tipo')?.value;
-            if (!tipo) return;
-            const tablas = ['registro_vinculado'];
-            if (tipo === 'Motocicleta') tablas.unshift('registro_motos');
-            else if (tipo === 'Automóvil') tablas.unshift('registro_automoviles');
-            verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', tablas, 'serial_carroceria', currentId);
-        }, 600));
-    }
-
-    if (serialMotorInput) {
-        serialMotorInput.addEventListener('input', debounce(() => {
-            const tipo = document.getElementById('pv_v_tipo')?.value;
-            if (!tipo) return;
-            const tablas = ['registro_vinculado'];
-            if (tipo === 'Motocicleta') tablas.unshift('registro_motos');
-            else if (tipo === 'Automóvil') tablas.unshift('registro_automoviles');
-            verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', tablas, 'serial_motor', currentId);
-        }, 600));
     }
 
     // Validación numérica teléfono
@@ -852,71 +914,22 @@ function cargarVinculado(data) {
         });
     }
 
-    // Setup edad
-    const fechaNac = document.getElementById('pv_p_fecha_nac');
-    const edadInput = document.getElementById('pv_p_edad');
-    if (fechaNac && edadInput) {
-        fechaNac.addEventListener('change', () => {
-            if (!fechaNac.value) return;
-            const hoy = new Date(), nac = new Date(fechaNac.value);
-            let edad = hoy.getFullYear() - nac.getFullYear();
-            const m = hoy.getMonth() - nac.getMonth();
-            if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
-            edadInput.value = (edad >= 0 && edad <= 120) ? edad : '';
-        });
-    }
-
-    // Inicialización
-    const cargarEstaciones = () => {
-        const select = document.getElementById('pv_estacion');
-        if (select) {
-            select.innerHTML = '<option value="">Seleccione estación...</option>';
-            estacionesList.forEach(est => select.innerHTML += `<option value="${est}">${est}</option>`);
-        }
-    };
-
-    const cargarAnios = () => {
-        if (anioSelect) {
-            const currentYear = new Date().getFullYear();
-            anioSelect.innerHTML = '<option value="">Seleccione año...</option>';
-            for (let y = currentYear; y >= 1990; y--) anioSelect.innerHTML += `<option value="${y}">${y}</option>`;
-        }
-    };
-
-    // Dropdown banderas
-    const initPhoneDropdown = () => {
-        const nativeSelect = document.getElementById('pv_p_tlf_pais');
-        const displayBox = document.querySelector('.phone-display');
-        const optionsBox = document.querySelector('.phone-options');
-        const flagImg = document.getElementById('pv_tlf-flag-img');
-        const codeText = document.getElementById('pv_tlf-code-text');
-        const countryText = document.getElementById('pv_tlf-country-text');
-        
-        if (optionsBox && nativeSelect && displayBox) {
-            optionsBox.innerHTML = '';
-            Array.from(nativeSelect.options).forEach(opt => {
-                if (!opt.value || opt.value === '--') return;
-                const iso = isoMap[opt.text] || 'xx';
-                const div = document.createElement('div');
-                div.className = 'phone-option';
-                div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.8rem;">${opt.text}</span>`;
-                div.addEventListener('click', () => {
-                    nativeSelect.value = opt.value;
-                    flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
-                    codeText.textContent = opt.value;
-                    countryText.textContent = opt.text;
-                    optionsBox.style.display = 'none';
-                });
-                optionsBox.appendChild(div);
-            });
-            displayBox.addEventListener('click', (e) => { e.stopPropagation(); optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block'; });
-            document.addEventListener('click', (e) => { if (!e.target.closest('.phone-dropdown-wrapper')) optionsBox.style.display = 'none'; });
-        }
-    };
-
+    // ==========================================
+    // 🔹 INICIALIZACIÓN FINAL
+    // ==========================================
     cargarEstaciones();
     cargarAnios();
+    setupEdad();
+    setupValidation();
     initPhoneDropdown();
-
+    
+    setupPhotoPreview('pv_foto_p_frontal', 'prev_p_frontal');
+    setupPhotoPreview('pv_foto_p_izq', 'prev_p_izq');
+    setupPhotoPreview('pv_foto_p_der', 'prev_p_der');
+    setupPhotoPreview('pv_foto_v_frontal', 'prev_v_frontal');
+    setupPhotoPreview('pv_foto_v_trasera', 'prev_v_trasera');
+    setupPhotoPreview('pv_foto_v_der', 'prev_v_der');
+    setupPhotoPreview('pv_foto_v_izq', 'prev_v_izq');
+    
     console.log("✅ Módulo mod-vinculado.js inicializado correctamente");
 };
