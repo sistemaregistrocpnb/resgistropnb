@@ -124,6 +124,7 @@ window.initModVinculado = function() {
     const selectionList = document.getElementById('selection-list');
     const resultCount = document.getElementById('result-count');
     const btnCancelSearch = document.getElementById('btn-cancelar-seleccion');
+    const crossPlateWarning = document.getElementById('cross-plate-warning');
     
     let currentData = null;
     let currentId = null;
