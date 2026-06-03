@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         msgBox.innerHTML = texto;
         msgBox.className = `mensaje ${tipo}`;
         msgBox.style.display = 'block';
-        setTimeout(() => { msgBox.style.display = 'none'; }, 6000);
+        setTimeout(() => { msgBox.style.display = 'none'; }, 15000);
     }
 
     form.addEventListener('submit', async (e) => {
