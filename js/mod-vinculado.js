@@ -370,28 +370,58 @@ window.initModVinculado = function() {
         }
     }
 
-    function mostrarPanelSeleccion(resultados, valorBuscado) {
-        selectionList.innerHTML = '';
-        resultCount.textContent = resultados.length;
-
-        // Alerta cruzada
-        const tieneMoto = resultados.some(r => r.origen === 'registro_motos');
-        const tieneAuto = resultados.some(r => r.origen === 'registro_automoviles');
-        const tieneVinculado = resultados.some(r => r.origen === 'registro_vinculado');
-        
-        if (crossPlateWarning) {
-            if ((tieneMoto && tieneAuto) || (tieneVinculado && (tieneMoto || tieneAuto))) {
-                crossPlateWarning.innerHTML = `
-                    <strong>⚠️ ALERTA CRUZADA DETECTADA:</strong><br>
-                    El dato <strong>"${valorBuscado}"</strong> aparece en más de un tipo de registro.
-                    Esto puede indicar un caso de clonación de placas/seriales. Revise cuidadosamente.
-                `;
-                crossPlateWarning.style.display = 'block';
-            } else {
-                crossPlateWarning.style.display = 'none';
-            }
+   function mostrarPanelSeleccion(resultados, valorBuscado) {
+    selectionList.innerHTML = '';
+    resultCount.textContent = resultados.length;
+    
+    // Alerta cruzada
+    const tieneMoto = resultados.some(r => r.origen === 'registro_motos');
+    const tieneAuto = resultados.some(r => r.origen === 'registro_automoviles');
+    const tieneVinculado = resultados.some(r => r.origen === 'registro_vinculado');
+    
+    if (crossPlateWarning) {
+        if ((tieneMoto && tieneAuto) || (tieneVinculado && (tieneMoto || tieneAuto))) {
+            crossPlateWarning.innerHTML = `⚠️ <strong>ALERTA CRUZADA:</strong> El dato <strong>"${valorBuscado}"</strong> aparece en más de un tipo de registro. Esto puede indicar clonación. Revise cuidadosamente.`;
+            crossPlateWarning.style.display = 'block';
+        } else {
+            crossPlateWarning.style.display = 'none';
         }
-
+    }
+    
+    resultados.forEach((res, index) => {
+        const card = document.createElement('div');
+        card.className = `selection-card ${res.clase}`;
+        
+        card.innerHTML = `
+            <div style="flex: 1;">
+                <div class="card-title">
+                    <span style="font-size: 1.5rem;">${res.icono}</span>
+                    <span>${res.tipo}</span>
+                </div>
+                <div style="font-size: 0.9rem; color: #334155; margin-bottom: 3px;">${res.linea1}</div>
+                <div style="font-size: 0.85rem; color: #475569; margin-bottom: 3px;">${res.linea2}</div>
+                <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 6px;">${res.linea3}</div>
+                <div style="font-size: 0.75rem; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; display: inline-block;">
+                    🔎 Coincidencia en: <strong>${res.encontrado_por.join(', ')}</strong>
+                </div>
+            </div>
+            <button class="btn-select-card" data-index="${index}">✏️ Editar</button>
+        `;
+        
+        selectionList.appendChild(card);
+    });
+    
+    document.querySelectorAll('.btn-select-card').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const idx = parseInt(e.target.dataset.index);
+            cargarResultado(resultados[idx]);
+        });
+    });
+    
+    selectionPanel.style.display = 'block';
+    form.style.display = 'none';
+    msgBusqueda.style.display = 'none';
+}
         resultados.forEach((res, index) => {
             const card = document.createElement('div');
             // ✅ USAR CLASES CSS EN LUGAR DE ESTILOS INLINE
