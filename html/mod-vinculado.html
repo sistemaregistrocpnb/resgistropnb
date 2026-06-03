@@ -22,7 +22,7 @@
 .input-valid { border-color: #22c55e !important; background-color: #f0fdf4; }
 .input-error { border-color: #ef4444 !important; background-color: #fef2f2; }
 
-/* 🔹 PANEL DE SELECCIÓN (Colores diferenciados) */
+/* 🔹 PANEL DE SELECCIÓN DINÁMICO (Idéntico a mod-vehiculos) */
 #selection-panel { display: none; margin-top: 20px; }
 .selection-header { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
 .selection-header h4 { margin: 0 0 8px; color: #1e40af; font-size: 1.05rem; }
@@ -31,32 +31,7 @@
 .btn-cancel-search { margin-top: 16px; padding: 10px 20px; background: #64748b; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; display: block; margin-left: auto; margin-right: auto; }
 .btn-cancel-search:hover { background: #475569; }
 
-/* Tarjetas con colores por tipo */
-.selection-card { border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s; border: 2px solid; border-left: 6px solid; }
-.selection-card:hover { transform: translateX(4px); }
-
-/* Motocicleta - Rojo */
-.selection-card.moto { background: #fef2f2; border-color: #dc2626; }
-.selection-card.moto .card-title { color: #dc2626; }
-.selection-card.moto .btn-select-card { background: #dc2626; }
-.selection-card.moto .btn-select-card:hover { background: #b91c1c; }
-
-/* Automóvil - Verde */
-.selection-card.auto { background: #ecfdf5; border-color: #059669; }
-.selection-card.auto .card-title { color: #059669; }
-.selection-card.auto .btn-select-card { background: #059669; }
-.selection-card.auto .btn-select-card:hover { background: #047857; }
-
-/* Vinculado - Azul */
-.selection-card.vinculado { background: #eff6ff; border-color: #002b5c; }
-.selection-card.vinculado .card-title { color: #002b5c; }
-.selection-card.vinculado .btn-select-card { background: #002b5c; }
-.selection-card.vinculado .btn-select-card:hover { background: #001f44; }
-
-.card-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
-.btn-select-card { padding: 12px 24px; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; white-space: nowrap; }
-
-/* Alerta cruzada */
+/* 🔹 ALERTA CRUZADA */
 #cross-plate-warning { background: #fffbeb !important; color: #92400e !important; border: 1px solid #fcd34d !important; text-align: left !important; padding: 12px !important; }
 
 /* 🔹 Dropdown Teléfono */
@@ -69,34 +44,38 @@
 .phone-option .country { color: #475569; font-size: 0.85rem; }
 .phone-display { border: 1.5px solid var(--beige-border); border-radius: 5px; padding: 9px 10px; background: #fff; display: flex; align-items: center; gap: 8px; cursor: pointer; height: 42px; box-sizing: border-box; }
 
-@media (max-width: 600px) { .form-grid, .search-row { grid-template-columns: 1fr; flex-direction: column; } .selection-card { flex-direction: column; align-items: stretch; } .btn-select-card { width: 100%; } }
+@media (max-width: 600px) { .form-grid, .search-row { grid-template-columns: 1fr; flex-direction: column; } }
 </style>
 
 <div class="card">
     <h3>✏️ Modificar Registro Vinculado (Persona + Vehículo)</h3>
 
-    <!-- 🔍 BÚSQUEDA -->
+    <!-- 🔍 BÚSQUEDA MULTI-TABLA -->
     <div class="search-box" style="padding: 16px; background: #f8fafc; border: 1.5px dashed var(--beige-border); border-radius: 8px; margin-bottom: 20px;">
-        <label style="font-weight:700; display:block; margin-bottom:8px;">Buscar por Cédula, Placa, Serial de Carrocería o Motor:</label>
+        <label style="font-weight:700; display:block; margin-bottom:8px;">🔍 Buscar por Cédula, Placa, Serial de Carrocería o Motor:</label>
         <div class="search-row" style="display: flex; gap: 10px;">
             <input type="text" id="mod_busqueda_input" placeholder="Ej: 12345678 o AA123BC..." maxlength="20" style="flex: 1; padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; text-transform: uppercase;">
-            <button id="btn_buscar_mod" class="btn-search">🔍 Buscar</button>
+            <button id="btn_buscar_mod" class="btn-search"> Buscar</button>
         </div>
+
+        <!-- ⚠️ ALERTA CRUZADA (Clonación de placas/seriales) -->
+        <div id="cross-plate-warning" class="msg" style="margin-top:12px; background:#fffbeb; color:#92400e; border:1px solid #fcd34d; border-radius:5px; text-align:left; display:none; padding: 12px;"></div>
+
+        <!-- 💬 MENSAJE DE BÚSQUEDA -->
         <div id="mod_msg_busqueda" class="msg" style="margin-top:8px;"></div>
-        <div id="cross-plate-warning" class="msg" style="margin-top:8px; background:#fffbeb; color:#92400e; border:1px solid #fcd34d; text-align:left; display:none;"></div>
     </div>
 
     <!-- 🔹 PANEL DE SELECCIÓN DINÁMICO -->
     <div id="selection-panel">
         <div class="selection-header">
-            <h4> Múltiples coincidencias encontradas</h4>
+            <h4>🔎 Múltiples coincidencias encontradas</h4>
             <p>Se encontraron <strong><span id="result-count">0</span> registros</strong> con ese dato. Seleccione cuál desea editar:</p>
         </div>
         <div id="selection-list"></div>
-        <button id="btn-cancel-search" class="btn-cancel-search">❌ Cancelar búsqueda</button>
+        <button id="btn-cancelar-seleccion" class="btn-cancel-search">❌ Cancelar búsqueda</button>
     </div>
 
-    <!-- 📝 FORMULARIO -->
+    <!-- 📝 FORMULARIO VINCULADO -->
     <form id="form-mod-vinculado" class="registro-form" novalidate style="display: none;">
         <input type="hidden" id="mod_vinculado_id">
 
@@ -105,19 +84,10 @@
             <span id="mod_estatus_badge" style="background:#dcfce7; color:#15803d; font-weight:700; padding:6px 12px; border-radius:6px; border:1px solid #86efac; display:inline-block;">Verificación</span>
         </div>
 
-        <fieldset>
-            <legend> Tipo de Vehículo</legend>
-            <div class="tipo-selector">
-                <div class="tipo-btn" id="btn_tipo_moto">️ Motocicleta</div>
-                <div class="tipo-btn" id="btn_tipo_auto">🚙 Automóvil</div>
-            </div>
-            <small style="color:#64748b;">El tipo de vehículo se detecta automáticamente del registro.</small>
-        </fieldset>
-
         <div class="section-title">👤 Datos de la Persona</div>
 
         <fieldset>
-            <legend>📸 Fotografías de la Persona (Suba nueva para reemplazar)</legend>
+            <legend> Fotografías de la Persona (Suba nueva para reemplazar)</legend>
             <div class="form-grid">
                 <div class="form-group"><label>Frontal</label><input type="file" id="pv_foto_p_frontal" accept="image/*" onchange="window.previewFile(this, 'prev_p_frontal')"><img id="prev_p_frontal" class="img-preview"></div>
                 <div class="form-group"><label>Perfil Izquierdo</label><input type="file" id="pv_foto_p_izq" accept="image/*" onchange="window.previewFile(this, 'prev_p_izq')"><img id="prev_p_izq" class="img-preview"></div>
@@ -145,9 +115,9 @@
                     <label>Nacionalidad</label>
                     <select id="pv_p_nacionalidad" required>
                         <option value="">Seleccione...</option>
-                        <option value="Venezolana">🇪 Venezolana</option>
+                        <option value="Venezolana">🇻🇪 Venezolana</option>
                         <option value="Colombiana">🇨🇴 Colombiana</option>
-                        <option value="Estadounidense">🇺 Estadounidense</option>
+                        <option value="Estadounidense">🇺🇸 Estadounidense</option>
                         <option value="Española">🇪🇸 Española</option>
                         <option value="Otra">🌍 Otra</option>
                     </select>
@@ -197,7 +167,7 @@
         </fieldset>
 
         <fieldset>
-            <legend>🏥 Salud y Antecedentes</legend>
+            <legend> Salud y Antecedentes</legend>
             <div class="form-group"><label>¿Usa Lentes?</label><select id="pv_p_lentes" onchange="window.toggleCampo(this, 'pv_det-lentes')"><option value="false">No</option><option value="true">Sí</option></select></div>
             <div id="pv_det-lentes" class="hidden-field"><label>Tipo/Descripción</label><input type="text" id="pv_txt_lentes"></div>
             <div class="form-group" style="margin-top:14px;"><label>¿Perforaciones?</label><select id="pv_p_perforaciones" onchange="window.activarCampoPerforacion(this)"><option value="false">No</option><option value="true">Sí</option></select></div>
@@ -221,6 +191,14 @@
         <fieldset>
             <legend>Tipo e Identificación</legend>
             <div class="form-grid">
+                <div class="form-group">
+                    <label>Tipo de Vehículo</label>
+                    <select id="pv_v_tipo" onchange="window.cargarMarcasPV()">
+                        <option value="">Seleccione...</option>
+                        <option value="Motocicleta">🏍️ Motocicleta</option>
+                        <option value="Automóvil">🚙 Automóvil</option>
+                    </select>
+                </div>
                 <div class="form-group"><label>Placa (Editable)</label><input type="text" id="pv_v_placa" style="text-transform: uppercase;"><small id="pv-msg-placa" class="status-msg"></small></div>
                 <div class="form-group"><label>Serial Carrocería (Editable)</label><input type="text" id="pv_v_serial_carro"><small id="pv-msg-carro" class="status-msg"></small></div>
                 <div class="form-group"><label>Serial Motor (Editable)</label><input type="text" id="pv_v_serial_motor"><small id="pv-msg-motor" class="status-msg"></small></div>
@@ -290,10 +268,7 @@
             </div>
         </fieldset>
 
-        <fieldset>
-            <legend>Observaciones</legend>
-            <textarea id="pv_observaciones" rows="2"></textarea>
-        </fieldset>
+        <fieldset><legend>Observaciones</legend><textarea id="pv_observaciones" rows="2"></textarea></fieldset>
 
         <button type="submit" class="btn-submit">💾 Guardar Cambios</button>
         <div id="msg-mod-vinculado" class="msg"></div>
