@@ -200,7 +200,7 @@ window.initRegPersonas = function() {
             if (dataProcesados) {
                 cedulaStatus.className = 'cedula-status error';
                 const delito = dataProcesados.tipo_delito || 'sin especificar';
-                cedulaStatus.textContent = `⚠️ Cédula ya está PROCESADA (${delito})`;
+                cedulaStatus.textContent = `⚠️ Cédula ya está PROCESADA`;
                 cedulaStatus.title = `Esta cédula ya tiene un proceso registrado: ${delito}`;
                 cedulaInput?.classList.add('cedula-duplicate');
                 return true;
