@@ -1,9 +1,6 @@
 window.initRegProcesados = function() {
     console.log("✅ Módulo reg-procesados.js cargado correctamente.");
 
-    // ==========================================
-    // 🔹 REFERENCIAS DOM
-    // ==========================================
     const btnBuscar = document.getElementById('proc_btn_buscar');
     const inputBusqueda = document.getElementById('proc_busqueda_input');
     const msgBusqueda = document.getElementById('proc_msg_busqueda');
@@ -12,7 +9,6 @@ window.initRegProcesados = function() {
     const resultCount = document.getElementById('result-count');
     const btnCancelSearch = document.getElementById('btn-cancelar-seleccion');
     const datosPanel = document.getElementById('datos-encontrados-panel');
-    const datosContenido = document.getElementById('datos-contenido');
     const btnCambiarRegistro = document.getElementById('btn-cambiar-registro');
     const form = document.getElementById('form-reg-procesados');
     const msgForm = document.getElementById('msg-reg-procesados');
@@ -26,30 +22,38 @@ window.initRegProcesados = function() {
         el.style.display = 'block';
     };
 
-    // ==========================================
-    //  DETECTAR COINCIDENCIAS
-    // ==========================================
+    const limpiarFotos = (gridId) => {
+        const grid = document.getElementById(gridId);
+        if (grid) grid.innerHTML = '';
+    };
+
+    const agregarFoto = (gridId, url, label) => {
+        const grid = document.getElementById(gridId);
+        if (!grid) return;
+        const div = document.createElement('div');
+        div.className = 'foto-item';
+        if (url) {
+            div.innerHTML = `<img src="${url}" alt="${label}"><div class="foto-label">${label}</div>`;
+        } else {
+            div.innerHTML = `<div class="foto-vacia">Sin foto</div><div class="foto-label">${label}</div>`;
+        }
+        grid.appendChild(div);
+    };
+
     function detectarCoincidencias(reg, val, tabla) {
         const campos = [];
         const v = val.trim().toUpperCase();
-        if ((tabla === 'registro_personas' || tabla === 'registro_vinculado') && reg.cedula && reg.cedula.toUpperCase() === v) {
-            campos.push('Cédula');
-        }
+        if ((tabla === 'registro_personas' || tabla === 'registro_vinculado') && reg.cedula && reg.cedula.toUpperCase() === v) campos.push('Cédula');
         if (reg.placa && reg.placa.toUpperCase() === v) campos.push('Placa');
         if (reg.serial_carroceria && reg.serial_carroceria.toUpperCase() === v) campos.push('Serial Carrocería');
         if (reg.serial_motor && reg.serial_motor.toUpperCase() === v) campos.push('Serial Motor');
         return campos;
     }
 
-    // ==========================================
-    // 🔹 BÚSQUEDA MULTI-TABLA (Solo registros "Verificación")
-    // ==========================================
     async function buscarEnTodasLasTablas(valor) {
         const resultados = [];
         const val = valor.trim().toUpperCase();
-
         try {
-            // 1. REGISTRO_PERSONAS (solo por cédula)
             const { data: personas, error: errPers } = await window.supabaseClient
                 .from('registro_personas')
                 .select('*')
@@ -60,7 +64,8 @@ window.initRegProcesados = function() {
                     const nombre = `${reg.primer_nombre || ''} ${reg.primer_apellido || ''}`.trim();
                     resultados.push({
                         origen: 'registro_personas', id: reg.id,
-                        tipo: '👤 Persona', icono: '👤', color: '#7c3aed', colorBg: '#f5f3ff',
+                        tipo: 'Persona', icono: '👤', color: '#7c3aed', colorBg: '#f5f3ff',
+                        tipoVehiculo: 'Persona',
                         datos: reg,
                         linea1: `${nombre} | C.I: ${reg.cedula || '-'}`,
                         linea2: `Sexo: ${reg.sexo || '-'} | Edad: ${reg.edad || '-'}`,
@@ -69,8 +74,6 @@ window.initRegProcesados = function() {
                     });
                 });
             }
-
-            // 2. REGISTRO_MOTOS
             const { data: motos, error: errMoto } = await window.supabaseClient
                 .from('registro_motos')
                 .select('*')
@@ -80,7 +83,8 @@ window.initRegProcesados = function() {
                 motos.forEach(reg => {
                     resultados.push({
                         origen: 'registro_motos', id: reg.id,
-                        tipo: '🏍️ Motocicleta', icono: '️', color: '#dc2626', colorBg: '#fef2f2',
+                        tipo: 'Motocicleta', icono: '🏍️', color: '#dc2626', colorBg: '#fef2f2',
+                        tipoVehiculo: 'Motocicleta',
                         datos: reg,
                         linea1: `Placa: ${reg.placa || '-'}`,
                         linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
@@ -89,8 +93,6 @@ window.initRegProcesados = function() {
                     });
                 });
             }
-
-            // 3. REGISTRO_AUTOMOVILES
             const { data: autos, error: errAuto } = await window.supabaseClient
                 .from('registro_automoviles')
                 .select('*')
@@ -100,7 +102,8 @@ window.initRegProcesados = function() {
                 autos.forEach(reg => {
                     resultados.push({
                         origen: 'registro_automoviles', id: reg.id,
-                        tipo: '🚙 Automóvil', icono: '🚙', color: '#059669', colorBg: '#ecfdf5',
+                        tipo: 'Automóvil', icono: '', color: '#059669', colorBg: '#ecfdf5',
+                        tipoVehiculo: 'Automóvil',
                         datos: reg,
                         linea1: `Placa: ${reg.placa || '-'}`,
                         linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
@@ -109,8 +112,6 @@ window.initRegProcesados = function() {
                     });
                 });
             }
-
-            // 4. REGISTRO_VINCULADO
             const { data: vinculados, error: errVinc } = await window.supabaseClient
                 .from('registro_vinculado')
                 .select('*')
@@ -121,16 +122,16 @@ window.initRegProcesados = function() {
                     const nombre = `${reg.primer_nombre || ''} ${reg.primer_apellido || ''}`.trim();
                     resultados.push({
                         origen: 'registro_vinculado', id: reg.id,
-                        tipo: '🔗 Persona + Vehículo', icono: '🔗', color: '#002b5c', colorBg: '#eff6ff',
+                        tipo: 'Persona + Vehículo', icono: '🔗', color: '#002b5c', colorBg: '#eff6ff',
+                        tipoVehiculo: reg.tipo_vehiculo || 'Vehículo',
                         datos: reg,
                         linea1: `👤 ${nombre} | C.I: ${reg.cedula || '-'}`,
-                        linea2: `🚗 ${reg.tipo_vehiculo || ''} ${reg.marca_vehiculo || ''} | Placa: ${reg.placa || '-'}`,
+                        linea2: `🚗 ${reg.tipo_vehiculo || ''} ${reg.marca_vehiculo || ''} ${reg.modelo_vehiculo || ''} | Placa: ${reg.placa || '-'}`,
                         linea3: `🏛️ ${reg.estacion_policial || '-'}`,
                         encontrado_por: detectarCoincidencias(reg, val, 'registro_vinculado')
                     });
                 });
             }
-
             return resultados;
         } catch (err) {
             console.error('Error en búsqueda multi-tabla:', err);
@@ -138,29 +139,12 @@ window.initRegProcesados = function() {
         }
     }
 
-    // ==========================================
-    // 🔹 PANEL DE SELECCIÓN
-    // ==========================================
     function mostrarPanelSeleccion(resultados, valorBuscado) {
         selectionList.innerHTML = '';
         resultCount.textContent = resultados.length;
-
         resultados.forEach((res, index) => {
             const card = document.createElement('div');
-            card.style.cssText = `
-                background: ${res.colorBg};
-                border: 2px solid ${res.color};
-                border-left: 6px solid ${res.color};
-                border-radius: 8px;
-                padding: 16px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 16px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-                transition: transform 0.2s;
-                margin-bottom: 12px;
-            `;
+            card.style.cssText = `background: ${res.colorBg}; border: 2px solid ${res.color}; border-left: 6px solid ${res.color}; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s; margin-bottom: 12px;`;
             card.onmouseover = () => card.style.transform = 'translateX(4px)';
             card.onmouseout = () => card.style.transform = 'translateX(0)';
             card.innerHTML = `
@@ -176,115 +160,124 @@ window.initRegProcesados = function() {
                         🔎 Coincidencia en: <strong>${res.encontrado_por.join(', ')}</strong>
                     </div>
                 </div>
-                <button class="btn-seleccionar" data-index="${index}" style="
-                    padding: 12px 24px; background: ${res.color}; color: white; border: none;
-                    border-radius: 6px; font-weight: 700; cursor: pointer; white-space: nowrap;
-                ">✅ Procesar</button>
+                <button class="btn-seleccionar" data-index="${index}" style="padding: 12px 24px; background: ${res.color}; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; white-space: nowrap;">✅ Procesar</button>
             `;
             selectionList.appendChild(card);
         });
-
         document.querySelectorAll('.btn-seleccionar').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const idx = parseInt(e.target.dataset.index);
                 seleccionarRegistro(resultados[idx]);
             });
         });
-
         selectionPanel.style.display = 'block';
         form.style.display = 'none';
         datosPanel.style.display = 'none';
         msgBusqueda.style.display = 'none';
     }
 
-    // ==========================================
-    // 🔹 SELECCIONAR REGISTRO Y MOSTRAR DATOS
-    // ==========================================
     function seleccionarRegistro(resultado) {
         registroSeleccionado = resultado;
         selectionPanel.style.display = 'none';
 
         const data = resultado.datos;
         const tipo = resultado.origen;
-        let html = '';
+        const seccionPersona = document.getElementById('seccion-persona');
+        const seccionVehiculo = document.getElementById('seccion-vehiculo');
 
-        // --- Sección Persona ---
+        // Mostrar badge de tipo de vehículo al lado del título
+        const badge = document.getElementById('tipo-vehiculo-badge');
+        if (badge) {
+            badge.textContent = ` ${resultado.tipoVehiculo}`;
+            badge.style.display = 'inline-block';
+        }
+
+        // Limpiar fotos
+        limpiarFotos('fotos-persona-grid');
+        limpiarFotos('fotos-vehiculo-grid');
+
+        // Sección Persona
         if (tipo === 'registro_personas' || tipo === 'registro_vinculado') {
-            const nombreCompleto = `${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}`.trim();
-            html += `<div class="dato-fila"><span class="dato-label">👤 Nombre:</span><span class="dato-valor">${nombreCompleto || '-'}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label"> Cédula:</span><span class="dato-valor">${data.cedula || '-'}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label">🎂 Edad:</span><span class="dato-valor">${data.edad ? data.edad + ' años' : '-'}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label">🌍 Nacionalidad:</span><span class="dato-valor">${data.nacionalidad || '-'}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label">⚧ Sexo:</span><span class="dato-valor">${data.sexo || '-'}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label">🏛️ Estación Policial:</span><span class="dato-valor">${data.estacion_policial || '-'}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label">📍 Lugar de Detención:</span><span class="dato-valor">${data.direccion_detencion || '-'}</span></div>`;
-            html += `<div class="dato-fila" style="margin-top:8px;"><span class="dato-label">📸 Fotos:</span><span class="dato-valor">${data.foto_frontal_persona || data.foto_frontal ? '✅ Disponibles' : '❌ No registradas'}</span></div>`;
+            seccionPersona.style.display = 'block';
+            document.getElementById('val-nombre').textContent = `${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}`.trim() || '-';
+            document.getElementById('val-cedula').textContent = data.cedula || '-';
+            document.getElementById('val-edad').textContent = data.edad ? `${data.edad} años` : '-';
+            document.getElementById('val-nacionalidad').textContent = data.nacionalidad || '-';
+            document.getElementById('val-sexo').textContent = data.sexo || '-';
+            document.getElementById('val-estacion').textContent = data.estacion_policial || '-';
+            document.getElementById('val-detencion').textContent = data.direccion_detencion || '-';
+
+            // Fotos persona
+            if (tipo === 'registro_vinculado') {
+                agregarFoto('fotos-persona-grid', data.foto_frontal_persona, 'Frontal');
+                agregarFoto('fotos-persona-grid', data.foto_perfil_izq_persona, 'Perfil Izquierdo');
+                agregarFoto('fotos-persona-grid', data.foto_perfil_der_persona, 'Perfil Derecho');
+            } else {
+                agregarFoto('fotos-persona-grid', data.foto_frontal, 'Frontal');
+                agregarFoto('fotos-persona-grid', data.foto_perfil_izq, 'Perfil Izquierdo');
+                agregarFoto('fotos-persona-grid', data.foto_perfil_der, 'Perfil Derecho');
+            }
+        } else {
+            seccionPersona.style.display = 'none';
         }
 
-        // --- Sección Vehículo ---
+        // Sección Vehículo
         if (tipo === 'registro_motos' || tipo === 'registro_automoviles' || tipo === 'registro_vinculado') {
-            let tipoVeh = '-';
-            if (tipo === 'registro_motos') tipoVeh = '️ Motocicleta';
-            else if (tipo === 'registro_automoviles') tipoVeh = '🚙 Automóvil';
-            else if (tipo === 'registro_vinculado') tipoVeh = `🚗 ${data.tipo_vehiculo || 'Vehículo'}`;
+            seccionVehiculo.style.display = 'block';
+            document.getElementById('val-placa').textContent = data.placa || '-';
+            document.getElementById('val-carroceria').textContent = data.serial_carroceria || '-';
+            document.getElementById('val-motor').textContent = data.serial_motor || '-';
+            document.getElementById('val-marca').textContent = data.marca || data.marca_vehiculo || '-';
+            document.getElementById('val-modelo').textContent = data.modelo || data.modelo_vehiculo || '-';
+            document.getElementById('val-anio').textContent = data.anio || data.anio_vehiculo || '-';
+            document.getElementById('val-color').textContent = data.color || data.color_vehiculo || '-';
+            document.getElementById('val-estacion-veh').textContent = data.estacion_policial || '-';
+            document.getElementById('val-detencion-veh').textContent = data.direccion_detencion || '-';
 
-            html += `<div style="margin-top:16px; padding-top:12px; border-top: 2px dashed #bbf7d0;"></div>`;
-            html += `<div class="dato-fila"><span class="dato-label"> Tipo de Vehículo:</span><span class="dato-valor">${tipoVeh}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label">🔢 Placa:</span><span class="dato-valor">${data.placa || '-'}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label">🔢 Serial Carrocería:</span><span class="dato-valor">${data.serial_carroceria || '-'}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label">🔢 Serial Motor:</span><span class="dato-valor">${data.serial_motor || '-'}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label">🏭 Marca:</span><span class="dato-valor">${data.marca || data.marca_vehiculo || '-'}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label">📦 Modelo:</span><span class="dato-valor">${data.modelo || data.modelo_vehiculo || '-'}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label"> Año:</span><span class="dato-valor">${data.anio || data.anio_vehiculo || '-'}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label">🎨 Color:</span><span class="dato-valor">${data.color || data.color_vehiculo || '-'}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label">🏛️ Estación Policial:</span><span class="dato-valor">${data.estacion_policial || '-'}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label">📍 Lugar de Detención:</span><span class="dato-valor">${data.direccion_detencion || '-'}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label">📸 Fotos:</span><span class="dato-valor">${data.foto_frontal_vehiculo || data.foto_frontal ? '✅ Disponibles' : '❌ No registradas'}</span></div>`;
+            // Fotos vehículo
+            if (tipo === 'registro_vinculado') {
+                agregarFoto('fotos-vehiculo-grid', data.foto_frontal_vehiculo, 'Frontal');
+                agregarFoto('fotos-vehiculo-grid', data.foto_trasera_vehiculo, 'Trasera');
+                agregarFoto('fotos-vehiculo-grid', data.foto_lado_der_vehiculo, 'Lado Derecho');
+                agregarFoto('fotos-vehiculo-grid', data.foto_lado_izq_vehiculo, 'Lado Izquierdo');
+            } else {
+                agregarFoto('fotos-vehiculo-grid', data.foto_frontal, 'Frontal');
+                agregarFoto('fotos-vehiculo-grid', data.foto_trasera || data.foto_trasera_vehiculo, 'Trasera');
+                agregarFoto('fotos-vehiculo-grid', data.foto_lado_derecho || data.foto_lado_der_vehiculo, 'Lado Derecho');
+                agregarFoto('fotos-vehiculo-grid', data.foto_lado_izquierdo || data.foto_lado_izq_vehiculo, 'Lado Izquierdo');
+            }
+        } else {
+            seccionVehiculo.style.display = 'none';
         }
 
-        datosContenido.innerHTML = html;
         datosPanel.style.display = 'block';
 
-        // Llenar campos ocultos
         document.getElementById('proc_tabla_origen').value = resultado.origen;
         document.getElementById('proc_registro_id').value = resultado.id;
 
-        const tipoMap = {
-            'registro_personas': 'persona',
-            'registro_motos': 'moto',
-            'registro_automoviles': 'auto',
-            'registro_vinculado': 'vinculado'
-        };
+        const tipoMap = { 'registro_personas': 'persona', 'registro_motos': 'moto', 'registro_automoviles': 'auto', 'registro_vinculado': 'vinculado' };
         document.getElementById('proc_tipo_registro').value = tipoMap[resultado.origen] || '';
 
-        const identificador = resultado.origen === 'registro_personas'
-            ? (data.cedula || '')
-            : (data.placa || '');
+        const identificador = resultado.origen === 'registro_personas' ? (data.cedula || '') : (data.placa || '');
         document.getElementById('proc_identificador').value = identificador;
 
         form.style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // ==========================================
-    //  LISTENERS DE BÚSQUEDA
-    // ==========================================
     if (btnBuscar && inputBusqueda) {
         btnBuscar.addEventListener('click', async () => {
             const val = inputBusqueda.value.trim();
             if (val.length < 5) {
-                return mostrarMsg(msgBusqueda, '️ Ingrese al menos 5 caracteres.', 'error');
+                return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 5 caracteres.', 'error');
             }
-
-            mostrarMsg(msgBusqueda, '🔍 Buscando registros en estado Verificación...', 'success');
+            mostrarMsg(msgBusqueda, ' Buscando registros en estado Verificación...', 'success');
             btnBuscar.disabled = true;
             form.style.display = 'none';
             datosPanel.style.display = 'none';
             selectionPanel.style.display = 'none';
-
             try {
                 const resultados = await buscarEnTodasLasTablas(val);
-
                 if (resultados.length === 0) {
                     mostrarMsg(msgBusqueda, '❌ No se encontró ningún registro en estado Verificación.', 'error');
                 } else if (resultados.length === 1) {
@@ -296,12 +289,11 @@ window.initRegProcesados = function() {
                 }
             } catch (err) {
                 console.error('Error en búsqueda:', err);
-                mostrarMsg(msgBusqueda, ' Error al buscar: ' + err.message, 'error');
+                mostrarMsg(msgBusqueda, '❌ Error al buscar: ' + err.message, 'error');
             } finally {
                 btnBuscar.disabled = false;
             }
         });
-
         inputBusqueda.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') { e.preventDefault(); btnBuscar.click(); }
         });
@@ -335,33 +327,27 @@ window.initRegProcesados = function() {
                 return mostrarMsg(msgForm, '❌ Debe buscar y seleccionar un registro primero.', 'error');
             }
 
-            // Validar tipo de delito (OBLIGATORIO)
             const tipoDelito = document.getElementById('proc_tipo_delito').value.trim();
             if (!tipoDelito) {
                 return mostrarMsg(msgForm, '❌ El tipo de delito es obligatorio.', 'error');
             }
 
             // Validar documentos marcados como Sí
-            const todosDocs = [
-                ...docsUnicos.map(d => d.id),
-                ...docsMultiples.map(d => d.id)
-            ];
-
-            for (const doc of todosDocs) {
-                const radio = document.querySelector(`input[name="doc_${doc}"]:checked`);
+            for (const doc of docsUnicos) {
+                const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                 if (radio && radio.value === 'si') {
-                    // Único
-                    if (docsUnicos.some(d => d.id === doc)) {
-                        const fileInput = document.getElementById(`file_${doc}`);
-                        if (!fileInput.files || fileInput.files.length === 0) {
-                            return mostrarMsg(msgForm, ` Debe subir un PDF para: ${doc.replace(/_/g, ' ')}`, 'error');
-                        }
+                    const fileInput = document.getElementById(`file_${doc.id}`);
+                    if (!fileInput.files || fileInput.files.length === 0) {
+                        return mostrarMsg(msgForm, ` Debe subir un PDF para: ${doc.label}`, 'error');
                     }
-                    // Múltiple (mínimo 1)
-                    if (docsMultiples.some(d => d.id === doc)) {
-                        if (archivosMultiples[doc].length === 0) {
-                            return mostrarMsg(msgForm, `❌ Debe subir al menos 1 PDF para: ${doc.replace(/_/g, ' ')}`, 'error');
-                        }
+                }
+            }
+
+            for (const doc of docsMultiples) {
+                const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+                if (radio && radio.value === 'si') {
+                    if (archivosMultiples[doc.id].length < doc.min) {
+                        return mostrarMsg(msgForm, `❌ Debe subir al menos ${doc.min} PDF para: ${doc.label}`, 'error');
                     }
                 }
             }
@@ -378,7 +364,6 @@ window.initRegProcesados = function() {
                 const uid = sessionStorage.getItem('pnb_user_id') || 'user';
                 const ts = Date.now();
 
-                // Subir PDF único
                 const subirPDF = async (fileInputId, suffix) => {
                     const fileInput = document.getElementById(fileInputId);
                     if (fileInput && fileInput.files && fileInput.files[0]) {
@@ -391,7 +376,6 @@ window.initRegProcesados = function() {
                     return null;
                 };
 
-                // Subir PDFs múltiples
                 const subirPDFsMultiples = async (campo) => {
                     const urls = [];
                     for (let i = 0; i < archivosMultiples[campo].length; i++) {
@@ -404,7 +388,6 @@ window.initRegProcesados = function() {
                     return urls;
                 };
 
-                // Construir objeto de datos
                 const dataToInsert = {
                     tabla_origen: registroSeleccionado.origen,
                     registro_id: registroSeleccionado.id,
@@ -419,32 +402,32 @@ window.initRegProcesados = function() {
                 };
 
                 // Documentos únicos
-                for (const doc of docsUnicos.map(d => d.id)) {
-                    const radio = document.querySelector(`input[name="doc_${doc}"]:checked`);
+                for (const doc of docsUnicos) {
+                    const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                     if (radio && radio.value === 'si') {
-                        dataToInsert[doc] = await subirPDF(`file_${doc}`, doc);
+                        dataToInsert[doc.id] = await subirPDF(`file_${doc.id}`, doc.id);
                     } else {
-                        dataToInsert[doc] = null;
+                        dataToInsert[doc.id] = null;
                     }
                 }
 
                 // Documentos múltiples
-                for (const doc of docsMultiples.map(d => d.id)) {
-                    const radio = document.querySelector(`input[name="doc_${doc}"]:checked`);
-                    if (radio && radio.value === 'si' && archivosMultiples[doc].length > 0) {
-                        dataToInsert[doc] = await subirPDFsMultiples(doc);
+                for (const doc of docsMultiples) {
+                    const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+                    if (radio && radio.value === 'si' && archivosMultiples[doc.id].length > 0) {
+                        dataToInsert[doc.id] = await subirPDFsMultiples(doc.id);
                     } else {
-                        dataToInsert[doc] = [];
+                        dataToInsert[doc.id] = [];
                     }
                 }
 
-                // 1. Insertar en registro_procesados
+                // Insertar en registro_procesados
                 const { error: insErr } = await window.supabaseClient
                     .from('registro_procesados')
                     .insert([dataToInsert]);
                 if (insErr) throw new Error(`Error al registrar procesado: ${insErr.message}`);
 
-                // 2. Cambiar estatus en tabla original
+                // Cambiar estatus en tabla original
                 const { error: updErr } = await window.supabaseClient
                     .from(registroSeleccionado.origen)
                     .update({ estatus: 'Procesado' })
@@ -460,12 +443,7 @@ window.initRegProcesados = function() {
                     msgBusqueda.style.display = 'none';
                     registroSeleccionado = null;
                     form.reset();
-                    // Resetear archivos múltiples
-                    archivosMultiples.entrevista = [];
-                    archivosMultiples.cadena_custodia = [];
-                    archivosMultiples.inspecciones_tecnicas = [];
-                    docsMultiples.forEach(d => actualizarListaArchivos(d.id));
-                    // Ocultar todas las áreas de upload
+                    docsMultiples.forEach(d => { archivosMultiples[d.id] = []; actualizarListaArchivos(d.id, d.max); });
                     document.querySelectorAll('.doc-upload-area').forEach(area => area.classList.remove('active'));
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 5000);
