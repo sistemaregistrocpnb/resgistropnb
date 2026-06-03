@@ -1,441 +1,117 @@
 <style>
 :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; }
-.registro-form fieldset { border: 1px solid var(--beige-border); border-radius: 8px; padding: 16px; margin-bottom: 18px; background: #fafbfc; }
-.registro-form legend { font-weight: 600; color: var(--primary); font-size: 0.95rem; padding: 0 8px; }
-.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
-.registro-form label { font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; display: block; }
-.registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; transition: border 0.2s; }
-.registro-form input:focus, .registro-form select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,43,92,0.1); }
-.btn-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 15px; font-size: 1rem; }
-.btn-submit:hover { background: var(--secondary); }
-.btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+.card { background: #fff; border-radius: 10px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+.card h3 { color: var(--primary); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--beige-border); }
+.search-box { padding: 16px; background: #f8fafc; border: 1.5px dashed var(--beige-border); border-radius: 8px; margin-bottom: 20px; }
+.search-box label { font-weight: 700; display: block; margin-bottom: 8px; }
+.search-row { display: flex; gap: 10px; }
+.search-row input { flex: 1; padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; text-transform: uppercase; }
 .btn-search { padding: 9px 15px; background: var(--secondary); color: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
 .msg { padding: 10px; margin-top: 12px; border-radius: 5px; text-align: center; display: none; }
 .msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
 .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-
-/* Panel de selección dinámica */
-#selection-panel { display: none; margin-top: 20px; }
+#selection-panel, #datos-encontrados-panel { display: none; margin-top: 20px; }
 .selection-header { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-.selection-header h4 { margin: 0 0 8px; color: #1e40af; font-size: 1.05rem; }
+.selection-header h4 { margin: 0 0 8px; color: #1e40af; }
 .selection-header p { margin: 0; color: #1e40af; font-size: 0.9rem; }
 #selection-list { display: grid; gap: 12px; }
 .btn-cancel-search { margin-top: 16px; padding: 10px 20px; background: #64748b; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; display: block; margin-left: auto; margin-right: auto; }
-
-/* Sección de datos encontrados */
 .datos-encontrados { background: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
 .datos-encontrados h4 { margin: 0 0 10px; color: #15803d; }
-.datos-encontrados .dato-fila { display: flex; gap: 10px; padding: 4px 0; border-bottom: 1px dashed #bbf7d0; }
-.datos-encontrados .dato-label { font-weight: 600; color: #166534; min-width: 140px; }
-.datos-encontrados .dato-valor { color: #14532d; }
-
-/* Sección de documentos */
+.dato-fila { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px dashed #bbf7d0; }
+.dato-label { font-weight: 600; color: #166534; min-width: 160px; }
+.dato-valor { color: #14532d; flex: 1; word-break: break-word; }
+.registro-form fieldset { border: 1px solid var(--beige-border); border-radius: 8px; padding: 16px; margin-bottom: 18px; background: #fafbfc; }
+.registro-form legend { font-weight: 600; color: var(--primary); font-size: 0.95rem; padding: 0 8px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.registro-form label { font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; display: block; }
+.registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; }
+.registro-form input:focus, .registro-form select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,43,92,0.1); }
+.btn-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 15px; font-size: 1rem; }
+.btn-submit:hover { background: var(--secondary); }
+.btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
 .doc-item { background: #fff; border: 1px solid var(--beige-border); border-radius: 6px; padding: 12px; margin-bottom: 10px; }
 .doc-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 .doc-header label { font-weight: 600; color: var(--primary); margin: 0; }
-.doc-si-no { display: flex; gap: 8px; }
-.doc-si-no label { display: flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 500; font-size: 0.85rem; padding: 6px 12px; border: 1px solid var(--beige-border); border-radius: 4px; transition: all 0.2s; }
+.doc-si-no { display: flex; gap: 4px; }
+.doc-si-no label { display: flex; align-items: center; gap: 4px; cursor: pointer; padding: 5px 12px; border: 1px solid var(--beige-border); border-radius: 4px; font-weight: 500; font-size: 0.85rem; transition: all 0.2s; }
 .doc-si-no input[type="radio"] { display: none; }
-.doc-si-no input[type="radio"]:checked + span { color: white; }
 .doc-si-no label:has(input:checked) { background: var(--primary); color: white; border-color: var(--primary); }
 .doc-upload-area { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--beige-border); display: none; }
 .doc-upload-area.active { display: block; }
-.doc-upload-area input[type="file"] { margin-bottom: 8px; }
 .file-list { margin-top: 8px; }
 .file-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #f8fafc; border-radius: 4px; margin-bottom: 4px; font-size: 0.85rem; }
 .file-item button { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.75rem; }
-.file-item button:hover { background: #dc2626; }
-.btn-add-file { padding: 6px 12px; background: var(--secondary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-top: 8px; }
-.btn-add-file:hover { background: #b8941f; }
-.btn-add-file:disabled { background: #9ca3af; cursor: not-allowed; }
+.btn-add-file { padding: 6px 12px; background: var(--secondary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-top: 6px; }
 .file-count { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
-
-/* Campo obligatorio destacado */
-.campo-obligatorio input { border: 2px solid var(--secondary); }
+.campo-obligatorio input { border: 2px solid var(--secondary) !important; }
 .campo-obligatorio label::after { content: ' *'; color: #dc2626; font-weight: 700; }
-
-@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .form-grid, .search-row { grid-template-columns: 1fr; flex-direction: column; } }
 </style>
 
 <div class="card">
-    <h3>⚖️ Registrar Procesado</h3>
+    <h3>️ Registrar Procesado</h3>
 
     <!-- 🔍 BÚSQUEDA -->
-    <div class="search-box" style="padding: 16px; background: #f8fafc; border: 1.5px dashed var(--beige-border); border-radius: 8px; margin-bottom: 20px;">
-        <label style="font-weight:700; display:block; margin-bottom:8px;">🔍 Buscar por Cédula, Placa, Serial de Carrocería o Motor:</label>
-        <div class="search-row" style="display: flex; gap: 10px;">
-            <input type="text" id="proc_busqueda_input" placeholder="Ej: 12345678 o AA123BC..." maxlength="20" style="flex: 1; padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; text-transform: uppercase;">
+    <div class="search-box">
+        <label>🔍 Buscar por Cédula, Placa, Serial de Carrocería o Motor:</label>
+        <div class="search-row">
+            <input type="text" id="proc_busqueda_input" placeholder="Ej: 12345678 o AA123BC..." maxlength="20">
             <button id="proc_btn_buscar" class="btn-search">🔍 Buscar</button>
         </div>
-        <div id="proc_msg_busqueda" class="msg" style="margin-top:8px;"></div>
+        <div id="proc_msg_busqueda" class="msg"></div>
     </div>
 
-    <!-- 🔹 PANEL DE SELECCIÓN DINÁMICO -->
+    <!-- 🔹 PANEL DE SELECCIÓN -->
     <div id="selection-panel">
         <div class="selection-header">
             <h4>🔎 Múltiples coincidencias encontradas</h4>
-            <p>Se encontraron <strong><span id="result-count">0</span> registros</strong> con ese dato. Seleccione cuál procesar:</p>
+            <p>Se encontraron <strong><span id="result-count">0</span> registros</strong>. Seleccione cuál procesar:</p>
         </div>
         <div id="selection-list"></div>
         <button id="btn-cancelar-seleccion" class="btn-cancel-search">❌ Cancelar búsqueda</button>
     </div>
 
-<!-- 📋 DATOS ENCONTRADOS (se muestra al seleccionar un registro) -->
-<div id="datos-encontrados-panel" class="datos-encontrados" style="display: none;">
-    <h4>📋 Datos del Registro Seleccionado</h4>
-    
-    <!-- SECCIÓN PERSONA (visible solo si es persona o vinculado) -->
-    <div id="seccion-persona" style="display: none;">
-        <div style="background: #f0f9ff; border: 1px solid #7dd3fc; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
-            <strong style="color: #0369a1;">👤 Datos de la Persona</strong>
-        </div>
-        
-        <!-- Fotos Persona -->
-        <div id="fotos-persona" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px;">
-            <div>
-                <label style="font-size: 0.75rem; color: #64748b;">Frontal</label>
-                <img id="proc_foto_p_frontal" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; display: none;">
-            </div>
-            <div>
-                <label style="font-size: 0.75rem; color: #64748b;">Perfil Izquierdo</label>
-                <img id="proc_foto_p_izq" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; display: none;">
-            </div>
-            <div>
-                <label style="font-size: 0.75rem; color: #64748b;">Perfil Derecho</label>
-                <img id="proc_foto_p_der" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; display: none;">
-            </div>
-        </div>
-        
-        <!-- Datos Personales -->
-        <div class="dato-fila"><span class="dato-label">👤 Nombre Completo:</span><span class="dato-valor" id="proc_p_nombre_completo">-</span></div>
-        <div class="dato-fila"><span class="dato-label">🆔 Cédula:</span><span class="dato-valor" id="proc_p_cedula">-</span></div>
-        <div class="dato-fila"><span class="dato-label">🎂 Edad:</span><span class="dato-valor" id="proc_p_edad">-</span></div>
-        <div class="dato-fila"><span class="dato-label">🌍 Nacionalidad:</span><span class="dato-valor" id="proc_p_nacionalidad">-</span></div>
-        <div class="dato-fila"><span class="dato-label">⚧ Sexo:</span><span class="dato-valor" id="proc_p_sexo">-</span></div>
-        <div class="dato-fila"><span class="dato-label">️ Estación Policial:</span><span class="dato-valor" id="proc_p_estacion">-</span></div>
-        <div class="dato-fila"><span class="dato-label">📍 Lugar de Detención:</span><span class="dato-valor" id="proc_p_direccion_detencion">-</span></div>
+    <!--  DATOS ENCONTRADOS -->
+    <div id="datos-encontrados-panel" class="datos-encontrados">
+        <h4>📋 Datos del Registro Seleccionado</h4>
+        <div id="datos-contenido"></div>
+        <button id="btn-cambiar-registro" style="margin-top:12px; padding:8px 16px; background:#64748b; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:600;">🔄 Cambiar registro</button>
     </div>
-    
-    <!-- SECCIÓN VEHÍCULO (visible solo si es vehículo o vinculado) -->
-    <div id="seccion-vehiculo" style="display: none;">
-        <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 12px; margin-bottom: 12px; margin-top: 16px;">
-            <strong style="color: #15803d;">🚗 Datos del Vehículo</strong>
-        </div>
-        
-        <div class="dato-fila"><span class="dato-label">🚗 Tipo de Vehículo:</span><span class="dato-valor" id="proc_v_tipo">-</span></div>
-        
-        <!-- Fotos Vehículo -->
-        <div id="fotos-vehiculo" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px;">
-            <div>
-                <label style="font-size: 0.75rem; color: #64748b;">Frontal</label>
-                <img id="proc_foto_v_frontal" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; display: none;">
-            </div>
-            <div>
-                <label style="font-size: 0.75rem; color: #64748b;">Trasera</label>
-                <img id="proc_foto_v_trasera" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; display: none;">
-            </div>
-            <div>
-                <label style="font-size: 0.75rem; color: #64748b;">Lado Derecho</label>
-                <img id="proc_foto_v_der" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; display: none;">
-            </div>
-            <div>
-                <label style="font-size: 0.75rem; color: #64748b;">Lado Izquierdo</label>
-                <img id="proc_foto_v_izq" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; display: none;">
-            </div>
-        </div>
-        
-        <div class="dato-fila"><span class="dato-label"> Placa:</span><span class="dato-valor" id="proc_v_placa">-</span></div>
-        <div class="dato-fila"><span class="dato-label">🔢 Serial Carrocería:</span><span class="dato-valor" id="proc_v_serial_carro">-</span></div>
-        <div class="dato-fila"><span class="dato-label">️ Serial Motor:</span><span class="dato-valor" id="proc_v_serial_motor">-</span></div>
-        <div class="dato-fila"><span class="dato-label">🏭 Marca:</span><span class="dato-valor" id="proc_v_marca">-</span></div>
-        <div class="dato-fila"><span class="dato-label">📦 Modelo:</span><span class="dato-valor" id="proc_v_modelo">-</span></div>
-        <div class="dato-fila"><span class="dato-label">📅 Año:</span><span class="dato-valor" id="proc_v_anio">-</span></div>
-        <div class="dato-fila"><span class="dato-label">🎨 Color:</span><span class="dato-valor" id="proc_v_color">-</span></div>
-        <div class="dato-fila"><span class="dato-label">🏛️ Estación Policial:</span><span class="dato-valor" id="proc_v_estacion">-</span></div>
-        <div class="dato-fila"><span class="dato-label"> Lugar de Detención:</span><span class="dato-valor" id="proc_v_direccion_detencion">-</span></div>
-    </div>
-    
-    <button id="btn-cambiar-registro" style="margin-top:12px; padding:8px 16px; background:#64748b; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:600;">🔄 Cambiar registro</button>
-</div>
 
-    <!-- 📝 FORMULARIO DE PROCESADOS -->
+    <!-- 📝 FORMULARIO -->
     <form id="form-reg-procesados" class="registro-form" novalidate style="display: none;">
         <input type="hidden" id="proc_tabla_origen">
         <input type="hidden" id="proc_registro_id">
         <input type="hidden" id="proc_tipo_registro">
         <input type="hidden" id="proc_identificador">
 
-        <!-- Tipo de Delito (OBLIGATORIO) -->
         <fieldset>
-            <legend>⚖️ Información del Delito</legend>
+            <legend>️ Información del Delito</legend>
             <div class="form-grid">
                 <div class="form-group campo-obligatorio" style="grid-column: span 2;">
                     <label>Tipo de Delito</label>
-                    <input type="text" id="proc_tipo_delito" placeholder="Ej: Robo agravado, Homicidio, etc." required>
+                    <input type="text" id="proc_tipo_delito" placeholder="Ej: Robo agravado, Homicidio, Secuestro..." required>
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
                     <label>Observaciones (opcional)</label>
-                    <textarea id="proc_observaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+                    <textarea id="proc_observaciones" rows="2" placeholder="Notas adicionales sobre el caso..."></textarea>
                 </div>
             </div>
         </fieldset>
 
-        <!-- DOCUMENTOS ÚNICOS -->
         <fieldset>
             <legend>📄 Documentos del Proceso (PDF)</legend>
-            <p style="font-size:0.85rem; color:#64748b; margin-top:-10px; margin-bottom:12px;">Seleccione "Sí" para habilitar la carga del archivo PDF.</p>
+            <p style="font-size:0.85rem; color:#64748b; margin-top:-10px; margin-bottom:12px;">Seleccione "Sí" para habilitar la carga del archivo.</p>
 
-            <!-- Portada -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label>📑 Portada</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_portada" value="no" checked onchange="toggleDocField('portada', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_portada" value="si" onchange="toggleDocField('portada', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-portada">
-                    <input type="file" id="file_portada" accept=".pdf,application/pdf">
-                </div>
-            </div>
+            <!-- GENERAR TODOS LOS DOCS ÚNICOS -->
+            <div id="docs-unicos-container"></div>
 
-            <!-- Oficio de Remisión -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label>📨 Oficio de Remisión</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_oficio_remision" value="no" checked onchange="toggleDocField('oficio_remision', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_oficio_remision" value="si" onchange="toggleDocField('oficio_remision', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-oficio_remision">
-                    <input type="file" id="file_oficio_remision" accept=".pdf,application/pdf">
-                </div>
-            </div>
+            <hr style="margin: 20px 0; border: none; border-top: 2px dashed var(--beige-border);">
+            <p style="font-weight:600; color:var(--primary); margin-bottom:12px;">📁 Documentos Múltiples (1 a 10 archivos cada uno)</p>
 
-            <!-- Acta de Denuncia -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label>📝 Acta de Denuncia</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_acta_denuncia" value="no" checked onchange="toggleDocField('acta_denuncia', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_acta_denuncia" value="si" onchange="toggleDocField('acta_denuncia', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-acta_denuncia">
-                    <input type="file" id="file_acta_denuncia" accept=".pdf,application/pdf">
-                </div>
-            </div>
-
-            <!-- Datos Filiatorios -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label>👤 Datos Filiatorios</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_datos_filiatorios" value="no" checked onchange="toggleDocField('datos_filiatorios', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_datos_filiatorios" value="si" onchange="toggleDocField('datos_filiatorios', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-datos_filiatorios">
-                    <input type="file" id="file_datos_filiatorios" accept=".pdf,application/pdf">
-                </div>
-            </div>
-
-            <!-- Acta Policial -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label> Acta Policial</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_acta_policial" value="no" checked onchange="toggleDocField('acta_policial', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_acta_policial" value="si" onchange="toggleDocField('acta_policial', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-acta_policial">
-                    <input type="file" id="file_acta_policial" accept=".pdf,application/pdf">
-                </div>
-            </div>
-
-            <!-- Derechos del Imputado -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label>⚖️ Derechos del Imputado</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_derechos_imputado" value="no" checked onchange="toggleDocField('derechos_imputado', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_derechos_imputado" value="si" onchange="toggleDocField('derechos_imputado', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-derechos_imputado">
-                    <input type="file" id="file_derechos_imputado" accept=".pdf,application/pdf">
-                </div>
-            </div>
-
-            <!-- Evaluación Médica -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label>🏥 Evaluación Médica</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_evaluacion_medica" value="no" checked onchange="toggleDocField('evaluacion_medica', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_evaluacion_medica" value="si" onchange="toggleDocField('evaluacion_medica', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-evaluacion_medica">
-                    <input type="file" id="file_evaluacion_medica" accept=".pdf,application/pdf">
-                </div>
-            </div>
-
-            <!-- Identificación (Cédula) -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label>🆔 Identificación (Cédula)</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_identificacion_cedula" value="no" checked onchange="toggleDocField('identificacion_cedula', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_identificacion_cedula" value="si" onchange="toggleDocField('identificacion_cedula', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-identificacion_cedula">
-                    <input type="file" id="file_identificacion_cedula" accept=".pdf,application/pdf">
-                </div>
-            </div>
-
-            <!-- Solicitud de Examen Forense -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label>🔬 Solicitud de Examen Forense</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_solicitud_examen_forense" value="no" checked onchange="toggleDocField('solicitud_examen_forense', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_solicitud_examen_forense" value="si" onchange="toggleDocField('solicitud_examen_forense', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-solicitud_examen_forense">
-                    <input type="file" id="file_solicitud_examen_forense" accept=".pdf,application/pdf">
-                </div>
-            </div>
-
-            <!-- Resultados del Examen Forense -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label>🔬 Resultados del Examen Forense</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_resultados_examen_forense" value="no" checked onchange="toggleDocField('resultados_examen_forense', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_resultados_examen_forense" value="si" onchange="toggleDocField('resultados_examen_forense', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-resultados_examen_forense">
-                    <input type="file" id="file_resultados_examen_forense" accept=".pdf,application/pdf">
-                </div>
-            </div>
-
-            <!-- Asistencia de Comdepro -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label>👶 Asistencia de Comdepro</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_asistencia_comdepro" value="no" checked onchange="toggleDocField('asistencia_comdepro', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_asistencia_comdepro" value="si" onchange="toggleDocField('asistencia_comdepro', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-asistencia_comdepro">
-                    <input type="file" id="file_asistencia_comdepro" accept=".pdf,application/pdf">
-                </div>
-            </div>
-
-            <!-- Remisión a Estacionamiento -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label>🚗 Remisión a Estacionamiento</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_remision_estacionamiento" value="no" checked onchange="toggleDocField('remision_estacionamiento', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_remision_estacionamiento" value="si" onchange="toggleDocField('remision_estacionamiento', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-remision_estacionamiento">
-                    <input type="file" id="file_remision_estacionamiento" accept=".pdf,application/pdf">
-                </div>
-            </div>
-
-            <!-- Planilla de Revisión de Vehículo (PVR) -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label>🚙 Planilla de Revisión de Vehículo (PVR)</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_planilla_pvr" value="no" checked onchange="toggleDocField('planilla_pvr', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_planilla_pvr" value="si" onchange="toggleDocField('planilla_pvr', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-planilla_pvr">
-                    <input type="file" id="file_planilla_pvr" accept=".pdf,application/pdf">
-                </div>
-            </div>
-
-            <!-- Otros -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label>📎 Otros Documentos</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_otros_documentos" value="no" checked onchange="toggleDocField('otros_documentos', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_otros_documentos" value="si" onchange="toggleDocField('otros_documentos', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-otros_documentos">
-                    <input type="file" id="file_otros_documentos" accept=".pdf,application/pdf">
-                </div>
-            </div>
-        </fieldset>
-
-        <!-- DOCUMENTOS MÚLTIPLES -->
-        <fieldset>
-            <legend>📁 Documentos Múltiples (hasta 10 archivos PDF cada uno)</legend>
-
-            <!-- Entrevista -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label>🎤 Entrevista</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_entrevista" value="no" checked onchange="toggleDocField('entrevista', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_entrevista" value="si" onchange="toggleDocField('entrevista', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-entrevista">
-                    <input type="file" id="file_entrevista" accept=".pdf,application/pdf" multiple>
-                    <button type="button" class="btn-add-file" onclick="agregarArchivo('entrevista')">➕ Agregar archivo</button>
-                    <div class="file-count" id="count-entrevista">0 de 10 archivos</div>
-                    <div class="file-list" id="list-entrevista"></div>
-                </div>
-            </div>
-
-            <!-- Cadena de Custodia -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label>🔗 Cadena de Custodia</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_cadena_custodia" value="no" checked onchange="toggleDocField('cadena_custodia', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_cadena_custodia" value="si" onchange="toggleDocField('cadena_custodia', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-cadena_custodia">
-                    <input type="file" id="file_cadena_custodia" accept=".pdf,application/pdf" multiple>
-                    <button type="button" class="btn-add-file" onclick="agregarArchivo('cadena_custodia')">➕ Agregar archivo</button>
-                    <div class="file-count" id="count-cadena_custodia">0 de 10 archivos</div>
-                    <div class="file-list" id="list-cadena_custodia"></div>
-                </div>
-            </div>
-
-            <!-- Inspecciones Técnicas -->
-            <div class="doc-item">
-                <div class="doc-header">
-                    <label>🔍 Inspecciones Técnicas</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_inspecciones_tecnicas" value="no" checked onchange="toggleDocField('inspecciones_tecnicas', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_inspecciones_tecnicas" value="si" onchange="toggleDocField('inspecciones_tecnicas', true)"><span>Sí</span></label>
-                    </div>
-                </div>
-                <div class="doc-upload-area" id="upload-inspecciones_tecnicas">
-                    <input type="file" id="file_inspecciones_tecnicas" accept=".pdf,application/pdf" multiple>
-                    <button type="button" class="btn-add-file" onclick="agregarArchivo('inspecciones_tecnicas')">➕ Agregar archivo</button>
-                    <div class="file-count" id="count-inspecciones_tecnicas">0 de 10 archivos</div>
-                    <div class="file-list" id="list-inspecciones_tecnicas"></div>
-                </div>
-            </div>
+            <!-- GENERAR DOCS MÚLTIPLES -->
+            <div id="docs-multiples-container"></div>
         </fieldset>
 
         <button type="submit" class="btn-submit">💾 Registrar Procesado y Cambiar Estatus</button>
@@ -444,56 +120,114 @@
 </div>
 
 <script>
-// Variables globales para archivos múltiples
-const archivosMultiples = {
-    entrevista: [],
-    cadena_custodia: [],
-    inspecciones_tecnicas: []
-};
+// ==========================================
+// 🔹 GENERAR DOCS ÚNICOS DINÁMICAMENTE
+// ==========================================
+const docsUnicos = [
+    { id: 'portada', label: '📑 Portada', icon: '📑' },
+    { id: 'oficio_remision', label: '📨 Oficio de Remisión', icon: '' },
+    { id: 'acta_denuncia', label: '📝 Acta de Denuncia', icon: '📝' },
+    { id: 'datos_filiatorios', label: '👤 Datos Filiatorios', icon: '' },
+    { id: 'acta_policial', label: '📋 Acta Policial', icon: '📋' },
+    { id: 'derechos_imputado', label: '⚖️ Derechos del Imputado', icon: '⚖️' },
+    { id: 'evaluacion_medica', label: '🏥 Evaluación Médica', icon: '🏥' },
+    { id: 'identificacion_cedula', label: '🆔 Identificación (Cédula)', icon: '🆔' },
+    { id: 'solicitud_examen_forense', label: '🔬 Solicitud de Examen Forense', icon: '🔬' },
+    { id: 'resultados_examen_forense', label: '🔬 Resultados del Examen Forense', icon: '🔬' },
+    { id: 'asistencia_comdepro', label: '👶 Asistencia de Comdepro', icon: '👶' },
+    { id: 'remision_estacionamiento', label: ' Remisión a Estacionamiento', icon: '🚗' },
+    { id: 'planilla_pvr', label: '🚙 Planilla de Revisión de Vehículo (PVR)', icon: '🚙' },
+    { id: 'otros_documentos', label: ' Otros Documentos', icon: '📎' }
+];
 
-// Toggle de campos de documentos
+const docsMultiples = [
+    { id: 'entrevista', label: '🎤 Entrevista' },
+    { id: 'cadena_custodia', label: ' Cadena de Custodia' },
+    { id: 'inspecciones_tecnicas', label: '🔍 Inspecciones Técnicas' }
+];
+
+const contenedorUnicos = document.getElementById('docs-unicos-container');
+docsUnicos.forEach(doc => {
+    const div = document.createElement('div');
+    div.className = 'doc-item';
+    div.innerHTML = `
+        <div class="doc-header">
+            <label>${doc.label}</label>
+            <div class="doc-si-no">
+                <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
+                <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+            </div>
+        </div>
+        <div class="doc-upload-area" id="upload-${doc.id}">
+            <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf">
+        </div>
+    `;
+    contenedorUnicos.appendChild(div);
+});
+
+const contenedorMultiples = document.getElementById('docs-multiples-container');
+docsMultiples.forEach(doc => {
+    const div = document.createElement('div');
+    div.className = 'doc-item';
+    div.innerHTML = `
+        <div class="doc-header">
+            <label>${doc.label}</label>
+            <div class="doc-si-no">
+                <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
+                <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+            </div>
+        </div>
+        <div class="doc-upload-area" id="upload-${doc.id}">
+            <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
+            <button type="button" class="btn-add-file" onclick="agregarArchivo('${doc.id}')">➕ Agregar archivo</button>
+            <div class="file-count" id="count-${doc.id}">0 de 10 archivos</div>
+            <div class="file-list" id="list-${doc.id}"></div>
+        </div>
+    `;
+    contenedorMultiples.appendChild(div);
+});
+
+// ==========================================
+// 🔹 FUNCIONES GLOBALES
+// ==========================================
 window.toggleDocField = function(campo, mostrar) {
-    const uploadArea = document.getElementById(`upload-${campo}`);
-    if (uploadArea) {
-        uploadArea.classList.toggle('active', mostrar);
-    }
+    const area = document.getElementById(`upload-${campo}`);
+    if (area) area.classList.toggle('active', mostrar);
 };
 
-// Agregar archivo múltiple
+const archivosMultiples = { entrevista: [], cadena_custodia: [], inspecciones_tecnicas: [] };
+
 window.agregarArchivo = function(campo) {
     const input = document.getElementById(`file_${campo}`);
-    if (input.files && input.files.length > 0) {
-        if (archivosMultiples[campo].length + input.files.length > 10) {
-            alert('Máximo 10 archivos permitidos');
-            return;
+    if (!input.files || input.files.length === 0) return;
+    const disponibles = 10 - archivosMultiples[campo].length;
+    if (disponibles <= 0) { alert('Máximo 10 archivos permitidos'); return; }
+    let agregados = 0;
+    for (const file of input.files) {
+        if (agregados >= disponibles) break;
+        if (file.type === 'application/pdf') {
+            archivosMultiples[campo].push(file);
+            agregados++;
         }
-        Array.from(input.files).forEach(file => {
-            if (file.type === 'application/pdf') {
-                archivosMultiples[campo].push(file);
-            }
-        });
-        actualizarListaArchivos(campo);
-        input.value = '';
     }
+    actualizarListaArchivos(campo);
+    input.value = '';
 };
 
-// Actualizar lista de archivos
 function actualizarListaArchivos(campo) {
     const list = document.getElementById(`list-${campo}`);
     const count = document.getElementById(`count-${campo}`);
-    if (list && count) {
-        list.innerHTML = '';
-        archivosMultiples[campo].forEach((file, index) => {
-            const item = document.createElement('div');
-            item.className = 'file-item';
-            item.innerHTML = `<span>📄 ${file.name}</span><button type="button" onclick="eliminarArchivo('${campo}', ${index})">❌ Eliminar</button>`;
-            list.appendChild(item);
-        });
-        count.textContent = `${archivosMultiples[campo].length} de 10 archivos`;
-    }
+    if (!list || !count) return;
+    list.innerHTML = '';
+    archivosMultiples[campo].forEach((file, index) => {
+        const item = document.createElement('div');
+        item.className = 'file-item';
+        item.innerHTML = `<span>📄 ${file.name}</span><button type="button" onclick="eliminarArchivo('${campo}', ${index})">❌</button>`;
+        list.appendChild(item);
+    });
+    count.textContent = `${archivosMultiples[campo].length} de 10 archivos`;
 }
 
-// Eliminar archivo
 window.eliminarArchivo = function(campo, index) {
     archivosMultiples[campo].splice(index, 1);
     actualizarListaArchivos(campo);
