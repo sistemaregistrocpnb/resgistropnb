@@ -80,12 +80,83 @@
         <button id="btn-cancelar-seleccion" class="btn-cancel-search">❌ Cancelar búsqueda</button>
     </div>
 
-    <!-- 📋 DATOS ENCONTRADOS (se muestra al seleccionar un registro) -->
-    <div id="datos-encontrados-panel" class="datos-encontrados" style="display: none;">
-        <h4>📋 Datos del Registro Seleccionado</h4>
-        <div id="datos-contenido"></div>
-        <button id="btn-cambiar-registro" style="margin-top:12px; padding:8px 16px; background:#64748b; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:600;">🔄 Cambiar registro</button>
+<!-- 📋 DATOS ENCONTRADOS (se muestra al seleccionar un registro) -->
+<div id="datos-encontrados-panel" class="datos-encontrados" style="display: none;">
+    <h4>📋 Datos del Registro Seleccionado</h4>
+    
+    <!-- SECCIÓN PERSONA (visible solo si es persona o vinculado) -->
+    <div id="seccion-persona" style="display: none;">
+        <div style="background: #f0f9ff; border: 1px solid #7dd3fc; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
+            <strong style="color: #0369a1;">👤 Datos de la Persona</strong>
+        </div>
+        
+        <!-- Fotos Persona -->
+        <div id="fotos-persona" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px;">
+            <div>
+                <label style="font-size: 0.75rem; color: #64748b;">Frontal</label>
+                <img id="proc_foto_p_frontal" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; display: none;">
+            </div>
+            <div>
+                <label style="font-size: 0.75rem; color: #64748b;">Perfil Izquierdo</label>
+                <img id="proc_foto_p_izq" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; display: none;">
+            </div>
+            <div>
+                <label style="font-size: 0.75rem; color: #64748b;">Perfil Derecho</label>
+                <img id="proc_foto_p_der" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; display: none;">
+            </div>
+        </div>
+        
+        <!-- Datos Personales -->
+        <div class="dato-fila"><span class="dato-label">👤 Nombre Completo:</span><span class="dato-valor" id="proc_p_nombre_completo">-</span></div>
+        <div class="dato-fila"><span class="dato-label">🆔 Cédula:</span><span class="dato-valor" id="proc_p_cedula">-</span></div>
+        <div class="dato-fila"><span class="dato-label">🎂 Edad:</span><span class="dato-valor" id="proc_p_edad">-</span></div>
+        <div class="dato-fila"><span class="dato-label">🌍 Nacionalidad:</span><span class="dato-valor" id="proc_p_nacionalidad">-</span></div>
+        <div class="dato-fila"><span class="dato-label">⚧ Sexo:</span><span class="dato-valor" id="proc_p_sexo">-</span></div>
+        <div class="dato-fila"><span class="dato-label">️ Estación Policial:</span><span class="dato-valor" id="proc_p_estacion">-</span></div>
+        <div class="dato-fila"><span class="dato-label">📍 Lugar de Detención:</span><span class="dato-valor" id="proc_p_direccion_detencion">-</span></div>
     </div>
+    
+    <!-- SECCIÓN VEHÍCULO (visible solo si es vehículo o vinculado) -->
+    <div id="seccion-vehiculo" style="display: none;">
+        <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 12px; margin-bottom: 12px; margin-top: 16px;">
+            <strong style="color: #15803d;">🚗 Datos del Vehículo</strong>
+        </div>
+        
+        <div class="dato-fila"><span class="dato-label">🚗 Tipo de Vehículo:</span><span class="dato-valor" id="proc_v_tipo">-</span></div>
+        
+        <!-- Fotos Vehículo -->
+        <div id="fotos-vehiculo" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px;">
+            <div>
+                <label style="font-size: 0.75rem; color: #64748b;">Frontal</label>
+                <img id="proc_foto_v_frontal" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; display: none;">
+            </div>
+            <div>
+                <label style="font-size: 0.75rem; color: #64748b;">Trasera</label>
+                <img id="proc_foto_v_trasera" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; display: none;">
+            </div>
+            <div>
+                <label style="font-size: 0.75rem; color: #64748b;">Lado Derecho</label>
+                <img id="proc_foto_v_der" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; display: none;">
+            </div>
+            <div>
+                <label style="font-size: 0.75rem; color: #64748b;">Lado Izquierdo</label>
+                <img id="proc_foto_v_izq" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; display: none;">
+            </div>
+        </div>
+        
+        <div class="dato-fila"><span class="dato-label"> Placa:</span><span class="dato-valor" id="proc_v_placa">-</span></div>
+        <div class="dato-fila"><span class="dato-label">🔢 Serial Carrocería:</span><span class="dato-valor" id="proc_v_serial_carro">-</span></div>
+        <div class="dato-fila"><span class="dato-label">️ Serial Motor:</span><span class="dato-valor" id="proc_v_serial_motor">-</span></div>
+        <div class="dato-fila"><span class="dato-label">🏭 Marca:</span><span class="dato-valor" id="proc_v_marca">-</span></div>
+        <div class="dato-fila"><span class="dato-label">📦 Modelo:</span><span class="dato-valor" id="proc_v_modelo">-</span></div>
+        <div class="dato-fila"><span class="dato-label">📅 Año:</span><span class="dato-valor" id="proc_v_anio">-</span></div>
+        <div class="dato-fila"><span class="dato-label">🎨 Color:</span><span class="dato-valor" id="proc_v_color">-</span></div>
+        <div class="dato-fila"><span class="dato-label">🏛️ Estación Policial:</span><span class="dato-valor" id="proc_v_estacion">-</span></div>
+        <div class="dato-fila"><span class="dato-label"> Lugar de Detención:</span><span class="dato-valor" id="proc_v_direccion_detencion">-</span></div>
+    </div>
+    
+    <button id="btn-cambiar-registro" style="margin-top:12px; padding:8px 16px; background:#64748b; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:600;">🔄 Cambiar registro</button>
+</div>
 
     <!-- 📝 FORMULARIO DE PROCESADOS -->
     <form id="form-reg-procesados" class="registro-form" novalidate style="display: none;">
