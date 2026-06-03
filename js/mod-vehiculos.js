@@ -227,13 +227,23 @@ window.initModVehiculos = function() {
     // ==========================================
     // 🔹 CARGAR DATOS EN FORMULARIO
     // ==========================================
-    function cargarDatos(data, tabla, tipo) {
-        currentData = data;
-        isSelectionMode = false; // ✅ Doble seguridad
-        setUIForType(tipo);
-        form.style.display = 'block';
-        mostrarMsg(msgBusqueda, '✅ Registro cargado. Puede editar y guardar.', 'success');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+   function cargarDatos(data, tabla, tipo) {
+currentData = data;
+isSelectionMode = false;
+setUIForType(tipo);
+form.style.display = 'block';
+mostrarMsg(msgBusqueda, '✅ Registro cargado. Puede editar y guardar.', 'success');
+window.scrollTo({ top: 0, behavior: 'smooth' });
+
+// ✅ Mostrar solo el tipo de vehículo encontrado
+const displayTipo = document.getElementById('display-tipo-vehiculo');
+if (displayTipo) {
+displayTipo.textContent = tipo === 'moto' ? '🏍️ Motocicleta' : '🚙 Automóvil';
+}
+
+document.getElementById('mod_id_original').value = data.id;
+// ... resto del código
+}
 
         document.getElementById('mod_id_original').value = data.id;
         document.getElementById('m_placa').value = data.placa;
