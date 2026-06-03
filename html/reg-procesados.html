@@ -2,8 +2,6 @@
 :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; }
 .card { background: #fff; border-radius: 10px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
 .card h3 { color: var(--primary); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--beige-border); }
-
-/* 🔹 Búsqueda */
 .search-box { padding: 16px; background: #f8fafc; border: 1.5px dashed var(--beige-border); border-radius: 8px; margin-bottom: 20px; }
 .search-box label { font-weight: 700; display: block; margin-bottom: 8px; }
 .search-row { display: flex; gap: 10px; }
@@ -12,16 +10,12 @@
 .msg { padding: 10px; margin-top: 12px; border-radius: 5px; text-align: center; display: none; }
 .msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
 .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-
-/* 🔹 Panel de Selección */
 #selection-panel { display: none; margin-top: 20px; }
 .selection-header { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
 .selection-header h4 { margin: 0 0 8px; color: #1e40af; font-size: 1.05rem; }
 .selection-header p { margin: 0; color: #1e40af; font-size: 0.9rem; }
 #selection-list { display: grid; gap: 12px; }
 .btn-cancel-search { margin-top: 16px; padding: 10px 20px; background: #64748b; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; display: block; margin-left: auto; margin-right: auto; }
-
-/* 🔹 Datos Encontrados */
 .datos-encontrados { background: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
 .datos-encontrados-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
 .datos-encontrados h4 { margin: 0; color: #15803d; font-size: 1.1rem; }
@@ -30,28 +24,18 @@
 .dato-fila:last-child { border-bottom: none; }
 .dato-label { font-weight: 600; color: #166534; min-width: 160px; }
 .dato-valor { color: #14532d; flex: 1; word-break: break-word; }
-
-/* 🔹 Fotos */
-.fotos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 8px; }
-.foto-item { text-align: center; }
-.foto-item img { width: 100%; height: 100px; object-fit: contain; border: 1px solid #bbf7d0; border-radius: 6px; background: #f8fafc; }
-.foto-item .foto-label { font-size: 0.75rem; color: #166534; margin-top: 4px; font-weight: 600; }
-.foto-vacia { width: 100%; height: 100px; display: flex; align-items: center; justify-content: center; border: 2px dashed #d1d5db; border-radius: 6px; background: #f9fafb; color: #9ca3af; font-size: 0.8rem; }
-
-/* 🔹 Formulario */
 .registro-form fieldset { border: 1px solid var(--beige-border); border-radius: 8px; padding: 16px; margin-bottom: 18px; background: #fafbfc; }
 .registro-form legend { font-weight: 600; color: var(--primary); font-size: 0.95rem; padding: 0 8px; }
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
 .registro-form label { font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; display: block; }
-.registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; transition: border 0.2s; }
-.registro-form input:focus, .registro-form select:focus, .registro-form textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,43,92,0.1); }
+.registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; }
+.registro-form input:focus, .registro-form select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,43,92,0.1); }
 .btn-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 15px; font-size: 1rem; }
 .btn-submit:hover { background: var(--secondary); }
 .btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
-
-/* 🔹 Documentos */
-.doc-item { background: #fff; border: 1px solid var(--beige-border); border-radius: 6px; padding: 12px; margin-bottom: 10px; transition: all 0.2s; }
-.doc-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.campo-obligatorio input { border: 2px solid var(--secondary) !important; }
+.campo-obligatorio label::after { content: ' *'; color: #dc2626; font-weight: 700; }
+.doc-item { background: #fff; border: 1px solid var(--beige-border); border-radius: 6px; padding: 12px; margin-bottom: 10px; }
 .doc-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 .doc-header label { font-weight: 600; color: var(--primary); margin: 0; flex: 1; }
 .doc-si-no { display: flex; gap: 4px; }
@@ -61,42 +45,27 @@
 .doc-upload-area { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--beige-border); display: none; }
 .doc-upload-area.active { display: block; }
 .doc-upload-area input[type="file"] { margin-bottom: 8px; padding: 8px; background: #f8fafc; border-radius: 4px; width: 100%; border: 1px solid var(--beige-border); }
-
-/* ✅ Indicador de archivo cargado */
 .file-loaded { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #dcfce7; border: 1px solid #86efac; border-radius: 6px; margin-top: 8px; font-size: 0.85rem; color: #15803d; font-weight: 600; animation: fadeInCheck 0.3s ease-in; }
-.file-loaded .check-icon { font-size: 1.2rem; }
-.file-loaded .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #166534; font-weight: 500; }
-.file-loaded .btn-remove { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.75rem; font-weight: 600; margin-left: auto; transition: background 0.2s; }
-.file-loaded .btn-remove:hover { background: #dc2626; }
+.file-loaded .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #166534; }
+.file-loaded .btn-remove { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.75rem; font-weight: 600; margin-left: auto; }
 @keyframes fadeInCheck { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 .file-status-container { margin-top: 6px; }
-
-/* 🔹 Botones múltiples */
 .btn-add-file { padding: 6px 14px; background: var(--secondary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-top: 6px; font-weight: 600; }
-.btn-add-file:hover { background: #b8941f; }
 .file-count { font-size: 0.75rem; color: #64748b; margin-top: 4px; font-weight: 600; }
-.file-list { margin-top: 8px; }
 .file-item-multiple { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #f8fafc; border-radius: 4px; margin-bottom: 4px; font-size: 0.85rem; border: 1px solid #e2e8f0; }
 .file-item-multiple button { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.75rem; }
-
-/* 🔹 Campo obligatorio */
-.campo-obligatorio input { border: 2px solid var(--secondary) !important; }
-.campo-obligatorio label::after { content: ' *'; color: #dc2626; font-weight: 700; }
-
-/* 🔹 Sección de observaciones destacada */
 .observaciones-section { background: #fef3c7; border: 2px solid #fcd34d; border-radius: 8px; padding: 16px; margin-top: 20px; }
 .observaciones-section legend { color: #92400e; font-size: 1rem; }
 .observaciones-section textarea { background: #fffbeb; border: 1px solid #fcd34d; min-height: 80px; }
-
-@media (max-width: 600px) { .form-grid, .search-row { grid-template-columns: 1fr; flex-direction: column; } .doc-header { flex-direction: column; align-items: stretch; } .doc-si-no { justify-content: center; } }
+@media (max-width: 600px) { .form-grid, .search-row { grid-template-columns: 1fr; flex-direction: column; } }
 </style>
 
 <div class="card">
     <h3>⚖️ Registrar Procesado</h3>
 
-    <!-- 🔍 BÚSQUEDA -->
+    <!-- BÚSQUEDA MULTI-TABLA -->
     <div class="search-box">
-        <label> Buscar por Cédula, Placa, Serial de Carrocería o Motor:</label>
+        <label>🔍 Buscar en todos los registros por Cédula, Placa, Serial de Carrocería o Motor:</label>
         <div class="search-row">
             <input type="text" id="proc_busqueda_input" placeholder="Ej: 12345678 o AA123BC..." maxlength="20">
             <button id="proc_btn_buscar" class="btn-search">🔍 Buscar</button>
@@ -104,61 +73,26 @@
         <div id="proc_msg_busqueda" class="msg"></div>
     </div>
 
-    <!-- 🔹 PANEL DE SELECCIÓN -->
+    <!-- PANEL DE SELECCIÓN -->
     <div id="selection-panel">
         <div class="selection-header">
             <h4>🔎 Múltiples coincidencias encontradas</h4>
-            <p>Se encontraron <strong><span id="result-count">0</span> registros</strong> con ese dato. Seleccione cuál procesar:</p>
+            <p>Se encontraron <strong><span id="result-count">0</span> registros</strong>. Seleccione cuál procesar:</p>
         </div>
         <div id="selection-list"></div>
-        <button id="btn-cancelar-seleccion" class="btn-cancel-search">❌ Cancelar búsqueda</button>
+        <button id="btn-cancelar-seleccion" class="btn-cancel-search"> Cancelar búsqueda</button>
     </div>
 
-    <!-- 📋 DATOS ENCONTRADOS -->
+    <!-- DATOS ENCONTRADOS -->
     <div id="datos-encontrados-panel" class="datos-encontrados" style="display: none;">
         <div class="datos-encontrados-header">
-            <h4> Datos del Registro Seleccionado</h4>
+            <h4>📋 Registro a Procesar</h4>
             <span id="tipo-vehiculo-badge" class="tipo-badge" style="display: none;"></span>
         </div>
-
-        <!-- Sección Persona -->
-        <div id="seccion-persona" style="display: none;">
-            <div class="dato-fila"><span class="dato-label"> Nombre Completo:</span><span class="dato-valor" id="val-nombre"></span></div>
-            <div class="dato-fila"><span class="dato-label">🆔 Cédula:</span><span class="dato-valor" id="val-cedula"></span></div>
-            <div class="dato-fila"><span class="dato-label">🎂 Edad:</span><span class="dato-valor" id="val-edad"></span></div>
-            <div class="dato-fila"><span class="dato-label">🌍 Nacionalidad:</span><span class="dato-valor" id="val-nacionalidad"></span></div>
-            <div class="dato-fila"><span class="dato-label">⚧ Sexo:</span><span class="dato-valor" id="val-sexo"></span></div>
-            <div class="dato-fila"><span class="dato-label">️ Estación Policial:</span><span class="dato-valor" id="val-estacion"></span></div>
-            <div class="dato-fila"><span class="dato-label">📍 Lugar de Detención:</span><span class="dato-valor" id="val-detencion"></span></div>
-            <div style="margin-top: 12px;">
-                <strong style="color: #166534; font-size: 0.9rem;">📸 Fotos de la Persona:</strong>
-                <div class="fotos-grid" id="fotos-persona-grid"></div>
-            </div>
-        </div>
-
-        <!-- Sección Vehículo -->
-        <div id="seccion-vehiculo" style="display: none;">
-            <div style="margin-top: 12px; padding-top: 12px; border-top: 2px dashed #bbf7d0;"></div>
-            <div class="dato-fila"><span class="dato-label">🚗 Tipo de Vehículo:</span><span class="dato-valor" id="val-tipo-veh"></span></div>
-            <div class="dato-fila"><span class="dato-label">🔢 Placa:</span><span class="dato-valor" id="val-placa"></span></div>
-            <div class="dato-fila"><span class="dato-label">🔢 Serial Carrocería:</span><span class="dato-valor" id="val-carroceria"></span></div>
-            <div class="dato-fila"><span class="dato-label"> Serial Motor:</span><span class="dato-valor" id="val-motor"></span></div>
-            <div class="dato-fila"><span class="dato-label">🏭 Marca:</span><span class="dato-valor" id="val-marca"></span></div>
-            <div class="dato-fila"><span class="dato-label">📦 Modelo:</span><span class="dato-valor" id="val-modelo"></span></div>
-            <div class="dato-fila"><span class="dato-label">📅 Año:</span><span class="dato-valor" id="val-anio"></span></div>
-            <div class="dato-fila"><span class="dato-label">🎨 Color:</span><span class="dato-valor" id="val-color"></span></div>
-            <div class="dato-fila"><span class="dato-label">🏛️ Estación Policial:</span><span class="dato-valor" id="val-estacion-veh"></span></div>
-            <div class="dato-fila"><span class="dato-label">📍 Lugar de Detención:</span><span class="dato-valor" id="val-detencion-veh"></span></div>
-            <div style="margin-top: 12px;">
-                <strong style="color: #166534; font-size: 0.9rem;">📸 Fotos del Vehículo:</strong>
-                <div class="fotos-grid" id="fotos-vehiculo-grid"></div>
-            </div>
-        </div>
-
-        <button id="btn-cambiar-registro" style="margin-top: 12px; padding: 8px 16px; background: #64748b; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">🔄 Cambiar registro</button>
+        <div id="datos-contenido"></div>
     </div>
 
-    <!-- 📝 FORMULARIO DE PROCESADO -->
+    <!-- FORMULARIO -->
     <form id="form-reg-procesados" class="registro-form" novalidate style="display: none;">
         <input type="hidden" id="proc_tabla_origen">
         <input type="hidden" id="proc_registro_id">
@@ -167,7 +101,7 @@
 
         <!-- TIPO DE DELITO (OBLIGATORIO) -->
         <fieldset>
-            <legend>⚖️ Información del Delito</legend>
+            <legend>⚖️ Tipo de Delito</legend>
             <div class="form-grid">
                 <div class="form-group campo-obligatorio" style="grid-column: span 2;">
                     <label>Tipo de Delito</label>
@@ -179,22 +113,22 @@
         <!-- DOCUMENTOS ÚNICOS -->
         <fieldset>
             <legend>📄 Documentos del Proceso (PDF)</legend>
-            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Seleccione "Sí" para habilitar la carga del archivo. Todos los documentos se guardarán vacío si selecciona "No".</p>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Seleccione "Sí" para habilitar la carga.</p>
             <div id="docs-unicos-container"></div>
         </fieldset>
 
         <!-- DOCUMENTOS MÚLTIPLES -->
         <fieldset>
             <legend>📁 Documentos Múltiples (1 a 10 archivos PDF cada uno)</legend>
-            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Estos campos permiten subir varios archivos PDF (mínimo 1, máximo 10).</p>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Mínimo 1, máximo 10 por categoría.</p>
             <div id="docs-multiples-container"></div>
         </fieldset>
 
-        <!-- OBSERVACIONES (AL FINAL) -->
+        <!-- OBSERVACIONES -->
         <div class="observaciones-section">
             <fieldset style="background: transparent; border: none; padding: 0; margin: 0;">
-                <legend>📝 Observaciones del Proceso (Opcional)</legend>
-                <textarea id="proc_observaciones" rows="4" placeholder="Escriba aquí cualquier observación adicional sobre el proceso, detalles del caso, circunstancias especiales, etc."></textarea>
+                <legend>📝 Observaciones (Opcional)</legend>
+                <textarea id="proc_observaciones" rows="4" placeholder="Notas adicionales sobre el proceso..."></textarea>
             </fieldset>
         </div>
 
