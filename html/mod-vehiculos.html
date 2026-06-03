@@ -199,11 +199,19 @@
             <span id="mod_estatus_badge" style="background:#dcfce7; color:#15803d; font-weight:700; padding:6px 12px; border-radius:6px; border:1px solid #86efac; display:inline-block;">Verificación</span>
         </div>
 
-      <!-- Reemplaza el fieldset de "Tipo de Vehículo" por esto: -->
+
 <fieldset>
-<legend>🚗 Tipo de Vehículo</legend>
-<div style="padding: 12px; background: #f0f4f8; border: 2px solid var(--primary); border-radius: 8px; text-align: center; font-weight: 600; color: var(--primary); font-size: 1.05rem;">
-<span id="display-tipo-vehiculo">-</span>
+<legend> Tipo de Vehículo</legend>
+<div style="display: flex; gap: 12px; margin-bottom: 10px;">
+<div class="tipo-btn" id="btn_tipo_moto" style="flex: 1; padding: 12px; border: 2px solid #d4c9a8; border-radius: 8px; background: #fff; text-align: center; font-weight: 600; color: #64748b; transition: all 0.2s;">
+🏍️ Motocicleta
+</div>
+<div class="tipo-btn" id="btn_tipo_auto" style="flex: 1; padding: 12px; border: 2px solid #d4c9a8; border-radius: 8px; background: #fff; text-align: center; font-weight: 600; color: #64748b; transition: all 0.2s;">
+🚙 Automóvil
+</div>
+</div>
+<div id="tipo-vehiculo-badge" style="display: none; padding: 10px 16px; border-radius: 6px; font-weight: 700; font-size: 0.95rem; text-align: center;">
+<!-- Se llenará dinámicamente -->
 </div>
 <small style="color:#64748b;">El tipo de vehículo se detecta automáticamente del registro.</small>
 </fieldset>
