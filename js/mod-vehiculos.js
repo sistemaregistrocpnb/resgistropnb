@@ -108,33 +108,34 @@ window.initModVehiculos = function() {
         if (lista[marca]) lista[marca].forEach(mod => modeloSelect.innerHTML += `<option value="${mod}">${mod}</option>`);
     });
 
-    function setUIForType(type) {
-        const isMoto = type === 'moto';
-        document.getElementById('mod_tipo_vehiculo').value = isMoto ? 'Motocicleta' : 'Automóvil';
-        document.getElementById('mod_tabla_destino').value = isMoto ? 'registro_motos' : 'registro_automoviles';
-        
-        // ✅ MOSTRAR SOLO EL TIPO ENCONTRADO (ocultar el otro)
-        const btnMoto = document.getElementById('btn_tipo_moto');
-        const btnAuto = document.getElementById('btn_tipo_auto');
-        
-        if (isMoto) {
-            btnMoto.classList.add('active');
-            btnMoto.style.display = 'block';
-            btnMoto.style.flex = '1';
-            btnAuto.style.display = 'none'; // Ocultar el botón de auto
-        } else {
-            btnAuto.classList.add('active');
-            btnAuto.style.display = 'block';
-            btnAuto.style.flex = '1';
-            btnMoto.style.display = 'none'; // Ocultar el botón de moto
-        }
-        
-        document.getElementById('grid-fotos-moto').style.display = isMoto ? 'grid' : 'none';
-        document.getElementById('grid-fotos-auto').style.display = isMoto ? 'none' : 'grid';
-        document.getElementById('box-cilindraje').style.display = isMoto ? 'block' : 'none';
-        cargarMarcas(type);
-    }
-
+function setUIForType(type) {
+    const isMoto = type === 'moto';
+    
+    // ✅ Actualizar campos ocultos (siempre existen)
+    const tipoInput = document.getElementById('mod_tipo_vehiculo');
+    const tablaInput = document.getElementById('mod_tabla_destino');
+    if (tipoInput) tipoInput.value = isMoto ? 'Motocicleta' : 'Automóvil';
+    if (tablaInput) tablaInput.value = isMoto ? 'registro_motos' : 'registro_automoviles';
+    
+    // ✅ Actualizar botones de tipo (con verificación de existencia)
+    const btnMoto = document.getElementById('btn_tipo_moto');
+    const btnAuto = document.getElementById('btn_tipo_auto');
+    if (btnMoto) btnMoto.classList.toggle('active', isMoto);
+    if (btnAuto) btnAuto.classList.toggle('active', !isMoto);
+    
+    // ✅ Mostrar/ocultar grids de fotos
+    const gridMoto = document.getElementById('grid-fotos-moto');
+    const gridAuto = document.getElementById('grid-fotos-auto');
+    if (gridMoto) gridMoto.style.display = isMoto ? 'grid' : 'none';
+    if (gridAuto) gridAuto.style.display = isMoto ? 'none' : 'grid';
+    
+    // ✅ Mostrar/ocultar cilindraje
+    const boxCilindro = document.getElementById('box-cilindraje');
+    if (boxCilindro) boxCilindro.style.display = isMoto ? 'block' : 'none';
+    
+    // ✅ Cargar marcas según tipo
+    cargarMarcas(type);
+}
     // ==========================================
     // 🔹 BÚSQUEDA MULTI-TABLA
     // ==========================================
@@ -506,7 +507,5 @@ window.initModVehiculos = function() {
             btnSubmit.disabled = false; btnSubmit.textContent = '💾 Guardar Cambios';
         }
     });
-
-    setUIForType('moto');
     console.log("✅ Módulo mod-vehiculos.js inicializado correctamente");
 };
