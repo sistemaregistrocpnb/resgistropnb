@@ -1,6 +1,86 @@
 window.initRegProcesados = function() {
     console.log("✅ Módulo reg-procesados.js cargado correctamente.");
 
+    // ==========================================
+    // 🔹 DEFINICIÓN DE DOCUMENTOS
+    // ==========================================
+    const docsUnicos = [
+        { id: 'portada', label: '📑 Portada' },
+        { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
+        { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
+        { id: 'entrevista', label: '🎤 Entrevista' },
+        { id: 'datos_filiatorios', label: '👤 Datos Filiatorios' },
+        { id: 'acta_policial', label: '📋 Acta Policial' },
+        { id: 'derechos_imputado', label: '⚖️ Derechos del Imputado' },
+        { id: 'evaluacion_medica', label: '🏥 Evaluación Médica' },
+        { id: 'identificacion_cedula', label: '🆔 Identificación (Cédula)' },
+        { id: 'solicitud_examen_forense', label: '🔬 Solicitud de Examen Forense' },
+        { id: 'resultados_examen_forense', label: '🔬 Resultados del Examen Forense' },
+        { id: 'asistencia_comdepro', label: '👶 Asistencia de Comdepro' },
+        { id: 'remision_estacionamiento', label: '🚗 Remisión a Estacionamiento' },
+        { id: 'planilla_pvr', label: '🚙 Planilla de Revisión de Vehículo (PVR)' },
+        { id: 'otros_documentos', label: '📎 Otros Documentos' }
+    ];
+
+    const docsMultiples = [
+        { id: 'entrevista_multi', label: '🎤 Entrevista (Múltiple)', max: 10, min: 1 },
+        { id: 'cadena_custodia', label: '🔗 Cadena de Custodia', max: 10, min: 1 },
+        { id: 'inspecciones_tecnicas', label: '🔍 Inspecciones Técnicas', max: 10, min: 1 }
+    ];
+
+    const archivosMultiples = {};
+    docsMultiples.forEach(d => archivosMultiples[d.id] = []);
+
+    // ==========================================
+    // 🔹 FUNCIONES GLOBALES (para el HTML)
+    // ==========================================
+    window.toggleDocField = function(campo, mostrar) {
+        const area = document.getElementById(`upload-${campo}`);
+        if (area) area.classList.toggle('active', mostrar);
+    };
+
+    window.agregarArchivo = function(campo, max) {
+        const input = document.getElementById(`file_${campo}`);
+        if (!input || !input.files || input.files.length === 0) return;
+        const disponibles = max - archivosMultiples[campo].length;
+        if (disponibles <= 0) {
+            alert(`Máximo ${max} archivos permitidos`);
+            return;
+        }
+        let agregados = 0;
+        for (const file of input.files) {
+            if (agregados >= disponibles) break;
+            if (file.type === 'application/pdf') {
+                archivosMultiples[campo].push(file);
+                agregados++;
+            }
+        }
+        actualizarListaArchivos(campo, max);
+        input.value = '';
+    };
+
+    window.eliminarArchivo = function(campo, max, index) {
+        archivosMultiples[campo].splice(index, 1);
+        actualizarListaArchivos(campo, max);
+    };
+
+    function actualizarListaArchivos(campo, max) {
+        const list = document.getElementById(`list-${campo}`);
+        const count = document.getElementById(`count-${campo}`);
+        if (!list || !count) return;
+        list.innerHTML = '';
+        archivosMultiples[campo].forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.innerHTML = `<span>📄 ${file.name}</span><button type="button" onclick="eliminarArchivo('${campo}', ${max}, ${index})">❌ Eliminar</button>`;
+            list.appendChild(item);
+        });
+        count.textContent = `${archivosMultiples[campo].length} de ${max} archivos`;
+    }
+
+    // ==========================================
+    // 🔹 REFERENCIAS DOM
+    // ==========================================
     const btnBuscar = document.getElementById('proc_btn_buscar');
     const inputBusqueda = document.getElementById('proc_busqueda_input');
     const msgBusqueda = document.getElementById('proc_msg_busqueda');
@@ -102,7 +182,7 @@ window.initRegProcesados = function() {
                 autos.forEach(reg => {
                     resultados.push({
                         origen: 'registro_automoviles', id: reg.id,
-                        tipo: 'Automóvil', icono: '', color: '#059669', colorBg: '#ecfdf5',
+                        tipo: 'Automóvil', icono: '🚙', color: '#059669', colorBg: '#ecfdf5',
                         tipoVehiculo: 'Automóvil',
                         datos: reg,
                         linea1: `Placa: ${reg.placa || '-'}`,
@@ -185,18 +265,15 @@ window.initRegProcesados = function() {
         const seccionPersona = document.getElementById('seccion-persona');
         const seccionVehiculo = document.getElementById('seccion-vehiculo');
 
-        // Mostrar badge de tipo de vehículo al lado del título
         const badge = document.getElementById('tipo-vehiculo-badge');
         if (badge) {
-            badge.textContent = ` ${resultado.tipoVehiculo}`;
+            badge.textContent = `🚗 ${resultado.tipoVehiculo}`;
             badge.style.display = 'inline-block';
         }
 
-        // Limpiar fotos
         limpiarFotos('fotos-persona-grid');
         limpiarFotos('fotos-vehiculo-grid');
 
-        // Sección Persona
         if (tipo === 'registro_personas' || tipo === 'registro_vinculado') {
             seccionPersona.style.display = 'block';
             document.getElementById('val-nombre').textContent = `${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}`.trim() || '-';
@@ -207,7 +284,6 @@ window.initRegProcesados = function() {
             document.getElementById('val-estacion').textContent = data.estacion_policial || '-';
             document.getElementById('val-detencion').textContent = data.direccion_detencion || '-';
 
-            // Fotos persona
             if (tipo === 'registro_vinculado') {
                 agregarFoto('fotos-persona-grid', data.foto_frontal_persona, 'Frontal');
                 agregarFoto('fotos-persona-grid', data.foto_perfil_izq_persona, 'Perfil Izquierdo');
@@ -221,7 +297,6 @@ window.initRegProcesados = function() {
             seccionPersona.style.display = 'none';
         }
 
-        // Sección Vehículo
         if (tipo === 'registro_motos' || tipo === 'registro_automoviles' || tipo === 'registro_vinculado') {
             seccionVehiculo.style.display = 'block';
             document.getElementById('val-placa').textContent = data.placa || '-';
@@ -234,7 +309,6 @@ window.initRegProcesados = function() {
             document.getElementById('val-estacion-veh').textContent = data.estacion_policial || '-';
             document.getElementById('val-detencion-veh').textContent = data.direccion_detencion || '-';
 
-            // Fotos vehículo
             if (tipo === 'registro_vinculado') {
                 agregarFoto('fotos-vehiculo-grid', data.foto_frontal_vehiculo, 'Frontal');
                 agregarFoto('fotos-vehiculo-grid', data.foto_trasera_vehiculo, 'Trasera');
@@ -242,9 +316,9 @@ window.initRegProcesados = function() {
                 agregarFoto('fotos-vehiculo-grid', data.foto_lado_izq_vehiculo, 'Lado Izquierdo');
             } else {
                 agregarFoto('fotos-vehiculo-grid', data.foto_frontal, 'Frontal');
-                agregarFoto('fotos-vehiculo-grid', data.foto_trasera || data.foto_trasera_vehiculo, 'Trasera');
-                agregarFoto('fotos-vehiculo-grid', data.foto_lado_derecho || data.foto_lado_der_vehiculo, 'Lado Derecho');
-                agregarFoto('fotos-vehiculo-grid', data.foto_lado_izquierdo || data.foto_lado_izq_vehiculo, 'Lado Izquierdo');
+                agregarFoto('fotos-vehiculo-grid', data.foto_trasera, 'Trasera');
+                agregarFoto('fotos-vehiculo-grid', data.foto_lado_derecho, 'Lado Derecho');
+                agregarFoto('fotos-vehiculo-grid', data.foto_lado_izquierdo, 'Lado Izquierdo');
             }
         } else {
             seccionVehiculo.style.display = 'none';
@@ -271,7 +345,7 @@ window.initRegProcesados = function() {
             if (val.length < 5) {
                 return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 5 caracteres.', 'error');
             }
-            mostrarMsg(msgBusqueda, ' Buscando registros en estado Verificación...', 'success');
+            mostrarMsg(msgBusqueda, '🔍 Buscando registros en estado Verificación...', 'success');
             btnBuscar.disabled = true;
             form.style.display = 'none';
             datosPanel.style.display = 'none';
@@ -332,17 +406,18 @@ window.initRegProcesados = function() {
                 return mostrarMsg(msgForm, '❌ El tipo de delito es obligatorio.', 'error');
             }
 
-            // Validar documentos marcados como Sí
+            // Validar documentos únicos marcados como Sí
             for (const doc of docsUnicos) {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                 if (radio && radio.value === 'si') {
                     const fileInput = document.getElementById(`file_${doc.id}`);
-                    if (!fileInput.files || fileInput.files.length === 0) {
-                        return mostrarMsg(msgForm, ` Debe subir un PDF para: ${doc.label}`, 'error');
+                    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                        return mostrarMsg(msgForm, `⚠️ Debe subir un PDF para: ${doc.label}`, 'error');
                     }
                 }
             }
 
+            // Validar documentos múltiples
             for (const doc of docsMultiples) {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                 if (radio && radio.value === 'si') {
@@ -421,13 +496,11 @@ window.initRegProcesados = function() {
                     }
                 }
 
-                // Insertar en registro_procesados
                 const { error: insErr } = await window.supabaseClient
                     .from('registro_procesados')
                     .insert([dataToInsert]);
                 if (insErr) throw new Error(`Error al registrar procesado: ${insErr.message}`);
 
-                // Cambiar estatus en tabla original
                 const { error: updErr } = await window.supabaseClient
                     .from(registroSeleccionado.origen)
                     .update({ estatus: 'Procesado' })
@@ -443,7 +516,10 @@ window.initRegProcesados = function() {
                     msgBusqueda.style.display = 'none';
                     registroSeleccionado = null;
                     form.reset();
-                    docsMultiples.forEach(d => { archivosMultiples[d.id] = []; actualizarListaArchivos(d.id, d.max); });
+                    docsMultiples.forEach(d => { 
+                        archivosMultiples[d.id] = []; 
+                        actualizarListaArchivos(d.id, d.max); 
+                    });
                     document.querySelectorAll('.doc-upload-area').forEach(area => area.classList.remove('active'));
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 5000);
