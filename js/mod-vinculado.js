@@ -415,112 +415,141 @@ window.initModVinculado = function() {
         }
     }
 
-    async function cargarVinculado(data) {
-        currentData = data;
-        currentId = data.id;
-        document.getElementById('mod_vinculado_id').value = data.id;
-        
-        // Mostrar badge de estatus
-        const badge = document.getElementById('mod_estatus_badge');
-        if (badge) badge.textContent = data.estatus || 'Verificación';
-        
-        // Persona
-        document.getElementById('pv_p_nombre1').value = data.primer_nombre || '';
-        document.getElementById('pv_p_nombre2').value = data.segundo_nombre || '';
-        document.getElementById('pv_p_apellido1').value = data.primer_apellido || '';
-        document.getElementById('pv_p_apellido2').value = data.segundo_apellido || '';
-        document.getElementById('pv_p_cedula').value = data.cedula || '';
-        document.getElementById('pv_p_fecha_nac').value = data.fecha_nacimiento || '';
-        document.getElementById('pv_p_edad').value = data.edad || '';
-        document.getElementById('pv_p_apodo').value = data.apodo || '';
-        document.getElementById('pv_p_marca').value = data.marca_corporal || '';
-        document.getElementById('pv_p_nacionalidad').value = data.nacionalidad || '';
-        document.getElementById('pv_p_sexo').value = data.sexo || '';
-        document.getElementById('pv_p_direccion').value = data.direccion || '';
-        document.getElementById('pv_p_tlf_pais').value = data.tlf_pais || '';
-        document.getElementById('pv_p_tlf_num').value = data.tlf_numero || '';
-        document.getElementById('pv_p_fecha_nac').dispatchEvent(new Event('change'));
-        
-        // Fotos persona
-        const prevFotos = [
-            { id: 'prev_p_frontal', url: data.foto_frontal_persona },
-            { id: 'prev_p_izq', url: data.foto_perfil_izq_persona },
-            { id: 'prev_p_der', url: data.foto_perfil_der_persona }
-        ];
-        prevFotos.forEach(f => {
-            const img = document.getElementById(f.id);
-            if (img) {
-                if (f.url) { img.src = f.url; img.style.display = 'block'; }
-                else img.style.display = 'none';
-            }
-        });
-        
-        // Características
-        document.getElementById('pv_p_estatura').value = data.estatura_cm ? (data.estatura_cm / 100).toFixed(2) : '';
-        document.getElementById('pv_p_color_piel').value = data.color_piel || '';
-        document.getElementById('pv_p_color_ojos').value = data.color_ojos || '';
-        document.getElementById('pv_p_color_cabello').value = data.color_cabello || '';
-        document.getElementById('pv_p_complexion').value = data.complexion || '';
-        
-        // Salud
-        document.getElementById('pv_p_lentes').value = data.usa_lentes ? 'true' : 'false';
-        window.toggleCampo(document.getElementById('pv_p_lentes'), 'pv_det-lentes');
-        document.getElementById('pv_txt_lentes').value = data.detalle_lentes || '';
-        
-        document.getElementById('pv_p_perforaciones').value = data.perforaciones ? 'true' : 'false';
-        window.activarCampoPerforacion(document.getElementById('pv_p_perforaciones'));
-        document.getElementById('pv_txt_lugar_perforacion').value = data.detalle_perforaciones || '';
-        
-        document.getElementById('pv_p_cond_medica').value = data.condicion_medica ? 'true' : 'false';
-        window.toggleCampo(document.getElementById('pv_p_cond_medica'), 'pv_det-cond');
-        document.getElementById('pv_txt_cond').value = data.condicion_medica || '';
-        
-        document.getElementById('pv_p_medicamento').value = data.consume_medicamento ? 'true' : 'false';
-        window.toggleCampo(document.getElementById('pv_p_medicamento'), 'pv_det-med');
-        document.getElementById('pv_txt_med').value = data.consume_medicamento || '';
-        
-        document.getElementById('pv_p_judicial').value = data.problema_judicial ? 'true' : 'false';
-        window.toggleCampo(document.getElementById('pv_p_judicial'), 'pv_det-jud');
-        document.getElementById('pv_txt_jud').value = data.problema_judicial || '';
-        
-        // Vehículo
-        document.getElementById('pv_v_tipo').value = data.tipo_vehiculo || '';
-        window.cargarMarcasPV();
-        document.getElementById('pv_v_placa').value = data.placa || '';
-        document.getElementById('pv_v_serial_carro').value = data.serial_carroceria || '';
-        document.getElementById('pv_v_serial_motor').value = data.serial_motor || '';
-        document.getElementById('pv_v_cilindraje').value = data.cilindraje || '';
-        document.getElementById('pv_v_marca').value = data.marca_vehiculo || '';
-        window.cargarModelosPV();
-        document.getElementById('pv_v_modelo').value = data.modelo_vehiculo || '';
-        document.getElementById('pv_v_anio').value = data.anio_vehiculo || '';
-        document.getElementById('pv_v_color').value = data.color_vehiculo || '';
-        
-        // Fotos vehículo
-        const prevFotosV = [
-            { id: 'prev_v_frontal', url: data.foto_frontal_vehiculo },
-            { id: 'prev_v_trasera', url: data.foto_trasera_vehiculo },
-            { id: 'prev_v_der', url: data.foto_lado_der_vehiculo },
-            { id: 'prev_v_izq', url: data.foto_lado_izq_vehiculo }
-        ];
-        prevFotosV.forEach(f => {
-            const img = document.getElementById(f.id);
-            if (img) {
-                if (f.url) { img.src = f.url; img.style.display = 'block'; }
-                else img.style.display = 'none';
-            }
-        });
-        
-        // Registro
-        document.getElementById('pv_estacion').value = data.estacion_policial || '';
-        document.getElementById('pv_dir_detencion').value = data.direccion_detencion || '';
-        document.getElementById('pv_observaciones').value = data.observaciones || '';
-        
-        form.style.display = 'block';
-        mostrarMsg(msgBusqueda, '✅ Registro cargado. Puede editar y guardar.', 'success');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+   // Cargar datos de vinculado en el formulario
+function cargarVinculado(data) {
+    // Helper seguro para establecer valores
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val || '';
+    };
+
+    setVal('mod_vinculado_id', data.id);
+
+    // Persona
+    setVal('pv_p_nombre1', data.primer_nombre);
+    setVal('pv_p_nombre2', data.segundo_nombre);
+    setVal('pv_p_apellido1', data.primer_apellido);
+    setVal('pv_p_apellido2', data.segundo_apellido);
+    setVal('pv_p_cedula', data.cedula);
+    setVal('pv_p_fecha_nac', data.fecha_nacimiento);
+    setVal('pv_p_edad', data.edad);
+    setVal('pv_p_apodo', data.apodo);
+    setVal('pv_p_marca', data.marca_corporal);
+    setVal('pv_p_nacionalidad', data.nacionalidad);
+    setVal('pv_p_sexo', data.sexo);
+    setVal('pv_p_direccion', data.direccion);
+    setVal('pv_p_tlf_pais', data.tlf_pais);
+    setVal('pv_p_tlf_num', data.tlf_numero);
+
+    // Disparar evento de cambio para calcular edad
+    const fechaNac = document.getElementById('pv_p_fecha_nac');
+    if (fechaNac) fechaNac.dispatchEvent(new Event('change'));
+
+    // Fotos persona
+    if (data.foto_frontal_persona) {
+        const p = document.getElementById('prev_p_frontal');
+        if (p) { p.src = data.foto_frontal_persona; p.style.display = 'block'; }
+    }
+    if (data.foto_perfil_izq_persona) {
+        const p = document.getElementById('prev_p_izq');
+        if (p) { p.src = data.foto_perfil_izq_persona; p.style.display = 'block'; }
+    }
+    if (data.foto_perfil_der_persona) {
+        const p = document.getElementById('prev_p_der');
+        if (p) { p.src = data.foto_perfil_der_persona; p.style.display = 'block'; }
     }
 
+    // Características
+    const estaturaCm = data.estatura_cm;
+    setVal('pv_p_estatura', estaturaCm ? (estaturaCm / 100).toFixed(2) : '');
+    setVal('pv_p_color_piel', data.color_piel);
+    setVal('pv_p_color_ojos', data.color_ojos);
+    setVal('pv_p_color_cabello', data.color_cabello);
+    setVal('pv_p_complexion', data.complexion);
+
+    // Salud - campos simples
+    const lentes = document.getElementById('pv_p_lentes');
+    if (lentes) {
+        lentes.value = data.usa_lentes ? 'true' : 'false';
+        if (window.toggleCampo) window.toggleCampo(lentes, 'pv_det-lentes');
+    }
+    setVal('pv_txt_lentes', data.detalle_lentes);
+
+    const perforaciones = document.getElementById('pv_p_perforaciones');
+    if (perforaciones) {
+        perforaciones.value = data.perforaciones ? 'true' : 'false';
+        if (window.activarCampoPerforacion) window.activarCampoPerforacion(perforaciones);
+    }
+    setVal('pv_txt_lugar_perforacion', data.detalle_perforaciones);
+
+    const condMedica = document.getElementById('pv_p_cond_medica');
+    if (condMedica) {
+        condMedica.value = data.condicion_medica ? 'true' : 'false';
+        if (window.toggleCampo) window.toggleCampo(condMedica, 'pv_det-cond');
+    }
+    setVal('pv_txt_cond', data.condicion_medica);
+
+    const medicamento = document.getElementById('pv_p_medicamento');
+    if (medicamento) {
+        medicamento.value = data.consume_medicamento ? 'true' : 'false';
+        if (window.toggleCampo) window.toggleCampo(medicamento, 'pv_det-med');
+    }
+    setVal('pv_txt_med', data.consume_medicamento);
+
+    const judicial = document.getElementById('pv_p_judicial');
+    if (judicial) {
+        judicial.value = data.problema_judicial ? 'true' : 'false';
+        if (window.toggleCampo) window.toggleCampo(judicial, 'pv_det-jud');
+    }
+    setVal('pv_txt_jud', data.problema_judicial);
+
+    // Vehículo - primero establecer tipo para cargar marcas
+    setVal('pv_v_tipo', data.tipo_vehiculo);
+    if (window.cargarMarcasPV) window.cargarMarcasPV();
+
+    // Luego establecer marca para cargar modelos
+    setVal('pv_v_marca', data.marca_vehiculo);
+    if (window.cargarModelosPV) window.cargarModelosPV();
+
+    // Resto de campos del vehículo
+    setVal('pv_v_placa', data.placa);
+    setVal('pv_v_serial_carro', data.serial_carroceria);
+    setVal('pv_v_serial_motor', data.serial_motor);
+    setVal('pv_v_cilindraje', data.cilindraje);
+    setVal('pv_v_modelo', data.modelo_vehiculo);
+    setVal('pv_v_anio', data.anio_vehiculo);
+    setVal('pv_v_color', data.color_vehiculo);
+
+    // Fotos vehículo
+    if (data.foto_frontal_vehiculo) {
+        const p = document.getElementById('prev_v_frontal');
+        if (p) { p.src = data.foto_frontal_vehiculo; p.style.display = 'block'; }
+    }
+    if (data.foto_trasera_vehiculo) {
+        const p = document.getElementById('prev_v_trasera');
+        if (p) { p.src = data.foto_trasera_vehiculo; p.style.display = 'block'; }
+    }
+    if (data.foto_lado_der_vehiculo) {
+        const p = document.getElementById('prev_v_der');
+        if (p) { p.src = data.foto_lado_der_vehiculo; p.style.display = 'block'; }
+    }
+    if (data.foto_lado_izq_vehiculo) {
+        const p = document.getElementById('prev_v_izq');
+        if (p) { p.src = data.foto_lado_izq_vehiculo; p.style.display = 'block'; }
+    }
+
+    // Registro
+    setVal('pv_estacion', data.estacion_policial);
+    setVal('pv_dir_detencion', data.direccion_detencion);
+    setVal('pv_observaciones', data.observaciones);
+
+    // Mostrar formulario
+    setTimeout(() => {
+        form.style.display = 'block';
+        msgBusqueda.style.display = 'none';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 300);
+}
     // ==========================================
     // 🔹 6. VALIDACIÓN EN TIEMPO REAL
     // ==========================================
