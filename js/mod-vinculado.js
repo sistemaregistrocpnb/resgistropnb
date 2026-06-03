@@ -1,4 +1,4 @@
- window.initModVinculado = function() {
+window.initModVinculado = function() {
     console.log("✅ Módulo mod-vinculado.js cargado correctamente.");
 
     // ==========================================
@@ -52,7 +52,7 @@
     const selectionList = document.getElementById('selection-list');
     const resultCount = document.getElementById('result-count');
     const btnCancelSearch = document.getElementById('btn-cancelar-seleccion');
-
+    
     let currentData = null;
 
     if (anioSelect) {
@@ -120,8 +120,8 @@
     };
 
     function setUIForType(type) {
-        const tipoSelect = document.getElementById('pv_v_tipo');
-        if (tipoSelect) tipoSelect.value = type;
+        const isMoto = type === 'Motocicleta';
+        document.getElementById('pv_v_tipo').value = type;
         window.cargarMarcasPV();
     }
 
@@ -130,25 +130,23 @@
     }
 
     // ==========================================
-    // 🔹 4. BÚSQUEDA MULTI-TABLA (CORREGIDA)
+    // 🔹 4. BÚSQUEDA MULTI-TABLA Y PANEL DINÁMICO
     // ==========================================
-    function detectarCoincidencias(reg, val, tabla) {
+    function detectarCoincidencias(reg, val) {
         const campos = [];
         const v = val.trim().toUpperCase();
-        if (tabla === 'registro_vinculado' && reg.cedula && reg.cedula.toUpperCase() === v) campos.push('Cédula');
+        if (reg.cedula && reg.cedula.toUpperCase() === v) campos.push('Cédula');
         if (reg.placa && reg.placa.toUpperCase() === v) campos.push('Placa');
         if (reg.serial_carroceria && reg.serial_carroceria.toUpperCase() === v) campos.push('Serial Carrocería');
         if (reg.serial_motor && reg.serial_motor.toUpperCase() === v) campos.push('Serial Motor');
         return campos;
     }
 
-    // ✅ FUNCIÓN CORREGIDA: Busca en las 3 tablas
-    async function buscarEnTodasLasTablas(valor) {
+    async function buscarEnVinculados(valor) {
         const resultados = [];
         const val = valor.trim().toUpperCase();
         
         try {
-            // 1. REGISTRO_VINCULADO
             const { data: vinculados, error: errVinc } = await window.supabaseClient
                 .from('registro_vinculado')
                 .select('*')
@@ -159,7 +157,7 @@
                     resultados.push({
                         origen: 'registro_vinculado',
                         id: reg.id,
-                        tipo: '🔗 Registro Vinculado (Persona + Vehículo)',
+                        tipo: '🔗 Registro Vinculado',
                         icono: '🔗',
                         color: '#002b5c',
                         colorBg: '#eff6ff',
@@ -167,249 +165,142 @@
                         linea1: `👤 ${reg.primer_nombre || ''} ${reg.primer_apellido || ''} | C.I: ${reg.cedula || '-'}`,
                         linea2: `🚗 ${reg.tipo_vehiculo || ''} ${reg.marca_vehiculo || ''} ${reg.modelo_vehiculo || ''} | Placa: ${reg.placa || '-'}`,
                         linea3: `🏛️ ${reg.estacion_policial || '-'}`,
-                        encontrado_por: detectarCoincidencias(reg, val, 'registro_vinculado')
-                    });
-                });
-            }
-
-            // 2. REGISTRO_MOTOS
-            const { data: motos, error: errMoto } = await window.supabaseClient
-                .from('registro_motos')
-                .select('*')
-                .or(`placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`);
-
-            if (!errMoto && motos && motos.length > 0) {
-                motos.forEach(reg => {
-                    resultados.push({
-                        origen: 'registro_motos',
-                        id: reg.id,
-                        tipo: '🏍️ Motocicleta (Registro Individual)',
-                        icono: '🏍️',
-                        color: '#dc2626',
-                        colorBg: '#fef2f2',
-                        datos: reg,
-                        linea1: `Placa: ${reg.placa || '-'}`,
-                        linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
-                        linea3: `Serial Carrocería: ${reg.serial_carroceria || '-'}`,
-                        encontrado_por: detectarCoincidencias(reg, val, 'registro_motos')
-                    });
-                });
-            }
-
-            // 3. REGISTRO_AUTOMOVILES
-            const { data: autos, error: errAuto } = await window.supabaseClient
-                .from('registro_automoviles')
-                .select('*')
-                .or(`placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`);
-
-            if (!errAuto && autos && autos.length > 0) {
-                autos.forEach(reg => {
-                    resultados.push({
-                        origen: 'registro_automoviles',
-                        id: reg.id,
-                        tipo: '🚙 Automóvil (Registro Individual)',
-                        icono: '🚙',
-                        color: '#059669',
-                        colorBg: '#ecfdf5',
-                        datos: reg,
-                        linea1: `Placa: ${reg.placa || '-'}`,
-                        linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
-                        linea3: `Serial Carrocería: ${reg.serial_carroceria || '-'}`,
-                        encontrado_por: detectarCoincidencias(reg, val, 'registro_automoviles')
+                        encontrado_por: detectarCoincidencias(reg, val)
                     });
                 });
             }
 
             return resultados;
         } catch (err) {
-            console.error('Error en búsqueda multi-tabla:', err);
+            console.error('Error en búsqueda:', err);
             throw err;
         }
     }
 
-  function mostrarPanelSeleccion(resultados, valorBuscado) {
-    selectionList.innerHTML = '';
-    resultCount.textContent = resultados.length;
-    
-    // Alerta cruzada
-    const tieneMoto = resultados.some(r => r.origen === 'registro_motos');
-    const tieneAuto = resultados.some(r => r.origen === 'registro_automoviles');
-    const tieneVinculado = resultados.some(r => r.origen === 'registro_vinculado');
-    
-    if (crossPlateWarning) {
-        if ((tieneMoto && tieneAuto) || (tieneVinculado && (tieneMoto || tieneAuto))) {
-            crossPlateWarning.innerHTML = `
-                <strong>⚠️ ALERTA CRUZADA DETECTADA:</strong><br>
-                El dato <strong>"${valorBuscado}"</strong> aparece en más de un tipo de registro.
-                Esto puede indicar un caso de clonación de placas/seriales. Revise cuidadosamente.
-            `;
-            crossPlateWarning.style.display = 'block';
+    function mostrarPanelSeleccion(resultados, valorBuscado) {
+        selectionList.innerHTML = '';
+        resultCount.textContent = resultados.length;
+
+        if (resultados.length > 1) {
+            crossWarning.innerHTML = `⚠️ <strong>Atención:</strong> Se encontraron <strong>${resultados.length}</strong> registros con el dato "<strong>${valorBuscado}</strong>". Esto puede indicar clonación o registros duplicados. Revise cuidadosamente.`;
+            crossWarning.style.display = 'block';
         } else {
             crossWarning.style.display = 'none';
         }
-    }
-    
-    resultados.forEach((res, index) => {
-        const card = document.createElement('div');
-        // ✅ APLICAR COLORES DINÁMICOS INLINE (igual que mod-vehiculos)
-        card.style.cssText = `
-            background: ${res.colorBg};
-            border: 2px solid ${res.color};
-            border-left: 6px solid ${res.color};
-            border-radius: 8px;
-            padding: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            margin-bottom: 12px;
-        `;
-        
-        card.innerHTML = `
-            <div style="flex: 1;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                    <span style="font-size: 1.5rem;">${res.icono}</span>
-                    <strong style="color: ${res.color}; font-size: 0.95rem;">${res.tipo}</strong>
-                </div>
-                <div style="font-size: 0.9rem; color: #334155; margin-bottom: 3px;">${res.linea1}</div>
-                <div style="font-size: 0.85rem; color: #475569; margin-bottom: 3px;">${res.linea2}</div>
-                <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 6px;">${res.linea3}</div>
-                <div style="font-size: 0.75rem; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; display: inline-block;">
-                    🔎 Coincidencia en: <strong>${res.encontrado_por.join(', ')}</strong>
-                </div>
-            </div>
-            <button class="btn-seleccionar" data-index="${index}" style="
-                padding: 12px 24px;
-                background: ${res.color};
-                color: white;
-                border: none;
-                border-radius: 6px;
-                font-weight: 700;
-                cursor: pointer;
-                white-space: nowrap;
-            ">✏️ Editar</button>
-        `;
-        
-        selectionList.appendChild(card);
-    });
-    
-    document.querySelectorAll('.btn-seleccionar').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const idx = parseInt(e.target.dataset.index);
-            cargarResultado(resultados[idx]);
-        });
-    });
-    
-    selectionPanel.style.display = 'block';
-    form.style.display = 'none';
-    msgBusqueda.style.display = 'none';
-}
 
-        // ✅ CORRECCIÓN CLAVE: Usar style.display en lugar de classList
+        resultados.forEach((res, index) => {
+            const card = document.createElement('div');
+            card.className = `selection-card ${res.origen === 'registro_vinculado' ? 'vinculado' : ''}`;
+            card.innerHTML = `
+                <div class="selection-card-info">
+                    <div class="selection-card-title">
+                        <span class="icon">${res.icono}</span>
+                        <span class="title">${res.tipo}</span>
+                    </div>
+                    <div class="selection-card-line">${res.linea1}</div>
+                    <div class="selection-card-line">${res.linea2}</div>
+                    <div class="selection-card-line small">${res.linea3}</div>
+                    <div class="selection-card-badge">🔎 Coincidencia en: <strong>${res.encontrado_por.join(', ')}</strong></div>
+                </div>
+                <button class="btn-select-card" data-index="${index}">✏️ Editar</button>
+            `;
+            selectionList.appendChild(card);
+        });
+
+        document.querySelectorAll('.btn-select-card').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(e.target.dataset.index);
+                cargarResultado(resultados[idx]);
+            });
+        });
+
         selectionPanel.style.display = 'block';
         form.style.display = 'none';
         msgBusqueda.style.display = 'none';
     }
 
-    // ✅ FUNCIÓN CORREGIDA: Valida el origen antes de cargar
     async function cargarResultado(resultado) {
         selectionPanel.style.display = 'none';
-        if (crossWarning) crossWarning.style.display = 'none';
+        crossWarning.style.display = 'none';
         mostrarMsg(msgBusqueda, '✅ Cargando registro...', 'success');
-
+        
         try {
-            // ✅ VALIDACIÓN: Solo cargar si es registro_vinculado
-            if (resultado.origen === 'registro_vinculado') {
-                currentData = resultado.datos;
-                form.style.display = 'block';
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+            currentData = resultado.datos;
+            form.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
 
-                document.getElementById('mod_vinculado_id').value = currentData.id;
-                setUIForType(currentData.tipo_vehiculo);
+            document.getElementById('mod_vinculado_id').value = currentData.id;
+            setUIForType(currentData.tipo_vehiculo);
 
-                // Persona
-                document.getElementById('pv_p_nombre1').value = currentData.primer_nombre || '';
-                document.getElementById('pv_p_nombre2').value = currentData.segundo_nombre || '';
-                document.getElementById('pv_p_apellido1').value = currentData.primer_apellido || '';
-                document.getElementById('pv_p_apellido2').value = currentData.segundo_apellido || '';
-                document.getElementById('pv_p_cedula').value = currentData.cedula || '';
-                document.getElementById('pv_p_fecha_nac').value = currentData.fecha_nacimiento || '';
-                document.getElementById('pv_p_edad').value = currentData.edad || '';
-                document.getElementById('pv_p_apodo').value = currentData.apodo || '';
-                document.getElementById('pv_p_marca').value = currentData.marca_corporal || '';
-                document.getElementById('pv_p_nacionalidad').value = currentData.nacionalidad || '';
-                document.getElementById('pv_p_sexo').value = currentData.sexo || '';
-                document.getElementById('pv_p_direccion').value = currentData.direccion || '';
-                document.getElementById('pv_p_tlf_pais').value = currentData.tlf_pais || '';
-                document.getElementById('pv_p_tlf_num').value = currentData.tlf_numero || '';
-                document.getElementById('pv_p_fecha_nac').dispatchEvent(new Event('change'));
+            // Persona
+            document.getElementById('pv_p_nombre1').value = currentData.primer_nombre || '';
+            document.getElementById('pv_p_nombre2').value = currentData.segundo_nombre || '';
+            document.getElementById('pv_p_apellido1').value = currentData.primer_apellido || '';
+            document.getElementById('pv_p_apellido2').value = currentData.segundo_apellido || '';
+            document.getElementById('pv_p_cedula').value = currentData.cedula || '';
+            document.getElementById('pv_p_fecha_nac').value = currentData.fecha_nacimiento || '';
+            document.getElementById('pv_p_edad').value = currentData.edad || '';
+            document.getElementById('pv_p_apodo').value = currentData.apodo || '';
+            document.getElementById('pv_p_marca').value = currentData.marca_corporal || '';
+            document.getElementById('pv_p_nacionalidad').value = currentData.nacionalidad || '';
+            document.getElementById('pv_p_sexo').value = currentData.sexo || '';
+            document.getElementById('pv_p_direccion').value = currentData.direccion || '';
+            document.getElementById('pv_p_tlf_pais').value = currentData.tlf_pais || '';
+            document.getElementById('pv_p_tlf_num').value = currentData.tlf_numero || '';
+            document.getElementById('pv_p_fecha_nac').dispatchEvent(new Event('change'));
 
-                // Fotos Persona
-                if (currentData.foto_frontal_persona) { const p = document.getElementById('prev_p_frontal'); p.src = currentData.foto_frontal_persona; p.style.display = 'block'; }
-                if (currentData.foto_perfil_izq_persona) { const p = document.getElementById('prev_p_izq'); p.src = currentData.foto_perfil_izq_persona; p.style.display = 'block'; }
-                if (currentData.foto_perfil_der_persona) { const p = document.getElementById('prev_p_der'); p.src = currentData.foto_perfil_der_persona; p.style.display = 'block'; }
+            // Fotos Persona
+            if (currentData.foto_frontal_persona) { const p = document.getElementById('prev_p_frontal'); p.src = currentData.foto_frontal_persona; p.style.display = 'block'; }
+            if (currentData.foto_perfil_izq_persona) { const p = document.getElementById('prev_p_izq'); p.src = currentData.foto_perfil_izq_persona; p.style.display = 'block'; }
+            if (currentData.foto_perfil_der_persona) { const p = document.getElementById('prev_p_der'); p.src = currentData.foto_perfil_der_persona; p.style.display = 'block'; }
 
-                // Características
-                document.getElementById('pv_p_estatura').value = currentData.estatura_cm ? (currentData.estatura_cm / 100).toFixed(2) : '';
-                document.getElementById('pv_p_color_piel').value = currentData.color_piel || '';
-                document.getElementById('pv_p_color_ojos').value = currentData.color_ojos || '';
-                document.getElementById('pv_p_color_cabello').value = currentData.color_cabello || '';
-                document.getElementById('pv_p_complexion').value = currentData.complexion || '';
+            // Características
+            document.getElementById('pv_p_estatura').value = currentData.estatura_cm ? (currentData.estatura_cm / 100).toFixed(2) : '';
+            document.getElementById('pv_p_color_piel').value = currentData.color_piel || '';
+            document.getElementById('pv_p_color_ojos').value = currentData.color_ojos || '';
+            document.getElementById('pv_p_color_cabello').value = currentData.color_cabello || '';
+            document.getElementById('pv_p_complexion').value = currentData.complexion || '';
 
-                // Salud
-                document.getElementById('pv_p_lentes').value = currentData.usa_lentes ? 'true' : 'false';
-                window.toggleCampo(document.getElementById('pv_p_lentes'), 'pv_det-lentes');
-                document.getElementById('pv_txt_lentes').value = currentData.detalle_lentes || '';
-                document.getElementById('pv_p_perforaciones').value = currentData.perforaciones ? 'true' : 'false';
-                window.activarCampoPerforacion(document.getElementById('pv_p_perforaciones'));
-                document.getElementById('pv_txt_lugar_perforacion').value = currentData.detalle_perforaciones || '';
-                document.getElementById('pv_p_cond_medica').value = currentData.condicion_medica ? 'true' : 'false';
-                window.toggleCampo(document.getElementById('pv_p_cond_medica'), 'pv_det-cond');
-                document.getElementById('pv_txt_cond').value = currentData.condicion_medica || '';
-                document.getElementById('pv_p_medicamento').value = currentData.consume_medicamento ? 'true' : 'false';
-                window.toggleCampo(document.getElementById('pv_p_medicamento'), 'pv_det-med');
-                document.getElementById('pv_txt_med').value = currentData.consume_medicamento || '';
-                document.getElementById('pv_p_judicial').value = currentData.problema_judicial ? 'true' : 'false';
-                window.toggleCampo(document.getElementById('pv_p_judicial'), 'pv_det-jud');
-                document.getElementById('pv_txt_jud').value = currentData.problema_judicial || '';
+            // Salud
+            document.getElementById('pv_p_lentes').value = currentData.usa_lentes ? 'true' : 'false';
+            window.toggleCampo(document.getElementById('pv_p_lentes'), 'pv_det-lentes');
+            document.getElementById('pv_txt_lentes').value = currentData.detalle_lentes || '';
+            document.getElementById('pv_p_perforaciones').value = currentData.perforaciones ? 'true' : 'false';
+            window.activarCampoPerforacion(document.getElementById('pv_p_perforaciones'));
+            document.getElementById('pv_txt_lugar_perforacion').value = currentData.detalle_perforaciones || '';
+            document.getElementById('pv_p_cond_medica').value = currentData.condicion_medica ? 'true' : 'false';
+            window.toggleCampo(document.getElementById('pv_p_cond_medica'), 'pv_det-cond');
+            document.getElementById('pv_txt_cond').value = currentData.condicion_medica || '';
+            document.getElementById('pv_p_medicamento').value = currentData.consume_medicamento ? 'true' : 'false';
+            window.toggleCampo(document.getElementById('pv_p_medicamento'), 'pv_det-med');
+            document.getElementById('pv_txt_med').value = currentData.consume_medicamento || '';
+            document.getElementById('pv_p_judicial').value = currentData.problema_judicial ? 'true' : 'false';
+            window.toggleCampo(document.getElementById('pv_p_judicial'), 'pv_det-jud');
+            document.getElementById('pv_txt_jud').value = currentData.problema_judicial || '';
 
-                // Vehículo
-                marcaSelect.value = currentData.marca_vehiculo || '';
-                marcaSelect.dispatchEvent(new Event('change'));
-                setTimeout(() => { modeloSelect.value = currentData.modelo_vehiculo || ''; }, 150);
-                document.getElementById('pv_v_placa').value = currentData.placa || '';
-                document.getElementById('pv_v_serial_carro').value = currentData.serial_carroceria || '';
-                document.getElementById('pv_v_serial_motor').value = currentData.serial_motor || '';
-                document.getElementById('pv_v_cilindraje').value = currentData.cilindraje || '';
-                document.getElementById('pv_v_anio').value = currentData.anio_vehiculo || '';
-                document.getElementById('pv_v_color').value = currentData.color_vehiculo || '';
+            // Vehículo
+            marcaSelect.value = currentData.marca_vehiculo || '';
+            marcaSelect.dispatchEvent(new Event('change'));
+            setTimeout(() => { modeloSelect.value = currentData.modelo_vehiculo || ''; }, 150);
+            document.getElementById('pv_v_placa').value = currentData.placa || '';
+            document.getElementById('pv_v_serial_carro').value = currentData.serial_carroceria || '';
+            document.getElementById('pv_v_serial_motor').value = currentData.serial_motor || '';
+            document.getElementById('pv_v_cilindraje').value = currentData.cilindraje || '';
+            document.getElementById('pv_v_anio').value = currentData.anio_vehiculo || '';
+            document.getElementById('pv_v_color').value = currentData.color_vehiculo || '';
 
-                // Fotos Vehículo
-                if (currentData.foto_frontal_vehiculo) { const p = document.getElementById('prev_v_frontal'); p.src = currentData.foto_frontal_vehiculo; p.style.display = 'block'; }
-                if (currentData.foto_trasera_vehiculo) { const p = document.getElementById('prev_v_trasera'); p.src = currentData.foto_trasera_vehiculo; p.style.display = 'block'; }
-                if (currentData.foto_lado_der_vehiculo) { const p = document.getElementById('prev_v_der'); p.src = currentData.foto_lado_der_vehiculo; p.style.display = 'block'; }
-                if (currentData.foto_lado_izq_vehiculo) { const p = document.getElementById('prev_v_izq'); p.src = currentData.foto_lado_izq_vehiculo; p.style.display = 'block'; }
+            // Fotos Vehículo
+            if (currentData.foto_frontal_vehiculo) { const p = document.getElementById('prev_v_frontal'); p.src = currentData.foto_frontal_vehiculo; p.style.display = 'block'; }
+            if (currentData.foto_trasera_vehiculo) { const p = document.getElementById('prev_v_trasera'); p.src = currentData.foto_trasera_vehiculo; p.style.display = 'block'; }
+            if (currentData.foto_lado_der_vehiculo) { const p = document.getElementById('prev_v_der'); p.src = currentData.foto_lado_der_vehiculo; p.style.display = 'block'; }
+            if (currentData.foto_lado_izq_vehiculo) { const p = document.getElementById('prev_v_izq'); p.src = currentData.foto_lado_izq_vehiculo; p.style.display = 'block'; }
 
-                // Registro
-                document.getElementById('pv_estacion').value = currentData.estacion_policial || '';
-                document.getElementById('pv_dir_detencion').value = currentData.direccion_detencion || '';
-                document.getElementById('pv_observaciones').value = currentData.observaciones || '';
+            // Registro
+            document.getElementById('pv_estacion').value = currentData.estacion_policial || '';
+            document.getElementById('pv_dir_detencion').value = currentData.direccion_detencion || '';
+            document.getElementById('pv_observaciones').value = currentData.observaciones || '';
 
-                mostrarMsg(msgBusqueda, '✅ Registro cargado. Puede editar y guardar.', 'success');
-            } else {
-                // ✅ Es moto o auto individual → redirigir al módulo correcto
-                mostrarMsg(msgBusqueda, 
-                    `⚠️ Este es un <strong>registro individual</strong> (${resultado.tipo}).<br>
-                    <span style="font-size:0.85rem;">Para modificarlo, use el módulo:<br>
-                    <strong>Registro de Vehículos → Modificar</strong></span>`,
-                    'error'
-                );
-                setTimeout(() => {
-                    msgBusqueda.style.display = 'none';
-                    inputBusqueda.focus();
-                }, 6000);
-            }
+            mostrarMsg(msgBusqueda, '✅ Registro cargado. Puede editar y guardar.', 'success');
         } catch (err) {
             console.error('Error cargando resultado:', err);
             mostrarMsg(msgBusqueda, '❌ Error al cargar: ' + err.message, 'error');
@@ -427,14 +318,14 @@
                 return;
             }
 
-            mostrarMsg(msgBusqueda, '🔍 Buscando en todos los registros...', 'success');
+            mostrarMsg(msgBusqueda, '🔍 Buscando...', 'success');
             btnBuscar.disabled = true;
             form.style.display = 'none';
-            selectionPanel.style.display = 'none';  // ✅ Corregido
+            selectionPanel.style.display = 'none';
             crossWarning.style.display = 'none';
 
             try {
-                const resultados = await buscarEnTodasLasTablas(val);  // ✅ Nueva función
+                const resultados = await buscarEnVinculados(val);
                 if (resultados.length === 0) {
                     mostrarMsg(msgBusqueda, '❌ No se encontró ningún registro con ese dato.', 'error');
                 } else if (resultados.length === 1) {
@@ -459,7 +350,7 @@
 
     if (btnCancelSearch) {
         btnCancelSearch.addEventListener('click', () => {
-            selectionPanel.style.display = 'none';  // ✅ Corregido
+            selectionPanel.style.display = 'none';
             crossWarning.style.display = 'none';
             msgBusqueda.style.display = 'none';
             inputBusqueda.value = '';
@@ -643,4 +534,4 @@
     }
 
     console.log("✅ Módulo mod-vinculado.js inicializado correctamente");
-};
+}; // ✅ CIERRA initModVinculado
