@@ -26,13 +26,11 @@ window.initElimVehiculos = function() {
   let pendingAction = null;
 
   // 🔹 Helpers UI
-  const showMsg = (el, txt, type) => { if(el) { el.textContent = txt; el.className = `search-msg ${type}`; el.style.display = 'block'; } };
+    // 🔹 Helpers UI (CORREGIDO: innerHTML permite que funcione el <strong>)
+  const showMsg = (el, txt, type) => { if(el) { el.innerHTML = txt; el.className = `search-msg ${type}`; el.style.display = 'block'; } };
   const hideMsg = (el) => { if(el) el.style.display = 'none'; };
-  const showMsgElim = (txt, type) => { msgElim.textContent = txt; msgElim.className = `msg ${type}`; msgElim.style.display = 'block'; };
+  const showMsgElim = (txt, type) => { msgElim.innerHTML = txt; msgElim.className = `msg ${type}`; msgElim.style.display = 'block'; };
   const hideMsgElim = () => { msgElim.style.display = 'none'; };
-  const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = (val !== null && val !== undefined && val !== '') ? val : '-'; };
-  const setPhoto = (imgId, url) => { const img = document.getElementById(imgId); if (img) { img.src = url || ''; img.style.display = url ? 'block' : 'none'; } };
-
   // 🔹 Mostrar datos + UI según estado
   function cargarDatos(data, source) {
     currentData = data;
