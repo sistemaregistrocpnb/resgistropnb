@@ -50,7 +50,7 @@ window.initModVinculado = function() {
   };
 
   // ==========================================
-  // 🔹 2. LISTAS COMPLETAS DE MARCAS/MODELOS
+  // 🔹 2. LISTAS DE MARCAS/MODELOS
   // ==========================================
   const marcasModelosMoto = {
     "Empire Keeway": ["Matrix Lite", "Matrix II 150", "EK Xpress Lite", "QJ Fort", "Horse (EK Horse 2 SE)", "EK Arsen II 200", "EK Atlas", "EK Atlas HD/HDS 200", "Owen 200", "Thunder EK", "TX II 150", "TX 250GS", "QJ Motor SRT 550", "QJ Motor SRT 550X", "QJ Motor SRT 700S", "QJ Motor SRT 700SX", "Superlight 200S", "V302C"],
@@ -280,7 +280,7 @@ window.initModVinculado = function() {
   };
 
   // ==========================================
-  // 🔹 7. BÚSQUEDA MULTI-TABLA
+  // 🔹 7. BÚSQUEDA MULTI-TABLA (CON .ilike)
   // ==========================================
   function detectarCoincidencias(reg, val, tabla) {
     const campos = [];
@@ -296,14 +296,22 @@ window.initModVinculado = function() {
     const resultados = [];
     const val = valor.trim().toUpperCase();
     try {
+      // 1️⃣ Buscar en registro_vinculado (Cédula, Placa, Serial Carrocería, Serial Motor)
       const { data: vinculados, error: errVinc } = await window.supabaseClient
         .from('registro_vinculado')
         .select('*')
-        .or(`cedula.eq.${val},placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`);
+        .or(`cedula.ilike.${val},placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
+
       if (!errVinc && vinculados && vinculados.length > 0) {
         vinculados.forEach(reg => {
           resultados.push({
-            origen: 'registro_vinculado', id: reg.id, tipo: '🔗 Registro Vinculado (Persona + Vehículo)', icono: '🔗', color: '#002b5c', colorBg: '#eff6ff', datos: reg,
+            origen: 'registro_vinculado',
+            id: reg.id,
+            tipo: '🔗 Registro Vinculado (Persona + Vehículo)',
+            icono: '🔗',
+            color: '#002b5c',
+            colorBg: '#eff6ff',
+            datos: reg,
             linea1: `👤 ${reg.primer_nombre || ''} ${reg.primer_apellido || ''} | C.I: ${reg.cedula || '-'}`,
             linea2: `🚗 ${reg.tipo_vehiculo || ''} ${reg.marca_vehiculo || ''} ${reg.modelo_vehiculo || ''} | Placa: ${reg.placa || '-'}`,
             linea3: `🏛️ ${reg.estacion_policial || '-'}`,
@@ -311,32 +319,55 @@ window.initModVinculado = function() {
           });
         });
       }
+
+      // 2️⃣ Buscar en registro_motos (Placa, Serial Carrocería, Serial Motor)
       const { data: motos, error: errMoto } = await window.supabaseClient
         .from('registro_motos')
         .select('*')
-        .or(`placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`);
+        .or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
+
       if (!errMoto && motos && motos.length > 0) {
         motos.forEach(reg => {
           resultados.push({
-            origen: 'registro_motos', id: reg.id, tipo: '🏍️ Motocicleta (Registro Individual)', icono: '🏍️', color: '#dc2626', colorBg: '#fef2f2', datos: reg,
-            linea1: `Placa: ${reg.placa || '-'}`, linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`, linea3: `Serial Carrocería: ${reg.serial_carroceria || '-'}`,
+            origen: 'registro_motos',
+            id: reg.id,
+            tipo: '🏍️ Motocicleta (Registro Individual)',
+            icono: '🏍️',
+            color: '#dc2626',
+            colorBg: '#fef2f2',
+            datos: reg,
+            linea1: `Placa: ${reg.placa || '-'}`,
+            linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
+            linea3: `Serial Carrocería: ${reg.serial_carroceria || '-'}`,
             encontrado_por: detectarCoincidencias(reg, val, 'registro_motos')
           });
         });
       }
+
+      // 3️⃣ Buscar en registro_automoviles (Placa, Serial Carrocería, Serial Motor)
       const { data: autos, error: errAuto } = await window.supabaseClient
         .from('registro_automoviles')
         .select('*')
-        .or(`placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`);
+        .or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
+
       if (!errAuto && autos && autos.length > 0) {
         autos.forEach(reg => {
           resultados.push({
-            origen: 'registro_automoviles', id: reg.id, tipo: '🚙 Automóvil (Registro Individual)', icono: '🚙', color: '#059669', colorBg: '#ecfdf5', datos: reg,
-            linea1: `Placa: ${reg.placa || '-'}`, linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`, linea3: `Serial Carrocería: ${reg.serial_carroceria || '-'}`,
+            origen: 'registro_automoviles',
+            id: reg.id,
+            tipo: '🚙 Automóvil (Registro Individual)',
+            icono: '🚙',
+            color: '#059669',
+            colorBg: '#ecfdf5',
+            datos: reg,
+            linea1: `Placa: ${reg.placa || '-'}`,
+            linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
+            linea3: `Serial Carrocería: ${reg.serial_carroceria || '-'}`,
             encontrado_por: detectarCoincidencias(reg, val, 'registro_automoviles')
           });
         });
       }
+
       return resultados;
     } catch (err) {
       console.error('Error en búsqueda multi-tabla:', err);
