@@ -5,41 +5,100 @@
 .search-row { display: flex; gap: 10px; }
 .search-row input { flex: 1; padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; text-transform: uppercase; }
 .search-row button { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
-
-/* 🔹 Estilos de Mensajes y Banners (Idénticos a elim-personas) */
 .search-msg { margin-top: 8px; font-size: 0.85rem; display: none; }
 .search-msg.error { color: #dc2626; }
 .search-msg.success { color: #15803d; }
 .search-msg.archived { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; padding: 8px; border-radius: 4px; margin-top: 8px; display: none; }
-
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 14px; }
 .data-item { margin-bottom: 8px; }
 .data-item label { font-weight: 600; font-size: 0.8rem; color: #64748b; display: block; margin-bottom: 4px; }
 .data-item input, .data-item textarea { width: 100%; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 8px; font-size: 0.9rem; pointer-events: none; color: #334155; }
 .img-preview-elim { width: 100%; height: auto; max-height: 200px; object-fit: contain; border: 1px solid var(--beige-border); border-radius: 5px; background: #f8fafc; display: none; margin-top: 4px; }
-
 .btn-eliminar { width: 100%; padding: 14px; background: #dc2626; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 20px; font-size: 1rem; }
 .btn-eliminar:hover { background: #b91c1c; }
 .btn-eliminar:disabled { background: #fca5a5; cursor: not-allowed; }
-
 .btn-reintegrar { width: 100%; padding: 14px; background: #059669; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 20px; font-size: 1rem; display: none; }
 .btn-reintegrar:hover { background: #047857; }
 .btn-reintegrar:disabled { background: #6ee7b7; cursor: not-allowed; }
-
 .msg { padding: 12px; margin-top: 15px; border-radius: 5px; text-align: center; display: none; }
 .msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
 .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-
 .archived-banner { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 12px; margin-bottom: 16px; display: none; text-align: center; }
 .archived-banner strong { color: #92400e; }
 
-/* Panel de Selección (para duplicados en tablas activas) */
-.selection-panel { display: none; padding: 20px; background: #f1f5f9; border: 2px dashed var(--beige-border); border-radius: 8px; margin-bottom: 20px; text-align: center; }
-.selection-panel.active { display: block; animation: fadeIn 0.3s ease-in-out; }
-.selection-title { margin: 0 0 15px; font-weight: 600; color: var(--primary); }
-.selection-btns { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
-.btn-select-type { padding: 10px 20px; border: 2px solid var(--primary); background: white; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--primary); transition: 0.2s; }
-.btn-select-type:hover { background: var(--primary); color: white; }
+/* ✅ PANEL DE SELECCIÓN CON TARJETAS DE COLORES (Idéntico a mod-vehiculos) */
+#selection-panel { display: none; margin-top: 20px; }
+.selection-header { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+.selection-header h4 { margin: 0 0 8px; color: #1e40af; font-size: 1.05rem; }
+.selection-header p { margin: 0; color: #1e40af; font-size: 0.9rem; }
+#selection-list { display: grid; gap: 12px; }
+
+/* Tarjetas de selección con colores */
+.selection-card {
+  background: #fff;
+  border: 2px solid #e2e8f0;
+  border-left: 6px solid #94a3b8;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: transform 0.2s;
+}
+.selection-card:hover { transform: translateX(4px); }
+
+/* Colores específicos por tipo */
+.selection-card.moto { background: #fef2f2; border-color: #dc2626; border-left-color: #dc2626; }
+.selection-card.auto { background: #ecfdf5; border-color: #059669; border-left-color: #059669; }
+.selection-card.archivado { background: #fef3c7; border-color: #d97706; border-left-color: #d97706; }
+
+.selection-card-info { flex: 1; }
+.selection-card-title {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px; font-weight: 600; font-size: 0.95rem;
+}
+.selection-card-title .icon { font-size: 1.5rem; }
+.selection-card-title.moto { color: #dc2626; }
+.selection-card-title.auto { color: #059669; }
+.selection-card-title.archivado { color: #92400e; }
+
+.selection-card-line { font-size: 0.9rem; color: #334155; margin-bottom: 3px; }
+.selection-card-line.small { font-size: 0.8rem; color: #64748b; margin-bottom: 6px; }
+.selection-card-badge {
+  font-size: 0.75rem; color: #0369a1; background: #e0f2fe;
+  padding: 4px 8px; border-radius: 4px; display: inline-block;
+}
+.selection-card.archivado .selection-card-badge {
+  color: #92400e; background: #fde68a;
+}
+
+.btn-select-card {
+  padding: 12px 24px;
+  background: #002b5c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.btn-select-card:hover { background: #001f44; }
+.selection-card.moto .btn-select-card { background: #dc2626; }
+.selection-card.moto .btn-select-card:hover { background: #b91c1c; }
+.selection-card.auto .btn-select-card { background: #059669; }
+.selection-card.auto .btn-select-card:hover { background: #047857; }
+.selection-card.archivado .btn-select-card { background: #d97706; }
+.selection-card.archivado .btn-select-card:hover { background: #b45309; }
+
+.btn-cancel-search {
+  margin-top: 16px; padding: 10px 20px; background: #64748b;
+  color: white; border: none; border-radius: 5px; cursor: pointer;
+  font-weight: 600; display: block; margin-left: auto; margin-right: auto;
+}
+.btn-cancel-search:hover { background: #475569; }
 
 /* Modal */
 .elim-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; animation: fadeIn 0.2s; }
@@ -49,108 +108,104 @@
 .elim-modal-box p { margin: 0 0 24px; color: #475569; line-height: 1.6; font-size: 0.95rem; }
 .elim-btns { display: flex; gap: 12px; justify-content: center; }
 .btn-modal-danger { background: #dc2626; color: #fff; border: none; padding: 11px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; flex: 1; max-width: 140px; }
+.btn-modal-success { background: #059669; color: #fff; border: none; padding: 11px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; flex: 1; max-width: 140px; }
 .btn-modal-cancel { background: #e2e8f0; color: #334155; border: none; padding: 11px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; flex: 1; max-width: 140px; }
 .btn-modal-danger:hover { background: #b91c1c; }
+.btn-modal-success:hover { background: #047857; }
 .btn-modal-cancel:hover { background: #cbd5e1; }
 
-@media (max-width: 600px) { .search-row, .form-grid, .selection-btns { flex-direction: column; } }
+@media (max-width: 600px) {
+  .search-row, .form-grid, .selection-card { flex-direction: column; }
+  .selection-card { align-items: stretch; }
+  .btn-select-card { width: 100%; }
+}
 </style>
 
 <div class="card">
-    <h3>🗑️ Eliminar / Reintegrar Vehículo</h3>
-    
-    <!-- 🔍 BÚSQUEDA -->
-    <div class="search-box">
-        <label>Buscar por Placa, Serial de Carrocería o Motor:</label>
-        <div class="search-row">
-            <input type="text" id="buscar-input-elim" placeholder="Ej: AA123BC o serial..." maxlength="20">
-            <button id="btn-buscar-elim">🔍 Buscar</button>
-        </div>
-        <div id="buscar-msg-elim" class="search-msg"></div>
-        
-        <!-- ✅ AVISO DE ELIMINADO ANTERIORMENTE (Idéntico a elim-personas) -->
-        <div id="archived-notice" class="search-msg archived">
-            🔒 Sujeto eliminado anteriormente. Use el botón <strong>Reintegrar</strong> si desea volver a activarlo.
-        </div>
+  <h3>🗑️ Eliminar / Reintegrar Vehículo</h3>
+  
+  <!-- 🔍 BÚSQUEDA -->
+  <div class="search-box">
+    <label>Buscar por Placa, Serial de Carrocería o Motor:</label>
+    <div class="search-row">
+      <input type="text" id="buscar-input-elim" placeholder="Ej: AA123BC o serial..." maxlength="20">
+      <button id="btn-buscar-elim">🔍 Buscar</button>
     </div>
-
-    <!-- ⚠️ PANEL DE SELECCIÓN (Para duplicados en tablas activas) -->
-    <div id="selection-panel" class="selection-panel">
-        <h4 class="selection-title">⚠️ Dato encontrado en dos registros distintos</h4>
-        <p style="margin-bottom: 15px; font-size: 0.9rem;">Seleccione qué tipo de vehículo desea eliminar:</p>
-        <div class="selection-btns">
-            <button class="btn-select-type" onclick="seleccionarRegistro('moto')">🏍️ Eliminar Motocicleta</button>
-            <button class="btn-select-type" onclick="seleccionarRegistro('auto')">🚙 Eliminar Automóvil</button>
-        </div>
+    <div id="buscar-msg-elim" class="search-msg"></div>
+    <div id="cross-plate-warning" class="search-msg" style="background:#fffbeb; color:#92400e; border:1px solid #fcd34d; text-align:left; display:none;"></div>
+    <div id="archived-notice" class="search-msg archived">
+      🔒 Sujeto eliminado anteriormente. Use el botón <strong>Reintegrar</strong> si desea volver a activarlo.
     </div>
+  </div>
 
-    <!-- 📝 DATOS DEL VEHÍCULO -->
-    <div id="elim-data-container" style="display: none;">
-        
-        <!-- ✅ BANNER GRANDE DE ARCHIVADO (Idéntico a elim-personas) -->
-        <div id="archived-banner" class="archived-banner">
-            <strong>🗄️ Registro Archivado</strong><br>
-            Eliminado el <span id="archived-date">-</span> por <span id="archived-by">-</span>
-        </div>
-
-        <fieldset style="border:1px solid var(--beige-border); border-radius:8px; padding:16px; margin-bottom:18px; background:#fafbfc;">
-            <legend>📸 Fotografías</legend>
-            <div class="form-grid">
-                <div class="data-item"><label>Frontal</label><img id="elim-foto-frontal" class="img-preview-elim" alt="Frontal"></div>
-                <div class="data-item"><label>Trasera</label><img id="elim-foto-trasera" class="img-preview-elim" alt="Trasera"></div>
-                <div class="data-item"><label>Lado Derecho</label><img id="elim-foto-der" class="img-preview-elim" alt="Lado Der"></div>
-                <div class="data-item"><label>Lado Izquierdo</label><img id="elim-foto-izq" class="img-preview-elim" alt="Lado Izq"></div>
-            </div>
-        </fieldset>
-
-        <fieldset style="border:1px solid var(--beige-border); border-radius:8px; padding:16px; margin-bottom:18px; background:#fafbfc;">
-            <legend>📋 Identificación</legend>
-            <div class="form-grid">
-                <div class="data-item"><label>Placa</label><input id="elim-placa" readonly></div>
-                <div class="data-item"><label>Serial Carrocería</label><input id="elim-serial-carro" readonly></div>
-                <div class="data-item"><label>Serial Motor</label><input id="elim-serial-motor" readonly></div>
-                <div class="data-item"><label>Color</label><input id="elim-color" readonly></div>
-            </div>
-        </fieldset>
-
-        <fieldset style="border:1px solid var(--beige-border); border-radius:8px; padding:16px; margin-bottom:18px; background:#fafbfc;">
-            <legend>️ Características</legend>
-            <div class="form-grid">
-                <div class="data-item"><label>Marca</label><input id="elim-marca" readonly></div>
-                <div class="data-item"><label>Modelo</label><input id="elim-modelo" readonly></div>
-                <div class="data-item"><label>Año</label><input id="elim-anio" readonly></div>
-                <div class="data-item" id="box-cilindro" style="display:none;"><label>Cilindraje</label><input id="elim-cilindraje" readonly></div>
-            </div>
-        </fieldset>
-
-        <fieldset style="border:1px solid var(--beige-border); border-radius:8px; padding:16px; margin-bottom:18px; background:#fafbfc;">
-            <legend>🏛️ Registro</legend>
-            <div class="data-item" style="margin-bottom:10px;"><label>Tipo</label><input id="elim-tipo" readonly style="font-weight:600; color:var(--primary);"></div>
-            <div class="data-item" style="margin-bottom:10px;"><label>Estación Policial</label><input id="elim-estacion" readonly></div>
-            <div class="data-item" style="margin-bottom:10px;"><label>Dirección de Detención</label><input id="elim-dir-det" readonly></div>
-            <div class="data-item"><label>Estatus</label><input id="elim-estatus" readonly></div>
-        </fieldset>
-
-        <fieldset style="border:1px solid var(--beige-border); border-radius:8px; padding:16px; margin-bottom:18px; background:#fafbfc;">
-            <legend>📝 Observaciones</legend>
-            <textarea id="elim-obs" rows="2" readonly></textarea>
-        </fieldset>
-
-        <!-- Botones dinámicos -->
-        <button id="btn-eliminar" class="btn-eliminar">️ Eliminar Vehículo del Sistema</button>
-        <button id="btn-reintegrar" class="btn-reintegrar">♻️ Reintegrar al Sistema Activo</button>
-        <div id="msg-elim" class="msg"></div>
+  <!-- ✅ PANEL DE SELECCIÓN CON TARJETAS DE COLORES -->
+  <div id="selection-panel">
+    <div class="selection-header">
+      <h4>🔎 Múltiples coincidencias encontradas</h4>
+      <p>Se encontraron <strong><span id="result-count">0</span> registros</strong> con ese dato. Seleccione cuál desea eliminar o reintegrar:</p>
     </div>
+    <div id="selection-list"></div>
+    <button id="btn-cancel-search" class="btn-cancel-search">❌ Cancelar búsqueda</button>
+  </div>
+
+  <!-- 📝 DATOS DEL VEHÍCULO -->
+  <div id="elim-data-container" style="display: none;">
+    <div id="archived-banner" class="archived-banner">
+      <strong>🗄️ Registro Archivado</strong><br>
+      Eliminado el <span id="archived-date">-</span> por <span id="archived-by">-</span>
+    </div>
+    <fieldset style="border:1px solid var(--beige-border); border-radius:8px; padding:16px; margin-bottom:18px; background:#fafbfc;">
+      <legend>📸 Fotografías</legend>
+      <div class="form-grid">
+        <div class="data-item"><label>Frontal</label><img id="elim-foto-frontal" class="img-preview-elim" alt="Frontal"></div>
+        <div class="data-item"><label>Trasera</label><img id="elim-foto-trasera" class="img-preview-elim" alt="Trasera"></div>
+        <div class="data-item"><label>Lado Derecho</label><img id="elim-foto-der" class="img-preview-elim" alt="Lado Der"></div>
+        <div class="data-item"><label>Lado Izquierdo</label><img id="elim-foto-izq" class="img-preview-elim" alt="Lado Izq"></div>
+      </div>
+    </fieldset>
+    <fieldset style="border:1px solid var(--beige-border); border-radius:8px; padding:16px; margin-bottom:18px; background:#fafbfc;">
+      <legend>📋 Identificación</legend>
+      <div class="form-grid">
+        <div class="data-item"><label>Placa</label><input id="elim-placa" readonly></div>
+        <div class="data-item"><label>Serial Carrocería</label><input id="elim-serial-carro" readonly></div>
+        <div class="data-item"><label>Serial Motor</label><input id="elim-serial-motor" readonly></div>
+        <div class="data-item"><label>Color</label><input id="elim-color" readonly></div>
+      </div>
+    </fieldset>
+    <fieldset style="border:1px solid var(--beige-border); border-radius:8px; padding:16px; margin-bottom:18px; background:#fafbfc;">
+      <legend>️ Características</legend>
+      <div class="form-grid">
+        <div class="data-item"><label>Marca</label><input id="elim-marca" readonly></div>
+        <div class="data-item"><label>Modelo</label><input id="elim-modelo" readonly></div>
+        <div class="data-item"><label>Año</label><input id="elim-anio" readonly></div>
+        <div class="data-item" id="box-cilindro" style="display:none;"><label>Cilindraje</label><input id="elim-cilindraje" readonly></div>
+      </div>
+    </fieldset>
+    <fieldset style="border:1px solid var(--beige-border); border-radius:8px; padding:16px; margin-bottom:18px; background:#fafbfc;">
+      <legend>🏛️ Registro</legend>
+      <div class="data-item" style="margin-bottom:10px;"><label>Tipo</label><input id="elim-tipo" readonly style="font-weight:600; color:var(--primary);"></div>
+      <div class="data-item" style="margin-bottom:10px;"><label>Estación Policial</label><input id="elim-estacion" readonly></div>
+      <div class="data-item" style="margin-bottom:10px;"><label>Dirección de Detención</label><input id="elim-dir-det" readonly></div>
+      <div class="data-item"><label>Estatus</label><input id="elim-estatus" readonly></div>
+    </fieldset>
+    <fieldset style="border:1px solid var(--beige-border); border-radius:8px; padding:16px; margin-bottom:18px; background:#fafbfc;">
+      <legend>📝 Observaciones</legend>
+      <textarea id="elim-obs" rows="2" readonly></textarea>
+    </fieldset>
+    <button id="btn-eliminar" class="btn-eliminar">🗑️ Eliminar Vehículo del Sistema</button>
+    <button id="btn-reintegrar" class="btn-reintegrar">♻️ Reintegrar al Sistema Activo</button>
+    <div id="msg-elim" class="msg"></div>
+  </div>
 </div>
 
 <!-- ✅ Modal de Confirmación -->
 <div id="elim-modal" class="elim-modal">
-    <div class="elim-modal-box">
-        <h4 id="modal-title">⚠️ Confirmar Acción</h4>
-        <p id="modal-text">¿Está seguro?</p>
-        <div class="elim-btns">
-            <button id="btn-modal-yes" class="btn-modal-danger">✅ Confirmar</button>
-            <button id="btn-modal-no" class="btn-modal-cancel">❌ Cancelar</button>
-        </div>
+  <div class="elim-modal-box">
+    <h4 id="modal-title">⚠️ Confirmar Acción</h4>
+    <p id="modal-text">¿Está seguro?</p>
+    <div class="elim-btns">
+      <button id="btn-modal-yes" class="btn-modal-danger">✅ Confirmar</button>
+      <button id="btn-modal-no" class="btn-modal-cancel">❌ Cancelar</button>
     </div>
+  </div>
 </div>
