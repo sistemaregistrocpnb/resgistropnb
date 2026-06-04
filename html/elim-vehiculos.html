@@ -25,18 +25,17 @@
 .archived-banner { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 12px; margin-bottom: 16px; display: none; text-align: center; }
 .archived-banner strong { color: #92400e; }
 
-/* 🔹 PANEL DE SELECCIÓN (Idéntico a mod-vehiculos.html) */
+/* 🔹 PANEL DE SELECCIÓN DINÁMICO (Idéntico a mod-vehiculos) */
 #selection-panel { display: none; margin-top: 20px; }
 .selection-header { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
 .selection-header h4 { margin: 0 0 8px; color: #1e40af; font-size: 1.05rem; }
 .selection-header p { margin: 0; color: #1e40af; font-size: 0.9rem; }
 #selection-list { display: grid; gap: 12px; }
 
-/* Tarjetas de selección con colores */
 .selection-card {
   background: #fff; border: 2px solid #e2e8f0; border-left: 6px solid #94a3b8; border-radius: 8px;
   padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s; margin-bottom: 12px;
 }
 .selection-card:hover { transform: translateX(4px); }
 .selection-card.moto { background: #fef2f2; border-color: #dc2626; border-left-color: #dc2626; }
@@ -101,12 +100,13 @@
     <div id="buscar-msg-elim" class="search-msg"></div>
   </div>
 
-  <!-- 🔹 PANEL DE SELECCIÓN DINÁMICO (Idéntico a mod-vehiculos) -->
+  <!-- 🔹 PANEL DE SELECCIÓN DINÁMICO -->
   <div id="selection-panel">
     <div class="selection-header">
       <h4>🔎 Múltiples coincidencias encontradas</h4>
       <p>Se encontraron <strong><span id="result-count">0</span> registros</strong> con ese dato. Seleccione cuál desea gestionar:</p>
     </div>
+    
     <!-- ⚠️ ALERTA CRUZADA -->
     <div id="cross-plate-warning" class="msg" style="margin-bottom: 16px; background:#fffbeb; color:#92400e; border:1px solid #fcd34d; border-radius:5px; text-align:left; display:none; padding: 12px;"></div>
     
