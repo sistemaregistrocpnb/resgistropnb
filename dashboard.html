@@ -15,30 +15,28 @@
   --sidebar-width: 280px; --header-height: 60px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-
 /* 🔹 BODY: Altura fija, sin scroll global */
-body { 
-  background: var(--bg); 
-  color: var(--text); 
-  height: 100vh; 
-  overflow: hidden; 
-  display: flex; 
-  flex-direction: column; 
+body {
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
-
 /* 🔹 Navbar */
-.navbar { 
-  background: var(--primary); 
-  color: var(--white); 
-  padding: 0 20px; 
-  height: var(--header-height); 
-  display: flex; 
-  align-items: center; 
-  justify-content: space-between; 
-  box-shadow: 0 2px 10px rgba(0,0,0,0.15); 
-  position: fixed; 
-  top: 0; left: 0; right: 0; 
-  z-index: 100; 
+.navbar {
+  background: var(--primary);
+  color: var(--white);
+  padding: 0 20px;
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
   flex-shrink: 0;
 }
 .navbar h2 { font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
@@ -47,31 +45,28 @@ body {
 .clock-badge { background: rgba(255,255,255,0.12); padding: 3px 8px; border-radius: 6px; font-family: 'Consolas', monospace; letter-spacing: 0.5px; }
 .btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.6); color: var(--white); padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
 .btn-logout:hover { background: rgba(255,255,255,0.15); }
-
 /* 🔹 Layout Principal */
-.dashboard-wrapper { 
-  display: flex; 
-  margin-top: var(--header-height); 
-  height: calc(100vh - var(--header-height)); 
-  overflow: hidden; 
+.dashboard-wrapper {
+  display: flex;
+  margin-top: var(--header-height);
+  height: calc(100vh - var(--header-height));
+  overflow: hidden;
 }
-
 /* 🔹 Sidebar */
-.sidebar { 
-  width: var(--sidebar-width); 
-  background: var(--white); 
-  border-right: 1px solid #e2e8f0; 
-  position: fixed; 
-  top: var(--header-height); 
-  bottom: 0; 
-  overflow-y: auto; 
-  box-shadow: 2px 0 10px rgba(0,0,0,0.05); 
-  z-index: 90; 
-  display: flex; 
-  flex-direction: column; 
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--white);
+  border-right: 1px solid #e2e8f0;
+  position: fixed;
+  top: var(--header-height);
+  bottom: 0;
+  overflow-y: auto;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
 }
-
-/* ✅ PERFIL DE USUARIO EN SIDEBAR */
+/* ✅ PERFIL DE USUARIO EN SIDEBAR ACTUALIZADO */
 .sidebar-profile {
   text-align: center;
   padding: 25px 15px 20px;
@@ -80,41 +75,35 @@ body {
   flex-shrink: 0;
 }
 .user-avatar {
-  width: 100px; /* ✅ MÁS GRANDE */
-  height: 100px; /* ✅ MÁS GRANDE */
-  border-radius: 10px; /* ✅ CUADRADO con esquinas suaves */
+  width: 130px; /* ✅ MÁS GRANDE */
+  height: 130px; /* ✅ MÁS GRANDE */
+  border-radius: 12px; 
   object-fit: cover;
-  border: 2px solid var(--secondary); /* ✅ BORDE DORADO MÁS DELGAÑO */
+  border: 3px solid var(--secondary); 
   margin-bottom: 12px;
   background: #e2e8f0;
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
-.user-nivel-badge {
+.user-jerarquia {
   display: inline-block;
-  background: var(--primary);
-  color: var(--white);
-  padding: 4px 12px;
+  background: var(--primary); /* ✅ FONDO OSCURO PARA QUE SE LEA EL DORADO */
+  color: var(--secondary); 
+  padding: 5px 14px;
   border-radius: 12px;
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 .user-fullname {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 4px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--primary);
+  text-transform: uppercase; /* ✅ SIEMPRE EN MAYÚSCULAS */
   line-height: 1.3;
+  letter-spacing: 0.5px;
 }
-.user-jerarquia {
-  font-size: 0.85rem;
-  color: var(--secondary); /* ✅ JERARQUÍA DESTACADA EN DORADO */
-  font-weight: 600;
-  font-style: italic;
-}
-
 /* 🔹 Menú Lateral */
 .menu { flex: 1; padding: 10px 0; }
 .menu-item { border-bottom: 1px solid #f1f1f1; }
@@ -127,7 +116,6 @@ body {
 .menu-btn svg { flex-shrink: 0; width: 18px; height: 18px; fill: currentColor; }
 .menu-btn .arrow { margin-left: auto; transition: transform 0.2s; font-size: 0.8rem; opacity: 0.7; }
 .menu-btn:hover, .menu-btn.active { background: var(--beige-light); color: var(--primary); border-left: 3px solid var(--secondary); }
-
 /* 🔹 Submenús */
 .submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; background: #fafafa; border-left: 3px solid var(--primary); }
 .submenu.show { max-height: 500px; }
@@ -135,45 +123,41 @@ body {
 .submenu-item:hover { background: var(--beige-light); color: var(--primary); padding-left: 56px; }
 .submenu-item.danger { color: var(--danger); }
 .submenu-item.danger:hover { background: #fef2f2; }
-
 /* 🔹 Contenido Principal */
-.main-content { 
-  flex: 1; 
-  margin-left: var(--sidebar-width); 
-  padding: 20px; 
-  overflow-y: auto; /* ✅ Scroll normal en módulos largos */
-  overflow-x: hidden; 
+.main-content {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  padding: 20px;
+  overflow-y: auto; 
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }
-
-/* ✅ TARJETA BLANCA RESTAURADA (Para bienvenida y todos los módulos) */
-.card { 
-  background: var(--white); 
-  border-radius: 10px; 
-  padding: 25px; 
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
-  margin-bottom: 20px; 
+/* ✅ TARJETA BLANCA RESTAURADA */
+.card {
+  background: var(--white);
+  border-radius: 10px;
+  padding: 25px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  margin-bottom: 20px;
 }
-.card h3 { 
-  color: var(--primary); 
-  margin-bottom: 15px; 
-  padding-bottom: 10px; 
-  border-bottom: 2px solid var(--beige-border); 
+.card h3 {
+  color: var(--primary);
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--beige-border);
 }
-
 /* 🔹 Vista de Bienvenida: "TODO JUSTO" */
-.welcome-card { 
-  flex: 1; /* Ocupa exactamente el espacio disponible */
-  display: flex; 
-  flex-direction: column; 
-  justify-content: space-between; /* Empuja el contenido inferior al fondo */
-  padding: 25px; 
-  margin-bottom: 0; /* Sin margen para que encaje perfecto al fondo */
-  height: 100%; 
+.welcome-card {
+  flex: 1; 
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; 
+  padding: 25px;
+  margin-bottom: 0; 
+  height: 100%;
   box-sizing: border-box;
 }
-
 .welcome-center {
   flex: 1;
   display: flex;
@@ -183,23 +167,20 @@ body {
   text-align: center;
   overflow: hidden;
 }
-
 .welcome-logo { max-width: 120px; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
 .welcome-card h3 { color: var(--primary); margin-bottom: 10px; border: none; padding: 0; font-size: 1.3rem; }
 .welcome-desc { font-size: 1rem; color: #334155; max-width: 750px; margin: 0 auto 15px; line-height: 1.6; }
 .feature-badges { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .feature-badge { background: #f1f5f9; color: #475569; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; border: 1px solid #e2e8f0; }
-
 /* 🔹 Sección Inferior (Fija al fondo) */
 .welcome-bottom {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-top: auto; /* ✅ Empuja todo al fondo absoluto */
+  margin-top: auto; 
   flex-shrink: 0;
   width: 100%;
 }
-
 /* 🔹 Copyright */
 .copyright-wrapper {
   width: 100%;
@@ -214,11 +195,10 @@ body {
 }
 .copyright-wrapper strong { color: var(--primary); font-weight: 700; }
 .copyright-wrapper .phone-numbers { color: var(--secondary); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.3px; }
-
 /* 🔹 Marquesina (Sin scroll horizontal) */
 .marquee-wrapper {
   width: 100%;
-  overflow: hidden; 
+  overflow: hidden;
   background: linear-gradient(135deg, #002b5c 0%, #001f44 100%);
   border-radius: 8px;
   border-top: 3px solid var(--secondary);
@@ -230,7 +210,7 @@ body {
   display: inline-block;
   white-space: nowrap;
   animation: scrollMarquee 25s linear infinite;
-  padding-left: 100%; 
+  padding-left: 100%;
 }
 .marquee-text {
   color: #fff;
@@ -242,23 +222,22 @@ body {
 }
 @keyframes scrollMarquee {
   0% { transform: translateX(0); }
-  100% { transform: translateX(-100%); } 
+  100% { transform: translateX(-100%); }
 }
-
 /* 🔹 Responsive */
-@media (max-width: 900px) { 
-  .sidebar { transform: translateX(-100%); transition: transform 0.3s; } 
-  .sidebar.open { transform: translateX(0); } 
-  .main-content { margin-left: 0; } 
-  .menu-toggle { display: block !important; } 
-  .clock-badge { display: none; } 
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
+  .sidebar.open { transform: translateX(0); }
+  .main-content { margin-left: 0; }
+  .menu-toggle { display: block !important; }
+  .clock-badge { display: none; }
 }
-@media (max-width: 600px) { 
-  .marquee-text { font-size: 0.8rem; } 
-  .copyright-wrapper { font-size: 0.7rem; padding: 8px 10px; } 
+@media (max-width: 600px) {
+  .marquee-text { font-size: 0.8rem; }
+  .copyright-wrapper { font-size: 0.7rem; padding: 8px 10px; }
   .welcome-desc { font-size: 0.85rem; }
   .welcome-card { padding: 15px; }
-  .user-avatar { width: 80px; height: 80px; }
+  .user-avatar { width: 100px; height: 100px; }
 }
 .menu-toggle { display: none; background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 5px; margin-right: 10px; cursor: pointer; }
 .loading { text-align: center; padding: 30px; color: #64748b; font-weight: 500; }
@@ -277,17 +256,14 @@ body {
     <button id="btn-logout" class="btn-logout">Cerrar Sesión</button>
   </div>
 </nav>
-
 <div class="dashboard-wrapper">
   <aside class="sidebar" id="sidebar">
-    <!-- ✅ PERFIL DE USUARIO ACTUALIZADO -->
+    <!-- ✅ PERFIL DE USUARIO ACTUALIZADO (Sin nivel, jerarquía con fondo, nombre en mayúsculas) -->
     <div class="sidebar-profile">
       <img src="https://ui-avatars.com/api/?name=Usuario&background=002b5c&color=fff" alt="Foto de Usuario" class="user-avatar" id="user-foto">
-      <div class="user-nivel-badge" id="user-nivel-display">---</div>
+      <div class="user-jerarquia" id="user-jerarquia-display">---</div>
       <div class="user-fullname" id="user-nombre-display">Cargando...</div>
-      <div class="user-jerarquia" id="user-jerarquia-display">Jerarquía: ---</div>
     </div>
-
     <nav class="menu">
       <div class="menu-item">
         <button class="menu-btn" data-toggle="submenu-consulta">
@@ -360,12 +336,8 @@ body {
       </div>
     </nav>
   </aside>
-
   <main id="app-content" class="main-content">
-    <!-- ✅ CONTENIDO DE BIENVENIDA CON TARJETA BLANCA (.card) RESTAURADA -->
     <div class="card welcome-card">
-      
-      <!-- Parte Central (Ocupa el espacio disponible y se centra) -->
       <div class="welcome-center">
         <img src="img/LOGO-PNB.png" alt="Logo PNB" class="welcome-logo">
         <h3>👋 Bienvenido al Sistema de Verificación y Registro Policial</h3>
@@ -380,10 +352,7 @@ body {
           <span class="feature-badge">📱 Interfaz Adaptativa</span>
         </div>
       </div>
-      
-      <!-- Parte Inferior (Fija al fondo absoluto) -->
       <div class="welcome-bottom">
-        <!-- ✅ MARQUESINA -->
         <div class="marquee-wrapper">
           <div class="marquee-inner">
             <div class="marquee-text">
@@ -391,19 +360,15 @@ body {
             </div>
           </div>
         </div>
-        
-        <!-- ✅ COPYRIGHT -->
         <div class="copyright-wrapper">
           © 2026 <strong>OTIC-ZULIA PNB</strong> | Sistema Oficial<br>
           Para gestión de usuarios y soporte comuníquese con los números:<br>
           <span class="phone-numbers">📞 0424-6962854 / 0412-3302339</span>
         </div>
       </div>
-      
     </div>
   </main>
 </div>
-
 <script src="js/config.js"></script>
 <script src="js/dashboard.js"></script>
 </body>
