@@ -25,7 +25,7 @@
 .archived-banner { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 12px; margin-bottom: 16px; display: none; text-align: center; }
 .archived-banner strong { color: #92400e; }
 
-/* 🔹 PANEL DE SELECCIÓN DINÁMICO (Idéntico a mod-vehiculos) */
+/* 🔹 PANEL DE SELECCIÓN (Idéntico a mod-vehiculos) */
 #selection-panel { display: none; margin-top: 20px; }
 .selection-header { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
 .selection-header h4 { margin: 0 0 8px; color: #1e40af; font-size: 1.05rem; }
@@ -41,14 +41,12 @@
 .selection-card.moto { background: #fef2f2; border-color: #dc2626; border-left-color: #dc2626; }
 .selection-card.auto { background: #ecfdf5; border-color: #059669; border-left-color: #059669; }
 .selection-card.vinculado { background: #eff6ff; border-color: #002b5c; border-left-color: #002b5c; }
-.selection-card.archivado { background: #f1f5f9; border-color: #64748b; border-left-color: #64748b; }
 
 .selection-card-info { flex: 1; }
 .selection-card-title { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-weight: 600; font-size: 0.95rem; }
 .selection-card-title.moto { color: #dc2626; }
 .selection-card-title.auto { color: #059669; }
 .selection-card-title.vinculado { color: #002b5c; }
-.selection-card-title.archivado { color: #64748b; }
 
 .selection-card-line { font-size: 0.9rem; color: #334155; margin-bottom: 3px; }
 .selection-card-line.small { font-size: 0.8rem; color: #64748b; margin-bottom: 6px; }
@@ -62,8 +60,6 @@
 .selection-card.moto .btn-select-card:hover { background: #b91c1c; }
 .selection-card.auto .btn-select-card { background: #059669; }
 .selection-card.auto .btn-select-card:hover { background: #047857; }
-.selection-card.archivado .btn-select-card { background: #64748b; }
-.selection-card.archivado .btn-select-card:hover { background: #475569; }
 
 .btn-cancel-search {
   margin-top: 16px; padding: 10px 20px; background: #64748b; color: white; border: none;
@@ -104,7 +100,7 @@
   <div id="selection-panel">
     <div class="selection-header">
       <h4>🔎 Múltiples coincidencias encontradas</h4>
-      <p>Se encontraron <strong><span id="result-count">0</span> registros</strong> con ese dato. Seleccione cuál desea gestionar:</p>
+      <p>Se encontraron <strong><span id="result-count">0</span> registros</strong> con ese dato o seriales asociados. Seleccione cuál desea gestionar:</p>
     </div>
     
     <!-- ⚠️ ALERTA CRUZADA -->
