@@ -122,13 +122,11 @@ window.initModVehiculos = function() {
   function setUIForType(type) {
     const isMoto = type === 'moto';
     
-    // ✅ Actualizar campos ocultos
     const tipoInput = document.getElementById('mod_tipo_vehiculo');
     const tablaInput = document.getElementById('mod_tabla_destino');
     if (tipoInput) tipoInput.value = isMoto ? 'Motocicleta' : 'Automóvil';
     if (tablaInput) tablaInput.value = isMoto ? 'registro_motos' : 'registro_automoviles';
 
-    // ✅ Actualizar botones de tipo con estilos inline
     const btnMoto = document.getElementById('btn_tipo_moto');
     const btnAuto = document.getElementById('btn_tipo_auto');
     if (btnMoto) {
@@ -158,7 +156,6 @@ window.initModVehiculos = function() {
       }
     }
 
-    // ✅ Mostrar badge con el tipo de vehículo
     const badge = document.getElementById('tipo-vehiculo-badge');
     if (badge) {
       badge.style.display = 'block';
@@ -175,22 +172,19 @@ window.initModVehiculos = function() {
       }
     }
 
-    // ✅ Mostrar/ocultar grids de fotos
     const gridMoto = document.getElementById('grid-fotos-moto');
     const gridAuto = document.getElementById('grid-fotos-auto');
     if (gridMoto) gridMoto.style.display = isMoto ? 'grid' : 'none';
     if (gridAuto) gridAuto.style.display = isMoto ? 'none' : 'grid';
 
-    // ✅ Mostrar/ocultar cilindraje
     const boxCilindro = document.getElementById('box-cilindraje');
     if (boxCilindro) boxCilindro.style.display = isMoto ? 'block' : 'none';
 
-    // ✅ Cargar marcas según tipo
     cargarMarcas(type);
   }
 
   // ==========================================
-  // 🔹 BÚSQUEDA MULTI-TABLA (✅ CORREGIDO CON .ilike)
+  // 🔹 BÚSQUEDA MULTI-TABLA (CON .ilike)
   // ==========================================
   function detectarCoincidenciasVehiculo(reg, val) {
     const campos = [];
@@ -206,7 +200,6 @@ window.initModVehiculos = function() {
     const val = valor.trim().toUpperCase();
     
     try {
-      // ✅ CAMBIO CLAVE: Usar .ilike en lugar de .eq para que no importe si está en mayúsculas o minúsculas en la BD
       const { data: motos, error: errMoto } = await window.supabaseClient
         .from('registro_motos')
         .select('*')
@@ -379,7 +372,8 @@ window.initModVehiculos = function() {
     }
 
     resetValidation();
-    verificarPlacaCruzada(data, tabla);
+    // ✅ AQUÍ SE LLAMA A LA NUEVA FUNCIÓN MEJORADA
+    verificarCoincidenciaCruzada(data, tabla);
 
     const sufijo = tipo === 'moto' ? '' : '_a';
     mostrarPreview(`m_prev_frontal${sufijo}`, data.foto_frontal);
@@ -408,20 +402,50 @@ window.initModVehiculos = function() {
     }
   }
 
-  async function verificarPlacaCruzada(data, tablaActual) {
+  // ==========================================
+  // ✅ NUEVA FUNCIÓN: VERIFICAR COINCIDENCIA CRUZADA (PLACA, SERIALES)
+  // ==========================================
+  async function verificarCoincidenciaCruzada(data, tablaActual) {
     crossWarning.style.display = 'none';
-    if (!data.placa) return;
-    
+    if (!data) return;
+
     const tablaContraria = tablaActual === 'registro_motos' ? 'registro_automoviles' : 'registro_motos';
-    const { data: match } = await window.supabaseClient
-      .from(tablaContraria)
-      .select('id')
-      .ilike('placa', data.placa)
-      .maybeSingle();
-      
-    if (match) {
-      const tipoNombre = tablaContraria === 'registro_motos' ? 'Motocicleta' : 'Automóvil';
-      crossWarning.innerHTML = `⚠️ <strong>Atención:</strong> Esta placa (<strong>${data.placa}</strong>) también se encuentra registrada en la tabla de <strong>${tipoNombre}</strong>.`;
+    const tipoContrario = tablaContraria === 'registro_motos' ? 'Motocicleta' : 'Automóvil';
+    const coincidencias = [];
+
+    // 1. Verificar Placa
+    if (data.placa) {
+      const { data: matchPlaca } = await window.supabaseClient
+        .from(tablaContraria)
+        .select('id, placa')
+        .ilike('placa', data.placa)
+        .maybeSingle();
+      if (matchPlaca) coincidencias.push(`Placa (${data.placa})`);
+    }
+
+    // 2. Verificar Serial de Carrocería
+    if (data.serial_carroceria) {
+      const { data: matchCarro } = await window.supabaseClient
+        .from(tablaContraria)
+        .select('id, serial_carroceria')
+        .ilike('serial_carroceria', data.serial_carroceria)
+        .maybeSingle();
+      if (matchCarro) coincidencias.push(`Serial de Carrocería (${data.serial_carroceria})`);
+    }
+
+    // 3. Verificar Serial de Motor
+    if (data.serial_motor) {
+      const { data: matchMotor } = await window.supabaseClient
+        .from(tablaContraria)
+        .select('id, serial_motor')
+        .ilike('serial_motor', data.serial_motor)
+        .maybeSingle();
+      if (matchMotor) coincidencias.push(`Serial de Motor (${data.serial_motor})`);
+    }
+
+    // Si hay alguna coincidencia, mostrar alerta detallada
+    if (coincidencias.length > 0) {
+      crossWarning.innerHTML = `⚠️ <strong>Atención:</strong> Este registro comparte datos con un vehículo en la tabla de <strong>${tipoContrario}</strong>.<br>Campos coincidentes: <strong>${coincidencias.join(', ')}</strong>. Esto puede indicar clonación o un error de registro.`;
       crossWarning.style.display = 'block';
     }
   }
