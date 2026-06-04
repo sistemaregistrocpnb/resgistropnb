@@ -144,13 +144,15 @@ window.initElimVinculados = function() {
     }
   }
 
-  // ✅ CORREGIDO: Ahora es una función async para permitir el uso de await
+  // ✅ CORREGIDO: Función declarada como 'async' para permitir el uso de 'await'
   async function mostrarPanelSeleccion(resultados, valorBuscado) {
     selectionList.innerHTML = '';
     resultCount.textContent = resultados.length;
     
     // Verificar si hay datos en otras tablas para alerta cruzada
     const val = valorBuscado.trim().toUpperCase();
+    
+    // Estas consultas usan await, por eso la función debe ser async
     const { data: motos } = await window.supabaseClient.from('registro_motos').select('id').or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`).limit(1);
     const { data: autos } = await window.supabaseClient.from('registro_automoviles').select('id').or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`).limit(1);
     
