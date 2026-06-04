@@ -15,10 +15,32 @@
   --sidebar-width: 270px; --header-height: 60px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+/* 🔹 BODY: Altura fija, sin scroll global */
+body { 
+  background: var(--bg); 
+  color: var(--text); 
+  height: 100vh; 
+  overflow: hidden; 
+  display: flex; 
+  flex-direction: column; 
+}
 
 /* 🔹 Navbar */
-.navbar { background: var(--primary); color: var(--white); padding: 0 20px; height: var(--header-height); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.15); position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
+.navbar { 
+  background: var(--primary); 
+  color: var(--white); 
+  padding: 0 20px; 
+  height: var(--header-height); 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15); 
+  position: fixed; 
+  top: 0; left: 0; right: 0; 
+  z-index: 100; 
+  flex-shrink: 0;
+}
 .navbar h2 { font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
 .user-info { display: flex; align-items: center; gap: 12px; font-size: 0.82rem; }
 .badge { background: var(--secondary); color: var(--primary); padding: 4px 10px; border-radius: 12px; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; }
@@ -26,23 +48,41 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
 .btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.6); color: var(--white); padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
 .btn-logout:hover { background: rgba(255,255,255,0.15); }
 
-/* 🔹 Layout */
-.dashboard-wrapper { display: flex; margin-top: var(--header-height); min-height: calc(100vh - var(--header-height)); }
+/* 🔹 Layout Principal */
+.dashboard-wrapper { 
+  display: flex; 
+  margin-top: var(--header-height); 
+  height: calc(100vh - var(--header-height)); 
+  overflow: hidden; 
+}
 
 /* 🔹 Sidebar */
-.sidebar { width: var(--sidebar-width); background: var(--white); border-right: 1px solid #e2e8f0; position: fixed; top: var(--header-height); bottom: 0; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.05); z-index: 90; display: flex; flex-direction: column; }
+.sidebar { 
+  width: var(--sidebar-width); 
+  background: var(--white); 
+  border-right: 1px solid #e2e8f0; 
+  position: fixed; 
+  top: var(--header-height); 
+  bottom: 0; 
+  overflow-y: auto; 
+  box-shadow: 2px 0 10px rgba(0,0,0,0.05); 
+  z-index: 90; 
+  display: flex; 
+  flex-direction: column; 
+}
 
-/* ✅ NUEVO: Perfil de Usuario en el Sidebar */
+/* ✅ PERFIL DE USUARIO EN SIDEBAR */
 .sidebar-profile {
   text-align: center;
-  padding: 25px 15px 20px;
+  padding: 20px 15px;
   border-bottom: 1px solid #e2e8f0;
   background: #fafbfc;
+  flex-shrink: 0;
 }
 .user-avatar {
-  width: 85px;
-  height: 85px;
-  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px; /* ✅ CUADRADO con esquinas suaves */
   object-fit: cover;
   border: 3px solid var(--secondary);
   margin-bottom: 12px;
@@ -62,14 +102,14 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
   margin-bottom: 10px;
 }
 .user-fullname {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--text);
   margin-bottom: 4px;
   line-height: 1.3;
 }
 .user-cedula {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #64748b;
   font-weight: 500;
 }
@@ -96,32 +136,113 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
 .submenu-item.danger:hover { background: #fef2f2; }
 
 /* 🔹 Contenido Principal */
-.main-content { flex: 1; margin-left: var(--sidebar-width); padding: 25px; transition: all 0.3s; }
-.card { background: var(--white); border-radius: 10px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
-.card h3 { color: var(--primary); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--beige-border); }
-.loading { text-align: center; padding: 30px; color: #64748b; font-weight: 500; }
-.hidden { display: none !important; }
+.main-content { 
+  flex: 1; 
+  margin-left: var(--sidebar-width); 
+  padding: 20px; 
+  overflow-y: auto; /* Scroll normal en módulos largos */
+  overflow-x: hidden; /* Bloquea scroll horizontal */
+  display: flex;
+  flex-direction: column;
+}
 
-/* 🔹 Vista de Bienvenida */
-.welcome-card { text-align: center; padding: 40px 30px; }
-.welcome-logo { max-width: 130px; margin-bottom: 20px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
-.welcome-desc { font-size: 1.05rem; color: #334155; max-width: 750px; margin: 0 auto 25px; line-height: 1.7; }
-.feature-badges { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 15px; }
-.feature-badge { background: #f1f5f9; color: #475569; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; border: 1px solid #e2e8f0; }
+/* 🔹 Vista de Bienvenida: "TODO JUSTO" */
+.welcome-card { 
+  flex: 1; /* Ocupa exactamente el espacio disponible */
+  display: flex; 
+  flex-direction: column; 
+  justify-content: space-between; /* Empuja el contenido inferior al fondo */
+  padding: 20px; 
+  margin-bottom: 0;
+  height: 100%; 
+  box-sizing: border-box;
+}
 
-/* 🔹 Marquesina */
-.marquee-wrapper { width: 100%; margin: 25px auto 0 auto; background: linear-gradient(135deg, #002b5c 0%, #001f44 100%); border-radius: 8px; overflow: hidden; border-top: 3px solid var(--secondary); border-bottom: 3px solid var(--secondary); padding: 12px 0; }
-.marquee-text { color: #fff; font-size: 1rem; font-weight: 700; letter-spacing: 1px; white-space: nowrap; animation: scrollMarquee 20s linear infinite; font-family: 'Playfair Display', Georgia, serif; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); }
-@keyframes scrollMarquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+.welcome-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  overflow: hidden;
+}
+
+.welcome-logo { max-width: 110px; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
+.welcome-card h3 { color: var(--primary); margin-bottom: 10px; border: none; padding: 0; font-size: 1.25rem; }
+.welcome-desc { font-size: 0.95rem; color: #334155; max-width: 750px; margin: 0 auto 15px; line-height: 1.6; }
+.feature-badges { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.feature-badge { background: #f1f5f9; color: #475569; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; border: 1px solid #e2e8f0; }
+
+/* 🔹 Sección Inferior (Fija al fondo) */
+.welcome-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto; /* ✅ Empuja todo al fondo absoluto */
+  flex-shrink: 0;
+  width: 100%;
+}
 
 /* 🔹 Copyright */
-.copyright-wrapper { width: 100%; margin: 15px auto 0 auto; background: #fff; border: 1px solid var(--beige-border); border-radius: 8px; padding: 12px 20px; text-align: center; font-size: 0.85rem; color: var(--text); line-height: 1.6; }
+.copyright-wrapper {
+  width: 100%;
+  background: #fff;
+  border: 1px solid var(--beige-border);
+  border-radius: 8px;
+  padding: 10px 20px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text);
+  line-height: 1.4;
+}
 .copyright-wrapper strong { color: var(--primary); font-weight: 700; }
-.copyright-wrapper .phone-numbers { color: var(--secondary); font-weight: 700; font-size: 0.9rem; letter-spacing: 0.3px; }
+.copyright-wrapper .phone-numbers { color: var(--secondary); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.3px; }
+
+/* 🔹 Marquesina (Sin scroll horizontal) */
+.marquee-wrapper {
+  width: 100%;
+  overflow: hidden; /* ✅ Bloquea cualquier desbordamiento horizontal */
+  background: linear-gradient(135deg, #002b5c 0%, #001f44 100%);
+  border-radius: 8px;
+  border-top: 3px solid var(--secondary);
+  border-bottom: 3px solid var(--secondary);
+  padding: 10px 0;
+  position: relative;
+}
+.marquee-inner {
+  display: inline-block;
+  white-space: nowrap;
+  animation: scrollMarquee 25s linear infinite;
+  padding-left: 100%; /* Comienza fuera de la pantalla a la derecha */
+}
+.marquee-text {
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-family: 'Playfair Display', Georgia, serif;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+}
+@keyframes scrollMarquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); } /* Se desplaza completamente hacia la izquierda */
+}
 
 /* 🔹 Responsive */
-@media (max-width: 900px) { .sidebar { transform: translateX(-100%); transition: transform 0.3s; } .sidebar.open { transform: translateX(0); } .main-content { margin-left: 0; } .menu-toggle { display: block !important; } .clock-badge { display: none; } }
-@media (max-width: 600px) { .marquee-text { font-size: 0.85rem; } .copyright-wrapper { font-size: 0.75rem; } }
+@media (max-width: 900px) { 
+  .sidebar { transform: translateX(-100%); transition: transform 0.3s; } 
+  .sidebar.open { transform: translateX(0); } 
+  .main-content { margin-left: 0; } 
+  .menu-toggle { display: block !important; } 
+  .clock-badge { display: none; } 
+}
+@media (max-width: 600px) { 
+  .marquee-text { font-size: 0.8rem; } 
+  .copyright-wrapper { font-size: 0.7rem; padding: 8px 10px; } 
+  .welcome-desc { font-size: 0.85rem; }
+  .welcome-card { padding: 15px; }
+}
 .menu-toggle { display: none; background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 5px; margin-right: 10px; cursor: pointer; }
 </style>
 </head>
@@ -141,7 +262,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
 
 <div class="dashboard-wrapper">
   <aside class="sidebar" id="sidebar">
-    <!-- ✅ NUEVO: Perfil de Usuario en lugar del Logo -->
+    <!-- ✅ PERFIL DE USUARIO (Reemplaza al logo anterior) -->
     <div class="sidebar-profile">
       <img src="https://ui-avatars.com/api/?name=Usuario&background=002b5c&color=fff" alt="Foto de Usuario" class="user-avatar" id="user-foto">
       <div class="user-nivel-badge" id="user-nivel-display">---</div>
@@ -223,29 +344,44 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
   </aside>
 
   <main id="app-content" class="main-content">
-    <div class="card welcome-card">
-      <img src="img/LOGO-PNB.png" alt="Logo PNB" class="welcome-logo">
-      <h3>👋 Bienvenido al Sistema de Verificación y Registro Policial</h3>
-      <p class="welcome-desc">
-        Plataforma integral desarrollada para el <strong>Cuerpo de Policía Nacional Bolivariana (CPNB) - Centro de Coordinación Policial Estadal (CCPE) Zulia</strong>.
-        Este sistema permite gestionar, consultar, modificar y archivar registros de personas y vehículos de manera segura, centralizada y auditada.
-      </p>
-      <div class="feature-badges">
-        <span class="feature-badge"> Acceso Seguro y Auditado</span>
-        <span class="feature-badge">📊 Gestión en Tiempo Real</span>
-        <span class="feature-badge"> Respaldo Automatizado</span>
-        <span class="feature-badge">📱 Interfaz Adaptativa</span>
-      </div>
-      <div class="marquee-wrapper">
-        <div class="marquee-text">
-          🚔 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🇻🇪 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 👮 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🛡️ ¡Proteger, defender y servir a nuestro pueblo!
+    <!-- ✅ CONTENIDO DE BIENVENIDA (Distribuido "Todo Justo") -->
+    <div class="welcome-card">
+      
+      <!-- Parte Central (Ocupa el espacio disponible y se centra) -->
+      <div class="welcome-center">
+        <img src="img/LOGO-PNB.png" alt="Logo PNB" class="welcome-logo">
+        <h3>👋 Bienvenido al Sistema de Verificación y Registro Policial</h3>
+        <p class="welcome-desc">
+          Plataforma integral desarrollada para el <strong>Cuerpo de Policía Nacional Bolivariana (CPNB) - Centro de Coordinación Policial Estadal (CCPE) Zulia</strong>.
+          Este sistema permite gestionar, consultar, modificar y archivar registros de personas y vehículos de manera segura, centralizada y auditada.
+        </p>
+        <div class="feature-badges">
+          <span class="feature-badge"> Acceso Seguro y Auditado</span>
+          <span class="feature-badge">📊 Gestión en Tiempo Real</span>
+          <span class="feature-badge"> Respaldo Automatizado</span>
+          <span class="feature-badge">📱 Interfaz Adaptativa</span>
         </div>
       </div>
-      <div class="copyright-wrapper">
-        © 2026 <strong>OTIC-ZULIA PNB</strong> | Sistema Oficial<br>
-        Para gestión de usuarios y soporte comuníquese con los números:<br>
-        <span class="phone-numbers">📞 0424-6962854 / 0412-3302339</span>
+      
+      <!-- Parte Inferior (Fija al fondo absoluto) -->
+      <div class="welcome-bottom">
+        <!-- ✅ COPYRIGHT -->
+        <div class="copyright-wrapper">
+          © 2026 <strong>OTIC-ZULIA PNB</strong> | Sistema Oficial<br>
+          Para gestión de usuarios y soporte comuníquese con los números:<br>
+          <span class="phone-numbers">📞 0424-6962854 / 0412-3302339</span>
+        </div>
+        
+        <!-- ✅ MARQUESINA (Justo debajo del pie de página) -->
+        <div class="marquee-wrapper">
+          <div class="marquee-inner">
+            <div class="marquee-text">
+              🚔 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🇻🇪 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 👮 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🛡️ ¡Proteger, defender y servir a nuestro pueblo!
+            </div>
+          </div>
+        </div>
       </div>
+      
     </div>
   </main>
 </div>
