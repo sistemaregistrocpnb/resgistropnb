@@ -122,7 +122,7 @@ window.initRegVehiculos = function() {
     setupPreview(id, id.replace('v_foto_', 'prev_v_'));
   });
 
-// 🔹 5. 🚨 VALIDACIÓN EN TIEMPO REAL (ESPECÍFICA POR TIPO DE VEHÍCULO)
+// 🔹 5. 🚨 VALIDACIÓN EN TIEMPO REAL (ESPECÍFICA POR TIPO + TABLA VINCULADOS)
 function debounce(func, wait) {
   let timeout;
   return function(...args) {
@@ -145,32 +145,48 @@ async function checkAvailability(input, msgId) {
   
   try {
     let found = false;
+    let foundIn = '';
     const col = input.id === 'v_placa' ? 'placa' :
                 input.id === 'v_serial_carroceria' ? 'serial_carroceria' : 'serial_motor';
 
-    // ✅ 1. Detectar el tipo de vehículo que se está registrando actualmente
-    const tipoVehiculo = document.getElementById('v_tipo').value;
-    const esMoto = tipoVehiculo === 'Motocicleta';
-    const tablaDestino = esMoto ? 'registro_motos' : 'registro_automoviles';
-
-    // ✅ 2. Buscar duplicados SOLO en la tabla del mismo tipo de vehículo.
-    // Esto permite que una Moto y un Auto tengan el mismo número, 
-    // pero bloquea si ya existe en su misma categoría.
-    const { data, error } = await window.supabaseClient
-      .from(tablaDestino)
+    // 1️⃣ Detectar el tipo de vehículo que se está registrando actualmente
+    const tipoVehiculo = document.getElementById('v_tipo').value; // 'Motocicleta' o 'Automóvil'
+    
+    // 2️⃣ Verificar en la tabla principal (Solo Motos o Solo Automóviles)
+    const tablaPrincipal = tipoVehiculo === 'Motocicleta' ? 'registro_motos' : 'registro_automoviles';
+    const { data: dataPrincipal } = await window.supabaseClient
+      .from(tablaPrincipal)
       .select('id')
       .ilike(col, val)
       .limit(1);
 
-    if (data && data.length > 0) {
+    if (dataPrincipal && dataPrincipal.length > 0) {
       found = true;
+      foundIn = tipoVehiculo === 'Motocicleta' ? 'Motocicletas' : 'Automóviles';
     }
 
+    // 3️⃣ Verificar en registro_vinculados (Respetando la regla de "vehículos diferentes")
+    // ⚠️ IMPORTANTE: Este código asume que tu tabla 'registro_vinculados' tiene una columna 
+    // llamada 'tipo_vehiculo' que guarda 'Motocicleta' o 'Automóvil'. 
+    // Si tu columna se llama 'tipo' o 'categoria', cámbialo en la línea de abajo (.eq).
+    const { data: dataVinculados } = await window.supabaseClient
+      .from('registro_vinculados')
+      .select('id')
+      .ilike(col, val)
+      .eq('tipo_vehiculo', tipoVehiculo) // Solo bloquea si el tipo de vehículo coincide
+      .limit(1);
+
+    if (dataVinculados && dataVinculados.length > 0) {
+      found = true;
+      foundIn = 'Vehículos Vinculados';
+    }
+
+    // 4️⃣ Mostrar resultado al usuario
     if (found) {
       input.classList.add('input-error');
       input.classList.remove('input-valid');
       if (msgEl) {
-        msgEl.textContent = `❌ Ya registrado en ${esMoto ? 'Motocicletas' : 'Automóviles'}`;
+        msgEl.textContent = `❌ Ya registrado en ${foundIn}`;
         msgEl.className = 'status-msg error';
       }
     } else {
