@@ -184,14 +184,14 @@ window.initModVehiculos = function() {
   }
 
   // ==========================================
-  // 🔹 BÚSQUEDA MULTI-TABLA (CON .ilike)
+  // 🔹 BÚSQUEDA MULTI-TABLA (CON .ilike EN LOS 3 CAMPOS)
   // ==========================================
   function detectarCoincidenciasVehiculo(reg, val) {
     const campos = [];
     const v = val.trim().toUpperCase();
     if (reg.placa && reg.placa.toUpperCase() === v) campos.push('Placa');
-    if (reg.serial_carroceria && reg.serial_carroceria.toUpperCase() === v) campos.push('Serial Carrocería');
-    if (reg.serial_motor && reg.serial_motor.toUpperCase() === v) campos.push('Serial Motor');
+    if (reg.serial_carroceria && reg.serial_carroceria.toUpperCase() === v) campos.push('Serial de Carrocería');
+    if (reg.serial_motor && reg.serial_motor.toUpperCase() === v) campos.push('Serial de Motor');
     return campos;
   }
 
@@ -200,6 +200,7 @@ window.initModVehiculos = function() {
     const val = valor.trim().toUpperCase();
     
     try {
+      // ✅ CAMBIO CLAVE: .ilike en los 3 campos para encontrar coincidencias sin importar mayúsculas/minúsculas
       const { data: motos, error: errMoto } = await window.supabaseClient
         .from('registro_motos')
         .select('*')
@@ -372,7 +373,7 @@ window.initModVehiculos = function() {
     }
 
     resetValidation();
-    // ✅ AQUÍ SE LLAMA A LA NUEVA FUNCIÓN MEJORADA
+    // ✅ AQUÍ SE LLAMA A LA FUNCIÓN QUE VERIFICA LOS 3 CAMPOS
     verificarCoincidenciaCruzada(data, tabla);
 
     const sufijo = tipo === 'moto' ? '' : '_a';
@@ -403,7 +404,7 @@ window.initModVehiculos = function() {
   }
 
   // ==========================================
-  // ✅ NUEVA FUNCIÓN: VERIFICAR COINCIDENCIA CRUZADA (PLACA, SERIALES)
+  // ✅ NUEVA FUNCIÓN: VERIFICAR COINCIDENCIA CRUZADA EN LOS 3 CAMPOS
   // ==========================================
   async function verificarCoincidenciaCruzada(data, tablaActual) {
     crossWarning.style.display = 'none';
