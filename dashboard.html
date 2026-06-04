@@ -67,6 +67,61 @@
         .welcome-desc { font-size: 1.05rem; color: #334155; max-width: 750px; margin: 0 auto 25px; line-height: 1.7; }
         .feature-badges { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 15px; }
         .feature-badge { background: #f1f5f9; color: #475569; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; border: 1px solid #e2e8f0; }
+
+        /*  PIE DE PÁGINA */
+.footer-container {
+    margin-top: auto;
+    background: #f8fafc;
+    border-top: 2px solid var(--beige-border);
+    padding: 15px 0 0 0;
+    text-align: center;
+}
+
+.footer-copyright {
+    background: var(--white);
+    padding: 12px 20px;
+    font-size: 0.85rem;
+    color: var(--text);
+    line-height: 1.6;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.footer-copyright strong {
+    color: var(--primary);
+}
+
+.footer-copyright .phone-numbers {
+    color: var(--secondary);
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.footer-marquee {
+    background: linear-gradient(135deg, #002b5c 0%, #001f44 100%);
+    padding: 10px 0;
+    overflow: hidden;
+    border-top: 3px solid var(--secondary);
+}
+
+.footer-marquee marquee {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.footer-marquee marquee span {
+    margin: 0 30px;
+}
+
+.footer-marquee .emoji-pnb {
+    font-size: 1.1rem;
+}
+
+@media (max-width: 600px) {
+    .footer-copyright { font-size: 0.75rem; padding: 10px 15px; }
+    .footer-marquee marquee { font-size: 0.85rem; }
+}
         
         /* 🔹 Responsive */
         @media (max-width: 900px) { .sidebar { transform: translateX(-100%); transition: transform 0.3s; } .sidebar.open { transform: translateX(0); } .main-content { margin-left: 0; } .menu-toggle { display: block !important; } .clock-badge { display: none; } }
@@ -206,7 +261,33 @@ Procesar <span class="arrow">▼</span>
         </main>
     </div>
 
-    <script src="js/config.js"></script>
-    <script src="js/dashboard.js"></script>
+</main>
+</div>
+
+<!-- 🔹 PIE DE PÁGINA -->
+<footer class="footer-container">
+    <!-- Copyright centrado -->
+    <div class="footer-copyright">
+        © 2026 <strong>OTIC-ZULIA PNB</strong> | Sistema Oficial<br>
+        Para gestión de usuarios y soporte comuníquese con los números:<br>
+        <span class="phone-numbers">📞 0424-6962854 / 0412-3302339</span>
+    </div>
+    
+    <!-- Marquesina -->
+    <div class="footer-marquee">
+        <marquee behavior="scroll" direction="left" scrollamount="6">
+            <span class="emoji-pnb">🚔</span>
+            ¡Proteger, defender y servir a nuestro pueblo!
+            <span class="emoji-pnb">🇪</span>
+            ¡Proteger, defender y servir a nuestro pueblo!
+            <span class="emoji-pnb">👮</span>
+            ¡Proteger, defender y servir a nuestro pueblo!
+            <span class="emoji-pnb">🛡️</span>
+        </marquee>
+    </div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/dashboard.js"></script>
 </body>
 </html>
