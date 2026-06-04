@@ -165,15 +165,13 @@ async function checkAvailability(input, msgId) {
       foundIn = tipoVehiculo === 'Motocicleta' ? 'Motocicletas' : 'Automóviles';
     }
 
-    // 3️⃣ Verificar en registro_vinculados (Respetando la regla de "vehículos diferentes")
-    // ⚠️ IMPORTANTE: Este código asume que tu tabla 'registro_vinculados' tiene una columna 
-    // llamada 'tipo_vehiculo' que guarda 'Motocicleta' o 'Automóvil'. 
-    // Si tu columna se llama 'tipo' o 'categoria', cámbialo en la línea de abajo (.eq).
+    // 3️⃣ Verificar en registro_vinculado (Respetando la regla de "vehículos diferentes")
+    // ✅ CORREGIDO: El nombre de la tabla es 'registro_vinculado' (singular)
     const { data: dataVinculados } = await window.supabaseClient
-      .from('registro_vinculados')
+      .from('registro_vinculado')
       .select('id')
       .ilike(col, val)
-      .eq('tipo_vehiculo', tipoVehiculo) // Solo bloquea si el tipo de vehículo coincide
+      .eq('tipo_vehiculo', tipoVehiculo)
       .limit(1);
 
     if (dataVinculados && dataVinculados.length > 0) {
