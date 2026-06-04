@@ -66,7 +66,7 @@ body {
   display: flex;
   flex-direction: column;
 }
-/* ✅ PERFIL DE USUARIO EN SIDEBAR ACTUALIZADO */
+/* ✅ PERFIL DE USUARIO EN SIDEBAR */
 .sidebar-profile {
   text-align: center;
   padding: 25px 15px 20px;
@@ -75,37 +75,39 @@ body {
   flex-shrink: 0;
 }
 .user-avatar {
-  width: 130px; /* ✅ MÁS GRANDE */
-  height: 130px; /* ✅ MÁS GRANDE */
-  border-radius: 12px; 
+  width: 100px; 
+  height: 100px; 
+  border-radius: 10px; 
   object-fit: cover;
-  border: 3px solid var(--secondary); 
+  border: 2px solid var(--secondary); 
   margin-bottom: 12px;
   background: #e2e8f0;
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
-/* ✅ JERARQUÍA: TEXTO BLANCO, CENTRADO, JUSTO DEBAJO DE LA FOTO */
-.user-jerarquia {
-  display: block;
-  width: 100%;
-  text-align: center;
-  background: var(--primary); /* Fondo oscuro para que el blanco resalte */
-  color: #ffffff; /* ✅ TEXTO EN BLANCO */
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-size: 0.85rem;
+.user-nivel-badge {
+  display: inline-block;
+  background: var(--primary);
+  color: var(--white);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
 }
 .user-fullname {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--primary);
-  text-transform: uppercase; /* ✅ SIEMPRE EN MAYÚSCULAS */
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
   line-height: 1.3;
-  letter-spacing: 0.5px;
+}
+.user-jerarquia {
+  font-size: 0.85rem;
+  color: var(--secondary); 
+  font-weight: 600;
+  font-style: italic;
 }
 /* 🔹 Menú Lateral */
 .menu { flex: 1; padding: 10px 0; }
@@ -170,9 +172,9 @@ body {
   text-align: center;
   overflow: hidden;
 }
-.welcome-logo { max-width: 250px; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
-.welcome-card h3 { color: var(--primary); margin-bottom: 10px; border: none; padding: 0; font-size: 1.9rem; }
-.welcome-desc { font-size: 1.10rem; color: #334155; max-width: 750px; margin: 0 auto 15px; line-height: 1.6; }
+.welcome-logo { max-width: 120px; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
+.welcome-card h3 { color: var(--primary); margin-bottom: 10px; border: none; padding: 0; font-size: 1.3rem; }
+.welcome-desc { font-size: 1rem; color: #334155; max-width: 750px; margin: 0 auto 15px; line-height: 1.6; }
 .feature-badges { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .feature-badge { background: #f1f5f9; color: #475569; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; border: 1px solid #e2e8f0; }
 /* 🔹 Sección Inferior (Fija al fondo) */
@@ -240,7 +242,7 @@ body {
   .copyright-wrapper { font-size: 0.7rem; padding: 8px 10px; }
   .welcome-desc { font-size: 0.85rem; }
   .welcome-card { padding: 15px; }
-  .user-avatar { width: 100px; height: 100px; }
+  .user-avatar { width: 80px; height: 80px; }
 }
 .menu-toggle { display: none; background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 5px; margin-right: 10px; cursor: pointer; }
 .loading { text-align: center; padding: 30px; color: #64748b; font-weight: 500; }
@@ -250,7 +252,7 @@ body {
 <nav class="navbar">
   <div style="display: flex; align-items: center;">
     <button class="menu-toggle" id="menuToggle">☰</button>
-    <h2>🚔 Sistema de Verificación y Registro Policial del CPNB - CCPE ZULIA</h2>
+    <h2>🚔 Sistema de verificación y registro policial del CPNB - CCPE ZULIA</h2>
   </div>
   <div class="user-info">
     <span id="live-clock" class="clock-badge">--:--:--</span>
@@ -261,12 +263,11 @@ body {
 </nav>
 <div class="dashboard-wrapper">
   <aside class="sidebar" id="sidebar">
-    <!-- ✅ PERFIL DE USUARIO ACTUALIZADO -->
     <div class="sidebar-profile">
       <img src="https://ui-avatars.com/api/?name=Usuario&background=002b5c&color=fff" alt="Foto de Usuario" class="user-avatar" id="user-foto">
-      <!-- ✅ JERARQUÍA JUSTO DEBAJO DE LA FOTO, CENTRADA Y EN BLANCO -->
-      <div class="user-jerarquia" id="user-jerarquia-display">---</div>
+      <div class="user-nivel-badge" id="user-nivel-display">---</div>
       <div class="user-fullname" id="user-nombre-display">Cargando...</div>
+      <div class="user-jerarquia" id="user-jerarquia-display">Jerarquía: ---</div>
     </div>
     <nav class="menu">
       <div class="menu-item">
@@ -285,7 +286,7 @@ body {
           Registro de Personas <span class="arrow">▼</span>
         </button>
         <div class="submenu" id="submenu-reg-personas">
-          <a href="#" class="submenu-item" data-src="html/reg-personas.html" data-js="js/reg-personas.js" data-init="initRegPersonas">📝 Registrar</a>
+          <a href="#" class="submenu-item" data-src="html/reg-personas.html" data-js="js/reg-personas.js" data-init="initRegPersonas"> Registrar</a>
           <a href="#" class="submenu-item" data-src="html/mod-personas.html" data-js="js/mod-personas.js" data-init="initModPersonas">✏️ Modificar</a>
           <a href="#" class="submenu-item danger" data-src="html/elim-personas.html" data-js="js/elim-personas.js" data-init="initElimPersonas">🗑️ Eliminar</a>
         </div>
@@ -323,6 +324,22 @@ body {
           <a href="#" class="submenu-item danger" data-src="html/elim-procesados.html" data-js="js/elim-procesados.js" data-init="initElimProcesados">🗑️ Eliminar</a>
         </div>
       </div>
+      
+      <!-- ✅ NUEVO MENÚ: DENUNCIAS -->
+      <div class="menu-item">
+        <button class="menu-btn" data-toggle="submenu-denuncias">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+          Denuncias <span class="arrow">▼</span>
+        </button>
+        <div class="submenu" id="submenu-denuncias">
+          <a href="#" class="submenu-item" data-src="html/consulta-denuncias.html" data-js="js/consulta-denuncias.js" data-init="initConsultaDenuncias">👁️ Consultar</a>
+          <a href="#" class="submenu-item" data-src="html/reg-denuncias.html" data-js="js/reg-denuncias.js" data-init="initRegDenuncias">📝 Registrar</a>
+          <a href="#" class="submenu-item" data-src="html/mod-denuncias.html" data-js="js/mod-denuncias.js" data-init="initModDenuncias">✏️ Modificar</a>
+          <a href="#" class="submenu-item danger" data-src="html/elim-denuncias.html" data-js="js/elim-denuncias.js" data-init="initElimDenuncias">🗑️ Eliminar</a>
+        </div>
+      </div>
+      <!-- ✅ FIN NUEVO MENÚ -->
+
       <div class="menu-item" id="menu-historial">
         <button class="menu-btn" data-toggle="submenu-historial">
           <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
@@ -343,7 +360,7 @@ body {
   <main id="app-content" class="main-content">
     <div class="card welcome-card">
       <div class="welcome-center">
-        <img src="img/logosistema.png" alt="Logo PNB" class="welcome-logo">
+        <img src="img/LOGO-PNB.png" alt="Logo PNB" class="welcome-logo">
         <h3>👋 Bienvenido al Sistema de Verificación y Registro Policial</h3>
         <p class="welcome-desc">
           Plataforma integral desarrollada para el <strong>Cuerpo de Policía Nacional Bolivariana (CPNB) - Centro de Coordinación Policial Estadal (CCPE) Zulia</strong>.
@@ -360,7 +377,7 @@ body {
         <div class="marquee-wrapper">
           <div class="marquee-inner">
             <div class="marquee-text">
-               ¡Proteger, defender y servir a nuestro pueblo!                &nbsp;&nbsp;&nbsp;                  ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp;             ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🛡️ ¡Proteger, defender y servir a nuestro pueblo!
+              🚔 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🇻🇪 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 👮 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🛡️ ¡Proteger, defender y servir a nuestro pueblo!
             </div>
           </div>
         </div>
