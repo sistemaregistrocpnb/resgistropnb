@@ -12,7 +12,7 @@
   --primary: #002b5c; --primary-dark: #001f44; --secondary: #c5a028;
   --beige-light: #f5f3e8; --beige-border: #d4c9a8;
   --bg: #f4f7fa; --text: #222; --white: #fff; --danger: #dc2626;
-  --sidebar-width: 270px; --header-height: 60px;
+  --sidebar-width: 280px; --header-height: 60px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
 
@@ -74,17 +74,17 @@ body {
 /* ✅ PERFIL DE USUARIO EN SIDEBAR */
 .sidebar-profile {
   text-align: center;
-  padding: 20px 15px;
+  padding: 25px 15px 20px;
   border-bottom: 1px solid #e2e8f0;
   background: #fafbfc;
   flex-shrink: 0;
 }
 .user-avatar {
-  width: 80px;
-  height: 80px;
-  border-radius: 8px; /* ✅ CUADRADO con esquinas suaves */
+  width: 100px; /* ✅ MÁS GRANDE */
+  height: 100px; /* ✅ MÁS GRANDE */
+  border-radius: 10px; /* ✅ CUADRADO con esquinas suaves */
   object-fit: cover;
-  border: 3px solid var(--secondary);
+  border: 2px solid var(--secondary); /* ✅ BORDE DORADO MÁS DELGAÑO */
   margin-bottom: 12px;
   background: #e2e8f0;
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
@@ -99,19 +99,20 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 .user-fullname {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--text);
   margin-bottom: 4px;
   line-height: 1.3;
 }
-.user-cedula {
-  font-size: 0.8rem;
-  color: #64748b;
-  font-weight: 500;
+.user-jerarquia {
+  font-size: 0.85rem;
+  color: var(--secondary); /* ✅ JERARQUÍA DESTACADA EN DORADO */
+  font-weight: 600;
+  font-style: italic;
 }
 
 /* 🔹 Menú Lateral */
@@ -140,10 +141,25 @@ body {
   flex: 1; 
   margin-left: var(--sidebar-width); 
   padding: 20px; 
-  overflow-y: auto; /* Scroll normal en módulos largos */
-  overflow-x: hidden; /* Bloquea scroll horizontal */
+  overflow-y: auto; /* ✅ Scroll normal en módulos largos */
+  overflow-x: hidden; 
   display: flex;
   flex-direction: column;
+}
+
+/* ✅ TARJETA BLANCA RESTAURADA (Para bienvenida y todos los módulos) */
+.card { 
+  background: var(--white); 
+  border-radius: 10px; 
+  padding: 25px; 
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+  margin-bottom: 20px; 
+}
+.card h3 { 
+  color: var(--primary); 
+  margin-bottom: 15px; 
+  padding-bottom: 10px; 
+  border-bottom: 2px solid var(--beige-border); 
 }
 
 /* 🔹 Vista de Bienvenida: "TODO JUSTO" */
@@ -152,8 +168,8 @@ body {
   display: flex; 
   flex-direction: column; 
   justify-content: space-between; /* Empuja el contenido inferior al fondo */
-  padding: 20px; 
-  margin-bottom: 0;
+  padding: 25px; 
+  margin-bottom: 0; /* Sin margen para que encaje perfecto al fondo */
   height: 100%; 
   box-sizing: border-box;
 }
@@ -168,11 +184,11 @@ body {
   overflow: hidden;
 }
 
-.welcome-logo { max-width: 110px; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
-.welcome-card h3 { color: var(--primary); margin-bottom: 10px; border: none; padding: 0; font-size: 1.25rem; }
-.welcome-desc { font-size: 0.95rem; color: #334155; max-width: 750px; margin: 0 auto 15px; line-height: 1.6; }
+.welcome-logo { max-width: 120px; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
+.welcome-card h3 { color: var(--primary); margin-bottom: 10px; border: none; padding: 0; font-size: 1.3rem; }
+.welcome-desc { font-size: 1rem; color: #334155; max-width: 750px; margin: 0 auto 15px; line-height: 1.6; }
 .feature-badges { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
-.feature-badge { background: #f1f5f9; color: #475569; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; border: 1px solid #e2e8f0; }
+.feature-badge { background: #f1f5f9; color: #475569; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; border: 1px solid #e2e8f0; }
 
 /* 🔹 Sección Inferior (Fija al fondo) */
 .welcome-bottom {
@@ -202,7 +218,7 @@ body {
 /* 🔹 Marquesina (Sin scroll horizontal) */
 .marquee-wrapper {
   width: 100%;
-  overflow: hidden; /* ✅ Bloquea cualquier desbordamiento horizontal */
+  overflow: hidden; 
   background: linear-gradient(135deg, #002b5c 0%, #001f44 100%);
   border-radius: 8px;
   border-top: 3px solid var(--secondary);
@@ -214,7 +230,7 @@ body {
   display: inline-block;
   white-space: nowrap;
   animation: scrollMarquee 25s linear infinite;
-  padding-left: 100%; /* Comienza fuera de la pantalla a la derecha */
+  padding-left: 100%; 
 }
 .marquee-text {
   color: #fff;
@@ -226,7 +242,7 @@ body {
 }
 @keyframes scrollMarquee {
   0% { transform: translateX(0); }
-  100% { transform: translateX(-100%); } /* Se desplaza completamente hacia la izquierda */
+  100% { transform: translateX(-100%); } 
 }
 
 /* 🔹 Responsive */
@@ -242,8 +258,10 @@ body {
   .copyright-wrapper { font-size: 0.7rem; padding: 8px 10px; } 
   .welcome-desc { font-size: 0.85rem; }
   .welcome-card { padding: 15px; }
+  .user-avatar { width: 80px; height: 80px; }
 }
 .menu-toggle { display: none; background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 5px; margin-right: 10px; cursor: pointer; }
+.loading { text-align: center; padding: 30px; color: #64748b; font-weight: 500; }
 </style>
 </head>
 <body>
@@ -262,12 +280,12 @@ body {
 
 <div class="dashboard-wrapper">
   <aside class="sidebar" id="sidebar">
-    <!-- ✅ PERFIL DE USUARIO (Reemplaza al logo anterior) -->
+    <!-- ✅ PERFIL DE USUARIO ACTUALIZADO -->
     <div class="sidebar-profile">
       <img src="https://ui-avatars.com/api/?name=Usuario&background=002b5c&color=fff" alt="Foto de Usuario" class="user-avatar" id="user-foto">
       <div class="user-nivel-badge" id="user-nivel-display">---</div>
       <div class="user-fullname" id="user-nombre-display">Cargando...</div>
-      <div class="user-cedula" id="user-cedula-display">V- ---</div>
+      <div class="user-jerarquia" id="user-jerarquia-display">Jerarquía: ---</div>
     </div>
 
     <nav class="menu">
@@ -344,8 +362,8 @@ body {
   </aside>
 
   <main id="app-content" class="main-content">
-    <!-- ✅ CONTENIDO DE BIENVENIDA (Distribuido "Todo Justo") -->
-    <div class="welcome-card">
+    <!-- ✅ CONTENIDO DE BIENVENIDA CON TARJETA BLANCA (.card) RESTAURADA -->
+    <div class="card welcome-card">
       
       <!-- Parte Central (Ocupa el espacio disponible y se centra) -->
       <div class="welcome-center">
@@ -365,20 +383,20 @@ body {
       
       <!-- Parte Inferior (Fija al fondo absoluto) -->
       <div class="welcome-bottom">
-        <!-- ✅ COPYRIGHT -->
-        <div class="copyright-wrapper">
-          © 2026 <strong>OTIC-ZULIA PNB</strong> | Sistema Oficial<br>
-          Para gestión de usuarios y soporte comuníquese con los números:<br>
-          <span class="phone-numbers">📞 0424-6962854 / 0412-3302339</span>
-        </div>
-        
-        <!-- ✅ MARQUESINA (Justo debajo del pie de página) -->
+        <!-- ✅ MARQUESINA -->
         <div class="marquee-wrapper">
           <div class="marquee-inner">
             <div class="marquee-text">
               🚔 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🇻🇪 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 👮 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🛡️ ¡Proteger, defender y servir a nuestro pueblo!
             </div>
           </div>
+        </div>
+        
+        <!-- ✅ COPYRIGHT -->
+        <div class="copyright-wrapper">
+          © 2026 <strong>OTIC-ZULIA PNB</strong> | Sistema Oficial<br>
+          Para gestión de usuarios y soporte comuníquese con los números:<br>
+          <span class="phone-numbers">📞 0424-6962854 / 0412-3302339</span>
         </div>
       </div>
       
