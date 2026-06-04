@@ -25,7 +25,7 @@ window.initElimVehiculos = function() {
   let isArchived = false;
   let pendingAction = null;
 
-  // 🔹 Helpers UI (Usamos innerHTML para que funcione el <strong>)
+  // 🔹 Helpers UI
   const showMsg = (el, txt, type) => { if(el) { el.innerHTML = txt; el.className = `search-msg ${type}`; el.style.display = 'block'; } };
   const hideMsg = (el) => { if(el) el.style.display = 'none'; };
   const showMsgElim = (txt, type) => { msgElim.innerHTML = txt; msgElim.className = `msg ${type}`; msgElim.style.display = 'block'; };
@@ -36,8 +36,18 @@ window.initElimVehiculos = function() {
   // 🔹 Mostrar datos + UI según estado
   function cargarDatos(data, source) {
     currentData = data;
-    isArchived = (source === 'archive');
-    currentTable = isArchived ? (data.tabla_origen || 'registro_motos') : source;
+    isArchived = (source === 'archive' || source === 'eliminados_vinculados' || source === 'vehiculos_eliminados');
+    
+    // Determinar tabla original
+    if (source === 'registro_vinculado' || source === 'eliminados_vinculados') {
+      currentTable = 'registro_vinculado';
+    } else if (source === 'registro_motos' || source === 'vehiculos_eliminados') {
+      currentTable = data.tabla_origen || 'registro_motos';
+    } else if (source === 'registro_automoviles') {
+      currentTable = 'registro_automoviles';
+    } else {
+      currentTable = data.tabla_origen || 'registro_motos';
+    }
     
     dataContainer.style.display = 'block';
     hideMsg(msgBuscar);
@@ -45,36 +55,58 @@ window.initElimVehiculos = function() {
     hideMsgElim();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
+    // 🔹 Banner dinámico para datos de persona (si es vinculado)
+    let personaBanner = document.getElementById('persona-banner');
+    if (!personaBanner) {
+      personaBanner = document.createElement('div');
+      personaBanner.id = 'persona-banner';
+      personaBanner.style.cssText = 'background: #eff6ff; border: 1px solid #3b82f6; border-radius: 6px; padding: 12px; margin-bottom: 16px; text-align: center; color: #1e40af;';
+      dataContainer.insertBefore(personaBanner, dataContainer.querySelector('fieldset'));
+    }
+
+    if (data.primer_nombre || data.cedula) {
+      personaBanner.innerHTML = `<strong>👤 Registro Vinculado (Persona + Vehículo)</strong><br>
+        Nombre: ${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}<br>
+        C.I: ${data.cedula || '-'} | Sexo: ${data.sexo || '-'} | Nacionalidad: ${data.nacionalidad || '-'}`;
+      personaBanner.style.display = 'block';
+    } else {
+      personaBanner.style.display = 'none';
+    }
+
+    // Llenar Campos de Vehículo
     setVal('elim-placa', data.placa);
     setVal('elim-serial-carro', data.serial_carroceria);
     setVal('elim-serial-motor', data.serial_motor);
-    setVal('elim-color', data.color);
-    setVal('elim-marca', data.marca);
-    setVal('elim-modelo', data.modelo);
-    setVal('elim-anio', data.anio);
+    setVal('elim-color', data.color_vehiculo || data.color);
+    setVal('elim-marca', data.marca_vehiculo || data.marca);
+    setVal('elim-modelo', data.modelo_vehiculo || data.modelo);
+    setVal('elim-anio', data.anio_vehiculo || data.anio);
     setVal('elim-estacion', data.estacion_policial);
     setVal('elim-dir-det', data.direccion_detencion);
     setVal('elim-estatus', data.estatus || 'Verificación');
     setVal('elim-obs', data.observaciones);
 
+    // Determinar tipo para mostrar
     let tipoMostrar = 'Desconocido';
-    if (source === 'registro_motos') tipoMostrar = 'Motocicleta';
-    else if (source === 'registro_automoviles') tipoMostrar = 'Automóvil';
-    else if (isArchived) tipoMostrar = data.tipo_vehiculo || 'Desconocido';
+    if (source === 'registro_motos' || data.tabla_origen === 'registro_motos') tipoMostrar = 'Motocicleta';
+    else if (source === 'registro_automoviles' || data.tabla_origen === 'registro_automoviles') tipoMostrar = 'Automóvil';
+    else if (data.tipo_vehiculo) tipoMostrar = data.tipo_vehiculo;
     setVal('elim-tipo', tipoMostrar);
 
-    const esMoto = (source === 'registro_motos') || (isArchived && data.tipo_vehiculo === 'Motocicleta');
+    const esMoto = tipoMostrar === 'Motocicleta';
     const boxCilindro = document.getElementById('box-cilindro');
     if (boxCilindro) {
-      boxCilindro.style.display = (esMoto && data.cilindraje) ? 'block' : 'none';
+      boxCilindro.style.display = (esMoto && (data.cilindraje || data.cilindraje === 0)) ? 'block' : 'none';
       if (data.cilindraje) setVal('elim-cilindraje', data.cilindraje);
     }
 
-    setPhoto('elim-foto-frontal', data.foto_frontal);
-    setPhoto('elim-foto-trasera', data.foto_trasera);
-    setPhoto('elim-foto-der', data.foto_lado_derecho);
-    setPhoto('elim-foto-izq', data.foto_lado_izquierdo);
+    // Fotos (buscar en campos de vehículo)
+    setPhoto('elim-foto-frontal', data.foto_frontal_vehiculo || data.foto_frontal);
+    setPhoto('elim-foto-trasera', data.foto_trasera_vehiculo || data.foto_trasera);
+    setPhoto('elim-foto-der', data.foto_lado_der_vehiculo || data.foto_lado_derecho);
+    setPhoto('elim-foto-izq', data.foto_lado_izq_vehiculo || data.foto_lado_izquierdo);
 
+    // 🔔 LÓGICA DE UI SEGÚN ESTADO
     if (isArchived) {
       if (archivedBanner) archivedBanner.style.display = 'block';
       const dateEl = document.getElementById('archived-date');
@@ -95,7 +127,7 @@ window.initElimVehiculos = function() {
   }
 
   // ==========================================
-  // 🔍 BÚSQUEDA MULTI-TABLA CON CORRELACIÓN DE SERIALES
+  // 🔍 BÚSQUEDA MULTI-TABLA (5 TABLAS)
   // ==========================================
   function detectarCoincidenciasVehiculo(reg, val) {
     const campos = [];
@@ -111,46 +143,36 @@ window.initElimVehiculos = function() {
     const resultados = [];
     const val = valor.trim().toUpperCase();
     try {
-      // 1. Búsqueda directa por el valor ingresado
+      // 1. Motos Activas
       const { data: motos, error: errMoto } = await window.supabaseClient
-        .from('registro_motos')
-        .select('*')
+        .from('registro_motos').select('*')
         .or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
-      
       if (!errMoto && motos && motos.length > 0) {
         motos.forEach(reg => resultados.push({
           origen: 'registro_motos', tipo: 'moto', icono: '🏍️', color: '#dc2626', colorBg: '#fef2f2', clase: 'moto',
           titulo: '🏍️ Motocicleta Activa',
-          linea1: `Placa: ${reg.placa || '-'}`,
-          linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
-          linea3: `Serial: ${reg.serial_carroceria || '-'}`,
-          encontrado_por: detectarCoincidenciasVehiculo(reg, val),
-          datos: reg, eliminado: false
+          linea1: `Placa: ${reg.placa || '-'}`, linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`, linea3: `Serial: ${reg.serial_carroceria || '-'}`,
+          encontrado_por: detectarCoincidenciasVehiculo(reg, val), datos: reg, eliminado: false
         }));
       }
 
+      // 2. Autos Activos
       const { data: autos, error: errAuto } = await window.supabaseClient
-        .from('registro_automoviles')
-        .select('*')
+        .from('registro_automoviles').select('*')
         .or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
-      
       if (!errAuto && autos && autos.length > 0) {
         autos.forEach(reg => resultados.push({
           origen: 'registro_automoviles', tipo: 'auto', icono: '🚙', color: '#059669', colorBg: '#ecfdf5', clase: 'auto',
           titulo: '🚙 Automóvil Activo',
-          linea1: `Placa: ${reg.placa || '-'}`,
-          linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
-          linea3: `Serial: ${reg.serial_carroceria || '-'}`,
-          encontrado_por: detectarCoincidenciasVehiculo(reg, val),
-          datos: reg, eliminado: false
+          linea1: `Placa: ${reg.placa || '-'}`, linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`, linea3: `Serial: ${reg.serial_carroceria || '-'}`,
+          encontrado_por: detectarCoincidenciasVehiculo(reg, val), datos: reg, eliminado: false
         }));
       }
 
+      // 3. Vinculados Activos
       const { data: vinculados, error: errVinc } = await window.supabaseClient
-        .from('registro_vinculado')
-        .select('*')
+        .from('registro_vinculado').select('*')
         .or(`cedula.ilike.${val},placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
-      
       if (!errVinc && vinculados && vinculados.length > 0) {
         vinculados.forEach(reg => resultados.push({
           origen: 'registro_vinculado', tipo: 'vinculado', icono: '🔗', color: '#002b5c', colorBg: '#eff6ff', clase: 'vinculado',
@@ -158,76 +180,43 @@ window.initElimVehiculos = function() {
           linea1: `👤 ${reg.primer_nombre || ''} ${reg.primer_apellido || ''} | C.I: ${reg.cedula || '-'}`,
           linea2: `🚗 ${reg.tipo_vehiculo || ''} ${reg.marca_vehiculo || ''} | Placa: ${reg.placa || '-'}`,
           linea3: `🏛️ ${reg.estacion_policial || '-'}`,
-          encontrado_por: detectarCoincidenciasVehiculo(reg, val),
-          datos: reg, eliminado: false
+          encontrado_por: detectarCoincidenciasVehiculo(reg, val), datos: reg, eliminado: false
         }));
       }
 
-      // 2. 🔍 VERIFICACIÓN CRUZADA POR SERIALES (Detecta clonación oculta)
-      // Si encontramos autos, buscamos motos con los mismos seriales
-      if (autos && autos.length > 0) {
-        for (const auto of autos) {
-          const condiciones = [];
-          if (auto.serial_carroceria) condiciones.push(`serial_carroceria.ilike.${auto.serial_carroceria}`);
-          if (auto.serial_motor) condiciones.push(`serial_motor.ilike.${auto.serial_motor}`);
-          
-          if (condiciones.length > 0) {
-            const { data: motosCruzadas } = await window.supabaseClient
-              .from('registro_motos')
-              .select('*')
-              .or(condiciones.join(','));
-            
-            if (motosCruzadas) {
-              motosCruzadas.forEach(moto => {
-                const yaExiste = resultados.some(r => r.origen === 'registro_motos' && r.datos.id === moto.id);
-                if (!yaExiste) {
-                  resultados.push({
-                    origen: 'registro_motos', tipo: 'moto', icono: '🏍️', color: '#dc2626', colorBg: '#fef2f2', clase: 'moto',
-                    titulo: '🏍️ Motocicleta (Coincidencia por Serial)',
-                    linea1: `Placa: ${moto.placa || '-'}`,
-                    linea2: `${moto.marca || ''} ${moto.modelo || ''} ${moto.anio || ''}`,
-                    linea3: `Serial: ${moto.serial_carroceria || '-'}`,
-                    encontrado_por: ['Serial Carrocería/Motor'],
-                    datos: moto, eliminado: false
-                  });
-                }
-              });
-            }
-          }
-        }
+      // 4. Vehículos Eliminados
+      const { data: eliminados, error: errElim } = await window.supabaseClient
+        .from('vehiculos_eliminados').select('*')
+        .or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
+      if (!errElim && eliminados && eliminados.length > 0) {
+        eliminados.forEach(reg => {
+          const esMoto = reg.tipo_vehiculo === 'Motocicleta';
+          resultados.push({
+            origen: 'vehiculos_eliminados', tipo: esMoto ? 'moto' : 'auto',
+            icono: esMoto ? '🗄️🏍️' : '🗄️🚙', color: '#64748b', colorBg: '#f1f5f9', clase: 'archivado',
+            titulo: `🗄️ Archivado (${reg.tipo_vehiculo || 'Vehículo'})`,
+            linea1: `Placa: ${reg.placa || '-'}`, linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`, linea3: `Eliminado por: ${reg.eliminado_por || 'Sistema'}`,
+            encontrado_por: detectarCoincidenciasVehiculo(reg, val), datos: reg, eliminado: true
+          });
+        });
       }
 
-      // Si encontramos motos, buscamos autos con los mismos seriales
-      if (motos && motos.length > 0) {
-        for (const moto of motos) {
-          const condiciones = [];
-          if (moto.serial_carroceria) condiciones.push(`serial_carroceria.ilike.${moto.serial_carroceria}`);
-          if (moto.serial_motor) condiciones.push(`serial_motor.ilike.${moto.serial_motor}`);
-          
-          if (condiciones.length > 0) {
-            const { data: autosCruzados } = await window.supabaseClient
-              .from('registro_automoviles')
-              .select('*')
-              .or(condiciones.join(','));
-            
-            if (autosCruzados) {
-              autosCruzados.forEach(auto => {
-                const yaExiste = resultados.some(r => r.origen === 'registro_automoviles' && r.datos.id === auto.id);
-                if (!yaExiste) {
-                  resultados.push({
-                    origen: 'registro_automoviles', tipo: 'auto', icono: '🚙', color: '#059669', colorBg: '#ecfdf5', clase: 'auto',
-                    titulo: '🚙 Automóvil (Coincidencia por Serial)',
-                    linea1: `Placa: ${auto.placa || '-'}`,
-                    linea2: `${auto.marca || ''} ${auto.modelo || ''} ${auto.anio || ''}`,
-                    linea3: `Serial: ${auto.serial_carroceria || '-'}`,
-                    encontrado_por: ['Serial Carrocería/Motor'],
-                    datos: auto, eliminado: false
-                  });
-                }
-              });
-            }
-          }
-        }
+      // 5. 🔗 Eliminados Vinculados (Persona + Vehículo)
+      const { data: elimVinc, error: errElimVinc } = await window.supabaseClient
+        .from('eliminados_vinculados').select('*')
+        .or(`cedula.ilike.${val},placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
+      if (!errElimVinc && elimVinc && elimVinc.length > 0) {
+        elimVinc.forEach(reg => {
+          resultados.push({
+            origen: 'eliminados_vinculados', tipo: 'vinculado',
+            icono: '🗄️🔗', color: '#64748b', colorBg: '#f1f5f9', clase: 'archivado',
+            titulo: '🗄️ Vinculado Archivado (Persona + Vehículo)',
+            linea1: `👤 ${reg.primer_nombre || ''} ${reg.primer_apellido || ''} | C.I: ${reg.cedula || '-'}`,
+            linea2: `🚗 ${reg.tipo_vehiculo || ''} ${reg.marca_vehiculo || ''} | Placa: ${reg.placa || '-'}`,
+            linea3: `Eliminado por: ${reg.eliminado_por || 'Sistema'}`,
+            encontrado_por: detectarCoincidenciasVehiculo(reg, val), datos: reg, eliminado: true
+          });
+        });
       }
 
       return resultados;
@@ -241,9 +230,9 @@ window.initElimVehiculos = function() {
     selectionList.innerHTML = '';
     resultCount.textContent = resultados.length;
     
-    const tieneMoto = resultados.some(r => r.origen === 'registro_motos');
-    const tieneAuto = resultados.some(r => r.origen === 'registro_automoviles');
-    const tieneVinculado = resultados.some(r => r.origen === 'registro_vinculado');
+    const tieneMoto = resultados.some(r => r.origen === 'registro_motos' || (r.origen === 'vehiculos_eliminados' && r.tipo === 'moto'));
+    const tieneAuto = resultados.some(r => r.origen === 'registro_automoviles' || (r.origen === 'vehiculos_eliminados' && r.tipo === 'auto'));
+    const tieneVinculado = resultados.some(r => r.origen === 'registro_vinculado' || r.origen === 'eliminados_vinculados');
 
     if (crossWarning) {
       if ((tieneMoto && tieneAuto) || (tieneVinculado && (tieneMoto || tieneAuto))) {
@@ -294,8 +283,7 @@ window.initElimVehiculos = function() {
   }
 
   async function cargarResultado(resultado) {
-    const source = resultado.eliminado ? 'archive' : resultado.origen;
-    cargarDatos(resultado.datos, source);
+    cargarDatos(resultado.datos, resultado.origen);
     selectionPanel.style.display = 'none';
     if (crossWarning) crossWarning.style.display = 'none';
   }
@@ -306,7 +294,7 @@ window.initElimVehiculos = function() {
       const val = buscarInput.value.trim();
       if (val.length < 5) return showMsg(msgBuscar, '⚠️ Ingrese un dato válido (mín. 5 caracteres).', 'error');
       
-      showMsg(msgBuscar, '🔍 Buscando en todos los registros y correlacionando seriales...', 'success');
+      showMsg(msgBuscar, '🔍 Buscando en todos los registros...', 'success');
       buscarBtn.disabled = true;
       dataContainer.style.display = 'none';
       selectionPanel.style.display = 'none';
@@ -322,7 +310,7 @@ window.initElimVehiculos = function() {
           showMsg(msgBuscar, '✅ 1 registro encontrado. Cargando...', 'success');
           setTimeout(() => cargarResultado(resultados[0]), 300);
         } else {
-          showMsg(msgBuscar, `🔎 Se encontraron <strong>${resultados.length} coincidencias</strong> (directas o por serial). Seleccione cuál gestionar:`, 'success');
+          showMsg(msgBuscar, `🔎 Se encontraron <strong>${resultados.length} coincidencias</strong>. Seleccione cuál gestionar:`, 'success');
           setTimeout(() => mostrarPanelSeleccion(resultados, val), 300);
         }
       } catch (err) {
@@ -338,7 +326,6 @@ window.initElimVehiculos = function() {
     });
   }
 
-  // Listener para cancelar búsqueda
   const btnCancelSearch = document.getElementById('btn-cancel-search');
   if (btnCancelSearch) {
     btnCancelSearch.addEventListener('click', () => {
@@ -378,7 +365,7 @@ window.initElimVehiculos = function() {
   if (btnModalYes) btnModalYes.addEventListener('click', ejecutarAccion);
 
   // ==========================================
-  // 🔹 ELIMINAR (Activa → Eliminados)
+  // 🔹 ELIMINAR (Activa → Archivada)
   // ==========================================
   async function eliminarRegistro() {
     if (!currentData) return;
@@ -390,37 +377,111 @@ window.initElimVehiculos = function() {
       const { data: { user } } = await window.supabaseClient.auth.getUser();
       const eliminadoPor = user?.email || 'usuario@sistema';
       
-      const dataToArchive = {
-        id_original: currentData.id,
-        tabla_origen: currentTable,
-        tipo_vehiculo: currentTable === 'registro_motos' ? 'Motocicleta' : 'Automóvil',
-        eliminado_por: eliminadoPor,
-        eliminado_en: new Date().toISOString(),
-        placa: currentData.placa,
-        marca: currentData.marca,
-        modelo: currentData.modelo,
-        anio: currentData.anio,
-        color: currentData.color,
-        serial_carroceria: currentData.serial_carroceria,
-        serial_motor: currentData.serial_motor,
-        cilindraje: currentData.cilindraje || null,
-        estacion_policial: currentData.estacion_policial,
-        direccion_detencion: currentData.direccion_detencion,
-        estatus: currentData.estatus,
-        observaciones: currentData.observaciones,
-        foto_frontal: currentData.foto_frontal,
-        foto_trasera: currentData.foto_trasera,
-        foto_lado_derecho: currentData.foto_lado_derecho,
-        foto_lado_izquierdo: currentData.foto_lado_izquierdo
-      };
-
-      const { error: insErr } = await window.supabaseClient.from('vehiculos_eliminados').insert([dataToArchive]);
-      if (insErr) throw new Error('Error archivando: ' + insErr.message);
-
-      const { error: delErr } = await window.supabaseClient.from(currentTable).delete().eq('id', currentData.id);
-      if (delErr) throw new Error('Error eliminando: ' + delErr.message);
-
-      showMsgElim('✅ Vehículo eliminado y archivado correctamente.', 'success');
+      // Detectar si es un registro vinculado (tiene datos de persona)
+      const esVinculado = currentTable === 'registro_vinculado' || currentData.primer_nombre || currentData.cedula;
+      
+      let error;
+      
+      if (esVinculado) {
+        // 📌 GUARDAR EN eliminados_vinculados
+        const dataToArchive = {
+          eliminado_por: eliminadoPor,
+          eliminado_en: new Date().toISOString(),
+          // Datos de persona
+          primer_nombre: currentData.primer_nombre,
+          segundo_nombre: currentData.segundo_nombre,
+          primer_apellido: currentData.primer_apellido,
+          segundo_apellido: currentData.segundo_apellido,
+          cedula: currentData.cedula,
+          fecha_nacimiento: currentData.fecha_nacimiento,
+          edad: currentData.edad,
+          apodo: currentData.apodo,
+          marca_corporal: currentData.marca_corporal,
+          nacionalidad: currentData.nacionalidad,
+          sexo: currentData.sexo,
+          direccion: currentData.direccion,
+          tlf_pais: currentData.tlf_pais,
+          tlf_numero: currentData.tlf_numero,
+          estatura_cm: currentData.estatura_cm,
+          color_piel: currentData.color_piel,
+          color_ojos: currentData.color_ojos,
+          color_cabello: currentData.color_cabello,
+          complexion: currentData.complexion,
+          usa_lentes: currentData.usa_lentes,
+          detalle_lentes: currentData.detalle_lentes,
+          perforaciones: currentData.perforaciones,
+          detalle_perforaciones: currentData.detalle_perforaciones,
+          condicion_medica: currentData.condicion_medica,
+          consume_medicamento: currentData.consume_medicamento,
+          problema_judicial: currentData.problema_judicial,
+          foto_frontal_persona: currentData.foto_frontal_persona,
+          foto_perfil_izq_persona: currentData.foto_perfil_izq_persona,
+          foto_perfil_der_persona: currentData.foto_perfil_der_persona,
+          // Datos de vehículo
+          tipo_vehiculo: currentData.tipo_vehiculo,
+          placa: currentData.placa,
+          serial_carroceria: currentData.serial_carroceria,
+          serial_motor: currentData.serial_motor,
+          cilindraje: currentData.cilindraje,
+          color_vehiculo: currentData.color_vehiculo,
+          anio_vehiculo: currentData.anio_vehiculo,
+          marca_vehiculo: currentData.marca_vehiculo,
+          modelo_vehiculo: currentData.modelo_vehiculo,
+          foto_frontal_vehiculo: currentData.foto_frontal_vehiculo,
+          foto_trasera_vehiculo: currentData.foto_trasera_vehiculo,
+          foto_lado_der_vehiculo: currentData.foto_lado_der_vehiculo,
+          foto_lado_izq_vehiculo: currentData.foto_lado_izq_vehiculo,
+          // Datos de registro
+          estatus: currentData.estatus,
+          estacion_policial: currentData.estacion_policial,
+          direccion_detencion: currentData.direccion_detencion,
+          observaciones: currentData.observaciones
+        };
+        
+        const res = await window.supabaseClient.from('eliminados_vinculados').insert([dataToArchive]);
+        error = res.error;
+        
+        if (!error) {
+          const delRes = await window.supabaseClient.from('registro_vinculado').delete().eq('id', currentData.id);
+          error = delRes.error;
+        }
+      } else {
+        // 📌 GUARDAR EN vehiculos_eliminados (SIN id_original para evitar error de bigint)
+        const dataToArchive = {
+          tabla_origen: currentTable,
+          tipo_vehiculo: currentTable === 'registro_motos' ? 'Motocicleta' : 'Automóvil',
+          eliminado_por: eliminadoPor,
+          eliminado_en: new Date().toISOString(),
+          placa: currentData.placa,
+          marca: currentData.marca,
+          modelo: currentData.modelo,
+          anio: currentData.anio,
+          color: currentData.color,
+          serial_carroceria: currentData.serial_carroceria,
+          serial_motor: currentData.serial_motor,
+          cilindraje: currentData.cilindraje || null,
+          estacion_policial: currentData.estacion_policial,
+          direccion_detencion: currentData.direccion_detencion,
+          estatus: currentData.estatus,
+          observaciones: currentData.observaciones,
+          foto_frontal: currentData.foto_frontal,
+          foto_trasera: currentData.foto_trasera,
+          foto_lado_derecho: currentData.foto_lado_derecho,
+          foto_lado_izquierdo: currentData.foto_lado_izquierdo
+        };
+        
+        const res = await window.supabaseClient.from('vehiculos_eliminados').insert([dataToArchive]);
+        error = res.error;
+        
+        if (!error) {
+          const delRes = await window.supabaseClient.from(currentTable).delete().eq('id', currentData.id);
+          error = delRes.error;
+        }
+      }
+      
+      if (error) throw error;
+      
+      showMsgElim('✅ Registro eliminado y archivado correctamente.', 'success');
       setTimeout(() => {
         dataContainer.style.display = 'none';
         buscarInput.value = '';
@@ -439,7 +500,7 @@ window.initElimVehiculos = function() {
   }
 
   // ==========================================
-  // 🔹 REINTEGRAR (Eliminados → Activa)
+  // 🔹 REINTEGRAR (Archivada → Activa)
   // ==========================================
   async function reintegrarRegistro() {
     if (!currentData) return;
@@ -448,36 +509,107 @@ window.initElimVehiculos = function() {
     hideMsgElim();
 
     try {
-      const tablaDestino = currentData.tabla_origen || currentTable;
-      const esMoto = currentData.tipo_vehiculo === 'Motocicleta' || tablaDestino === 'registro_motos';
+      // Detectar de qué tabla de eliminados viene
+      const vieneDeVinculados = currentTable === 'eliminados_vinculados' || currentData.primer_nombre || currentData.cedula;
+      let error;
       
-      const dataToRestore = {
-        estatus: currentData.estatus,
-        estacion_policial: currentData.estacion_policial,
-        direccion_detencion: currentData.direccion_detencion,
-        observaciones: currentData.observaciones,
-        placa: currentData.placa,
-        marca: currentData.marca,
-        modelo: currentData.modelo,
-        anio: currentData.anio,
-        color: currentData.color,
-        serial_carroceria: currentData.serial_carroceria,
-        serial_motor: currentData.serial_motor || '', // ✅ Evitar null
-        foto_frontal: currentData.foto_frontal,
-        foto_trasera: currentData.foto_trasera,
-        foto_lado_derecho: currentData.foto_lado_derecho,
-        foto_lado_izquierdo: currentData.foto_lado_izquierdo
-      };
+      if (vieneDeVinculados) {
+        // 📌 REINTEGRAR A registro_vinculado
+        const dataToRestore = {
+          estatus: currentData.estatus,
+          estacion_policial: currentData.estacion_policial,
+          direccion_detencion: currentData.direccion_detencion,
+          observaciones: currentData.observaciones,
+          // Persona
+          primer_nombre: currentData.primer_nombre,
+          segundo_nombre: currentData.segundo_nombre,
+          primer_apellido: currentData.primer_apellido,
+          segundo_apellido: currentData.segundo_apellido,
+          cedula: currentData.cedula,
+          fecha_nacimiento: currentData.fecha_nacimiento,
+          edad: currentData.edad,
+          apodo: currentData.apodo,
+          marca_corporal: currentData.marca_corporal,
+          nacionalidad: currentData.nacionalidad,
+          sexo: currentData.sexo,
+          direccion: currentData.direccion,
+          tlf_pais: currentData.tlf_pais,
+          tlf_numero: currentData.tlf_numero,
+          estatura_cm: currentData.estatura_cm,
+          color_piel: currentData.color_piel,
+          color_ojos: currentData.color_ojos,
+          color_cabello: currentData.color_cabello,
+          complexion: currentData.complexion,
+          usa_lentes: currentData.usa_lentes,
+          detalle_lentes: currentData.detalle_lentes,
+          perforaciones: currentData.perforaciones,
+          detalle_perforaciones: currentData.detalle_perforaciones,
+          condicion_medica: currentData.condicion_medica,
+          consume_medicamento: currentData.consume_medicamento,
+          problema_judicial: currentData.problema_judicial,
+          foto_frontal_persona: currentData.foto_frontal_persona,
+          foto_perfil_izq_persona: currentData.foto_perfil_izq_persona,
+          foto_perfil_der_persona: currentData.foto_perfil_der_persona,
+          // Vehículo
+          tipo_vehiculo: currentData.tipo_vehiculo,
+          placa: currentData.placa,
+          serial_carroceria: currentData.serial_carroceria,
+          serial_motor: currentData.serial_motor || '',
+          cilindraje: currentData.cilindraje,
+          color_vehiculo: currentData.color_vehiculo,
+          anio_vehiculo: currentData.anio_vehiculo,
+          marca_vehiculo: currentData.marca_vehiculo,
+          modelo_vehiculo: currentData.modelo_vehiculo,
+          foto_frontal_vehiculo: currentData.foto_frontal_vehiculo,
+          foto_trasera_vehiculo: currentData.foto_trasera_vehiculo,
+          foto_lado_der_vehiculo: currentData.foto_lado_der_vehiculo,
+          foto_lado_izq_vehiculo: currentData.foto_lado_izq_vehiculo
+        };
+        
+        const res = await window.supabaseClient.from('registro_vinculado').insert([dataToRestore]);
+        error = res.error;
+        
+        if (!error) {
+          const delRes = await window.supabaseClient.from('eliminados_vinculados').delete().eq('id', currentData.id);
+          error = delRes.error;
+        }
+      } else {
+        // 📌 REINTEGRAR A registro_motos o registro_automoviles
+        const tablaDestino = currentData.tabla_origen || (currentData.tipo_vehiculo === 'Motocicleta' ? 'registro_motos' : 'registro_automoviles');
+        const esMoto = currentData.tipo_vehiculo === 'Motocicleta' || tablaDestino === 'registro_motos';
+        
+        const dataToRestore = {
+          estatus: currentData.estatus,
+          estacion_policial: currentData.estacion_policial,
+          direccion_detencion: currentData.direccion_detencion,
+          observaciones: currentData.observaciones,
+          placa: currentData.placa,
+          marca: currentData.marca,
+          modelo: currentData.modelo,
+          anio: currentData.anio,
+          color: currentData.color,
+          serial_carroceria: currentData.serial_carroceria,
+          serial_motor: currentData.serial_motor || '',
+          foto_frontal: currentData.foto_frontal,
+          foto_trasera: currentData.foto_trasera,
+          foto_lado_derecho: currentData.foto_lado_derecho,
+          foto_lado_izquierdo: currentData.foto_lado_izquierdo
+        };
+        
+        if (esMoto) dataToRestore.cilindraje = currentData.cilindraje || null;
+        
+        const res = await window.supabaseClient.from(tablaDestino).insert([dataToRestore]);
+        error = res.error;
+        
+        if (!error) {
+          const delRes = await window.supabaseClient.from('vehiculos_eliminados').delete().eq('id', currentData.id);
+          error = delRes.error;
+        }
+      }
       
-      if (esMoto) dataToRestore.cilindraje = currentData.cilindraje || null;
-
-      const { error: insErr } = await window.supabaseClient.from(tablaDestino).insert([dataToRestore]);
-      if (insErr) throw new Error('Error restaurando: ' + insErr.message);
-
-      const { error: delError } = await window.supabaseClient.from('vehiculos_eliminados').delete().eq('id', currentData.id);
-      if (delError) throw new Error('Error limpiando historial: ' + delError.message);
-
-      showMsgElim('✅ Vehículo reintegrado al sistema activo.', 'success');
+      if (error) throw error;
+      
+      showMsgElim('✅ Registro reintegrado al sistema activo.', 'success');
       setTimeout(() => {
         dataContainer.style.display = 'none';
         buscarInput.value = '';
@@ -489,7 +621,7 @@ window.initElimVehiculos = function() {
       console.error('Error reintegrando:', err);
       let msg = 'Error al reintegrar.';
       if (err.message.includes('23505') || err.message.includes('unique')) {
-        msg = '❌ Esta placa ya existe en el sistema activo.';
+        msg = '❌ Este registro ya existe en el sistema activo.';
       } else {
         msg = '❌ ' + err.message;
       }
@@ -506,14 +638,14 @@ window.initElimVehiculos = function() {
   if (btnEliminar) {
     btnEliminar.addEventListener('click', () => {
       if (!currentData) return;
-      showModal('⚠️ Confirmar Eliminación', `¿Está seguro de eliminar el vehículo con placa ${currentData.placa}? Esta acción lo moverá al archivo de eliminados.`, 'delete', 'danger');
+      showModal('⚠️ Confirmar Eliminación', `¿Está seguro de eliminar este registro? Esta acción lo moverá al archivo de eliminados.`, 'delete', 'danger');
     });
   }
 
   if (btnReintegrar) {
     btnReintegrar.addEventListener('click', () => {
       if (!currentData) return;
-      showModal('⚠️ Confirmar Reintegración', `¿Está seguro de reintegrar el vehículo con placa ${currentData.placa} al sistema activo?`, 'reintegrate', 'success');
+      showModal('⚠️ Confirmar Reintegración', `¿Está seguro de reintegrar este registro al sistema activo?`, 'reintegrate', 'success');
     });
   }
 
