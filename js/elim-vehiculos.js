@@ -41,7 +41,7 @@ window.initElimVehiculos = function() {
     
     dataContainer.style.display = 'block';
     hideMsg(msgBuscar);
-    selectionPanel.classList.remove('active');
+    selectionPanel.style.display = 'none';
     hideMsgElim();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -241,7 +241,7 @@ window.initElimVehiculos = function() {
       });
     });
 
-    selectionPanel.classList.add('active');
+    selectionPanel.style.display = 'block';
     dataContainer.style.display = 'none';
     hideMsg(msgBuscar);
   }
@@ -249,7 +249,7 @@ window.initElimVehiculos = function() {
   async function cargarResultado(resultado) {
     const source = resultado.eliminado ? 'archive' : resultado.origen;
     cargarDatos(resultado.datos, source);
-    selectionPanel.classList.remove('active');
+    selectionPanel.style.display = 'none';
     if (crossWarning) crossWarning.style.display = 'none';
   }
 
@@ -262,7 +262,7 @@ window.initElimVehiculos = function() {
       showMsg(msgBuscar, '🔍 Buscando en todos los registros...', 'success');
       buscarBtn.disabled = true;
       dataContainer.style.display = 'none';
-      selectionPanel.classList.remove('active');
+      selectionPanel.style.display = 'none';
       if (archivedBanner) archivedBanner.style.display = 'none';
       hideMsgElim();
 
@@ -295,7 +295,7 @@ window.initElimVehiculos = function() {
   const btnCancelSearch = document.getElementById('btn-cancel-search');
   if (btnCancelSearch) {
     btnCancelSearch.addEventListener('click', () => {
-      selectionPanel.classList.remove('active');
+      selectionPanel.style.display = 'none';
       if (crossWarning) crossWarning.style.display = 'none';
       msgBuscar.style.display = 'none';
       buscarInput.value = '';
@@ -380,7 +380,7 @@ window.initElimVehiculos = function() {
         hideMsg(msgBuscar);
         hideMsg(msgElim);
         if (archivedBanner) archivedBanner.style.display = 'none';
-        selectionPanel.classList.remove('active');
+        selectionPanel.style.display = 'none';
       }, 4000);
     } catch (err) {
       console.error('❌ Error eliminando:', err);
