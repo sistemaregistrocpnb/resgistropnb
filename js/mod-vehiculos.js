@@ -570,88 +570,105 @@ window.initModVehiculos = function() {
   // ==========================================
   // 🔹 VALIDACIÓN EN TIEMPO REAL
   // ==========================================
-  function debounce(func, wait) {
-    let timeout;
-    return function(...args) {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-  }
+// ==========================================
+// 🔹 VALIDACIÓN EN TIEMPO REAL (ESPECÍFICA POR TIPO + TABLA VINCULADO)
+// ==========================================
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
 
-  async function checkAvailability(input, msgId) {
-    const val = input.value.trim().toUpperCase();
-    const msgEl = document.getElementById(msgId);
+async function checkAvailability(input, msgId) {
+  const val = input.value.trim().toUpperCase();
+  const msgEl = document.getElementById(msgId);
+  
+  if (!val) {
+    input.classList.remove('input-valid', 'input-error');
+    if (msgEl) { msgEl.textContent = ''; msgEl.className = 'status-msg'; }
+    return;
+  }
+  
+  if (!currentData) return; // No validar si no hay registro cargado
+  
+  if (msgEl) {
+    msgEl.textContent = '⏳ Verificando...';
+    msgEl.className = 'status-msg';
+  }
+  
+  try {
+    let found = false;
+    let foundIn = '';
+    const currentTable = document.getElementById('mod_tabla_destino').value;
+    const col = input.id === 'm_placa' ? 'placa' : 
+                (input.id === 'm_serial_carroceria' ? 'serial_carroceria' : 'serial_motor');
     
-    if (!val) {
-      input.classList.remove('input-valid', 'input-error');
-      if (msgEl) { msgEl.textContent = ''; msgEl.className = 'status-msg'; }
-      return;
+    // 1️⃣ Buscar en la tabla principal (Motos o Autos), excluyendo el registro actual
+    const { data: dataPrincipal } = await window.supabaseClient
+      .from(currentTable)
+      .select('id')
+      .ilike(col, val)
+      .neq('id', currentData.id) // Excluir el registro que estamos editando
+      .limit(1);
+    
+    if (dataPrincipal && dataPrincipal.length > 0) {
+      found = true;
+      const tipoVeh = document.getElementById('mod_tipo_vehiculo').value;
+      foundIn = tipoVeh === 'Motocicleta' ? 'Motocicletas' : 'Automóviles';
     }
     
-    if (!currentData) return;
-    
-    if (msgEl) { 
-      msgEl.textContent = '⏳ Verificando...'; 
-      msgEl.className = 'status-msg'; 
-    }
-    
-    try {
-      let found = false;
-      const currentTable = document.getElementById('mod_tabla_destino').value;
-      const col = input.id === 'm_placa' ? 'placa' : (input.id === 'm_serial_carroceria' ? 'serial_carroceria' : 'serial_motor');
-      
-      const { data } = await window.supabaseClient
-        .from(currentTable)
+    // 2️⃣ Buscar en registro_vinculado (solo si el tipo de vehículo coincide)
+    if (!found) {
+      const tipoVeh = document.getElementById('mod_tipo_vehiculo').value;
+      const { data: dataVinc } = await window.supabaseClient
+        .from('registro_vinculado')
         .select('id')
         .ilike(col, val)
-        .neq('id', currentData.id)
-        .maybeSingle();
-        
-      if (data) found = true;
-
-      if (!found) {
-        const tipoVeh = document.getElementById('mod_tipo_vehiculo').value;
-        let queryVinc = window.supabaseClient
-          .from('registro_vinculado')
-          .select('id')
-          .ilike(col, val)
-          .eq('tipo_vehiculo', tipoVeh)
-          .limit(1);
-        const { data: dataVinc } = await queryVinc;
-        if (dataVinc && dataVinc.length > 0) found = true;
+        .eq('tipo_vehiculo', tipoVeh) // Solo bloquea si es del mismo tipo
+        .limit(1);
+      
+      if (dataVinc && dataVinc.length > 0) {
+        found = true;
+        foundIn = 'Vehículos Vinculados';
       }
-
-      if (found) {
-        input.classList.add('input-error'); 
-        input.classList.remove('input-valid');
-        if (msgEl) { 
-          msgEl.textContent = '❌ Ya registrado'; 
-          msgEl.className = 'status-msg error'; 
-        }
-      } else {
-        input.classList.add('input-valid'); 
-        input.classList.remove('input-error');
-        if (msgEl) { 
-          msgEl.textContent = '✅ Disponible'; 
-          msgEl.className = 'status-msg valid'; 
-        }
-      }
-    } catch (e) {
-      if (msgEl) msgEl.textContent = '⚠️ Error de conexión';
     }
+    
+    // 3️⃣ Mostrar resultado
+    if (found) {
+      input.classList.add('input-error');
+      input.classList.remove('input-valid');
+      if (msgEl) {
+        msgEl.textContent = `❌ Ya registrado en ${foundIn}`;
+        msgEl.className = 'status-msg error';
+      }
+    } else {
+      input.classList.add('input-valid');
+      input.classList.remove('input-error');
+      if (msgEl) {
+        msgEl.textContent = '✅ Disponible';
+        msgEl.className = 'status-msg valid';
+      }
+    }
+  } catch (e) {
+    console.error('Error en validación:', e);
+    if (msgEl) msgEl.textContent = '⚠️ Error de conexión';
   }
+}
 
-  document.getElementById('m_placa')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'msg-m-placa'), 600));
-  document.getElementById('m_serial_carroceria')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'msg-m-carroceria'), 600));
-  document.getElementById('m_serial_motor')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'msg-m-motor'), 600));
+// Event listeners con debounce
+document.getElementById('m_placa')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'msg-m-placa'), 600));
+document.getElementById('m_serial_carroceria')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'msg-m-carroceria'), 600));
+document.getElementById('m_serial_motor')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'msg-m-motor'), 600));
 
-  function resetValidation() {
-    document.querySelectorAll('.registro-form input').forEach(i => i.classList.remove('input-valid', 'input-error'));
-    ['msg-m-placa', 'msg-m-carroceria', 'msg-m-motor'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = '';
-    });
-  }
+function resetValidation() {
+  document.querySelectorAll('.registro-form input').forEach(i => i.classList.remove('input-valid', 'input-error'));
+  ['msg-m-placa', 'msg-m-carroceria', 'msg-m-motor'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '';
+  });
+}
 
   // ==========================================
   // 🔹 ENVÍO DEL FORMULARIO
