@@ -5,6 +5,7 @@ window.initElimVehiculos = function() {
   const buscarInput = document.getElementById('buscar-input-elim');
   const buscarBtn = document.getElementById('btn-buscar-elim');
   const msgBuscar = document.getElementById('buscar-msg-elim');
+  const crossWarning = document.getElementById('cross-plate-warning');
   const selectionPanel = document.getElementById('selection-panel');
   const selectionList = document.getElementById('selection-list');
   const resultCount = document.getElementById('result-count');
@@ -44,7 +45,6 @@ window.initElimVehiculos = function() {
     hideMsgElim();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Llenar Campos
     setVal('elim-placa', data.placa);
     setVal('elim-serial-carro', data.serial_carroceria);
     setVal('elim-serial-motor', data.serial_motor);
@@ -57,14 +57,12 @@ window.initElimVehiculos = function() {
     setVal('elim-estatus', data.estatus || 'Verificación');
     setVal('elim-obs', data.observaciones);
 
-    // Determinar tipo para mostrar
     let tipoMostrar = 'Desconocido';
     if (source === 'registro_motos') tipoMostrar = 'Motocicleta';
     else if (source === 'registro_automoviles') tipoMostrar = 'Automóvil';
     else if (isArchived) tipoMostrar = data.tipo_vehiculo || 'Desconocido';
     setVal('elim-tipo', tipoMostrar);
 
-    // Cilindraje
     const esMoto = (source === 'registro_motos') || (isArchived && data.tipo_vehiculo === 'Motocicleta');
     const boxCilindro = document.getElementById('box-cilindro');
     if (boxCilindro) {
@@ -72,13 +70,11 @@ window.initElimVehiculos = function() {
       if (data.cilindraje) setVal('elim-cilindraje', data.cilindraje);
     }
 
-    // Fotos
     setPhoto('elim-foto-frontal', data.foto_frontal);
     setPhoto('elim-foto-trasera', data.foto_trasera);
     setPhoto('elim-foto-der', data.foto_lado_derecho);
     setPhoto('elim-foto-izq', data.foto_lado_izquierdo);
 
-    // 🔔 LÓGICA DE UI SEGÚN ESTADO
     if (isArchived) {
       if (archivedBanner) archivedBanner.style.display = 'block';
       const dateEl = document.getElementById('archived-date');
@@ -89,7 +85,6 @@ window.initElimVehiculos = function() {
         dateEl.textContent = '-';
       }
       if (byEl) byEl.textContent = data.eliminado_por || 'Sistema';
-      
       btnEliminar.style.display = 'none';
       btnReintegrar.style.display = 'block';
     } else {
@@ -100,66 +95,89 @@ window.initElimVehiculos = function() {
   }
 
   // ==========================================
-  // 🔍 BÚSQUEDA MULTI-TABLA CON DETECCIÓN DE COINCIDENCIAS
+  // 🔍 BÚSQUEDA MULTI-TABLA CON DETECCIÓN CRUZADA
   // ==========================================
+  function detectarCoincidenciasVehiculo(reg, val) {
+    const campos = [];
+    const v = val.trim().toUpperCase();
+    if (reg.placa && reg.placa.toUpperCase() === v) campos.push('Placa');
+    if (reg.serial_carroceria && reg.serial_carroceria.toUpperCase() === v) campos.push('Serial de Carrocería');
+    if (reg.serial_motor && reg.serial_motor.toUpperCase() === v) campos.push('Serial de Motor');
+    if (reg.cedula && reg.cedula.toUpperCase() === v) campos.push('Cédula');
+    return campos;
+  }
+
   async function buscarEnTodasLasTablas(valor) {
     const resultados = [];
     const val = valor.trim().toUpperCase();
-    const queryVehiculos = `placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`;
-    const queryVinculado = `cedula.ilike.${val},placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`;
-
     try {
       // 1. Buscar en Motos Activas
-      const { data: motos, error: errMoto } = await window.supabaseClient.from('registro_motos').select('*').or(queryVehiculos);
-      if (!errMoto && motos) {
+      const { data: motos, error: errMoto } = await window.supabaseClient
+        .from('registro_motos')
+        .select('*')
+        .or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
+      if (!errMoto && motos && motos.length > 0) {
         motos.forEach(reg => resultados.push({
-          origen: 'registro_motos', tipo: 'moto', icono: '🏍️', color: '#dc2626', colorBg: '#fef2f2',
+          origen: 'registro_motos', tipo: 'moto', icono: '🏍️', color: '#dc2626', colorBg: '#fef2f2', clase: 'moto',
           titulo: '🏍️ Motocicleta Activa',
           linea1: `Placa: ${reg.placa || '-'}`,
           linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
           linea3: `Serial: ${reg.serial_carroceria || '-'}`,
+          encontrado_por: detectarCoincidenciasVehiculo(reg, val),
           datos: reg, eliminado: false
         }));
       }
 
       // 2. Buscar en Automóviles Activos
-      const { data: autos, error: errAuto } = await window.supabaseClient.from('registro_automoviles').select('*').or(queryVehiculos);
-      if (!errAuto && autos) {
+      const { data: autos, error: errAuto } = await window.supabaseClient
+        .from('registro_automoviles')
+        .select('*')
+        .or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
+      if (!errAuto && autos && autos.length > 0) {
         autos.forEach(reg => resultados.push({
-          origen: 'registro_automoviles', tipo: 'auto', icono: '🚙', color: '#059669', colorBg: '#ecfdf5',
+          origen: 'registro_automoviles', tipo: 'auto', icono: '🚙', color: '#059669', colorBg: '#ecfdf5', clase: 'auto',
           titulo: '🚙 Automóvil Activo',
           linea1: `Placa: ${reg.placa || '-'}`,
           linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
           linea3: `Serial: ${reg.serial_carroceria || '-'}`,
+          encontrado_por: detectarCoincidenciasVehiculo(reg, val),
           datos: reg, eliminado: false
         }));
       }
 
       // 3. Buscar en Vinculados Activos
-      const { data: vinculados, error: errVinc } = await window.supabaseClient.from('registro_vinculado').select('*').or(queryVinculado);
-      if (!errVinc && vinculados) {
+      const { data: vinculados, error: errVinc } = await window.supabaseClient
+        .from('registro_vinculado')
+        .select('*')
+        .or(`cedula.ilike.${val},placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
+      if (!errVinc && vinculados && vinculados.length > 0) {
         vinculados.forEach(reg => resultados.push({
-          origen: 'registro_vinculado', tipo: 'vinculado', icono: '🔗', color: '#002b5c', colorBg: '#eff6ff',
+          origen: 'registro_vinculado', tipo: 'vinculado', icono: '🔗', color: '#002b5c', colorBg: '#eff6ff', clase: 'vinculado',
           titulo: '🔗 Vinculado Activo (Persona + Vehículo)',
           linea1: `👤 ${reg.primer_nombre || ''} ${reg.primer_apellido || ''} | C.I: ${reg.cedula || '-'}`,
           linea2: `🚗 ${reg.tipo_vehiculo || ''} ${reg.marca_vehiculo || ''} | Placa: ${reg.placa || '-'}`,
           linea3: `🏛️ ${reg.estacion_policial || '-'}`,
+          encontrado_por: detectarCoincidenciasVehiculo(reg, val),
           datos: reg, eliminado: false
         }));
       }
 
       // 4. Buscar en Vehículos Eliminados (Archivados)
-      const { data: eliminados, error: errElim } = await window.supabaseClient.from('vehiculos_eliminados').select('*').or(queryVehiculos);
-      if (!errElim && eliminados) {
+      const { data: eliminados, error: errElim } = await window.supabaseClient
+        .from('vehiculos_eliminados')
+        .select('*')
+        .or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
+      if (!errElim && eliminados && eliminados.length > 0) {
         eliminados.forEach(reg => {
           const esMoto = reg.tipo_vehiculo === 'Motocicleta';
           resultados.push({
             origen: 'vehiculos_eliminados', tipo: esMoto ? 'moto' : 'auto',
-            icono: esMoto ? '🗄️🏍️' : '🗄️🚙', color: '#64748b', colorBg: '#f1f5f9',
+            icono: esMoto ? '🗄️🏍️' : '🗄️🚙', color: '#64748b', colorBg: '#f1f5f9', clase: 'archivado',
             titulo: `🗄️ Archivado (${reg.tipo_vehiculo || 'Vehículo'})`,
             linea1: `Placa: ${reg.placa || '-'}`,
             linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
             linea3: `Eliminado por: ${reg.eliminado_por || 'Sistema'}`,
+            encontrado_por: detectarCoincidenciasVehiculo(reg, val),
             datos: reg, eliminado: true
           });
         });
@@ -172,25 +190,42 @@ window.initElimVehiculos = function() {
     }
   }
 
-  function mostrarPanelSeleccion(resultados) {
+  function mostrarPanelSeleccion(resultados, valorBuscado) {
     selectionList.innerHTML = '';
     resultCount.textContent = resultados.length;
     
+    const tieneMoto = resultados.some(r => r.origen === 'registro_motos' || (r.origen === 'vehiculos_eliminados' && r.tipo === 'moto'));
+    const tieneAuto = resultados.some(r => r.origen === 'registro_automoviles' || (r.origen === 'vehiculos_eliminados' && r.tipo === 'auto'));
+    const tieneVinculado = resultados.some(r => r.origen === 'registro_vinculado');
+
+    if (crossWarning) {
+      if ((tieneMoto && tieneAuto) || (tieneVinculado && (tieneMoto || tieneAuto))) {
+        crossWarning.innerHTML = `<strong>⚠️ ALERTA CRUZADA:</strong> El dato buscado o sus seriales asociados aparecen en más de un tipo de registro. Esto puede indicar clonación. Revise cuidadosamente.`;
+        crossWarning.style.display = 'block';
+      } else {
+        crossWarning.style.display = 'none';
+      }
+    }
+
     resultados.forEach((res, index) => {
       const card = document.createElement('div');
-      card.style.cssText = `background: ${res.colorBg}; border: 2px solid ${res.color}; border-left: 6px solid ${res.color}; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s;`;
+      card.className = `selection-card ${res.clase}`;
+      card.style.cssText = `background: ${res.colorBg}; border: 2px solid ${res.color}; border-left: 6px solid ${res.color}; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s; margin-bottom: 12px;`;
       card.onmouseover = () => card.style.transform = 'translateX(4px)';
       card.onmouseout = () => card.style.transform = 'translateX(0)';
       
       card.innerHTML = `
-        <div style="flex: 1;">
-          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <div class="selection-card-info">
+          <div class="selection-card-title ${res.clase}">
             <span style="font-size: 1.5rem;">${res.icono}</span>
-            <strong style="color: ${res.color}; font-size: 0.95rem;">${res.titulo}</strong>
+            <strong>${res.titulo}</strong>
           </div>
-          <div style="font-size: 0.9rem; color: #334155; margin-bottom: 3px;">${res.linea1}</div>
-          <div style="font-size: 0.85rem; color: #475569; margin-bottom: 3px;">${res.linea2}</div>
-          <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 6px;">${res.linea3}</div>
+          <div class="selection-card-line">${res.linea1}</div>
+          <div class="selection-card-line">${res.linea2}</div>
+          <div class="selection-card-line small">${res.linea3}</div>
+          <div style="font-size: 0.75rem; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 6px;">
+            🔎 Coincidencia en: <strong>${res.encontrado_por.join(', ')}</strong>
+          </div>
         </div>
         <button class="btn-select-card" data-index="${index}" style="padding: 12px 24px; background: ${res.color}; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; white-space: nowrap;">
           ${res.eliminado ? '♻️ Reintegrar' : '🗑️ Gestionar'}
@@ -215,6 +250,7 @@ window.initElimVehiculos = function() {
     const source = resultado.eliminado ? 'archive' : resultado.origen;
     cargarDatos(resultado.datos, source);
     selectionPanel.classList.remove('active');
+    if (crossWarning) crossWarning.style.display = 'none';
   }
 
   // 🔍 LISTENER PRINCIPAL DE BÚSQUEDA
@@ -240,7 +276,7 @@ window.initElimVehiculos = function() {
           setTimeout(() => cargarResultado(resultados[0]), 300);
         } else {
           showMsg(msgBuscar, `🔎 Se encontraron <strong>${resultados.length} coincidencias</strong>. Seleccione cuál gestionar:`, 'success');
-          setTimeout(() => mostrarPanelSeleccion(resultados), 300);
+          setTimeout(() => mostrarPanelSeleccion(resultados, val), 300);
         }
       } catch (err) {
         console.error('❌ Error general:', err);
@@ -260,6 +296,7 @@ window.initElimVehiculos = function() {
   if (btnCancelSearch) {
     btnCancelSearch.addEventListener('click', () => {
       selectionPanel.classList.remove('active');
+      if (crossWarning) crossWarning.style.display = 'none';
       msgBuscar.style.display = 'none';
       buscarInput.value = '';
       buscarInput.focus();
