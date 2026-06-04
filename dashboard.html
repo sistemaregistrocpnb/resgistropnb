@@ -6,6 +6,7 @@
 <title>Panel Principal - PNB</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚔</text></svg>">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
     --primary: #002b5c; --primary-dark: #001f44; --secondary: #c5a028;
@@ -25,7 +26,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
 .btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.6); color: var(--white); padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
 .btn-logout:hover { background: rgba(255,255,255,0.15); }
 
-/* 🔹 Layout */
+/*  Layout */
 .dashboard-wrapper { display: flex; margin-top: var(--header-height); min-height: calc(100vh - var(--header-height)); }
 
 /* 🔹 Sidebar */
@@ -61,7 +62,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
 .loading { text-align: center; padding: 30px; color: #64748b; font-weight: 500; }
 .hidden { display: none !important; }
 
-/* 🔹 PANTALLA DE BIENVENIDA (Centrada) */
+/* 🔹 Vista de Bienvenida (Centrada y Ancha) */
 .welcome-screen {
     display: flex;
     flex-direction: column;
@@ -71,41 +72,95 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
     padding: 20px;
 }
 
-/* 🔹 Bienvenida a pantalla completa */
-.welcome-card { 
-    text-align: center; 
+.welcome-card {
+    text-align: center;
     padding: 50px 40px;
     max-width: 100% !important;
     width: 100% !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
+    margin: 0 auto !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border-radius: 10px;
+    background: var(--white);
 }
-.welcome-logo { max-width: 200px; margin-bottom: 30px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
-.welcome-desc { font-size: 1.1rem; color: #334155; max-width: 900px; margin: 0 auto 30px; line-height: 1.8; }
-.feature-badges { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 20px; }
-.feature-badge { background: #f1f5f9; color: #475569; padding: 10px 20px; border-radius: 25px; font-size: 0.95rem; font-weight: 500; border: 1px solid #e2e8f0; }
 
-/* 🔹 MARQUESINA (Solo en bienvenida) */
-.marquee-container {
-    width: 100%;
+.welcome-logo {
+    max-width: 200px;
+    margin: 0 auto 25px;
+    display: block;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+}
+
+.welcome-card h3 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    color: var(--primary);
+    border: none;
+    padding: 0;
+}
+
+.welcome-desc {
+    font-size: 1.1rem;
+    color: #334155;
     max-width: 900px;
-    margin-top: 30px;
-    background: linear-gradient(135deg, #002b5c 0%, #001f44 100%);
-    border-radius: 8px;
+    margin: 0 auto 30px;
+    line-height: 1.8;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.feature-badges {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.feature-badge {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: 1px solid #e2e8f0;
+    font-family: 'Montserrat', sans-serif;
+    transition: all 0.2s;
+}
+
+.feature-badge:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+/* 🔹 Marquesina (Solo en bienvenida, mismo ancho) */
+.marquee-wrapper {
+    max-width: 900px;
+    margin: 35px auto 0 auto;
+    background: linear-gradient(135deg, #002b5c 0%, #001f44 50%, #001530 100%);
+    border-radius: 12px;
     overflow: hidden;
-    border-top: 3px solid var(--secondary);
-    box-shadow: 0 4px 12px rgba(0,43,92,0.2);
+    border-top: 4px solid var(--secondary);
+    border-bottom: 4px solid var(--secondary);
+    box-shadow: 0 6px 20px rgba(0,43,92,0.25);
+    padding: 18px 0;
 }
 
 .marquee-text {
     color: #fff;
-    font-size: 1.05rem;
+    font-size: 1.6rem;
     font-weight: 700;
-    letter-spacing: 1px;
-    padding: 12px 0;
+    letter-spacing: 2px;
     white-space: nowrap;
-    animation: scrollMarquee 20s linear infinite;
+    animation: scrollMarquee 18s linear infinite;
+    font-family: 'Playfair Display', Georgia, serif;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
 
 @keyframes scrollMarquee {
@@ -113,31 +168,32 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
     100% { transform: translateX(-100%); }
 }
 
-/* 🔹 Copyright (debajo de la marquesina) */
-.copyright-container {
-    width: 100%;
+/* 🔹 Copyright (Solo en bienvenida, mismo ancho) */
+.copyright-wrapper {
     max-width: 900px;
-    margin-top: 15px;
+    margin: 15px auto 0 auto;
     background: #fff;
-    border: 1px solid var(--beige-border);
-    border-radius: 8px;
-    padding: 12px 20px;
+    border: 2px solid var(--beige-border);
+    border-radius: 10px;
+    padding: 14px 20px;
     text-align: center;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: var(--text);
-    line-height: 1.6;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    line-height: 1.7;
+    font-family: 'Montserrat', sans-serif;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
-.copyright-container strong {
+.copyright-wrapper strong {
     color: var(--primary);
     font-weight: 700;
 }
 
-.copyright-container .phone-numbers {
+.copyright-wrapper .phone-numbers {
     color: var(--secondary);
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
 }
 
 /* 🔹 Responsive */
@@ -147,69 +203,23 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
     .main-content { margin-left: 0; }
     .menu-toggle { display: block !important; }
     .clock-badge { display: none; }
-    .welcome-card { padding: 25px 15px; }
+    .welcome-card { padding: 30px 20px; }
     .welcome-logo { max-width: 150px; }
-    .marquee-text { font-size: 0.9rem; }
-    .copyright-container { font-size: 0.75rem; padding: 10px 15px; }
+    .welcome-card h3 { font-size: 1.3rem; }
+    .welcome-desc { font-size: 0.95rem; }
+    .marquee-text { font-size: 1.1rem; }
+    .copyright-wrapper { font-size: 0.8rem; padding: 12px 15px; }
+    .copyright-wrapper .phone-numbers { font-size: 0.85rem; }
 }
+
 @media (max-width: 600px) {
     .feature-badges { flex-direction: column; align-items: center; }
     .feature-badge { width: 100%; max-width: 280px; }
+    .welcome-card h3 { font-size: 1.1rem; }
+    .welcome-desc { font-size: 0.9rem; }
 }
+
 .menu-toggle { display: none; background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 5px; margin-right: 10px; cursor: pointer; }
-    /* 🔹 Vista de Bienvenida */
-.welcome-card { text-align: center; padding: 40px 30px; }
-.welcome-logo { max-width: 130px; margin-bottom: 20px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
-.welcome-desc { font-size: 1.05rem; color: #334155; max-width: 800px; margin: 0 auto 25px; line-height: 1.7; }
-.feature-badges { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 15px; max-width: 800px; margin-left: auto; margin-right: auto; }
-.feature-badge { background: #f1f5f9; color: #475569; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; border: 1px solid #e2e8f0; }
-
-/* 🔹 Marquesina y Copyright (mismo ancho que bienvenida) */
-.marquee-wrapper {
-    max-width: 800px;
-    margin: 30px auto 0 auto;
-    background: linear-gradient(135deg, #002b5c 0%, #001f44 100%);
-    border-radius: 10px;
-    overflow: hidden;
-    border-top: 4px solid var(--secondary);
-    border-bottom: 4px solid var(--secondary);
-    box-shadow: 0 4px 15px rgba(0,43,92,0.25);
-}
-
-.marquee-text {
-    color: #fff;
-    font-size: 1.1rem;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    padding: 14px 0;
-    white-space: nowrap;
-    animation: scrollMarquee 18s linear infinite;
-    font-family: 'Georgia', serif;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-}
-
-@keyframes scrollMarquee {
-    0% { transform: translateX(100%); }
-    100% { transform: translateX(-100%); }
-}
-
-/* 🔹 Copyright (mismo ancho) */
-.copyright-wrapper {
-    max-width: 800px;
-    margin: 15px auto 0 auto;
-    background: #fff;
-    border: 2px solid var(--beige-border);
-    border-radius: 10px;
-    padding: 14px 20px;
-    text-align: center;
-    font-size: 0.88rem;
-    color: var(--text);
-    line-height: 1.7;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-}
-
-.copyright-wrapper strong { color: var(--primary); font-weight: 700; }
-.copyright-wrapper .phone-numbers { color: var(--secondary); font-weight: 700; font-size: 0.95rem; letter-spacing: 0.5px; }
 </style>
 </head>
 <body>
@@ -229,7 +239,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
 <div class="dashboard-wrapper">
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
-            <img src="img/LOGO-PNB.png" alt="Logo PNB">
+            <img src="img/LOGO-PNB.png" alt="Logo PNB" class="welcome-logo">
         </div>
         <nav class="menu">
             <div class="menu-item">
@@ -239,7 +249,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
                 </button>
                 <div class="submenu" id="submenu-consulta">
                     <a href="#" class="submenu-item" data-src="html/consulta-personas.html" data-js="js/consulta-personas.js" data-init="initConsultaPersonas">👤 Personas</a>
-                    <a href="#" class="submenu-item" data-src="html/consulta-vehiculos.html" data-js="js/consulta-vehiculos.js" data-init="initConsultaVehiculos"> Vehículos</a>
+                    <a href="#" class="submenu-item" data-src="html/consulta-vehiculos.html" data-js="js/consulta-vehiculos.js" data-init="initConsultaVehiculos">🚗 Vehículos</a>
                 </div>
             </div>
             <div class="menu-item">
@@ -275,17 +285,19 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
                     <a href="#" class="submenu-item danger" data-src="html/elim-pv.html" data-js="js/elim-pv.js" data-init="initElimPV">🗑️ Eliminar</a>
                 </div>
             </div>
+            <!-- 🔹 SECCIÓN PROCESAR -->
             <div class="menu-item">
                 <button class="menu-btn" data-toggle="submenu-procesar">
                     <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
                     Procesar <span class="arrow">▼</span>
                 </button>
                 <div class="submenu" id="submenu-procesar">
-                    <a href="#" class="submenu-item" data-src="html/reg-procesados.html" data-js="js/reg-procesados.js" data-init="initRegProcesados">📝 Registrar</a>
+                    <a href="#" class="submenu-item" data-src="html/reg-procesados.html" data-js="js/reg-procesados.js" data-init="initRegProcesados"> Registrar</a>
                     <a href="#" class="submenu-item" data-src="html/mod-procesados.html" data-js="js/mod-procesados.js" data-init="initModProcesados">✏️ Modificar</a>
-                    <a href="#" class="submenu-item danger" data-src="html/elim-procesados.html" data-js="js/elim-procesados.js" data-init="initElimProcesados">️ Eliminar</a>
+                    <a href="#" class="submenu-item danger" data-src="html/elim-procesados.html" data-js="js/elim-procesados.js" data-init="initElimProcesados">🗑️ Eliminar</a>
                 </div>
             </div>
+            <!--  HISTORIAL -->
             <div class="menu-item" id="menu-historial">
                 <button class="menu-btn" data-toggle="submenu-historial">
                     <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
@@ -295,6 +307,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
                     <a href="#" class="submenu-item" data-src="html/historial.html" data-js="js/historial.js" data-init="initHistorial">Ver Historial</a>
                 </div>
             </div>
+            <!-- 🔹 GESTIÓN DE USUARIOS -->
             <div class="menu-item" id="menu-gestion-usuarios">
                 <button class="menu-btn" data-src="html/gestion-usuarios.html" data-js="js/gestion-usuarios.js" data-init="initGestionUsuarios">
                     <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
@@ -304,47 +317,34 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
         </nav>
     </aside>
 
-   <main id="app-content" class="main-content" style="padding: 0;">
-        <!-- ✅ PANTALLA DE BIENVENIDA CON MARQUESINA INTEGRADA -->
-     <div class="card welcome-card">
-    <img src="img/LOGO-PNB.png" alt="Logo PNB" class="welcome-logo">
-    <h3>👋 Bienvenido al Sistema de Verificación y Registro Policial</h3>
-    <p class="welcome-desc">
-        Plataforma integral desarrollada para el <strong>Cuerpo de Policía Nacional Bolivariana (CPNB) - Centro de Coordinación Policial Estadal (CCPE) Zulia</strong>.
-        Este sistema permite gestionar, consultar, modificar y archivar registros de personas y vehículos de manera segura, centralizada y auditada,
-        garantizando el cumplimiento de los protocolos operativos y el resguardo de la información institucional.
-    </p>
-    <div class="feature-badges">
-        <span class="feature-badge">🔒 Acceso Seguro y Auditado</span>
-        <span class="feature-badge">📊 Gestión en Tiempo Real</span>
-        <span class="feature-badge">🗄️ Respaldo Automatizado</span>
-        <span class="feature-badge">📱 Interfaz Adaptativa</span>
-    </div>
-
-    <!-- ✅ MARQUESINA (mismo ancho que bienvenida) -->
-    <div class="marquee-wrapper">
-        <div class="marquee-text">
-            🚔 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🇻🇪 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 👮 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🛡️ ¡Proteger, defender y servir a nuestro pueblo!
-        </div>
-    </div>
-
-    <!-- ✅ COPYRIGHT (mismo ancho que bienvenida) -->
-    <div class="copyright-wrapper">
-        © 2026 <strong>OTIC-ZULIA PNB</strong> | Sistema Oficial<br>
-        Para gestión de usuarios y soporte comuníquese con los números:<br>
-        <span class="phone-numbers">📞 0424-6962854 / 0412-3302339</span>
-    </div>
-</div>
-
-            <!-- ✅ MARQUESINA (Solo visible en bienvenida) -->
-            <div class="marquee-container">
-                <div class="marquee-text">
-                    🚔 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🇻🇪 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 👮 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🛡️ ¡Proteger, defender y servir a nuestro pueblo!
+    <main id="app-content" class="main-content">
+        <!-- ✅ PANTALLA DE BIENVENIDA (Centrada y Ancha) -->
+        <div id="welcome-screen" class="welcome-screen">
+            <div class="welcome-card">
+                <img src="img/LOGO-PNB.png" alt="Logo PNB" class="welcome-logo">
+                <h3> Bienvenido al Sistema de Verificación y Registro Policial</h3>
+                <p class="welcome-desc">
+                    Plataforma integral desarrollada para el <strong>Cuerpo de Policía Nacional Bolivariana (CPNB) - Centro de Coordinación Policial Estadal (CCPE) Zulia</strong>.
+                    Este sistema permite gestionar, consultar, modificar y archivar registros de personas y vehículos de manera segura, centralizada y auditada,
+                    garantizando el cumplimiento de los protocolos operativos y el resguardo de la información institucional.
+                </p>
+                <div class="feature-badges">
+                    <span class="feature-badge">🔒 Acceso Seguro y Auditado</span>
+                    <span class="feature-badge">📊 Gestión en Tiempo Real</span>
+                    <span class="feature-badge">️ Respaldo Automatizado</span>
+                    <span class="feature-badge">📱 Interfaz Adaptativa</span>
                 </div>
             </div>
 
-            <!-- ✅ COPYRIGHT (Solo visible en bienvenida) -->
-            <div class="copyright-container">
+            <!-- ✅ MARQUESINA (Solo en bienvenida, mismo ancho) -->
+            <div class="marquee-wrapper">
+                <div class="marquee-text">
+                    🚔 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🇻 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 👮 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🛡️ ¡Proteger, defender y servir a nuestro pueblo!
+                </div>
+            </div>
+
+            <!-- ✅ COPYRIGHT (Solo en bienvenida, mismo ancho) -->
+            <div class="copyright-wrapper">
                 © 2026 <strong>OTIC-ZULIA PNB</strong> | Sistema Oficial<br>
                 Para gestión de usuarios y soporte comuníquese con los números:<br>
                 <span class="phone-numbers">📞 0424-6962854 / 0412-3302339</span>
@@ -355,14 +355,5 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
 
 <script src="js/config.js"></script>
 <script src="js/dashboard.js"></script>
-    <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const marquee = document.querySelector('.footer-marquee marquee');
-    if (marquee) {
-        marquee.addEventListener('mouseenter', () => marquee.stop());
-        marquee.addEventListener('mouseleave', () => marquee.start());
-    }
-});
-</script>
 </body>
 </html>
