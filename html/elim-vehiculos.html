@@ -62,16 +62,15 @@
     <div id="buscar-msg-elim" class="search-msg"></div>
   </div>
 
-  <!-- ⚠️ PANEL DE SELECCIÓN (SOLO ROJO Y VERDE) -->
-  <div id="selection-panel" class="selection-panel">
-    <h4 class="selection-title">⚠️ Dato encontrado en dos registros distintos</h4>
-    <p style="margin-bottom: 15px; font-size: 0.9rem;">Seleccione cuál desea gestionar:</p>
-    <div class="selection-btns">
-      <button class="btn-select-type" onclick="seleccionarRegistro('moto')" style="border-color: #dc2626; color: #dc2626;">🏍️ Motocicleta</button>
-      <button class="btn-select-type" onclick="seleccionarRegistro('auto')" style="border-color: #059669; color: #059669;">🚙 Automóvil</button>
-    </div>
+<!-- 🔹 PANEL DE SELECCIÓN DINÁMICO -->
+<div id="selection-panel" class="selection-panel">
+  <div class="selection-header" style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+    <h4 style="margin: 0 0 8px; color: #1e40af; font-size: 1.05rem;">🔎 Múltiples coincidencias encontradas</h4>
+    <p style="margin: 0; color: #1e40af; font-size: 0.9rem;">Se encontraron <strong><span id="result-count">0</span> registros</strong> con ese dato. Seleccione cuál desea gestionar:</p>
   </div>
-
+  <div id="selection-list" style="display: grid; gap: 12px;"></div>
+  <button id="btn-cancel-search" style="margin-top: 16px; padding: 10px 20px; background: #64748b; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; display: block; margin-left: auto; margin-right: auto;">❌ Cancelar búsqueda</button>
+</div>
   <!-- 📝 DATOS DEL VEHÍCULO -->
   <div id="elim-data-container" style="display: none;">
     <!-- ✅ BANNER DE ARCHIVADO (Solo aparece DESPUÉS de seleccionar, si aplica) -->
