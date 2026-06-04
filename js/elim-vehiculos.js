@@ -179,7 +179,7 @@ window.initElimVehiculos = function() {
         }));
       }
 
-      // 4. Vehículos Eliminados (TODOS los que coincidan)
+      // 4. Vehículos Eliminados (Histórico)
       const { data: eliminados, error: errElim } = await window.supabaseClient
         .from('vehiculos_eliminados').select('*')
         .or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
@@ -197,7 +197,7 @@ window.initElimVehiculos = function() {
         });
       }
 
-      // 5. Eliminados Vinculados (TODOS los que coincidan)
+      // 5. Eliminados Vinculados (Histórico)
       const { data: elimVinc, error: errElimVinc } = await window.supabaseClient
         .from('eliminados_vinculados').select('*')
         .or(`cedula.ilike.${val},placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
@@ -362,7 +362,7 @@ window.initElimVehiculos = function() {
   if (btnModalYes) btnModalYes.addEventListener('click', ejecutarAccion);
 
   // ==========================================
-  // 🔹 ELIMINAR (Activa → Archivada) - SIEMPRE INSERTA NUEVO
+  // 🔹 ELIMINAR (Activa → Archivada)
   // ==========================================
   async function eliminarRegistro() {
     if (!currentData) return;
@@ -375,11 +375,9 @@ window.initElimVehiculos = function() {
       const eliminadoPor = user?.email || 'usuario@sistema';
       
       const esVinculado = currentTable === 'registro_vinculado' || currentData.primer_nombre || currentData.cedula;
-      
       let error;
       
       if (esVinculado) {
-        // 📌 SIEMPRE INSERTAR nuevo registro en eliminados_vinculados
         const dataToArchive = {
           eliminado_por: eliminadoPor,
           eliminado_en: new Date().toISOString(),
@@ -439,7 +437,6 @@ window.initElimVehiculos = function() {
           error = delRes.error;
         }
       } else {
-        // 📌 SIEMPRE INSERTAR nuevo registro en vehiculos_eliminados
         const dataToArchive = {
           tabla_origen: currentTable,
           tipo_vehiculo: currentTable === 'registro_motos' ? 'Motocicleta' : 'Automóvil',
@@ -474,7 +471,7 @@ window.initElimVehiculos = function() {
       
       if (error) throw error;
       
-      showMsgElim('✅ Registro eliminado y archivado correctamente.', 'success');
+      showMsgElim('✅ Registro eliminado y archivado correctamente como respaldo histórico.', 'success');
       setTimeout(() => {
         dataContainer.style.display = 'none';
         buscarInput.value = '';
@@ -493,7 +490,7 @@ window.initElimVehiculos = function() {
   }
 
   // ==========================================
-  // 🔹 REINTEGRAR (Archivada → Activa) - BORRA SOLO EL REGISTRO ESPECÍFICO
+  // 🔹 REINTEGRAR (Archivada → Activa)
   // ==========================================
   async function reintegrarRegistro() {
     if (!currentData) return;
@@ -559,7 +556,6 @@ window.initElimVehiculos = function() {
         error = res.error;
         
         if (!error) {
-          // ✅ BORRAR SOLO este registro específico de eliminados_vinculados
           const delRes = await window.supabaseClient.from('eliminados_vinculados').delete().eq('id', currentData.id);
           error = delRes.error;
         }
@@ -591,7 +587,6 @@ window.initElimVehiculos = function() {
         error = res.error;
         
         if (!error) {
-          // ✅ BORRAR SOLO este registro específico de vehiculos_eliminados
           const delRes = await window.supabaseClient.from('vehiculos_eliminados').delete().eq('id', currentData.id);
           error = delRes.error;
         }
@@ -599,7 +594,7 @@ window.initElimVehiculos = function() {
       
       if (error) throw error;
       
-      showMsgElim('✅ Registro reintegrado al sistema activo.', 'success');
+      showMsgElim('✅ Registro reintegrado al sistema activo exitosamente.', 'success');
       setTimeout(() => {
         dataContainer.style.display = 'none';
         buscarInput.value = '';
@@ -610,8 +605,10 @@ window.initElimVehiculos = function() {
     } catch (err) {
       console.error('Error reintegrando:', err);
       let msg = 'Error al reintegrar.';
-      if (err.message.includes('23505') || err.message.includes('unique')) {
-        msg = '❌ Este registro ya existe en el sistema activo.';
+      
+      // ✅ MENSAJE MEJORADO Y EXPLICATIVO
+      if (err.message.includes('23505') || err.message.includes('unique') || err.message.includes('duplicate key')) {
+        msg = '❌ <strong>No se puede reintegrar:</strong> La placa, serial o cédula ya se encuentra en uso por otro registro en el sistema activo.<br><small style="color:#64748b;">Este registro eliminado se conserva en la tabla de respaldo como historial.</small>';
       } else {
         msg = '❌ ' + err.message;
       }
@@ -628,7 +625,7 @@ window.initElimVehiculos = function() {
   if (btnEliminar) {
     btnEliminar.addEventListener('click', () => {
       if (!currentData) return;
-      showModal('⚠️ Confirmar Eliminación', `¿Está seguro de eliminar este registro? Esta acción lo moverá al archivo de eliminados.`, 'delete', 'danger');
+      showModal('⚠️ Confirmar Eliminación', `¿Está seguro de eliminar este registro? Se moverá a la tabla de respaldo histórico.`, 'delete', 'danger');
     });
   }
 
