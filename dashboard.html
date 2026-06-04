@@ -68,13 +68,63 @@
         .feature-badges { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 15px; }
         .feature-badge { background: #f1f5f9; color: #475569; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; border: 1px solid #e2e8f0; }
 
-        /*  PIE DE PÁGINA */
+/* 🔹 PIE DE PÁGINA FIJO (siempre visible) */
 .footer-container {
-    margin-top: auto;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
     background: #f8fafc;
     border-top: 2px solid var(--beige-border);
-    padding: 15px 0 0 0;
     text-align: center;
+    z-index: 95;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+}
+
+.footer-copyright {
+    background: #fff;
+    padding: 10px 20px;
+    font-size: 0.82rem;
+    color: var(--text);
+    line-height: 1.5;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.footer-copyright strong {
+    color: var(--primary);
+}
+
+.footer-copyright .phone-numbers {
+    color: var(--secondary);
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.footer-marquee {
+    background: linear-gradient(135deg, #002b5c 0%, #001f44 100%);
+    padding: 8px 0;
+    overflow: hidden;
+    border-top: 3px solid var(--secondary);
+}
+
+.footer-marquee marquee {
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.footer-marquee marquee span {
+    margin: 0 30px;
+}
+
+.footer-marquee .emoji-pnb {
+    font-size: 1.1rem;
+}
+
+/* 🔹 Compensar espacio del footer fijo en el contenido */
+.main-content {
+    padding-bottom: 90px !important;
 }
 
 .footer-copyright {
