@@ -71,16 +71,20 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
     padding: 20px;
 }
 
-.welcome-card {
-    text-align: center;
-    padding: 40px 30px;
-    max-width: 900px;
-    width: 100%;
+/* 🔹 Bienvenida a pantalla completa */
+.welcome-card { 
+    text-align: center; 
+    padding: 50px 40px;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
 }
-.welcome-logo { max-width: 200px; margin-bottom: 20px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
-.welcome-desc { font-size: 1.05rem; color: #334155; max-width: 750px; margin: 0 auto 25px; line-height: 1.7; }
-.feature-badges { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 15px; }
-.feature-badge { background: #f1f5f9; color: #475569; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; border: 1px solid #e2e8f0; }
+.welcome-logo { max-width: 200px; margin-bottom: 30px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
+.welcome-desc { font-size: 1.1rem; color: #334155; max-width: 900px; margin: 0 auto 30px; line-height: 1.8; }
+.feature-badges { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 20px; }
+.feature-badge { background: #f1f5f9; color: #475569; padding: 10px 20px; border-radius: 25px; font-size: 0.95rem; font-weight: 500; border: 1px solid #e2e8f0; }
 
 /* 🔹 MARQUESINA (Solo en bienvenida) */
 .marquee-container {
@@ -247,7 +251,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
         </nav>
     </aside>
 
-    <main id="app-content" class="main-content">
+   <main id="app-content" class="main-content" style="padding: 0;">
         <!-- ✅ PANTALLA DE BIENVENIDA CON MARQUESINA INTEGRADA -->
         <div id="welcome-screen" class="welcome-screen">
             <div class="card welcome-card">
