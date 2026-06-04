@@ -25,12 +25,14 @@ window.initElimVehiculos = function() {
   let isArchived = false;
   let pendingAction = null;
 
-  // 🔹 Helpers UI
-    // 🔹 Helpers UI (CORREGIDO: innerHTML permite que funcione el <strong>)
+  // 🔹 Helpers UI (Usamos innerHTML para que funcione el <strong>)
   const showMsg = (el, txt, type) => { if(el) { el.innerHTML = txt; el.className = `search-msg ${type}`; el.style.display = 'block'; } };
   const hideMsg = (el) => { if(el) el.style.display = 'none'; };
   const showMsgElim = (txt, type) => { msgElim.innerHTML = txt; msgElim.className = `msg ${type}`; msgElim.style.display = 'block'; };
   const hideMsgElim = () => { msgElim.style.display = 'none'; };
+  const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = (val !== null && val !== undefined && val !== '') ? val : '-'; };
+  const setPhoto = (imgId, url) => { const img = document.getElementById(imgId); if (img) { img.src = url || ''; img.style.display = url ? 'block' : 'none'; } };
+
   // 🔹 Mostrar datos + UI según estado
   function cargarDatos(data, source) {
     currentData = data;
@@ -93,7 +95,7 @@ window.initElimVehiculos = function() {
   }
 
   // ==========================================
-  // 🔍 BÚSQUEDA MULTI-TABLA CON DETECCIÓN CRUZADA
+  // 🔍 BÚSQUEDA MULTI-TABLA CON CORRELACIÓN DE SERIALES
   // ==========================================
   function detectarCoincidenciasVehiculo(reg, val) {
     const campos = [];
@@ -109,11 +111,12 @@ window.initElimVehiculos = function() {
     const resultados = [];
     const val = valor.trim().toUpperCase();
     try {
-      // 1. Buscar en Motos Activas
+      // 1. Búsqueda directa por el valor ingresado
       const { data: motos, error: errMoto } = await window.supabaseClient
         .from('registro_motos')
         .select('*')
         .or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
+      
       if (!errMoto && motos && motos.length > 0) {
         motos.forEach(reg => resultados.push({
           origen: 'registro_motos', tipo: 'moto', icono: '🏍️', color: '#dc2626', colorBg: '#fef2f2', clase: 'moto',
@@ -126,11 +129,11 @@ window.initElimVehiculos = function() {
         }));
       }
 
-      // 2. Buscar en Automóviles Activos
       const { data: autos, error: errAuto } = await window.supabaseClient
         .from('registro_automoviles')
         .select('*')
         .or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
+      
       if (!errAuto && autos && autos.length > 0) {
         autos.forEach(reg => resultados.push({
           origen: 'registro_automoviles', tipo: 'auto', icono: '🚙', color: '#059669', colorBg: '#ecfdf5', clase: 'auto',
@@ -143,11 +146,11 @@ window.initElimVehiculos = function() {
         }));
       }
 
-      // 3. Buscar en Vinculados Activos
       const { data: vinculados, error: errVinc } = await window.supabaseClient
         .from('registro_vinculado')
         .select('*')
         .or(`cedula.ilike.${val},placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
+      
       if (!errVinc && vinculados && vinculados.length > 0) {
         vinculados.forEach(reg => resultados.push({
           origen: 'registro_vinculado', tipo: 'vinculado', icono: '🔗', color: '#002b5c', colorBg: '#eff6ff', clase: 'vinculado',
@@ -160,25 +163,71 @@ window.initElimVehiculos = function() {
         }));
       }
 
-      // 4. Buscar en Vehículos Eliminados (Archivados)
-      const { data: eliminados, error: errElim } = await window.supabaseClient
-        .from('vehiculos_eliminados')
-        .select('*')
-        .or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
-      if (!errElim && eliminados && eliminados.length > 0) {
-        eliminados.forEach(reg => {
-          const esMoto = reg.tipo_vehiculo === 'Motocicleta';
-          resultados.push({
-            origen: 'vehiculos_eliminados', tipo: esMoto ? 'moto' : 'auto',
-            icono: esMoto ? '🗄️🏍️' : '🗄️🚙', color: '#64748b', colorBg: '#f1f5f9', clase: 'archivado',
-            titulo: `🗄️ Archivado (${reg.tipo_vehiculo || 'Vehículo'})`,
-            linea1: `Placa: ${reg.placa || '-'}`,
-            linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
-            linea3: `Eliminado por: ${reg.eliminado_por || 'Sistema'}`,
-            encontrado_por: detectarCoincidenciasVehiculo(reg, val),
-            datos: reg, eliminado: true
-          });
-        });
+      // 2. 🔍 VERIFICACIÓN CRUZADA POR SERIALES (Detecta clonación oculta)
+      // Si encontramos autos, buscamos motos con los mismos seriales
+      if (autos && autos.length > 0) {
+        for (const auto of autos) {
+          const condiciones = [];
+          if (auto.serial_carroceria) condiciones.push(`serial_carroceria.ilike.${auto.serial_carroceria}`);
+          if (auto.serial_motor) condiciones.push(`serial_motor.ilike.${auto.serial_motor}`);
+          
+          if (condiciones.length > 0) {
+            const { data: motosCruzadas } = await window.supabaseClient
+              .from('registro_motos')
+              .select('*')
+              .or(condiciones.join(','));
+            
+            if (motosCruzadas) {
+              motosCruzadas.forEach(moto => {
+                const yaExiste = resultados.some(r => r.origen === 'registro_motos' && r.datos.id === moto.id);
+                if (!yaExiste) {
+                  resultados.push({
+                    origen: 'registro_motos', tipo: 'moto', icono: '🏍️', color: '#dc2626', colorBg: '#fef2f2', clase: 'moto',
+                    titulo: '🏍️ Motocicleta (Coincidencia por Serial)',
+                    linea1: `Placa: ${moto.placa || '-'}`,
+                    linea2: `${moto.marca || ''} ${moto.modelo || ''} ${moto.anio || ''}`,
+                    linea3: `Serial: ${moto.serial_carroceria || '-'}`,
+                    encontrado_por: ['Serial Carrocería/Motor'],
+                    datos: moto, eliminado: false
+                  });
+                }
+              });
+            }
+          }
+        }
+      }
+
+      // Si encontramos motos, buscamos autos con los mismos seriales
+      if (motos && motos.length > 0) {
+        for (const moto of motos) {
+          const condiciones = [];
+          if (moto.serial_carroceria) condiciones.push(`serial_carroceria.ilike.${moto.serial_carroceria}`);
+          if (moto.serial_motor) condiciones.push(`serial_motor.ilike.${moto.serial_motor}`);
+          
+          if (condiciones.length > 0) {
+            const { data: autosCruzados } = await window.supabaseClient
+              .from('registro_automoviles')
+              .select('*')
+              .or(condiciones.join(','));
+            
+            if (autosCruzados) {
+              autosCruzados.forEach(auto => {
+                const yaExiste = resultados.some(r => r.origen === 'registro_automoviles' && r.datos.id === auto.id);
+                if (!yaExiste) {
+                  resultados.push({
+                    origen: 'registro_automoviles', tipo: 'auto', icono: '🚙', color: '#059669', colorBg: '#ecfdf5', clase: 'auto',
+                    titulo: '🚙 Automóvil (Coincidencia por Serial)',
+                    linea1: `Placa: ${auto.placa || '-'}`,
+                    linea2: `${auto.marca || ''} ${auto.modelo || ''} ${auto.anio || ''}`,
+                    linea3: `Serial: ${auto.serial_carroceria || '-'}`,
+                    encontrado_por: ['Serial Carrocería/Motor'],
+                    datos: auto, eliminado: false
+                  });
+                }
+              });
+            }
+          }
+        }
       }
 
       return resultados;
@@ -192,8 +241,8 @@ window.initElimVehiculos = function() {
     selectionList.innerHTML = '';
     resultCount.textContent = resultados.length;
     
-    const tieneMoto = resultados.some(r => r.origen === 'registro_motos' || (r.origen === 'vehiculos_eliminados' && r.tipo === 'moto'));
-    const tieneAuto = resultados.some(r => r.origen === 'registro_automoviles' || (r.origen === 'vehiculos_eliminados' && r.tipo === 'auto'));
+    const tieneMoto = resultados.some(r => r.origen === 'registro_motos');
+    const tieneAuto = resultados.some(r => r.origen === 'registro_automoviles');
     const tieneVinculado = resultados.some(r => r.origen === 'registro_vinculado');
 
     if (crossWarning) {
@@ -257,7 +306,7 @@ window.initElimVehiculos = function() {
       const val = buscarInput.value.trim();
       if (val.length < 5) return showMsg(msgBuscar, '⚠️ Ingrese un dato válido (mín. 5 caracteres).', 'error');
       
-      showMsg(msgBuscar, '🔍 Buscando en todos los registros...', 'success');
+      showMsg(msgBuscar, '🔍 Buscando en todos los registros y correlacionando seriales...', 'success');
       buscarBtn.disabled = true;
       dataContainer.style.display = 'none';
       selectionPanel.style.display = 'none';
@@ -273,7 +322,7 @@ window.initElimVehiculos = function() {
           showMsg(msgBuscar, '✅ 1 registro encontrado. Cargando...', 'success');
           setTimeout(() => cargarResultado(resultados[0]), 300);
         } else {
-          showMsg(msgBuscar, `🔎 Se encontraron <strong>${resultados.length} coincidencias</strong>. Seleccione cuál gestionar:`, 'success');
+          showMsg(msgBuscar, `🔎 Se encontraron <strong>${resultados.length} coincidencias</strong> (directas o por serial). Seleccione cuál gestionar:`, 'success');
           setTimeout(() => mostrarPanelSeleccion(resultados, val), 300);
         }
       } catch (err) {
