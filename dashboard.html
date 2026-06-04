@@ -157,6 +157,59 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
     .feature-badge { width: 100%; max-width: 280px; }
 }
 .menu-toggle { display: none; background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 5px; margin-right: 10px; cursor: pointer; }
+    /* 🔹 Vista de Bienvenida */
+.welcome-card { text-align: center; padding: 40px 30px; }
+.welcome-logo { max-width: 130px; margin-bottom: 20px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
+.welcome-desc { font-size: 1.05rem; color: #334155; max-width: 800px; margin: 0 auto 25px; line-height: 1.7; }
+.feature-badges { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 15px; max-width: 800px; margin-left: auto; margin-right: auto; }
+.feature-badge { background: #f1f5f9; color: #475569; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; border: 1px solid #e2e8f0; }
+
+/* 🔹 Marquesina y Copyright (mismo ancho que bienvenida) */
+.marquee-wrapper {
+    max-width: 800px;
+    margin: 30px auto 0 auto;
+    background: linear-gradient(135deg, #002b5c 0%, #001f44 100%);
+    border-radius: 10px;
+    overflow: hidden;
+    border-top: 4px solid var(--secondary);
+    border-bottom: 4px solid var(--secondary);
+    box-shadow: 0 4px 15px rgba(0,43,92,0.25);
+}
+
+.marquee-text {
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 14px 0;
+    white-space: nowrap;
+    animation: scrollMarquee 18s linear infinite;
+    font-family: 'Georgia', serif;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+@keyframes scrollMarquee {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+}
+
+/* 🔹 Copyright (mismo ancho) */
+.copyright-wrapper {
+    max-width: 800px;
+    margin: 15px auto 0 auto;
+    background: #fff;
+    border: 2px solid var(--beige-border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    text-align: center;
+    font-size: 0.88rem;
+    color: var(--text);
+    line-height: 1.7;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.copyright-wrapper strong { color: var(--primary); font-weight: 700; }
+.copyright-wrapper .phone-numbers { color: var(--secondary); font-weight: 700; font-size: 0.95rem; letter-spacing: 0.5px; }
 </style>
 </head>
 <body>
@@ -253,22 +306,35 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; display: fl
 
    <main id="app-content" class="main-content" style="padding: 0;">
         <!-- ✅ PANTALLA DE BIENVENIDA CON MARQUESINA INTEGRADA -->
-        <div id="welcome-screen" class="welcome-screen">
-            <div class="card welcome-card">
-                <img src="img/LOGO-PNB.png" alt="Logo PNB" class="welcome-logo">
-                <h3> Bienvenido al Sistema de Verificación y Registro Policial</h3>
-                <p class="welcome-desc">
-                    Plataforma integral desarrollada para el <strong>Cuerpo de Policía Nacional Bolivariana (CPNB) - Centro de Coordinación Policial Estadal (CCPE) Zulia</strong>.
-                    Este sistema permite gestionar, consultar, modificar y archivar registros de personas y vehículos de manera segura, centralizada y auditada,
-                    garantizando el cumplimiento de los protocolos operativos y el resguardo de la información institucional.
-                </p>
-                <div class="feature-badges">
-                    <span class="feature-badge">🔒 Acceso Seguro y Auditado</span>
-                    <span class="feature-badge">📊 Gestión en Tiempo Real</span>
-                    <span class="feature-badge">️ Respaldo Automatizado</span>
-                    <span class="feature-badge">📱 Interfaz Adaptativa</span>
-                </div>
-            </div>
+     <div class="card welcome-card">
+    <img src="img/LOGO-PNB.png" alt="Logo PNB" class="welcome-logo">
+    <h3>👋 Bienvenido al Sistema de Verificación y Registro Policial</h3>
+    <p class="welcome-desc">
+        Plataforma integral desarrollada para el <strong>Cuerpo de Policía Nacional Bolivariana (CPNB) - Centro de Coordinación Policial Estadal (CCPE) Zulia</strong>.
+        Este sistema permite gestionar, consultar, modificar y archivar registros de personas y vehículos de manera segura, centralizada y auditada,
+        garantizando el cumplimiento de los protocolos operativos y el resguardo de la información institucional.
+    </p>
+    <div class="feature-badges">
+        <span class="feature-badge">🔒 Acceso Seguro y Auditado</span>
+        <span class="feature-badge">📊 Gestión en Tiempo Real</span>
+        <span class="feature-badge">🗄️ Respaldo Automatizado</span>
+        <span class="feature-badge">📱 Interfaz Adaptativa</span>
+    </div>
+
+    <!-- ✅ MARQUESINA (mismo ancho que bienvenida) -->
+    <div class="marquee-wrapper">
+        <div class="marquee-text">
+            🚔 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🇻🇪 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 👮 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🛡️ ¡Proteger, defender y servir a nuestro pueblo!
+        </div>
+    </div>
+
+    <!-- ✅ COPYRIGHT (mismo ancho que bienvenida) -->
+    <div class="copyright-wrapper">
+        © 2026 <strong>OTIC-ZULIA PNB</strong> | Sistema Oficial<br>
+        Para gestión de usuarios y soporte comuníquese con los números:<br>
+        <span class="phone-numbers">📞 0424-6962854 / 0412-3302339</span>
+    </div>
+</div>
 
             <!-- ✅ MARQUESINA (Solo visible en bienvenida) -->
             <div class="marquee-container">
