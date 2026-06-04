@@ -184,7 +184,7 @@ window.initModVehiculos = function() {
   }
 
   // ==========================================
-  // 🔹 BÚSQUEDA MULTI-TABLA (CON .ilike EN LOS 3 CAMPOS)
+  // 🔹 BÚSQUEDA MULTI-TABLA CON DETECCIÓN CRUZADA POR SERIALES
   // ==========================================
   function detectarCoincidenciasVehiculo(reg, val) {
     const campos = [];
@@ -200,7 +200,7 @@ window.initModVehiculos = function() {
     const val = valor.trim().toUpperCase();
     
     try {
-      // ✅ CAMBIO CLAVE: .ilike en los 3 campos para encontrar coincidencias sin importar mayúsculas/minúsculas
+      // 1. Búsqueda directa por el valor ingresado
       const { data: motos, error: errMoto } = await window.supabaseClient
         .from('registro_motos')
         .select('*')
@@ -252,6 +252,73 @@ window.initModVehiculos = function() {
         }));
       }
 
+      // 2. 🔍 VERIFICACIÓN CRUZADA POR SERIALES (Detecta clonación oculta)
+      // Si encontramos autos, buscamos motos con los mismos seriales
+      if (autos && autos.length > 0) {
+        for (const auto of autos) {
+          const condiciones = [];
+          if (auto.serial_carroceria) condiciones.push(`serial_carroceria.ilike.${auto.serial_carroceria}`);
+          if (auto.serial_motor) condiciones.push(`serial_motor.ilike.${auto.serial_motor}`);
+          
+          if (condiciones.length > 0) {
+            const { data: motosCruzadas } = await window.supabaseClient
+              .from('registro_motos')
+              .select('*')
+              .or(condiciones.join(','));
+              
+            if (motosCruzadas) {
+              motosCruzadas.forEach(moto => {
+                const yaExiste = resultados.some(r => r.origen === 'registro_motos' && r.datos.id === moto.id);
+                if (!yaExiste) {
+                  resultados.push({
+                    origen: 'registro_motos', tipo: 'moto', icono: '🏍️', color: '#dc2626', colorBg: '#fef2f2', clase: 'moto',
+                    titulo: '🏍️ Motocicleta (Coincidencia por Serial)',
+                    linea1: `Placa: ${moto.placa || '-'}`,
+                    linea2: `${moto.marca || ''} ${moto.modelo || ''} ${moto.anio || ''}`,
+                    linea3: `Serial: ${moto.serial_carroceria || '-'}`,
+                    encontrado_por: ['Serial Carrocería/Motor'],
+                    datos: moto
+                  });
+                }
+              });
+            }
+          }
+        }
+      }
+
+      // Si encontramos motos, buscamos autos con los mismos seriales
+      if (motos && motos.length > 0) {
+        for (const moto of motos) {
+          const condiciones = [];
+          if (moto.serial_carroceria) condiciones.push(`serial_carroceria.ilike.${moto.serial_carroceria}`);
+          if (moto.serial_motor) condiciones.push(`serial_motor.ilike.${moto.serial_motor}`);
+          
+          if (condiciones.length > 0) {
+            const { data: autosCruzados } = await window.supabaseClient
+              .from('registro_automoviles')
+              .select('*')
+              .or(condiciones.join(','));
+              
+            if (autosCruzados) {
+              autosCruzados.forEach(auto => {
+                const yaExiste = resultados.some(r => r.origen === 'registro_automoviles' && r.datos.id === auto.id);
+                if (!yaExiste) {
+                  resultados.push({
+                    origen: 'registro_automoviles', tipo: 'auto', icono: '🚙', color: '#059669', colorBg: '#ecfdf5', clase: 'auto',
+                    titulo: '🚙 Automóvil (Coincidencia por Serial)',
+                    linea1: `Placa: ${auto.placa || '-'}`,
+                    linea2: `${auto.marca || ''} ${auto.modelo || ''} ${auto.anio || ''}`,
+                    linea3: `Serial: ${auto.serial_carroceria || '-'}`,
+                    encontrado_por: ['Serial Carrocería/Motor'],
+                    datos: auto
+                  });
+                }
+              });
+            }
+          }
+        }
+      }
+
       return resultados;
     } catch (err) {
       console.error('Error en búsqueda multi-tabla:', err);
@@ -268,7 +335,7 @@ window.initModVehiculos = function() {
     const tieneVinculado = resultados.some(r => r.origen === 'registro_vinculado');
 
     if ((tieneMoto && tieneAuto) || (tieneVinculado && (tieneMoto || tieneAuto))) {
-      crossWarning.innerHTML = `<strong>⚠️ ALERTA CRUZADA:</strong> El dato "<strong>${valorBuscado}</strong>" aparece en más de un tipo de registro. Esto puede indicar clonación. Revise cuidadosamente.`;
+      crossWarning.innerHTML = `<strong>⚠️ ALERTA CRUZADA:</strong> El dato buscado o sus seriales asociados aparecen en más de un tipo de registro. Esto puede indicar clonación. Revise cuidadosamente.`;
       crossWarning.style.display = 'block';
     } else {
       crossWarning.style.display = 'none';
@@ -373,7 +440,6 @@ window.initModVehiculos = function() {
     }
 
     resetValidation();
-    // ✅ AQUÍ SE LLAMA A LA FUNCIÓN QUE VERIFICA LOS 3 CAMPOS
     verificarCoincidenciaCruzada(data, tabla);
 
     const sufijo = tipo === 'moto' ? '' : '_a';
@@ -403,9 +469,6 @@ window.initModVehiculos = function() {
     }
   }
 
-  // ==========================================
-  // ✅ NUEVA FUNCIÓN: VERIFICAR COINCIDENCIA CRUZADA EN LOS 3 CAMPOS
-  // ==========================================
   async function verificarCoincidenciaCruzada(data, tablaActual) {
     crossWarning.style.display = 'none';
     if (!data) return;
@@ -414,7 +477,6 @@ window.initModVehiculos = function() {
     const tipoContrario = tablaContraria === 'registro_motos' ? 'Motocicleta' : 'Automóvil';
     const coincidencias = [];
 
-    // 1. Verificar Placa
     if (data.placa) {
       const { data: matchPlaca } = await window.supabaseClient
         .from(tablaContraria)
@@ -424,7 +486,6 @@ window.initModVehiculos = function() {
       if (matchPlaca) coincidencias.push(`Placa (${data.placa})`);
     }
 
-    // 2. Verificar Serial de Carrocería
     if (data.serial_carroceria) {
       const { data: matchCarro } = await window.supabaseClient
         .from(tablaContraria)
@@ -434,7 +495,6 @@ window.initModVehiculos = function() {
       if (matchCarro) coincidencias.push(`Serial de Carrocería (${data.serial_carroceria})`);
     }
 
-    // 3. Verificar Serial de Motor
     if (data.serial_motor) {
       const { data: matchMotor } = await window.supabaseClient
         .from(tablaContraria)
@@ -444,7 +504,6 @@ window.initModVehiculos = function() {
       if (matchMotor) coincidencias.push(`Serial de Motor (${data.serial_motor})`);
     }
 
-    // Si hay alguna coincidencia, mostrar alerta detallada
     if (coincidencias.length > 0) {
       crossWarning.innerHTML = `⚠️ <strong>Atención:</strong> Este registro comparte datos con un vehículo en la tabla de <strong>${tipoContrario}</strong>.<br>Campos coincidentes: <strong>${coincidencias.join(', ')}</strong>. Esto puede indicar clonación o un error de registro.`;
       crossWarning.style.display = 'block';
