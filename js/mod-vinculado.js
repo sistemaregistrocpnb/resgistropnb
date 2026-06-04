@@ -551,7 +551,7 @@ window.initModVinculado = function() {
         });
     }
 
-   // ==========================================
+  // ==========================================
 // 🔹 10. VALIDACIÓN EN TIEMPO REAL (ESPECÍFICA POR TIPO + TABLAS)
 // ==========================================
 function debounce(func, wait) {
@@ -581,7 +581,7 @@ async function checkAvailability(input, msgId, columna) {
     let found = false;
     let foundIn = '';
 
-    // 1️⃣ Validación de Cédula (Siempre busca en personas y vinculados, sin importar el vehículo)
+    // 1️⃣ Validación de Cédula (Siempre busca en personas y vinculados)
     if (columna === 'cedula') {
       const { data: dataPersonas } = await window.supabaseClient
         .from('registro_personas')
@@ -696,128 +696,154 @@ window.reValidarCamposVehiculoMod = function() {
   if (serialMotor && serialMotor.value) serialMotor.dispatchEvent(new Event('input'));
 };
 
-    // ==========================================
-    // 🔹 11. ENVÍO DEL FORMULARIO
-    // ==========================================
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!currentData) return mostrarMsg(msgBox, 'Primero debe buscar y seleccionar un registro.', 'error');
-            let hasError = false;
-            document.querySelectorAll('.registro-form input').forEach(i => { if (i.classList.contains('input-error')) hasError = true; });
-            if (hasError) return mostrarMsg(msgBox, 'Por favor corrija los campos marcados en rojo.', 'error');
-            const cedula = document.getElementById('pv_p_cedula').value.trim();
-            if (cedula.length < 7) return mostrarMsg(msgBox, 'La cédula debe tener entre 7 y 8 dígitos.', 'error');
-            const btnSubmit = form.querySelector('.btn-submit');
-            btnSubmit.disabled = true; btnSubmit.textContent = '⏳ Guardando...';
-            msgBox.style.display = 'none';
-            try {
-                const bucket = window.supabaseClient.storage.from('fotos_personas');
-                const uid = sessionStorage.getItem('pnb_user_id') || 'user';
-                const ts = Date.now();
-                const uploadIfNeeded = async (inputId, currentUrl, suffix) => {
-                    const file = document.getElementById(inputId).files[0];
-                    if (!file) return currentUrl;
-                    const path = `${uid}/mod_${ts}_${suffix}.jpg`;
-                    const { error } = await bucket.upload(path, file, { cacheControl: '3600' });
-                    if (error) throw new Error('Error subiendo foto.');
-                    return bucket.getPublicUrl(path).data.publicUrl;
-                };
-                const n1 = await uploadIfNeeded('pv_foto_p_frontal', currentData.foto_frontal_persona, 'p_f');
-                const n2 = await uploadIfNeeded('pv_foto_p_izq', currentData.foto_perfil_izq_persona, 'p_i');
-                const n3 = await uploadIfNeeded('pv_foto_p_der', currentData.foto_perfil_der_persona, 'p_d');
-                const n4 = await uploadIfNeeded('pv_foto_v_frontal', currentData.foto_frontal_vehiculo, 'v_f');
-                const n5 = await uploadIfNeeded('pv_foto_v_trasera', currentData.foto_trasera_vehiculo, 'v_t');
-                const n6 = await uploadIfNeeded('pv_foto_v_der', currentData.foto_lado_der_vehiculo, 'v_rd');
-                const n7 = await uploadIfNeeded('pv_foto_v_izq', currentData.foto_lado_izq_vehiculo, 'v_ri');
-                const data = {
-                    primer_nombre: document.getElementById('pv_p_nombre1').value.trim(),
-                    segundo_nombre: document.getElementById('pv_p_nombre2').value.trim() || null,
-                    primer_apellido: document.getElementById('pv_p_apellido1').value.trim(),
-                    segundo_apellido: document.getElementById('pv_p_apellido2').value.trim() || null,
-                    cedula: cedula,
-                    fecha_nacimiento: document.getElementById('pv_p_fecha_nac').value,
-                    edad: parseInt(document.getElementById('pv_p_edad').value) || 0,
-                    apodo: document.getElementById('pv_p_apodo').value.trim() || null,
-                    marca_corporal: document.getElementById('pv_p_marca').value.trim() || null,
-                    nacionalidad: document.getElementById('pv_p_nacionalidad').value,
-                    sexo: document.getElementById('pv_p_sexo').value,
-                    direccion: document.getElementById('pv_p_direccion').value.trim() || null,
-                    tlf_pais: document.getElementById('pv_p_tlf_pais').value || null,
-                    tlf_numero: document.getElementById('pv_p_tlf_num').value.trim() || null,
-                    estatura_cm: window.convertirEstatura(),
-                    color_piel: document.getElementById('pv_p_color_piel').value,
-                    color_ojos: document.getElementById('pv_p_color_ojos').value,
-                    color_cabello: document.getElementById('pv_p_color_cabello').value,
-                    complexion: document.getElementById('pv_p_complexion').value,
-                    condicion_medica: document.getElementById('pv_p_cond_medica').value === 'true' ? document.getElementById('pv_txt_cond').value.trim() : null,
-                    consume_medicamento: document.getElementById('pv_p_medicamento').value === 'true' ? document.getElementById('pv_txt_med').value.trim() : null,
-                    problema_judicial: document.getElementById('pv_p_judicial').value === 'true' ? document.getElementById('pv_txt_jud').value.trim() : null,
-                    usa_lentes: document.getElementById('pv_p_lentes').value === 'true',
-                    detalle_lentes: document.getElementById('pv_p_lentes').value === 'true' ? document.getElementById('pv_txt_lentes').value.trim() : null,
-                    perforaciones: document.getElementById('pv_p_perforaciones').value === 'true',
-                    detalle_perforaciones: document.getElementById('pv_p_perforaciones').value === 'true' ? document.getElementById('pv_txt_lugar_perforacion').value.trim() : null,
-                    tipo_vehiculo: document.getElementById('pv_v_tipo').value,
-                    placa: document.getElementById('pv_v_placa').value.trim().toUpperCase(),
-                    serial_carroceria: document.getElementById('pv_v_serial_carro').value.trim(),
-                    serial_motor: document.getElementById('pv_v_serial_motor').value.trim() || null,
-                    cilindraje: document.getElementById('pv_v_cilindraje').value || null,
-                    color_vehiculo: document.getElementById('pv_v_color').value,
-                    anio_vehiculo: parseInt(document.getElementById('pv_v_anio').value),
-                    marca_vehiculo: document.getElementById('pv_v_marca').value,
-                    modelo_vehiculo: document.getElementById('pv_v_modelo').value,
-                    foto_frontal_persona: n1, foto_perfil_izq_persona: n2, foto_perfil_der_persona: n3,
-                    foto_frontal_vehiculo: n4, foto_trasera_vehiculo: n5, foto_lado_der_vehiculo: n6, foto_lado_izq_vehiculo: n7,
-                    estacion_policial: document.getElementById('pv_estacion').value,
-                    direccion_detencion: document.getElementById('pv_dir_detencion').value.trim() || null,
-                    observaciones: document.getElementById('pv_observaciones').value.trim() || null
-                };
-                const { error } = await window.supabaseClient.from('registro_vinculado').update(data).eq('id', currentData.id);
-                if (error) throw error;
-                mostrarMsg(msgBox, '✅ Registro actualizado correctamente.', 'success');
-                setTimeout(() => {
-                    form.style.display = 'none';
-                    inputBusqueda.value = '';
-                    msgBusqueda.style.display = 'none';
-                    msgBox.style.display = 'none';
-                    crossWarning.style.display = 'none';
-                    currentData = null;
-                    document.querySelectorAll('.img-preview').forEach(i => i.style.display = 'none');
-                    form.reset();
-                }, 4000);
-            } catch (err) {
-                console.error('Error al guardar:', err);
-                let msg = 'Error: ' + err.message;
-                if (err.message.includes('23505') || err.message.includes('unique_constraint')) {
-                    msg = '❌ Esa cédula o placa ya está registrada para otro registro.';
-                }
-                mostrarMsg(msgBox, msg, 'error');
-            } finally {
-                const btnSubmit = form.querySelector('.btn-submit');
-                btnSubmit.disabled = false; btnSubmit.textContent = '💾 Guardar Cambios';
-            }
-        });
+// ==========================================
+// 🔹 11. ENVÍO DEL FORMULARIO
+// ==========================================
+if (form) {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentData) return mostrarMsg(msgBox, 'Primero debe buscar y seleccionar un registro.', 'error');
+    
+    let hasError = false;
+    document.querySelectorAll('.registro-form input').forEach(i => { 
+      if (i.classList.contains('input-error')) hasError = true; 
+    });
+    if (hasError) return mostrarMsg(msgBox, 'Por favor corrija los campos marcados en rojo.', 'error');
+    
+    const cedula = document.getElementById('pv_p_cedula').value.trim();
+    if (cedula.length < 7) return mostrarMsg(msgBox, 'La cédula debe tener entre 7 y 8 dígitos.', 'error');
+    
+    const btnSubmit = form.querySelector('.btn-submit');
+    btnSubmit.disabled = true; 
+    btnSubmit.textContent = '⏳ Guardando...';
+    msgBox.style.display = 'none';
+    
+    try {
+      const bucket = window.supabaseClient.storage.from('fotos_personas');
+      const uid = sessionStorage.getItem('pnb_user_id') || 'user';
+      const ts = Date.now();
+      
+      const uploadIfNeeded = async (inputId, currentUrl, suffix) => {
+        const file = document.getElementById(inputId).files[0];
+        if (!file) return currentUrl;
+        const path = `${uid}/mod_${ts}_${suffix}.jpg`;
+        const { error } = await bucket.upload(path, file, { cacheControl: '3600' });
+        if (error) throw new Error('Error subiendo foto.');
+        return bucket.getPublicUrl(path).data.publicUrl;
+      };
+      
+      const n1 = await uploadIfNeeded('pv_foto_p_frontal', currentData.foto_frontal_persona, 'p_f');
+      const n2 = await uploadIfNeeded('pv_foto_p_izq', currentData.foto_perfil_izq_persona, 'p_i');
+      const n3 = await uploadIfNeeded('pv_foto_p_der', currentData.foto_perfil_der_persona, 'p_d');
+      const n4 = await uploadIfNeeded('pv_foto_v_frontal', currentData.foto_frontal_vehiculo, 'v_f');
+      const n5 = await uploadIfNeeded('pv_foto_v_trasera', currentData.foto_trasera_vehiculo, 'v_t');
+      const n6 = await uploadIfNeeded('pv_foto_v_der', currentData.foto_lado_der_vehiculo, 'v_rd');
+      const n7 = await uploadIfNeeded('pv_foto_v_izq', currentData.foto_lado_izq_vehiculo, 'v_ri');
+      
+      const data = {
+        primer_nombre: document.getElementById('pv_p_nombre1').value.trim(),
+        segundo_nombre: document.getElementById('pv_p_nombre2').value.trim() || null,
+        primer_apellido: document.getElementById('pv_p_apellido1').value.trim(),
+        segundo_apellido: document.getElementById('pv_p_apellido2').value.trim() || null,
+        cedula: cedula,
+        fecha_nacimiento: document.getElementById('pv_p_fecha_nac').value,
+        edad: parseInt(document.getElementById('pv_p_edad').value) || 0,
+        apodo: document.getElementById('pv_p_apodo').value.trim() || null,
+        marca_corporal: document.getElementById('pv_p_marca').value.trim() || null,
+        nacionalidad: document.getElementById('pv_p_nacionalidad').value,
+        sexo: document.getElementById('pv_p_sexo').value,
+        direccion: document.getElementById('pv_p_direccion').value.trim() || null,
+        tlf_pais: document.getElementById('pv_p_tlf_pais').value || null,
+        tlf_numero: document.getElementById('pv_p_tlf_num').value.trim() || null,
+        estatura_cm: window.convertirEstatura(),
+        color_piel: document.getElementById('pv_p_color_piel').value,
+        color_ojos: document.getElementById('pv_p_color_ojos').value,
+        color_cabello: document.getElementById('pv_p_color_cabello').value,
+        complexion: document.getElementById('pv_p_complexion').value,
+        condicion_medica: document.getElementById('pv_p_cond_medica').value === 'true' ? document.getElementById('pv_txt_cond').value.trim() : null,
+        consume_medicamento: document.getElementById('pv_p_medicamento').value === 'true' ? document.getElementById('pv_txt_med').value.trim() : null,
+        problema_judicial: document.getElementById('pv_p_judicial').value === 'true' ? document.getElementById('pv_txt_jud').value.trim() : null,
+        usa_lentes: document.getElementById('pv_p_lentes').value === 'true',
+        detalle_lentes: document.getElementById('pv_p_lentes').value === 'true' ? document.getElementById('pv_txt_lentes').value.trim() : null,
+        perforaciones: document.getElementById('pv_p_perforaciones').value === 'true',
+        detalle_perforaciones: document.getElementById('pv_p_perforaciones').value === 'true' ? document.getElementById('pv_txt_lugar_perforacion').value.trim() : null,
+        tipo_vehiculo: document.getElementById('pv_v_tipo').value,
+        placa: document.getElementById('pv_v_placa').value.trim().toUpperCase(),
+        serial_carroceria: document.getElementById('pv_v_serial_carro').value.trim(),
+        serial_motor: document.getElementById('pv_v_serial_motor').value.trim() || '', // ✅ CORREGIDO: Cadena vacía en lugar de null
+        cilindraje: document.getElementById('pv_v_cilindraje').value || null,
+        color_vehiculo: document.getElementById('pv_v_color').value,
+        anio_vehiculo: parseInt(document.getElementById('pv_v_anio').value),
+        marca_vehiculo: document.getElementById('pv_v_marca').value,
+        modelo_vehiculo: document.getElementById('pv_v_modelo').value,
+        foto_frontal_persona: n1, 
+        foto_perfil_izq_persona: n2, 
+        foto_perfil_der_persona: n3,
+        foto_frontal_vehiculo: n4, 
+        foto_trasera_vehiculo: n5, 
+        foto_lado_der_vehiculo: n6, 
+        foto_lado_izq_vehiculo: n7,
+        estacion_policial: document.getElementById('pv_estacion').value,
+        direccion_detencion: document.getElementById('pv_dir_detencion').value.trim() || null,
+        observaciones: document.getElementById('pv_observaciones').value.trim() || null
+      };
+      
+      const { error } = await window.supabaseClient
+        .from('registro_vinculado')
+        .update(data)
+        .eq('id', currentData.id);
+        
+      if (error) throw error;
+      
+      mostrarMsg(msgBox, '✅ Registro actualizado correctamente.', 'success');
+      setTimeout(() => {
+        form.style.display = 'none';
+        inputBusqueda.value = '';
+        msgBusqueda.style.display = 'none';
+        msgBox.style.display = 'none';
+        if (crossWarning) crossWarning.style.display = 'none';
+        currentData = null;
+        document.querySelectorAll('.img-preview').forEach(i => i.style.display = 'none');
+        form.reset();
+      }, 4000);
+      
+    } catch (err) {
+      console.error('Error al guardar:', err);
+      let msg = 'Error: ' + err.message;
+      if (err.message.includes('23505') || err.message.includes('unique_constraint')) {
+        msg = '❌ Esa cédula o placa ya está registrada para otro registro.';
+      }
+      mostrarMsg(msgBox, msg, 'error');
+    } finally {
+      const btnSubmit = form.querySelector('.btn-submit');
+      btnSubmit.disabled = false; 
+      btnSubmit.textContent = '💾 Guardar Cambios';
     }
+  });
+}
 
-    const tlfNumInput = document.getElementById('pv_p_tlf_num');
-    if (tlfNumInput) {
-        tlfNumInput.addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, ''); });
-    }
+const tlfNumInput = document.getElementById('pv_p_tlf_num');
+if (tlfNumInput) {
+  tlfNumInput.addEventListener('input', (e) => { 
+    e.target.value = e.target.value.replace(/\D/g, ''); 
+  });
+}
 
-    // ==========================================
-    // 🔹 12. INICIALIZACIÓN
-    // ==========================================
-    cargarEstaciones();
-    cargarAnios();
-    setupEdad();
-    initPhoneDropdown();
-    setupPhotoPreview('pv_foto_p_frontal', 'prev_p_frontal');
-    setupPhotoPreview('pv_foto_p_izq', 'prev_p_izq');
-    setupPhotoPreview('pv_foto_p_der', 'prev_p_der');
-    setupPhotoPreview('pv_foto_v_frontal', 'prev_v_frontal');
-    setupPhotoPreview('pv_foto_v_trasera', 'prev_v_trasera');
-    setupPhotoPreview('pv_foto_v_der', 'prev_v_der');
-    setupPhotoPreview('pv_foto_v_izq', 'prev_v_izq');
+// ==========================================
+// 🔹 12. INICIALIZACIÓN
+// ==========================================
+cargarEstaciones();
+cargarAnios();
+setupEdad();
+initPhoneDropdown();
 
-    console.log("✅ Módulo mod-vinculado.js inicializado correctamente");
-};
+setupPhotoPreview('pv_foto_p_frontal', 'prev_p_frontal');
+setupPhotoPreview('pv_foto_p_izq', 'prev_p_izq');
+setupPhotoPreview('pv_foto_p_der', 'prev_p_der');
+setupPhotoPreview('pv_foto_v_frontal', 'prev_v_frontal');
+setupPhotoPreview('pv_foto_v_trasera', 'prev_v_trasera');
+setupPhotoPreview('pv_foto_v_der', 'prev_v_der');
+setupPhotoPreview('pv_foto_v_izq', 'prev_v_izq');
+
+console.log("✅ Módulo mod-vinculado.js inicializado correctamente");
+}; // <-- Esta llave cierra window.initModVinculado = function() {
