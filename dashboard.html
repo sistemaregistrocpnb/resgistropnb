@@ -84,16 +84,19 @@ body {
   background: #e2e8f0;
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
+/* ✅ JERARQUÍA: TEXTO BLANCO, CENTRADO, JUSTO DEBAJO DE LA FOTO */
 .user-jerarquia {
-  display: inline-block;
-  background: var(--primary); /* ✅ FONDO OSCURO PARA QUE SE LEA EL DORADO */
-  color: var(--secondary); 
-  padding: 5px 14px;
-  border-radius: 12px;
-  font-size: 0.8rem;
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: var(--primary); /* Fondo oscuro para que el blanco resalte */
+  color: #ffffff; /* ✅ TEXTO EN BLANCO */
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
   margin-bottom: 10px;
 }
 .user-fullname {
@@ -258,9 +261,10 @@ body {
 </nav>
 <div class="dashboard-wrapper">
   <aside class="sidebar" id="sidebar">
-    <!-- ✅ PERFIL DE USUARIO ACTUALIZADO (Sin nivel, jerarquía con fondo, nombre en mayúsculas) -->
+    <!-- ✅ PERFIL DE USUARIO ACTUALIZADO -->
     <div class="sidebar-profile">
       <img src="https://ui-avatars.com/api/?name=Usuario&background=002b5c&color=fff" alt="Foto de Usuario" class="user-avatar" id="user-foto">
+      <!-- ✅ JERARQUÍA JUSTO DEBAJO DE LA FOTO, CENTRADA Y EN BLANCO -->
       <div class="user-jerarquia" id="user-jerarquia-display">---</div>
       <div class="user-fullname" id="user-nombre-display">Cargando...</div>
     </div>
