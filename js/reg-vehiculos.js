@@ -282,12 +282,12 @@ document.getElementById('v_serial_motor')?.addEventListener('input', validateMot
         foto_lado_izquierdo: urls.ri
       };
 
-      if (isMoto) {
-        data.serial_motor = document.getElementById('v_serial_motor').value.trim() || null;
-        data.cilindraje = document.getElementById('v_cilindraje').value;
-      } else {
-        data.serial_motor = document.getElementById('v_serial_motor').value.trim() || null;
-      }
+   if (isMoto) {
+  data.serial_motor = document.getElementById('v_serial_motor').value.trim() || '';
+  data.cilindraje = document.getElementById('v_cilindraje').value || 'No especificado';
+} else {
+  data.serial_motor = document.getElementById('v_serial_motor').value.trim() || '';
+}
 
       const { error } = await window.supabaseClient.from(tablaDestino).insert([data]);
       if (error) throw error;
