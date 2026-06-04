@@ -184,6 +184,11 @@ window.initModVinculado = function() {
             if(boxCilindro) boxCilindro.style.display = 'none';
         }
     };
+    // 🔑 IMPORTANTE: Re-validar placa y seriales al cambiar el tipo de vehículo
+  if (window.reValidarCamposVehiculoMod) {
+    window.reValidarCamposVehiculoMod();
+  }
+};
 
     window.cargarModelosPV = function() {
         const tipo = document.getElementById('pv_v_tipo')?.value;
@@ -546,46 +551,150 @@ window.initModVinculado = function() {
         });
     }
 
-    // ==========================================
-    // 🔹 10. VALIDACIÓN EN TIEMPO REAL
-    // ==========================================
-    function debounce(func, wait) {
-        let timeout;
-        return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
+   // ==========================================
+// 🔹 10. VALIDACIÓN EN TIEMPO REAL (ESPECÍFICA POR TIPO + TABLAS)
+// ==========================================
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
+
+async function checkAvailability(input, msgId, columna) {
+  const val = input.value.trim().toUpperCase();
+  const msgEl = document.getElementById(msgId);
+  
+  if (!val || !currentData) {
+    if (msgEl) { msgEl.textContent = ''; }
+    input.classList.remove('input-valid', 'input-error');
+    return;
+  }
+
+  if (msgEl) {
+    msgEl.textContent = '⏳ Verificando...';
+    msgEl.className = 'status-msg';
+  }
+
+  try {
+    let found = false;
+    let foundIn = '';
+
+    // 1️⃣ Validación de Cédula (Siempre busca en personas y vinculados, sin importar el vehículo)
+    if (columna === 'cedula') {
+      const { data: dataPersonas } = await window.supabaseClient
+        .from('registro_personas')
+        .select('id')
+        .ilike('cedula', val)
+        .neq('id', currentData.id)
+        .limit(1);
+
+      if (dataPersonas && dataPersonas.length > 0) {
+        found = true;
+        foundIn = 'Personas Registradas';
+      }
+
+      if (!found) {
+        const { data: dataVincCedula } = await window.supabaseClient
+          .from('registro_vinculado')
+          .select('id')
+          .ilike('cedula', val)
+          .neq('id', currentData.id)
+          .limit(1);
+
+        if (dataVincCedula && dataVincCedula.length > 0) {
+          found = true;
+          foundIn = 'Registros Vinculados';
+        }
+      }
+    } 
+    // 2️⃣ Validación de Placa y Seriales (Filtrado estricto por tipo de vehículo)
+    else {
+      const tipoVeh = document.getElementById('pv_v_tipo')?.value;
+
+      // Buscar en tabla individual de Motos
+      if (tipoVeh === 'Motocicleta') {
+        const { data: dataMotos } = await window.supabaseClient
+          .from('registro_motos')
+          .select('id')
+          .ilike(columna, val)
+          .limit(1);
+
+        if (dataMotos && dataMotos.length > 0) {
+          found = true;
+          foundIn = 'Motocicletas';
+        }
+      } 
+      // Buscar en tabla individual de Automóviles
+      else if (tipoVeh === 'Automóvil') {
+        const { data: dataAutos } = await window.supabaseClient
+          .from('registro_automoviles')
+          .select('id')
+          .ilike(columna, val)
+          .limit(1);
+
+        if (dataAutos && dataAutos.length > 0) {
+          found = true;
+          foundIn = 'Automóviles';
+        }
+      }
+
+      // Buscar en registro_vinculado (mismo tipo de vehículo, excluyendo el registro actual)
+      if (!found && tipoVeh) {
+        const { data: dataVinc } = await window.supabaseClient
+          .from('registro_vinculado')
+          .select('id')
+          .ilike(columna, val)
+          .eq('tipo_vehiculo', tipoVeh)
+          .neq('id', currentData.id)
+          .limit(1);
+
+        if (dataVinc && dataVinc.length > 0) {
+          found = true;
+          foundIn = 'Vehículos Vinculados';
+        }
+      }
     }
 
-    async function checkAvailability(input, msgId, columna) {
-        const val = input.value.trim().toUpperCase();
-        const msgEl = document.getElementById(msgId);
-        if (!val || !currentData) {
-            if(msgEl) { msgEl.textContent = ''; }
-            input.classList.remove('input-valid', 'input-error');
-            return;
-        }
-        if (msgEl) { msgEl.textContent = '⏳ Verificando...'; msgEl.className = 'status-msg'; }
-        try {
-            let found = false;
-            const { data } = await window.supabaseClient.from('registro_vinculado').select('id').ilike(columna, val).neq('id', currentData.id).maybeSingle();
-            if (data) found = true;
-            if (found) {
-                input.classList.add('input-error'); input.classList.remove('input-valid');
-                if (msgEl) { msgEl.textContent = '❌ Ya registrado'; msgEl.className = 'status-msg error'; }
-            } else {
-                input.classList.add('input-valid'); input.classList.remove('input-error');
-                if (msgEl) { msgEl.textContent = '✅ Disponible'; msgEl.className = 'status-msg valid'; }
-            }
-        } catch (e) {
-            if (msgEl) msgEl.textContent = '⚠️ Error de conexión';
-        }
+    // 3️⃣ Mostrar resultado al usuario
+    if (found) {
+      input.classList.add('input-error');
+      input.classList.remove('input-valid');
+      if (msgEl) {
+        msgEl.textContent = `❌ Ya registrado en ${foundIn}`;
+        msgEl.className = 'status-msg error';
+      }
+    } else {
+      input.classList.add('input-valid');
+      input.classList.remove('input-error');
+      if (msgEl) {
+        msgEl.textContent = '✅ Disponible';
+        msgEl.className = 'status-msg valid';
+      }
     }
+  } catch (e) {
+    console.error('Error en validación:', e);
+    if (msgEl) msgEl.textContent = '⚠️ Error de conexión';
+  }
+}
 
-    document.getElementById('pv_p_cedula')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'pv-msg-cedula', 'cedula'), 600));
-    document.getElementById('pv_v_placa')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'pv-msg-placa', 'placa'), 600));
-    document.getElementById('pv_v_serial_carro')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'pv-msg-carro', 'serial_carroceria'), 600));
-    document.getElementById('pv_v_serial_motor')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'pv-msg-motor', 'serial_motor'), 600));
+// Event listeners con debounce
+document.getElementById('pv_p_cedula')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'pv-msg-cedula', 'cedula'), 600));
+document.getElementById('pv_v_placa')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'pv-msg-placa', 'placa'), 600));
+document.getElementById('pv_v_serial_carro')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'pv-msg-carro', 'serial_carroceria'), 600));
+document.getElementById('pv_v_serial_motor')?.addEventListener('input', debounce((e) => checkAvailability(e.target, 'pv-msg-motor', 'serial_motor'), 600));
+
+// Función para re-validar automáticamente si el usuario cambia el tipo de vehículo
+window.reValidarCamposVehiculoMod = function() {
+  const placa = document.getElementById('pv_v_placa');
+  const serialCarro = document.getElementById('pv_v_serial_carro');
+  const serialMotor = document.getElementById('pv_v_serial_motor');
+  
+  if (placa && placa.value) placa.dispatchEvent(new Event('input'));
+  if (serialCarro && serialCarro.value) serialCarro.dispatchEvent(new Event('input'));
+  if (serialMotor && serialMotor.value) serialMotor.dispatchEvent(new Event('input'));
+};
 
     // ==========================================
     // 🔹 11. ENVÍO DEL FORMULARIO
