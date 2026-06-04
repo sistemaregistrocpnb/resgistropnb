@@ -1,341 +1,287 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Principal - PNB</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚔</text></svg>">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        :root {
-            --primary: #002b5c; --primary-dark: #001f44; --secondary: #c5a028;
-            --beige-light: #f5f3e8; --beige-border: #d4c9a8;
-            --bg: #f4f7fa; --text: #222; --white: #fff; --danger: #dc2626;
-            --sidebar-width: 270px; --header-height: 60px;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
-        
-        /* 🔹 Navbar */
-        .navbar { background: var(--primary); color: var(--white); padding: 0 20px; height: var(--header-height); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.15); position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
-        .navbar h2 { font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
-        .user-info { display: flex; align-items: center; gap: 12px; font-size: 0.82rem; }
-        .badge { background: var(--secondary); color: var(--primary); padding: 4px 10px; border-radius: 12px; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; }
-        .clock-badge { background: rgba(255,255,255,0.12); padding: 3px 8px; border-radius: 6px; font-family: 'Consolas', monospace; letter-spacing: 0.5px; }
-        .btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.6); color: var(--white); padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
-        .btn-logout:hover { background: rgba(255,255,255,0.15); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Principal - PNB</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚔</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+    --primary: #002b5c; --primary-dark: #001f44; --secondary: #c5a028;
+    --beige-light: #f5f3e8; --beige-border: #d4c9a8;
+    --bg: #f4f7fa; --text: #222; --white: #fff; --danger: #dc2626;
+    --sidebar-width: 270px; --header-height: 60px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
 
-        /* 🔹 Layout */
-        .dashboard-wrapper { display: flex; margin-top: var(--header-height); min-height: calc(100vh - var(--header-height)); }
-        
-        /* 🔹 Sidebar */
-        .sidebar { width: var(--sidebar-width); background: var(--white); border-right: 1px solid #e2e8f0; padding-top: 0; position: fixed; top: var(--header-height); bottom: 0; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.05); z-index: 90; display: flex; flex-direction: column; }
-        .sidebar-logo { text-align: center; padding: 18px 15px 12px; border-bottom: 1px solid #e2e8f0; background: #fafbfc; }
-        .sidebar-logo img { max-width: 90px; height: auto; display: block; margin: 0 auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
-        
-        /* 🔹 Menú Lateral */
-        .menu { flex: 1; padding: 10px 0; }
-        .menu-item { border-bottom: 1px solid #f1f1f1; }
-        .menu-btn {
-            width: 100%; padding: 14px 20px; background: none; border: none;
-            font-size: 0.95rem; font-weight: 500; color: var(--text); cursor: pointer;
-            display: flex; align-items: center; justify-content: flex-start;
-            gap: 12px; text-align: left; transition: 0.2s;
-        }
-        .menu-btn svg { flex-shrink: 0; width: 18px; height: 18px; fill: currentColor; }
-        .menu-btn .arrow { margin-left: auto; transition: transform 0.2s; font-size: 0.8rem; opacity: 0.7; }
-        .menu-btn:hover, .menu-btn.active { background: var(--beige-light); color: var(--primary); border-left: 3px solid var(--secondary); }
-        
-        /* 🔹 Submenús */
-        .submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; background: #fafafa; border-left: 3px solid var(--primary); }
-        .submenu.show { max-height: 500px; }
-        .submenu-item { padding: 10px 20px 10px 52px; font-size: 0.85rem; color: #4a5568; cursor: pointer; display: block; text-decoration: none; transition: 0.2s; }
-        .submenu-item:hover { background: var(--beige-light); color: var(--primary); padding-left: 56px; }
-        .submenu-item.danger { color: var(--danger); }
-        .submenu-item.danger:hover { background: #fef2f2; }
+/* 🔹 Navbar */
+.navbar { background: var(--primary); color: var(--white); padding: 0 20px; height: var(--header-height); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.15); position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
+.navbar h2 { font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+.user-info { display: flex; align-items: center; gap: 12px; font-size: 0.82rem; }
+.badge { background: var(--secondary); color: var(--primary); padding: 4px 10px; border-radius: 12px; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; }
+.clock-badge { background: rgba(255,255,255,0.12); padding: 3px 8px; border-radius: 6px; font-family: 'Consolas', monospace; letter-spacing: 0.5px; }
+.btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.6); color: var(--white); padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+.btn-logout:hover { background: rgba(255,255,255,0.15); }
 
-        /* 🔹 Contenido Principal */
-        .main-content { flex: 1; margin-left: var(--sidebar-width); padding: 25px; transition: all 0.3s; }
-        .card { background: var(--white); border-radius: 10px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .card h3 { color: var(--primary); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--beige-border); }
-        .loading { text-align: center; padding: 30px; color: #64748b; font-weight: 500; }
-        .hidden { display: none !important; }
-        
-        /* 🔹 Vista de Bienvenida */
-        .welcome-card { text-align: center; padding: 40px 30px; }
-        .welcome-logo { max-width: 300px; margin-bottom: 20px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
-        .welcome-desc { font-size: 1.05rem; color: #334155; max-width: 750px; margin: 0 auto 25px; line-height: 1.7; }
-        .feature-badges { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 15px; }
-        .feature-badge { background: #f1f5f9; color: #475569; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; border: 1px solid #e2e8f0; }
+/* 🔹 Layout */
+.dashboard-wrapper { display: flex; margin-top: var(--header-height); min-height: calc(100vh - var(--header-height)); }
 
-/* 🔹 PIE DE PÁGINA FIJO (siempre visible) */
-.footer-container {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: #f8fafc;
-    border-top: 2px solid var(--beige-border);
+/* 🔹 Sidebar */
+.sidebar { width: var(--sidebar-width); background: var(--white); border-right: 1px solid #e2e8f0; padding-top: 0; position: fixed; top: var(--header-height); bottom: 0; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.05); z-index: 90; display: flex; flex-direction: column; }
+.sidebar-logo { text-align: center; padding: 18px 15px 12px; border-bottom: 1px solid #e2e8f0; background: #fafbfc; }
+.sidebar-logo img { max-width: 90px; height: auto; display: block; margin: 0 auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+
+/* 🔹 Menú Lateral */
+.menu { flex: 1; padding: 10px 0; }
+.menu-item { border-bottom: 1px solid #f1f1f1; }
+.menu-btn {
+    width: 100%; padding: 14px 20px; background: none; border: none;
+    font-size: 0.95rem; font-weight: 500; color: var(--text); cursor: pointer;
+    display: flex; align-items: center; justify-content: flex-start;
+    gap: 12px; text-align: left; transition: 0.2s;
+}
+.menu-btn svg { flex-shrink: 0; width: 18px; height: 18px; fill: currentColor; }
+.menu-btn .arrow { margin-left: auto; transition: transform 0.2s; font-size: 0.8rem; opacity: 0.7; }
+.menu-btn:hover, .menu-btn.active { background: var(--beige-light); color: var(--primary); border-left: 3px solid var(--secondary); }
+
+/* 🔹 Submenús */
+.submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; background: #fafafa; border-left: 3px solid var(--primary); }
+.submenu.show { max-height: 500px; }
+.submenu-item { padding: 10px 20px 10px 52px; font-size: 0.85rem; color: #4a5568; cursor: pointer; display: block; text-decoration: none; transition: 0.2s; }
+.submenu-item:hover { background: var(--beige-light); color: var(--primary); padding-left: 56px; }
+.submenu-item.danger { color: var(--danger); }
+.submenu-item.danger:hover { background: #fef2f2; }
+
+/* 🔹 Contenido Principal */
+.main-content { flex: 1; margin-left: var(--sidebar-width); padding: 25px; transition: all 0.3s; }
+.card { background: var(--white); border-radius: 10px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+.card h3 { color: var(--primary); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--beige-border); }
+.loading { text-align: center; padding: 30px; color: #64748b; font-weight: 500; }
+.hidden { display: none !important; }
+
+/* 🔹 PANTALLA DE BIENVENIDA (Centrada) */
+.welcome-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - var(--header-height) - 50px);
+    padding: 20px;
+}
+
+.welcome-card {
     text-align: center;
-    z-index: 95;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+    padding: 40px 30px;
+    max-width: 900px;
+    width: 100%;
 }
+.welcome-logo { max-width: 200px; margin-bottom: 20px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
+.welcome-desc { font-size: 1.05rem; color: #334155; max-width: 750px; margin: 0 auto 25px; line-height: 1.7; }
+.feature-badges { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 15px; }
+.feature-badge { background: #f1f5f9; color: #475569; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; border: 1px solid #e2e8f0; }
 
-.footer-copyright {
-    background: #fff;
-    padding: 10px 20px;
-    font-size: 0.82rem;
-    color: var(--text);
-    line-height: 1.5;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.footer-copyright strong {
-    color: var(--primary);
-}
-
-.footer-copyright .phone-numbers {
-    color: var(--secondary);
-    font-weight: 700;
-    font-size: 0.85rem;
-}
-
-.footer-marquee {
+/* 🔹 MARQUESINA (Solo en bienvenida) */
+.marquee-container {
+    width: 100%;
+    max-width: 900px;
+    margin-top: 30px;
     background: linear-gradient(135deg, #002b5c 0%, #001f44 100%);
-    padding: 8px 0;
+    border-radius: 8px;
     overflow: hidden;
     border-top: 3px solid var(--secondary);
+    box-shadow: 0 4px 12px rgba(0,43,92,0.2);
 }
 
-.footer-marquee marquee {
+.marquee-text {
     color: #fff;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     font-weight: 700;
     letter-spacing: 1px;
+    padding: 12px 0;
+    white-space: nowrap;
+    animation: scrollMarquee 20s linear infinite;
 }
 
-.footer-marquee marquee span {
-    margin: 0 30px;
+@keyframes scrollMarquee {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
 }
 
-.footer-marquee .emoji-pnb {
-    font-size: 1.1rem;
-}
-
-/* 🔹 Compensar espacio del footer fijo en el contenido */
-.main-content {
-    padding-bottom: 90px !important;
-}
-
-.footer-copyright {
-    background: var(--white);
+/* 🔹 Copyright (debajo de la marquesina) */
+.copyright-container {
+    width: 100%;
+    max-width: 900px;
+    margin-top: 15px;
+    background: #fff;
+    border: 1px solid var(--beige-border);
+    border-radius: 8px;
     padding: 12px 20px;
+    text-align: center;
     font-size: 0.85rem;
     color: var(--text);
     line-height: 1.6;
-    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
-.footer-copyright strong {
+.copyright-container strong {
     color: var(--primary);
+    font-weight: 700;
 }
 
-.footer-copyright .phone-numbers {
+.copyright-container .phone-numbers {
     color: var(--secondary);
     font-weight: 700;
     font-size: 0.9rem;
 }
 
-.footer-marquee {
-    background: linear-gradient(135deg, #002b5c 0%, #001f44 100%);
-    padding: 10px 0;
-    overflow: hidden;
-    border-top: 3px solid var(--secondary);
+/* 🔹 Responsive */
+@media (max-width: 900px) {
+    .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
+    .sidebar.open { transform: translateX(0); }
+    .main-content { margin-left: 0; }
+    .menu-toggle { display: block !important; }
+    .clock-badge { display: none; }
+    .welcome-card { padding: 25px 15px; }
+    .welcome-logo { max-width: 150px; }
+    .marquee-text { font-size: 0.9rem; }
+    .copyright-container { font-size: 0.75rem; padding: 10px 15px; }
 }
-
-.footer-marquee marquee {
-    color: #fff;
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-}
-
-.footer-marquee marquee span {
-    margin: 0 30px;
-}
-
-.footer-marquee .emoji-pnb {
-    font-size: 1.1rem;
-}
-
 @media (max-width: 600px) {
-    .footer-copyright { font-size: 0.75rem; padding: 10px 15px; }
-    .footer-marquee marquee { font-size: 0.85rem; }
+    .feature-badges { flex-direction: column; align-items: center; }
+    .feature-badge { width: 100%; max-width: 280px; }
 }
-        
-        /* 🔹 Responsive */
-        @media (max-width: 900px) { .sidebar { transform: translateX(-100%); transition: transform 0.3s; } .sidebar.open { transform: translateX(0); } .main-content { margin-left: 0; } .menu-toggle { display: block !important; } .clock-badge { display: none; } }
-        .menu-toggle { display: none; background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 5px; margin-right: 10px; cursor: pointer; }
-    </style>
+.menu-toggle { display: none; background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 5px; margin-right: 10px; cursor: pointer; }
+</style>
 </head>
 <body>
-    <nav class="navbar">
-        <div style="display: flex; align-items: center;">
-            <button class="menu-toggle" id="menuToggle">☰</button>
-            <h2>🚔 Sistema de verificación y registro policial del CPNB - CCPE ZULIA </h2>
-        </div>
-        <div class="user-info">
-            <span id="live-clock" class="clock-badge">--:--:--</span>
-            <span id="user-email">Cargando...</span>
-            <span id="user-role" class="badge">---</span>
-            <button id="btn-logout" class="btn-logout">Cerrar Sesión</button>
-        </div>
-    </nav>
+<nav class="navbar">
+    <div style="display: flex; align-items: center;">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <h2>🚔 Sistema de verificación y registro policial del CPNB - CCPE ZULIA</h2>
+    </div>
+    <div class="user-info">
+        <span id="live-clock" class="clock-badge">--:--:--</span>
+        <span id="user-email">Cargando...</span>
+        <span id="user-role" class="badge">---</span>
+        <button id="btn-logout" class="btn-logout">Cerrar Sesión</button>
+    </div>
+</nav>
 
-    <div class="dashboard-wrapper">
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-logo">
-                <img src="img/LOGO-PNB.png" alt="Logo PNB" class="welcome-logo">
+<div class="dashboard-wrapper">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <img src="img/LOGO-PNB.png" alt="Logo PNB">
+        </div>
+        <nav class="menu">
+            <div class="menu-item">
+                <button class="menu-btn" data-toggle="submenu-consulta">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    Consulta <span class="arrow">▼</span>
+                </button>
+                <div class="submenu" id="submenu-consulta">
+                    <a href="#" class="submenu-item" data-src="html/consulta-personas.html" data-js="js/consulta-personas.js" data-init="initConsultaPersonas">👤 Personas</a>
+                    <a href="#" class="submenu-item" data-src="html/consulta-vehiculos.html" data-js="js/consulta-vehiculos.js" data-init="initConsultaVehiculos"> Vehículos</a>
+                </div>
             </div>
-            <nav class="menu">
-                <div class="menu-item">
-                    <button class="menu-btn" data-toggle="submenu-consulta">
-                        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                        Consulta <span class="arrow">▼</span>
-                    </button>
-                    <div class="submenu" id="submenu-consulta">
-                        <a href="#" class="submenu-item" data-src="html/consulta-personas.html" data-js="js/consulta-personas.js" data-init="initConsultaPersonas">👤 Personas</a>
-                        <a href="#" class="submenu-item" data-src="html/consulta-vehiculos.html" data-js="js/consulta-vehiculos.js" data-init="initConsultaVehiculos">🚗 Vehículos</a>
-                    </div>
+            <div class="menu-item">
+                <button class="menu-btn" data-toggle="submenu-reg-personas">
+                    <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    Registro de Personas <span class="arrow">▼</span>
+                </button>
+                <div class="submenu" id="submenu-reg-personas">
+                    <a href="#" class="submenu-item" data-src="html/reg-personas.html" data-js="js/reg-personas.js" data-init="initRegPersonas">📝 Registrar</a>
+                    <a href="#" class="submenu-item" data-src="html/mod-personas.html" data-js="js/mod-personas.js" data-init="initModPersonas">✏️ Modificar</a>
+                    <a href="#" class="submenu-item danger" data-src="html/elim-personas.html" data-js="js/elim-personas.js" data-init="initElimPersonas">🗑️ Eliminar</a>
                 </div>
-
-                <div class="menu-item">
-                    <button class="menu-btn" data-toggle="submenu-reg-personas">
-                        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                        Registro de Personas <span class="arrow">▼</span>
-                    </button>
-                    <div class="submenu" id="submenu-reg-personas">
-                        <a href="#" class="submenu-item" data-src="html/reg-personas.html" data-js="js/reg-personas.js" data-init="initRegPersonas">📝 Registrar</a>
-                        <a href="#" class="submenu-item" data-src="html/mod-personas.html" data-js="js/mod-personas.js" data-init="initModPersonas">✏️ Modificar</a>
-                        <a href="#" class="submenu-item danger" data-src="html/elim-personas.html" data-js="js/elim-personas.js" data-init="initElimPersonas">🗑️ Eliminar</a>
-                    </div>
+            </div>
+            <div class="menu-item">
+                <button class="menu-btn" data-toggle="submenu-reg-vehiculos">
+                    <svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
+                    Registro de Vehículos <span class="arrow">▼</span>
+                </button>
+                <div class="submenu" id="submenu-reg-vehiculos">
+                    <a href="#" class="submenu-item" data-src="html/reg-vehiculos.html" data-js="js/reg-vehiculos.js" data-init="initRegVehiculos">📝 Registrar</a>
+                    <a href="#" class="submenu-item" data-src="html/mod-vehiculos.html" data-js="js/mod-vehiculos.js" data-init="initModVehiculos">✏️ Modificar</a>
+                    <a href="#" class="submenu-item danger" data-src="html/elim-vehiculos.html" data-js="js/elim-vehiculos.js" data-init="initElimVehiculos">🗑️ Eliminar</a>
                 </div>
-
-                <div class="menu-item">
-                    <button class="menu-btn" data-toggle="submenu-reg-vehiculos">
-                        <svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
-                        Registro de Vehículos <span class="arrow">▼</span>
-                    </button>
-                    <div class="submenu" id="submenu-reg-vehiculos">
-                        <a href="#" class="submenu-item" data-src="html/reg-vehiculos.html" data-js="js/reg-vehiculos.js" data-init="initRegVehiculos">📝 Registrar</a>
-                        <a href="#" class="submenu-item" data-src="html/mod-vehiculos.html" data-js="js/mod-vehiculos.js" data-init="initModVehiculos">✏️ Modificar</a>
-                        <a href="#" class="submenu-item danger" data-src="html/elim-vehiculos.html" data-js="js/elim-vehiculos.js" data-init="initElimVehiculos">🗑️ Eliminar</a>
-                    </div>
+            </div>
+            <div class="menu-item">
+                <button class="menu-btn" data-toggle="submenu-pv">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                    Personas con Vehículos <span class="arrow">▼</span>
+                </button>
+                <div class="submenu" id="submenu-pv">
+                    <a href="#" class="submenu-item" data-src="html/reg-vinculado.html" data-js="js/reg-vinculado.js" data-init="initRegVinculado">📝 Registrar</a>
+                    <a href="#" class="submenu-item" data-src="html/mod-vinculado.html" data-js="js/mod-vinculado.js" data-init="initModVinculado">✏️ Modificar</a>
+                    <a href="#" class="submenu-item danger" data-src="html/elim-pv.html" data-js="js/elim-pv.js" data-init="initElimPV">🗑️ Eliminar</a>
                 </div>
-
-<div class="menu-item">
-    <button class="menu-btn" data-toggle="submenu-pv">
-        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-        Personas con Vehículos <span class="arrow">▼</span>
-    </button>
-    <div class="submenu" id="submenu-pv">
-        <a href="#" class="submenu-item" data-src="html/reg-vinculado.html" data-js="js/reg-vinculado.js" data-init="initRegVinculado">📝 Registrar</a>
-        <a href="#" class="submenu-item" data-src="html/mod-vinculado.html" data-js="js/mod-vinculado.js" data-init="initModVinculado">✏️ Modificar</a>
-        <a href="#" class="submenu-item danger" data-src="html/elim-vinculado.html" data-js="js/elim-vinculado.js" data-init="initElimVinculado">🗑️ Eliminar</a>
-    </div>
-</div>
-<!-- 🔹 SECCIÓN PROCESAR -->
-<div class="menu-item">
-<button class="menu-btn" data-toggle="submenu-procesar">
-<svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-Procesar <span class="arrow">▼</span>
-</button>
-<div class="submenu" id="submenu-procesar">
-<a href="#" class="submenu-item" data-src="html/reg-procesados.html" data-js="js/reg-procesados.js" data-init="initRegProcesados">📝 Registrar</a>
-<a href="#" class="submenu-item" data-src="html/mod-procesados.html" data-js="js/mod-procesados.js" data-init="initModProcesados">✏️ Modificar</a>
-<a href="#" class="submenu-item danger" data-src="html/elim-procesados.html" data-js="js/elim-procesados.js" data-init="initElimProcesados">🗑️ Eliminar</a>
-</div>
-</div>
-    <!-- 🔹 NUEVO: DENUNCIAS -->
-<div class="menu-item">
-    <button class="menu-btn" data-toggle="submenu-denuncias">
-        <!-- Icono de megáfono / denuncia -->
-        <svg viewBox="0 0 24 24"><path d="M18 11v2h4v-2h-4zm-2 6.61c.96.71 2.21 1.65 3.2 2.39.4-.53.8-1.07 1.2-1.6-.99-.74-2.24-1.68-3.2-2.4-.4.54-.8 1.08-1.2 1.61zM20.4 5.6c-.4-.53-.8-1.07-1.2-1.6-.99.74-2.24 1.68-3.2 2.4.4.53.8 1.07 1.2 1.6.96-.72 2.21-1.65 3.2-2.4zM4 9c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1l5 3V6L5 9H4zm5.03-1.97L9.5 12l-.47 4.97L8 16.5V7.5l1.03-.47zM15.97 12L13 8v8l2.97-4z"/></svg>
-        Denuncias <span class="arrow">▼</span>
-    </button>
-    <div class="submenu" id="submenu-denuncias">
-        <a href="#" class="submenu-item" data-src="html/reg-denuncias.html" data-js="js/reg-denuncias.js" data-init="initRegDenuncias">📝 Registrar</a>
-        <a href="#" class="submenu-item" data-src="html/mod-denuncias.html" data-js="js/mod-denuncias.js" data-init="initModDenuncias">✏️ Modificar</a>
-        <a href="#" class="submenu-item danger" data-src="html/elim-denuncias.html" data-js="js/elim-denuncias.js" data-init="initElimDenuncias">🗑️ Eliminar</a>
-    </div>
-</div>
-
-                <!-- 🔹 NUEVO: HISTORIAL (Lógica JS controlará visibilidad) -->
-                <div class="menu-item" id="menu-historial">
-                    <button class="menu-btn" data-toggle="submenu-historial">
-                        <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
-                        Historial <span class="arrow">▼</span>
-                    </button>
-                    <div class="submenu" id="submenu-historial">
-                        <a href="#" class="submenu-item" data-src="html/historial.html" data-js="js/historial.js" data-init="initHistorial">Ver Historial</a>
-                    </div>
+            </div>
+            <div class="menu-item">
+                <button class="menu-btn" data-toggle="submenu-procesar">
+                    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                    Procesar <span class="arrow">▼</span>
+                </button>
+                <div class="submenu" id="submenu-procesar">
+                    <a href="#" class="submenu-item" data-src="html/reg-procesados.html" data-js="js/reg-procesados.js" data-init="initRegProcesados">📝 Registrar</a>
+                    <a href="#" class="submenu-item" data-src="html/mod-procesados.html" data-js="js/mod-procesados.js" data-init="initModProcesados">✏️ Modificar</a>
+                    <a href="#" class="submenu-item danger" data-src="html/elim-procesados.html" data-js="js/elim-procesados.js" data-init="initElimProcesados">️ Eliminar</a>
                 </div>
-
-                <!-- 🔹 GESTIÓN DE USUARIOS -->
-                <div class="menu-item" id="menu-gestion-usuarios">
-                    <button class="menu-btn" data-src="html/gestion-usuarios.html" data-js="js/gestion-usuarios.js" data-init="initGestionUsuarios">
-                        <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-                        Gestión de Usuarios
-                    </button>
+            </div>
+            <div class="menu-item" id="menu-historial">
+                <button class="menu-btn" data-toggle="submenu-historial">
+                    <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                    Historial <span class="arrow">▼</span>
+                </button>
+                <div class="submenu" id="submenu-historial">
+                    <a href="#" class="submenu-item" data-src="html/historial.html" data-js="js/historial.js" data-init="initHistorial">Ver Historial</a>
                 </div>
-            </nav>
-        </aside>
+            </div>
+            <div class="menu-item" id="menu-gestion-usuarios">
+                <button class="menu-btn" data-src="html/gestion-usuarios.html" data-js="js/gestion-usuarios.js" data-init="initGestionUsuarios">
+                    <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                    Gestión de Usuarios
+                </button>
+            </div>
+        </nav>
+    </aside>
 
-        <main id="app-content" class="main-content">
-            <!-- ✅ CONTENIDO DE BIENVENIDA POR DEFECTO (Visible al recargar) -->
+    <main id="app-content" class="main-content">
+        <!-- ✅ PANTALLA DE BIENVENIDA CON MARQUESINA INTEGRADA -->
+        <div id="welcome-screen" class="welcome-screen">
             <div class="card welcome-card">
-                <img src="img/logosistema.png" alt="Logo PNB" class="welcome-logo">
-                <h3>👋 Bienvenido al Sistema de Verificación y Registro Policial</h3>
+                <img src="img/LOGO-PNB.png" alt="Logo PNB" class="welcome-logo">
+                <h3> Bienvenido al Sistema de Verificación y Registro Policial</h3>
                 <p class="welcome-desc">
-                    Plataforma integral desarrollada para el <strong>Cuerpo de Policía Nacional Bolivariana (CPNB) - Centro de Coordinación Policial Estadal (CCPE) Zulia</strong>. 
-                    Este sistema permite gestionar, consultar, modificar y archivar registros de personas y vehículos de manera segura, centralizada y auditada, 
+                    Plataforma integral desarrollada para el <strong>Cuerpo de Policía Nacional Bolivariana (CPNB) - Centro de Coordinación Policial Estadal (CCPE) Zulia</strong>.
+                    Este sistema permite gestionar, consultar, modificar y archivar registros de personas y vehículos de manera segura, centralizada y auditada,
                     garantizando el cumplimiento de los protocolos operativos y el resguardo de la información institucional.
                 </p>
                 <div class="feature-badges">
                     <span class="feature-badge">🔒 Acceso Seguro y Auditado</span>
                     <span class="feature-badge">📊 Gestión en Tiempo Real</span>
-                    <span class="feature-badge">🗄️ Respaldo Automatizado</span>
+                    <span class="feature-badge">️ Respaldo Automatizado</span>
                     <span class="feature-badge">📱 Interfaz Adaptativa</span>
                 </div>
             </div>
-        </main>
-    </div>
 
-</main>
+            <!-- ✅ MARQUESINA (Solo visible en bienvenida) -->
+            <div class="marquee-container">
+                <div class="marquee-text">
+                    🚔 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🇻🇪 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 👮 ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp; 🛡️ ¡Proteger, defender y servir a nuestro pueblo!
+                </div>
+            </div>
+
+            <!-- ✅ COPYRIGHT (Solo visible en bienvenida) -->
+            <div class="copyright-container">
+                © 2026 <strong>OTIC-ZULIA PNB</strong> | Sistema Oficial<br>
+                Para gestión de usuarios y soporte comuníquese con los números:<br>
+                <span class="phone-numbers">📞 0424-6962854 / 0412-3302339</span>
+            </div>
+        </div>
+    </main>
 </div>
-
-<!-- 🔹 PIE DE PÁGINA -->
-<footer class="footer-container">
-    <!-- Copyright centrado -->
-    <div class="footer-copyright">
-        © 2026 <strong>OTIC-ZULIA PNB</strong> | Sistema Oficial<br>
-        Para gestión de usuarios y soporte comuníquese con los números:<br>
-        <span class="phone-numbers">📞 0424-6962854 / 0412-3302339</span>
-    </div>
-    
-    <!-- Marquesina -->
-    <div class="footer-marquee">
-        <marquee behavior="scroll" direction="left" scrollamount="6">
-            <span class="emoji-pnb"></span>
-            ¡Proteger, defender y servir a nuestro pueblo!
-            <span class="emoji-pnb">🇪</span>
-            ¡Proteger, defender y servir a nuestro pueblo!
-            <span class="emoji-pnb"></span>
-            ¡Proteger, defender y servir a nuestro pueblo!
-            <span class="emoji-pnb"></span>
-        </marquee>
-    </div>
-</footer>
 
 <script src="js/config.js"></script>
 <script src="js/dashboard.js"></script>
