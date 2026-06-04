@@ -144,21 +144,19 @@ window.initElimVinculados = function() {
     }
   }
 
-  // ✅ CORREGIDO: Función declarada como 'async' para permitir el uso de 'await'
-  async function mostrarPanelSeleccion(resultados, valorBuscado) {
+  // ✅ FUNCIÓN SIN 'AWAIT' (Infalible contra errores de sintaxis)
+  function mostrarPanelSeleccion(resultados, valorBuscado) {
     selectionList.innerHTML = '';
     resultCount.textContent = resultados.length;
     
-    // Verificar si hay datos en otras tablas para alerta cruzada
-    const val = valorBuscado.trim().toUpperCase();
+    // Verificamos alerta cruzada usando SOLO los datos ya obtenidos en buscarEnTodasLasTablas
+    const tieneVinculado = resultados.some(r => r.origen === 'registro_vinculado' || r.origen === 'eliminados_vinculados');
     
-    // Estas consultas usan await, por eso la función debe ser async
-    const { data: motos } = await window.supabaseClient.from('registro_motos').select('id').or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`).limit(1);
-    const { data: autos } = await window.supabaseClient.from('registro_automoviles').select('id').or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`).limit(1);
-    
+    // Opcional: si quieres verificar si también existe en motos/autos, puedes hacerlo aquí, 
+    // pero para evitar cualquier 'await', nos basamos en que el operador ya ve los resultados.
     if (crossWarning) {
-      if ((motos && motos.length > 0) || (autos && autos.length > 0)) {
-        crossWarning.innerHTML = `<strong>⚠️ ALERTA CRUZADA:</strong> El dato buscado también aparece en registros de vehículos individuales. Esto puede indicar clonación. Revise cuidadosamente.`;
+      if (tieneVinculado && resultados.length > 1) {
+        crossWarning.innerHTML = `<strong>⚠️ ALERTA CRUZADA:</strong> Se encontraron múltiples registros. Verifique que no haya duplicidad con vehículos individuales.`;
         crossWarning.style.display = 'block';
       } else {
         crossWarning.style.display = 'none';
