@@ -17,30 +17,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 2. Mostrar email en el navbar
     userEmailEl.textContent = session.user.email;
 
-    // 3. ✅ Cargar datos del perfil (incluyendo jerarquía)
+    // 3. ✅ Cargar datos del perfil (Jerarquía sin prefijo, Nombre en mayúsculas)
     try {
       const { data: perfil, error } = await window.supabaseClient
         .from('perfiles_usuario')
-        .select('nivel, nombre, apellido, jerarquia, foto_url') // ✅ Cambiado a jerarquia
+        .select('nivel, nombre, apellido, jerarquia, foto_url') 
         .eq('user_id', session.user.id)
         .single();
 
       if (error || !perfil) {
         console.warn("Perfil no encontrado o faltan columnas. Usando modo de respaldo.");
         const nombreFallback = session.user.email.split('@')[0];
-        document.getElementById('user-nivel-display').textContent = sessionStorage.getItem('pnb_user_nivel') || 'Consultor';
-        document.getElementById('user-nombre-display').textContent = nombreFallback.charAt(0).toUpperCase() + nombreFallback.slice(1);
-        document.getElementById('user-jerarquia-display').textContent = 'Jerarquía: No asignada';
+        
+        // ✅ Nombre en mayúsculas
+        document.getElementById('user-nombre-display').textContent = nombreFallback.toUpperCase();
+        // ✅ Jerarquía sin la palabra "Jerarquía:"
+        document.getElementById('user-jerarquia-display').textContent = 'NO ASIGNADA';
+        
         document.getElementById('user-foto').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(nombreFallback)}&background=002b5c&color=fff&size=128`;
       } else {
         const rol = (perfil.nivel || 'consultor').toLowerCase();
         sessionStorage.setItem('pnb_user_nivel', rol);
         
-        document.getElementById('user-nivel-display').textContent = rol;
-        document.getElementById('user-nombre-display').textContent = `${perfil.nombre || ''} ${perfil.apellido || ''}`.trim() || 'Nombre no disponible';
+        // ✅ Nombre siempre en mayúsculas
+        document.getElementById('user-nombre-display').textContent = `${perfil.nombre || ''} ${perfil.apellido || ''}`.trim().toUpperCase() || 'NOMBRE NO DISPONIBLE';
         
-        // ✅ Mostrar Jerarquía
-        document.getElementById('user-jerarquia-display').textContent = perfil.jerarquia ? `Jerarquía: ${perfil.jerarquia}` : 'Jerarquía: No asignada';
+        // ✅ Mostrar Jerarquía sin la palabra "Jerarquía:" y en mayúsculas
+        document.getElementById('user-jerarquia-display').textContent = perfil.jerarquia ? perfil.jerarquia.toUpperCase() : 'NO ASIGNADA';
         
         if (perfil.foto_url) {
           document.getElementById('user-foto').src = perfil.foto_url;
@@ -105,6 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const res = await fetch(htmlPath + '?v=' + Date.now());
       if (!res.ok) throw new Error('Archivo no encontrado');
       appContent.innerHTML = await res.text();
+      
       if (jsPath) {
         const script = document.createElement('script');
         script.src = jsPath + '?v=' + Date.now();
