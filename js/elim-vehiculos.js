@@ -102,92 +102,176 @@ window.initElimVehiculos = function() {
     }
   }
 
-  // 🔹 Función Global para seleccionar (llamada desde HTML)
-  window.seleccionarRegistro = function(tipo) {
-    if (tipo === 'moto' && pendingData.moto) {
-      const source = pendingData.moto.eliminado_en ? 'archive' : 'registro_motos';
-      cargarDatos(pendingData.moto, source);
-    } else if (tipo === 'auto' && pendingData.auto) {
-      const source = pendingData.auto.eliminado_en ? 'archive' : 'registro_automoviles';
-      cargarDatos(pendingData.auto, source);
+// ==========================================
+// 🔍 BÚSQUEDA MULTI-TABLA CON DETECCIÓN DE COINCIDENCIAS
+// ==========================================
+async function buscarEnTodasLasTablas(valor) {
+  const resultados = [];
+  const val = valor.trim().toUpperCase();
+  const queryVehiculos = `placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`;
+  const queryVinculado = `cedula.ilike.${val},placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`;
+
+  try {
+    // 1. Buscar en Motos Activas
+    const { data: motos, error: errMoto } = await window.supabaseClient
+      .from('registro_motos').select('*').or(queryVehiculos);
+    if (!errMoto && motos) {
+      motos.forEach(reg => resultados.push({
+        origen: 'registro_motos', tipo: 'moto', icono: '🏍️', color: '#dc2626', colorBg: '#fef2f2',
+        titulo: '🏍️ Motocicleta Activa',
+        linea1: `Placa: ${reg.placa || '-'}`,
+        linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
+        linea3: `Serial: ${reg.serial_carroceria || '-'}`,
+        datos: reg, eliminado: false
+      }));
     }
-    selectionPanel.classList.remove('active');
-    isSelectionMode = false;
-  };
 
-  // 🔍 BUSCADOR PRINCIPAL
-  buscarBtn.addEventListener('click', async () => {
-    const val = buscarInput.value.trim().toUpperCase();
-    if (val.length < 5) return showMsg(msgBuscar, '⚠️ Ingrese un dato válido (mín. 5 caracteres).', 'error');
-    
-    showMsg(msgBuscar, '🔍 Buscando...', 'success');
-    buscarBtn.disabled = true;
-    dataContainer.style.display = 'none';
-    selectionPanel.classList.remove('active');
-    if (archivedBanner) archivedBanner.style.display = 'none';
-    hideMsgElim();
-    
-    pendingData = { moto: null, auto: null };
-    currentData = null;
-    isArchived = false;
-
-    try {
-      const query = `placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`;
-      const [resMoto, resAuto] = await Promise.all([
-        window.supabaseClient.from('registro_motos').select('*').or(query).maybeSingle(),
-        window.supabaseClient.from('registro_automoviles').select('*').or(query).maybeSingle()
-      ]);
-
-      const { data: resArchiveList, error: errArchive } = await window.supabaseClient
-        .from('vehiculos_eliminados')
-        .select('*')
-        .or(query);
-
-      if (errArchive) throw errArchive;
-
-      let archiveMoto = null;
-      let archiveAuto = null;
-      if (resArchiveList && resArchiveList.length > 0) {
-        for (const record of resArchiveList) {
-          if (record.tabla_origen === 'registro_motos' && !archiveMoto) archiveMoto = record;
-          else if (record.tabla_origen === 'registro_automoviles' && !archiveAuto) archiveAuto = record;
-        }
-      }
-
-      const activeMoto = resMoto.data;
-      const activeAuto = resAuto.data;
-
-      const hasMoto = activeMoto || archiveMoto;
-      const hasAuto = activeAuto || archiveAuto;
-
-      if (hasMoto && hasAuto) {
-        // ¡Duplicidad detectada! Mostrar panel de selección (SOLO ROJO Y VERDE)
-        isSelectionMode = true;
-        pendingData = {
-          moto: activeMoto || archiveMoto,
-          auto: activeAuto || archiveAuto
-        };
-        selectionPanel.classList.add('active');
-        hideMsg(msgBuscar);
-      } else if (hasMoto) {
-        const dataToShow = activeMoto || archiveMoto;
-        const source = activeMoto ? 'registro_motos' : 'archive';
-        cargarDatos(dataToShow, source);
-      } else if (hasAuto) {
-        const dataToShow = activeAuto || archiveAuto;
-        const source = activeAuto ? 'registro_automoviles' : 'archive';
-        cargarDatos(dataToShow, source);
-      } else {
-        showMsg(msgBuscar, '❌ Vehículo no encontrado.', 'error');
-      }
-    } catch (err) {
-      console.error('❌ Error general:', err);
-      showMsg(msgBuscar, '❌ Error: ' + err.message, 'error');
-    } finally {
-      buscarBtn.disabled = false;
+    // 2. Buscar en Automóviles Activos
+    const { data: autos, error: errAuto } = await window.supabaseClient
+      .from('registro_automoviles').select('*').or(queryVehiculos);
+    if (!errAuto && autos) {
+      autos.forEach(reg => resultados.push({
+        origen: 'registro_automoviles', tipo: 'auto', icono: '🚙', color: '#059669', colorBg: '#ecfdf5',
+        titulo: '🚙 Automóvil Activo',
+        linea1: `Placa: ${reg.placa || '-'}`,
+        linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
+        linea3: `Serial: ${reg.serial_carroceria || '-'}`,
+        datos: reg, eliminado: false
+      }));
     }
+
+    // 3. Buscar en Vinculados Activos
+    const { data: vinculados, error: errVinc } = await window.supabaseClient
+      .from('registro_vinculado').select('*').or(queryVinculado);
+    if (!errVinc && vinculados) {
+      vinculados.forEach(reg => resultados.push({
+        origen: 'registro_vinculado', tipo: 'vinculado', icono: '🔗', color: '#002b5c', colorBg: '#eff6ff',
+        titulo: '🔗 Vinculado Activo (Persona + Vehículo)',
+        linea1: `👤 ${reg.primer_nombre || ''} ${reg.primer_apellido || ''} | C.I: ${reg.cedula || '-'}`,
+        linea2: `🚗 ${reg.tipo_vehiculo || ''} ${reg.marca_vehiculo || ''} | Placa: ${reg.placa || '-'}`,
+        linea3: `🏛️ ${reg.estacion_policial || '-'}`,
+        datos: reg, eliminado: false
+      }));
+    }
+
+    // 4. Buscar en Vehículos Eliminados (Archivados)
+    const { data: eliminados, error: errElim } = await window.supabaseClient
+      .from('vehiculos_eliminados').select('*').or(queryVehiculos);
+    if (!errElim && eliminados) {
+      eliminados.forEach(reg => {
+        const esMoto = reg.tipo_vehiculo === 'Motocicleta';
+        resultados.push({
+          origen: 'vehiculos_eliminados', tipo: esMoto ? 'moto' : 'auto',
+          icono: esMoto ? '🗄️🏍️' : '🗄️🚙', color: '#64748b', colorBg: '#f1f5f9',
+          titulo: `🗄️ Archivado (${reg.tipo_vehiculo || 'Vehículo'})`,
+          linea1: `Placa: ${reg.placa || '-'}`,
+          linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
+          linea3: `Eliminado por: ${reg.eliminado_por || 'Sistema'}`,
+          datos: reg, eliminado: true
+        });
+      });
+    }
+
+    return resultados;
+  } catch (err) {
+    console.error('Error en búsqueda multi-tabla:', err);
+    throw err;
+  }
+}
+
+function mostrarPanelSeleccion(resultados) {
+  const selectionList = document.getElementById('selection-list');
+  const resultCount = document.getElementById('result-count');
+  const selectionPanel = document.getElementById('selection-panel');
+  
+  selectionList.innerHTML = '';
+  resultCount.textContent = resultados.length;
+  
+  resultados.forEach((res, index) => {
+    const card = document.createElement('div');
+    card.style.cssText = `background: ${res.colorBg}; border: 2px solid ${res.color}; border-left: 6px solid ${res.color}; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s;`;
+    card.onmouseover = () => card.style.transform = 'translateX(4px)';
+    card.onmouseout = () => card.style.transform = 'translateX(0)';
+    
+    card.innerHTML = `
+      <div style="flex: 1;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+          <span style="font-size: 1.5rem;">${res.icono}</span>
+          <strong style="color: ${res.color}; font-size: 0.95rem;">${res.titulo}</strong>
+        </div>
+        <div style="font-size: 0.9rem; color: #334155; margin-bottom: 3px;">${res.linea1}</div>
+        <div style="font-size: 0.85rem; color: #475569; margin-bottom: 3px;">${res.linea2}</div>
+        <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 6px;">${res.linea3}</div>
+      </div>
+      <button class="btn-select-card" data-index="${index}" style="padding: 12px 24px; background: ${res.color}; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; white-space: nowrap;">
+        ${res.eliminado ? '♻️ Reintegrar' : '🗑️ Gestionar'}
+      </button>
+    `;
+    selectionList.appendChild(card);
   });
 
+  // Asignar eventos a los botones generados
+  document.querySelectorAll('.btn-select-card').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.target.dataset.index);
+      cargarResultado(resultados[idx]);
+    });
+  });
+
+  selectionPanel.classList.add('active');
+  dataContainer.style.display = 'none';
+  hideMsg(msgBuscar);
+}
+
+async function cargarResultado(resultado) {
+  const source = resultado.eliminado ? 'archive' : resultado.origen;
+  cargarDatos(resultado.datos, source);
+  document.getElementById('selection-panel').classList.remove('active');
+}
+
+// 🔍 LISTENER PRINCIPAL DE BÚSQUEDA
+buscarBtn.addEventListener('click', async () => {
+  const val = buscarInput.value.trim();
+  if (val.length < 5) return showMsg(msgBuscar, '⚠️ Ingrese un dato válido (mín. 5 caracteres).', 'error');
+  
+  showMsg(msgBuscar, '🔍 Buscando en todos los registros...', 'success');
+  buscarBtn.disabled = true;
+  dataContainer.style.display = 'none';
+  selectionPanel.classList.remove('active');
+  if (archivedBanner) archivedBanner.style.display = 'none';
+  hideMsgElim();
+
+  try {
+    const resultados = await buscarEnTodasLasTablas(val);
+    
+    if (resultados.length === 0) {
+      showMsg(msgBuscar, '❌ Vehículo o registro no encontrado.', 'error');
+    } else if (resultados.length === 1) {
+      showMsg(msgBuscar, '✅ 1 registro encontrado. Cargando...', 'success');
+      setTimeout(() => cargarResultado(resultados[0]), 300);
+    } else {
+      showMsg(msgBuscar, `🔎 Se encontraron <strong>${resultados.length} coincidencias</strong>. Seleccione cuál gestionar:`, 'success');
+      setTimeout(() => mostrarPanelSeleccion(resultados), 300);
+    }
+  } catch (err) {
+    console.error('❌ Error general:', err);
+    showMsg(msgBuscar, '❌ Error de conexión: ' + err.message, 'error');
+  } finally {
+    buscarBtn.disabled = false;
+  }
+});
+
+// Listener para cancelar búsqueda
+document.getElementById('btn-cancel-search')?.addEventListener('click', () => {
+  selectionPanel.classList.remove('active');
+  msgBuscar.style.display = 'none';
+  buscarInput.value = '';
+  buscarInput.focus();
+});
+
+buscarInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); buscarBtn.click(); }
+});
   // 🔹 Modal
   function showModal(titulo, texto, accion, tipo) {
     pendingAction = accion;
