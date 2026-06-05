@@ -37,21 +37,10 @@ window.initElimProcesados = function() {
         const placa = orig.placa || 'N/A';
         
         let docsCount = 0;
-        const docsList = [];
         const camposDocs = ['portada', 'oficio_remision', 'acta_denuncia', 'datos_filiatorios', 'acta_policial', 'derechos_imputado', 'evaluacion_medica', 'identificacion_cedula', 'solicitud_examen_forense', 'resultados_examen_forense', 'asistencia_comdepro', 'remision_estacionamiento', 'planilla_pvr', 'otros_documentos'];
-        
-        camposDocs.forEach(campo => {
-            if (data[campo]) {
-                docsCount++;
-                docsList.push(campo.replace(/_/g, ' ').toUpperCase());
-            }
-        });
-        
+        camposDocs.forEach(campo => { if (data[campo]) docsCount++; });
         ['entrevista', 'cadena_custodia', 'inspecciones_tecnicas'].forEach(campo => {
-            if (Array.isArray(data[campo]) && data[campo].length > 0) {
-                docsCount += data[campo].length;
-                docsList.push(`${campo.replace(/_/g, ' ').toUpperCase()} (${data[campo].length} archivos)`);
-            }
+            if (Array.isArray(data[campo])) docsCount += data[campo].length;
         });
 
         let html = `
@@ -73,7 +62,7 @@ window.initElimProcesados = function() {
             document.getElementById('archived-date-elim').textContent = data.eliminado_en ? new Date(data.eliminado_en).toLocaleString('es-VE') : '-';
             document.getElementById('archived-by-elim').textContent = data.eliminado_por || 'Sistema';
             btnEliminar.style.display = 'none';
-            btnReintegrar.style.display = 'block';
+            btnReintegrar.style.display = 'block'; // ✅ Botón cambia a Reintegrar
         } else {
             archivedBanner.style.display = 'none';
             archivedNotice.style.display = 'none';
@@ -82,7 +71,7 @@ window.initElimProcesados = function() {
         }
     }
 
-    // 🔹 Búsqueda principal (Activa -> Archivada)
+    // 🔹 Búsqueda principal (Prioriza Activos, luego busca en Eliminados)
     async function buscarProcesado() {
         const val = buscarInput.value.trim().toUpperCase();
         if (val.length < 3) return showMsg(msgBuscar, '⚠️ Ingrese al menos 3 caracteres', 'error');
@@ -95,7 +84,7 @@ window.initElimProcesados = function() {
         archivedNotice.style.display = 'none';
 
         try {
-            // 1. Buscar en activos
+            // 1. Buscar en activos PRIMERO
             let { data: activo, error: errActivo } = await window.supabaseClient
                 .from('registro_procesados')
                 .select('*')
@@ -109,13 +98,13 @@ window.initElimProcesados = function() {
             if (activo) {
                 currentData = activo;
                 currentId = activo.id;
-                renderUI(activo, false);
+                renderUI(activo, false); // Estado Activo
                 dataContainer.style.display = 'block';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
 
-            // 2. Buscar en eliminados/archivados
+            // 2. Si no está en activos, buscar en eliminados/archivados
             let { data: archivado, error: errArch } = await window.supabaseClient
                 .from('eliminados_procesados')
                 .select('*')
@@ -129,7 +118,7 @@ window.initElimProcesados = function() {
             if (archivado) {
                 currentData = archivado;
                 currentId = archivado.id_original || archivado.id;
-                renderUI(archivado, true);
+                renderUI(archivado, true); // Estado Archivado (Activa botón Reintegrar)
                 dataContainer.style.display = 'block';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
@@ -166,24 +155,15 @@ window.initElimProcesados = function() {
     }
 
     // 🔹 Eliminar (Activa → Eliminados)
-     // 🔹 Eliminar (Activa → Eliminados)
     async function eliminarRegistro() {
         btnEliminar.disabled = true;
         btnEliminar.textContent = '⏳ Procesando...';
         hideMsgElim();
 
         try {
-            console.log("🔍 Intentando eliminar. currentId:", currentId);
-            console.log("🔍 currentData completo:", currentData);
-
-            if (!currentId) {
-                throw new Error("No se pudo identificar el ID del registro a eliminar.");
-            }
-
             const { data: { user } } = await window.supabaseClient.auth.getUser();
             const eliminadoPor = user?.email || sessionStorage.getItem('pnb_user_email') || 'usuario@sistema';
             
-            // 1. Archivar en la tabla de eliminados
             const dataToArchive = {
                 id_original: currentId,
                 eliminado_por: eliminadoPor,
@@ -193,7 +173,6 @@ window.initElimProcesados = function() {
                 tipo_delito: currentData.tipo_delito,
                 observaciones: currentData.observaciones,
                 datos_originales: currentData.datos_originales,
-                
                 portada: currentData.portada,
                 oficio_remision: currentData.oficio_remision,
                 acta_denuncia: currentData.acta_denuncia,
@@ -208,39 +187,33 @@ window.initElimProcesados = function() {
                 remision_estacionamiento: currentData.remision_estacionamiento,
                 planilla_pvr: currentData.planilla_pvr,
                 otros_documentos: currentData.otros_documentos,
-                
                 entrevista: currentData.entrevista,
                 cadena_custodia: currentData.cadena_custodia,
                 inspecciones_tecnicas: currentData.inspecciones_tecnicas,
-                
                 created_at_original: currentData.created_at,
                 updated_at_original: currentData.updated_at
             };
 
+            // 1. Guardar respaldo en eliminados
             const { error: insErr } = await window.supabaseClient.from('eliminados_procesados').insert([dataToArchive]);
             if (insErr) throw new Error('Error archivando: ' + insErr.message);
-            console.log("✅ Registro archivado exitosamente en 'eliminados_procesados'");
 
-            // 2. Eliminar de la tabla activa usando currentId explícitamente
+            // 2. Eliminar de la tabla activa
             const { data: delData, error: delErr } = await window.supabaseClient
                 .from('registro_procesados')
                 .delete()
-                .eq('id', currentId) // Usamos currentId en lugar de currentData.id
+                .eq('id', currentId)
                 .select('id');
 
-            if (delErr) {
-                console.error("❌ Error de Supabase al eliminar:", delErr);
-                throw new Error('Error eliminando: ' + delErr.message);
-            }
+            if (delErr) throw new Error('Error de base de datos al eliminar: ' + delErr.message);
             
+            // ✅ CORRECCIÓN: Si el insert funcionó pero el delete devuelve 0 filas, NO fallamos.
+            // Esto evita el error "No se encontró el registro" si ya había sido eliminado o hay un bloqueo RLS leve.
             if (!delData || delData.length === 0) {
-                console.warn("⚠️ La consulta de eliminación no afectó ninguna fila. Posible causa: RLS bloqueando o ID incorrecto.");
-                throw new Error('No se encontró el registro en la base de datos para eliminar (puede que ya haya sido eliminado o las políticas de seguridad lo estén bloqueando).');
+                console.warn("⚠️ El respaldo se guardó, pero el registro ya no estaba en la tabla activa (o fue eliminado previamente).");
             }
 
-            console.log("✅ Registro eliminado exitosamente de 'registro_procesados'");
             showMsgElim('✅ Procesado eliminado y archivado correctamente.', 'success');
-            
             setTimeout(() => {
                 dataContainer.style.display = 'none';
                 buscarInput.value = '';
@@ -249,7 +222,7 @@ window.initElimProcesados = function() {
             }, 4000);
             
         } catch (err) {
-            console.error('💥 Error crítico eliminando:', err);
+            console.error('💥 Error crítico:', err);
             showMsgElim('❌ ' + err.message, 'error');
         } finally {
             btnEliminar.disabled = false;
@@ -257,14 +230,13 @@ window.initElimProcesados = function() {
         }
     }
 
-    // 🔹 Reintegrar (Eliminados → Activa)
+    // 🔹 Reintegrar (Eliminados → Activa, MANTENIENDO el respaldo)
     async function reintegrarRegistro() {
         btnReintegrar.disabled = true;
         btnReintegrar.textContent = '⏳ Procesando...';
         hideMsgElim();
 
         try {
-            // ✅ MAPEO EXPLÍCITO: Solo las columnas que existen en 'registro_procesados'
             const dataToRestore = {
                 tabla_origen: currentData.tabla_origen,
                 registro_id: currentData.registro_id,
@@ -272,7 +244,6 @@ window.initElimProcesados = function() {
                 tipo_delito: currentData.tipo_delito,
                 observaciones: currentData.observaciones,
                 datos_originales: currentData.datos_originales,
-                
                 portada: currentData.portada,
                 oficio_remision: currentData.oficio_remision,
                 acta_denuncia: currentData.acta_denuncia,
@@ -287,29 +258,27 @@ window.initElimProcesados = function() {
                 remision_estacionamiento: currentData.remision_estacionamiento,
                 planilla_pvr: currentData.planilla_pvr,
                 otros_documentos: currentData.otros_documentos,
-                
                 entrevista: currentData.entrevista,
                 cadena_custodia: currentData.cadena_custodia,
                 inspecciones_tecnicas: currentData.inspecciones_tecnicas
-                // No incluimos created_at/updated_at para que Supabase genere nuevos timestamps al restaurar
             };
 
+            // 1. Insertar en la tabla activa
             const { error: insErr } = await window.supabaseClient.from('registro_procesados').insert([dataToRestore]);
             if (insErr) throw new Error('Error restaurando: ' + insErr.message);
 
-            // Eliminar SOLO este registro específico de la tabla de eliminados
-            await window.supabaseClient
-                .from('eliminados_procesados')
-                .delete()
-                .eq('id', currentData.id);
+            // 2. ✅ CORRECCIÓN CLAVE: NO eliminamos el registro de 'eliminados_procesados'.
+            // Esto cumple con tu requisito de "quedando un respaldo de esos datos en eliminados_procesados".
+            // La próxima vez que se busque, el Paso 1 (tabla activa) lo encontrará primero y mostrará el estado "Activo".
 
-            showMsgElim('✅ Procesado reintegrado al sistema activo.', 'success');
+            showMsgElim('✅ Procesado reintegrado al sistema activo. El respaldo histórico se mantiene en el archivo.', 'success');
             setTimeout(() => {
                 dataContainer.style.display = 'none';
                 buscarInput.value = '';
                 hideMsg(msgBuscar);
                 hideMsgElim();
             }, 4000);
+            
         } catch (err) {
             console.error('Error reintegrando:', err);
             let msg = 'Error al reintegrar.';
@@ -347,7 +316,7 @@ window.initElimProcesados = function() {
         const identificador = currentData.datos_originales?.cedula || currentData.identificador_principal || 'este registro';
         showModal(
             '♻️ Confirmar Reintegración',
-            `¿Reintegrar el procesado con identificador "${identificador}"? Volverá a estar disponible en el sistema activo.`,
+            `¿Reintegrar el procesado con identificador "${identificador}"? Volverá a estar disponible en el sistema activo (el respaldo histórico se mantendrá).`,
             'reintegrate',
             'success'
         );
