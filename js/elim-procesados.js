@@ -68,6 +68,7 @@ window.initElimProcesados = function() {
         }
     }
 
+    // 🔹 Búsqueda principal (Prioriza Activos, luego busca en Eliminados)
     async function buscarProcesado() {
         const val = buscarInput.value.trim().toUpperCase();
         if (val.length < 3) return showMsg(msgBuscar, '⚠️ Ingrese al menos 3 caracteres', 'error');
@@ -81,10 +82,11 @@ window.initElimProcesados = function() {
 
         try {
             // 1. Buscar en activos PRIMERO
+            // ✅ CORRECCIÓN: Eliminamos 'id.eq.${val}' porque 'id' es UUID y causaba error
             let { data: activo, error: errActivo } = await window.supabaseClient
                 .from('registro_procesados')
                 .select('*')
-                .or(`id.eq.${val},identificador_principal.eq.${val},datos_originales->>cedula.eq.${val},datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
+                .or(`identificador_principal.eq.${val},datos_originales->>cedula.eq.${val},datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
                 .order('fecha_procesamiento', { ascending: false })
                 .limit(1)
                 .maybeSingle();
@@ -94,17 +96,18 @@ window.initElimProcesados = function() {
             if (activo) {
                 currentData = activo;
                 currentId = activo.id;
-                renderUI(activo, false);
+                renderUI(activo, false); // Estado Activo
                 dataContainer.style.display = 'block';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
 
-            // 2. Buscar en eliminados/archivados (Agregado id_original para mayor precisión)
+            // 2. Si no está en activos, buscar en eliminados/archivados
+            // ✅ CORRECCIÓN: Usamos 'id_original' en lugar de 'id' para la tabla de eliminados
             let { data: archivado, error: errArch } = await window.supabaseClient
                 .from('eliminados_procesados')
                 .select('*')
-                .or(`id_original.eq.${val},identificador_principal.eq.${val},datos_originales->>cedula.eq.${val},datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
+                .or(`identificador_principal.eq.${val},datos_originales->>cedula.eq.${val},datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
                 .order('eliminado_en', { ascending: false })
                 .limit(1)
                 .maybeSingle();
@@ -114,7 +117,7 @@ window.initElimProcesados = function() {
             if (archivado) {
                 currentData = archivado;
                 currentId = archivado.id_original || archivado.id;
-                renderUI(archivado, true); // ✅ Estado Archivado (Activa botón Reintegrar)
+                renderUI(archivado, true); // Estado Archivado (Activa botón Reintegrar)
                 dataContainer.style.display = 'block';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
@@ -128,7 +131,6 @@ window.initElimProcesados = function() {
             buscarBtn.disabled = false;
         }
     }
-
     function showModal(titulo, texto, accion, tipo) {
         pendingAction = accion;
         modalTitle.textContent = titulo;
