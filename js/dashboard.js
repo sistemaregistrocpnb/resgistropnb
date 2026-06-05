@@ -68,39 +68,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     iniciarReloj();
   }
 
-  // 🔒 Matriz de permisos estricta
-  function aplicarPermisos(rol) {
+function aplicarPermisos(rol) {
+    // Mostrar todo por defecto
     document.querySelectorAll('.menu-item').forEach(item => item.style.display = 'block');
     document.querySelectorAll('.submenu-item').forEach(item => item.style.display = 'block');
     document.getElementById('menu-historial')?.style.removeProperty('display');
     document.getElementById('menu-gestion-usuarios')?.style.removeProperty('display');
 
     if (rol === 'consultor') {
-      document.querySelectorAll('.menu-item').forEach(item => {
-        if (!item.querySelector('[data-toggle="submenu-consulta"]')) {
-          item.style.display = 'none';
-        }
-      });
+        // Ocultar todo lo que no sea consulta (Personas, Vehículos, etc.)
+        document.querySelectorAll('.menu-item').forEach(item => {
+            const esConsulta = item.querySelector('[data-toggle="submenu-consulta"]');
+            const esDenuncias = item.querySelector('[data-toggle="submenu-denuncias"]'); // ✅ NUEVO
+            
+            // Si NO es consulta Y NO es denuncias, lo ocultamos
+            if (!esConsulta && !esDenuncias) {
+                item.style.display = 'none';
+            }
+        });
+        
+        // ✅ Permitir solo "Consultar" dentro del submenú de Denuncias
+        document.querySelectorAll('#submenu-denuncias .submenu-item').forEach(item => {
+            if (!item.dataset.src.includes('consulta-')) {
+                item.style.display = 'none';
+            }
+        });
+        
     } else if (rol === 'moderador') {
-      document.getElementById('menu-historial')?.style.setProperty('display', 'none', 'important');
-      document.getElementById('menu-gestion-usuarios')?.style.setProperty('display', 'none', 'important');
-      document.querySelectorAll('.submenu-item').forEach(item => {
-        const src = item.dataset.src || '';
-        if (src.includes('mod-') || src.includes('elim-')) {
-          item.style.setProperty('display', 'none', 'important');
-        }
-      });
+        document.getElementById('menu-historial')?.style.setProperty('display', 'none', 'important');
+        document.getElementById('menu-gestion-usuarios')?.style.setProperty('display', 'none', 'important');
+        document.querySelectorAll('.submenu-item').forEach(item => {
+            const src = item.dataset.src || '';
+            if (src.includes('mod-') || src.includes('elim-')) {
+                item.style.setProperty('display', 'none', 'important');
+            }
+        });
     } else if (rol === 'administrador') {
-      // Ve todo
+        // Ve todo
     } else {
-      document.querySelectorAll('.menu-item').forEach(item => {
-        if (!item.querySelector('[data-toggle="submenu-consulta"]')) {
-          item.style.display = 'none';
-        }
-      });
+        document.querySelectorAll('.menu-item').forEach(item => {
+            if (!item.querySelector('[data-toggle="submenu-consulta"]')) {
+                item.style.display = 'none';
+            }
+        });
     }
-  }
-
+}
   // 🔹 MOTOR DE CARGA DINÁMICA
   async function cargarModulo(htmlPath, jsPath, initFnName) {
     appContent.innerHTML = '<div class="loading">⏳ Cargando módulo...</div>';
