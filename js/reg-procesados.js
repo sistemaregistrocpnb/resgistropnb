@@ -527,6 +527,10 @@ window.initRegProcesados = function() {
         };
 
         const dataOriginal = registroSeleccionado.datos;
+        
+        // ✅ CONSTRUCCIÓN SEGURA DEL OBJETO A INSERTAR
+        // Se eliminaron los mapeos manuales (Object.assign) que causaban errores 
+        // de "columna no encontrada". Toda la información se guarda intacta en 'datos_originales'.
         const dataToInsert = {
           tabla_origen: registroSeleccionado.origen,
           registro_id: registroSeleccionado.id,
@@ -535,46 +539,9 @@ window.initRegProcesados = function() {
           tipo_delito: tipoDelito,
           procesado_por: procesadoPor,
           observaciones: document.getElementById('proc_observaciones').value.trim() || null,
-          datos_originales: dataOriginal // ✅ Aquí se guarda TODA la info del vehículo de forma segura
+          datos_originales: dataOriginal, // ¡Aquí está TODA la información del registro original (dirección, estación, vehículo, etc.)!
+          estatus: 'Procesado'
         };
-
-        // Agregar campos específicos según el tipo de registro (SOLO CAMPOS SEGUROS)
-        if (registroSeleccionado.origen === 'registro_personas') {
-          Object.assign(dataToInsert, {
-            cedula: dataOriginal.cedula,
-            nombre_completo: `${dataOriginal.primer_nombre || ''} ${dataOriginal.segundo_nombre || ''} ${dataOriginal.primer_apellido || ''} ${dataOriginal.segundo_apellido || ''}`.trim(),
-            nacionalidad: dataOriginal.nacionalidad,
-            sexo: dataOriginal.sexo,
-            edad: dataOriginal.edad,
-            estacion_policial: dataOriginal.estacion_policial,
-            direccion_detencion: dataOriginal.direccion_detencion,
-            estatus: 'Procesado'
-          });
-        } else if (registroSeleccionado.origen === 'registro_motos' || registroSeleccionado.origen === 'registro_automoviles') {
-          Object.assign(dataToInsert, {
-            placa: dataOriginal.placa,
-            serial_carroceria: dataOriginal.serial_carroceria,
-            serial_motor: dataOriginal.serial_motor,
-            tipo_vehiculo: registroSeleccionado.origen === 'registro_motos' ? 'Motocicleta' : 'Automóvil',
-            estacion_policial: dataOriginal.estacion_policial,
-            direccion_detencion: dataOriginal.direccion_detencion,
-            estatus: 'Procesado'
-          });
-        } else if (registroSeleccionado.origen === 'registro_vinculado') {
-          Object.assign(dataToInsert, {
-            cedula: dataOriginal.cedula,
-            nombre_completo: `${dataOriginal.primer_nombre || ''} ${dataOriginal.primer_apellido || ''}`.trim(),
-            nacionalidad: dataOriginal.nacionalidad,
-            sexo: dataOriginal.sexo,
-            placa: dataOriginal.placa,
-            serial_carroceria: dataOriginal.serial_carroceria,
-            serial_motor: dataOriginal.serial_motor,
-            tipo_vehiculo: dataOriginal.tipo_vehiculo,
-            estacion_policial: dataOriginal.estacion_policial,
-            direccion_detencion: dataOriginal.direccion_detencion,
-            estatus: 'Procesado'
-          });
-        }
 
         for (const doc of docsUnicos) {
           const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
