@@ -250,46 +250,37 @@ window.initEditarProcesado = function() {
     });
   }
 
-  // ==========================================
-  // CARGAR PROCESADO DESDE LA BD
-  // ==========================================
 // ==========================================
 // CARGAR PROCESADO DESDE LA BD (CORREGIDO)
 // ==========================================
 async function cargarProcesado(valor) {
   const val = valor.trim().toUpperCase();
   
-  // ✅ BÚSQUEDA SOLO EN COLUMNAS QUE EXISTEN
-  const { data, error } = await window.supabaseClient
+  // ✅ PASO 1: Buscar en columnas que SÍ existen
+  const { data: dataColumnas, error: errColumnas } = await window.supabaseClient
     .from('registro_procesados')
     .select('*')
     .or(`identificador_principal.eq.${val},cedula.eq.${val}`)
     .order('fecha_procesamiento', { ascending: false })
     .limit(5);
   
-  if (error) {
-    console.error('Error en consulta:', error);
-    throw error;
+  if (!errColumnas && dataColumnas && dataColumnas.length > 0) {
+    return dataColumnas;
   }
   
-  if (!data || data.length === 0) {
-    // ✅ BÚSQUEDA SECUNDARIA EN EL JSON (para placa, serial, etc.)
-    const { data: jsonData, error: jsonError } = await window.supabaseClient
-      .from('registro_procesados')
-      .select('*')
-      .or(`datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
-      .order('fecha_procesamiento', { ascending: false })
-      .limit(5);
-    
-    if (jsonError) {
-      console.warn('Búsqueda en JSON falló:', jsonError);
-      return [];
-    }
-    
-    return jsonData || [];
+  // ✅ PASO 2: Buscar dentro del JSON datos_originales (placa, serial, etc.)
+  const { data: dataJson, error: errJson } = await window.supabaseClient
+    .from('registro_procesados')
+    .select('*')
+    .or(`datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
+    .order('fecha_procesamiento', { ascending: false })
+    .limit(5);
+  
+  if (!errJson && dataJson && dataJson.length > 0) {
+    return dataJson;
   }
   
-  return data;
+  return [];
 }
   function mostrarDatosProcesado(proc) {
     const data = proc.datos_originales || {};
@@ -371,41 +362,42 @@ async function cargarProcesado(valor) {
   // LISTENER BÚSQUEDA
   // ==========================================
   if (btnBuscar && inputBusqueda) {
-    btnBuscar.addEventListener('click', async () => {
-      const val = inputBusqueda.value.trim();
-      if (val.length < 3) {
-        return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 3 caracteres.', 'error');
-      }
+  btnBuscar.addEventListener('click', async () => {
+    const val = inputBusqueda.value.trim();
+    if (val.length < 3) {
+      return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 3 caracteres.', 'error');
+    }
+    
+    mostrarMsg(msgBusqueda, '🔍 Buscando procesado...', 'success');
+    btnBuscar.disabled = true;
+    form.style.display = 'none';
+    datosPanel.style.display = 'none';
+    
+    try {
+      const resultados = await cargarProcesado(val);
       
-      mostrarMsg(msgBusqueda, '🔍 Buscando procesado...', 'success');
-      btnBuscar.disabled = true;
-      form.style.display = 'none';
-      datosPanel.style.display = 'none';
-      
-      try {
-        const proc = await cargarProcesado(val);
-        if (!proc) {
-          mostrarMsg(msgBusqueda, '❌ No se encontró ningún procesado con ese dato.', 'error');
-        } else {
-          procesadoActual = proc;
-          mostrarMsg(msgBusqueda, '✅ Procesado encontrado. Puede editarlo abajo.', 'success');
-          mostrarDatosProcesado(proc);
-          cargarArchivosEnForm(proc);
-          form.style.display = 'block';
-          window.scrollTo({ top: datosPanel.offsetTop - 20, behavior: 'smooth' });
-        }
-      } catch (err) {
-        console.error('Error en búsqueda:', err);
-        mostrarMsg(msgBusqueda, '❌ Error: ' + err.message, 'error');
-      } finally {
-        btnBuscar.disabled = false;
+      if (resultados.length === 0) {
+        mostrarMsg(msgBusqueda, '❌ No se encontró ningún procesado con ese dato.', 'error');
+      } else {
+        procesadoActual = resultados[0]; // Tomamos el más reciente
+        mostrarMsg(msgBusqueda, `✅ ${resultados.length} procesado(s) encontrado(s). Mostrando el más reciente.`, 'success');
+        mostrarDatosProcesado(procesadoActual);
+        cargarArchivosEnForm(procesadoActual);
+        form.style.display = 'block';
+        window.scrollTo({ top: datosPanel.offsetTop - 20, behavior: 'smooth' });
       }
-    });
+    } catch (err) {
+      console.error('Error en búsqueda:', err);
+      mostrarMsg(msgBusqueda, '❌ Error: ' + err.message, 'error');
+    } finally {
+      btnBuscar.disabled = false;
+    }
+  });
 
-    inputBusqueda.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); btnBuscar.click(); }
-    });
-  }
+  inputBusqueda.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); btnBuscar.click(); }
+  });
+}
 
   // ==========================================
   // ENVÍO DEL FORMULARIO (ACTUALIZAR)
