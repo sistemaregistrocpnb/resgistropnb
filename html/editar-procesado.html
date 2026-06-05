@@ -1,0 +1,128 @@
+<style>
+:root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; }
+.card { background: #fff; border-radius: 10px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+.card h3 { color: var(--primary); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--beige-border); }
+.search-box { padding: 16px; background: #f8fafc; border: 1.5px dashed var(--beige-border); border-radius: 8px; margin-bottom: 20px; }
+.search-box label { font-weight: 700; display: block; margin-bottom: 8px; }
+.search-row { display: flex; gap: 10px; }
+.search-row input { flex: 1; padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; }
+.btn-search { padding: 9px 15px; background: var(--secondary); color: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
+.msg { padding: 10px; margin-top: 12px; border-radius: 5px; text-align: center; display: none; }
+.msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.datos-encontrados { background: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+.datos-encontrados h4 { margin: 0 0 12px; color: #15803d; font-size: 1.1rem; }
+.dato-fila { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px dashed #bbf7d0; }
+.dato-fila:last-child { border-bottom: none; }
+.dato-label { font-weight: 600; color: #166534; min-width: 160px; }
+.dato-valor { color: #14532d; flex: 1; word-break: break-word; }
+.registro-form fieldset { border: 1px solid var(--beige-border); border-radius: 8px; padding: 16px; margin-bottom: 18px; background: #fafbfc; }
+.registro-form legend { font-weight: 600; color: var(--primary); font-size: 0.95rem; padding: 0 8px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.registro-form label { font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; display: block; }
+.registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; }
+.registro-form input:focus, .registro-form select:focus, .registro-form textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,43,92,0.1); }
+.btn-submit { width: 100%; padding: 14px; background: #059669; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 15px; font-size: 1rem; }
+.btn-submit:hover { background: #047857; }
+.btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+.campo-obligatorio input { border: 2px solid var(--secondary) !important; }
+.campo-obligatorio label::after { content: ' *'; color: #dc2626; font-weight: 700; }
+.doc-item { background: #fff; border: 1px solid var(--beige-border); border-radius: 6px; padding: 12px; margin-bottom: 10px; }
+.doc-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.doc-header label { font-weight: 600; color: var(--primary); margin: 0; flex: 1; }
+.doc-current { margin-top: 10px; padding: 10px 12px; background: #dbeafe; border: 1px solid #93c5fd; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 0.85rem; }
+.doc-current .file-info { display: flex; align-items: center; gap: 8px; flex: 1; overflow: hidden; }
+.doc-current .file-info span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1e40af; font-weight: 600; }
+.doc-current .actions { display: flex; gap: 6px; }
+.doc-current button { padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 600; }
+.btn-view { background: #3b82f6; color: white; }
+.btn-replace { background: #f59e0b; color: white; }
+.btn-delete { background: #ef4444; color: white; }
+.doc-upload-area { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--beige-border); display: none; }
+.doc-upload-area.active { display: block; }
+.doc-upload-area input[type="file"] { margin-bottom: 8px; padding: 8px; background: #f8fafc; border-radius: 4px; width: 100%; border: 1px solid var(--beige-border); }
+.file-loaded { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; margin-top: 8px; font-size: 0.85rem; color: #92400e; font-weight: 600; }
+.file-loaded .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-loaded .btn-remove { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.75rem; font-weight: 600; }
+.file-status-container { margin-top: 6px; }
+.btn-add-file { padding: 6px 14px; background: var(--secondary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-top: 6px; font-weight: 600; }
+.file-count { font-size: 0.75rem; color: #64748b; margin-top: 4px; font-weight: 600; }
+.file-item-multiple { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #f8fafc; border-radius: 4px; margin-bottom: 4px; font-size: 0.85rem; border: 1px solid #e2e8f0; }
+.file-item-multiple .file-actions { display: flex; gap: 4px; }
+.file-item-multiple button { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.75rem; }
+.file-item-multiple .btn-view { background: #3b82f6; }
+.observaciones-section { background: #fef3c7; border: 2px solid #fcd34d; border-radius: 8px; padding: 16px; margin-top: 20px; }
+.observaciones-section legend { color: #92400e; font-size: 1rem; }
+.observaciones-section textarea { background: #fffbeb; border: 1px solid #fcd34d; min-height: 80px; }
+.loading-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255, 255, 255, 0.9); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 9999; backdrop-filter: blur(4px); }
+.loading-overlay.active { display: flex; }
+.spinner { width: 50px; height: 50px; border: 5px solid #e2e8f0; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.loading-text { font-size: 1.1rem; font-weight: 600; color: var(--primary); text-align: center; }
+.loading-text small { font-weight: 400; color: #64748b; font-size: 0.9rem; display: block; margin-top: 5px; }
+@media (max-width: 600px) { .form-grid, .search-row { grid-template-columns: 1fr; flex-direction: column; } }
+</style>
+
+<div class="card">
+  <h3>✏️ Editar Procesado</h3>
+  
+  <div class="search-box">
+    <label>🔍 Buscar procesado por Cédula, Placa o ID del Registro:</label>
+    <div class="search-row">
+      <input type="text" id="edit_busqueda_input" placeholder="Ej: 19451803 o AA123BC...">
+      <button id="edit_btn_buscar" class="btn-search">🔍 Buscar</button>
+    </div>
+    <div id="edit_msg_busqueda" class="msg"></div>
+  </div>
+
+  <div id="edit-datos-panel" class="datos-encontrados" style="display: none;">
+    <h4>📋 Datos del Procesado a Editar</h4>
+    <div id="edit-datos-contenido"></div>
+  </div>
+
+  <form id="form-editar-procesado" class="registro-form" novalidate style="display: none;">
+    <input type="hidden" id="edit_procesado_id">
+    <input type="hidden" id="edit_tabla_origen">
+    <input type="hidden" id="edit_registro_id">
+
+    <fieldset>
+      <legend>⚖️ Tipo de Delito</legend>
+      <div class="form-grid">
+        <div class="form-group campo-obligatorio" style="grid-column: span 2;">
+          <label>Tipo de Delito</label>
+          <input type="text" id="edit_tipo_delito" placeholder="Ej: Robo agravado, Homicidio..." required>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>📄 Documentos del Proceso (PDF)</legend>
+      <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Los archivos actuales se muestran en azul. Puede verlos, reemplazarlos o eliminarlos.</p>
+      <div id="edit-docs-unicos-container"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>📁 Documentos Múltiples</legend>
+      <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Puede agregar más archivos o eliminar los existentes.</p>
+      <div id="edit-docs-multiples-container"></div>
+    </fieldset>
+
+    <div class="observaciones-section">
+      <fieldset style="background: transparent; border: none; padding: 0; margin: 0;">
+        <legend>📝 Observaciones (Opcional)</legend>
+        <textarea id="edit_observaciones" rows="4" placeholder="Notas adicionales sobre el proceso..."></textarea>
+      </fieldset>
+    </div>
+
+    <button type="submit" class="btn-submit">💾 Guardar Cambios</button>
+    <div id="edit-msg-form" class="msg"></div>
+  </form>
+</div>
+
+<div id="edit-loading-overlay" class="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">
+    ⏳ Actualizando registro...
+    <small>Por favor, no cierre ni recargue esta ventana.</small>
+  </div>
+</div>
