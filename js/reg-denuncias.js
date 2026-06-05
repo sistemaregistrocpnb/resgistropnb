@@ -1,5 +1,13 @@
 window.initRegDenuncias = function() {
+    // 🛡️ PREVENIR EJECUCIÓN DUPLICADA (Soluciona el parpadeo del dropdown)
+    if (window._regDenunciasInitialized) {
+        console.log("⚠️ Módulo ya inicializado. Omitiendo ejecución duplicada...");
+        return;
+    }
+    window._regDenunciasInitialized = true;
+
     console.log("⚙️ Iniciando módulo reg-denuncias.js...");
+    // ... (el resto del código sigue igual)
 
     // 🔹 FUNCIÓN DE INICIALIZACIÓN SEGURA CON REINTENTOS
     function iniciarModulo(intentos = 0) {
