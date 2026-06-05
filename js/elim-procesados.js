@@ -166,16 +166,24 @@ window.initElimProcesados = function() {
     }
 
     // 🔹 Eliminar (Activa → Eliminados)
+     // 🔹 Eliminar (Activa → Eliminados)
     async function eliminarRegistro() {
         btnEliminar.disabled = true;
         btnEliminar.textContent = '⏳ Procesando...';
         hideMsgElim();
 
         try {
+            console.log("🔍 Intentando eliminar. currentId:", currentId);
+            console.log("🔍 currentData completo:", currentData);
+
+            if (!currentId) {
+                throw new Error("No se pudo identificar el ID del registro a eliminar.");
+            }
+
             const { data: { user } } = await window.supabaseClient.auth.getUser();
             const eliminadoPor = user?.email || sessionStorage.getItem('pnb_user_email') || 'usuario@sistema';
             
-            // ✅ MAPEO EXPLÍCITO: Solo las columnas que existen en 'eliminados_procesados'
+            // 1. Archivar en la tabla de eliminados
             const dataToArchive = {
                 id_original: currentId,
                 eliminado_por: eliminadoPor,
@@ -186,7 +194,6 @@ window.initElimProcesados = function() {
                 observaciones: currentData.observaciones,
                 datos_originales: currentData.datos_originales,
                 
-                // Documentos únicos
                 portada: currentData.portada,
                 oficio_remision: currentData.oficio_remision,
                 acta_denuncia: currentData.acta_denuncia,
@@ -202,37 +209,47 @@ window.initElimProcesados = function() {
                 planilla_pvr: currentData.planilla_pvr,
                 otros_documentos: currentData.otros_documentos,
                 
-                // Documentos múltiples
                 entrevista: currentData.entrevista,
                 cadena_custodia: currentData.cadena_custodia,
                 inspecciones_tecnicas: currentData.inspecciones_tecnicas,
                 
-                // Timestamps originales
                 created_at_original: currentData.created_at,
                 updated_at_original: currentData.updated_at
             };
 
             const { error: insErr } = await window.supabaseClient.from('eliminados_procesados').insert([dataToArchive]);
             if (insErr) throw new Error('Error archivando: ' + insErr.message);
+            console.log("✅ Registro archivado exitosamente en 'eliminados_procesados'");
 
+            // 2. Eliminar de la tabla activa usando currentId explícitamente
             const { data: delData, error: delErr } = await window.supabaseClient
                 .from('registro_procesados')
                 .delete()
-                .eq('id', currentData.id)
+                .eq('id', currentId) // Usamos currentId en lugar de currentData.id
                 .select('id');
 
-            if (delErr) throw new Error('Error eliminando: ' + delErr.message);
-            if (!delData || delData.length === 0) throw new Error('No se encontró el registro para eliminar.');
+            if (delErr) {
+                console.error("❌ Error de Supabase al eliminar:", delErr);
+                throw new Error('Error eliminando: ' + delErr.message);
+            }
+            
+            if (!delData || delData.length === 0) {
+                console.warn("⚠️ La consulta de eliminación no afectó ninguna fila. Posible causa: RLS bloqueando o ID incorrecto.");
+                throw new Error('No se encontró el registro en la base de datos para eliminar (puede que ya haya sido eliminado o las políticas de seguridad lo estén bloqueando).');
+            }
 
+            console.log("✅ Registro eliminado exitosamente de 'registro_procesados'");
             showMsgElim('✅ Procesado eliminado y archivado correctamente.', 'success');
+            
             setTimeout(() => {
                 dataContainer.style.display = 'none';
                 buscarInput.value = '';
                 hideMsg(msgBuscar);
                 hideMsgElim();
             }, 4000);
+            
         } catch (err) {
-            console.error('Error eliminando:', err);
+            console.error('💥 Error crítico eliminando:', err);
             showMsgElim('❌ ' + err.message, 'error');
         } finally {
             btnEliminar.disabled = false;
