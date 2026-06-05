@@ -52,29 +52,41 @@
 .loading-text { font-size: 1.1rem; font-weight: 600; color: var(--primary); text-align: center; }
 
 @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
-    /* ✅ SOLUCIÓN: Asegurar que el dropdown de banderas sea visible */
+/* ✅ SOLUCIÓN DEFINITIVA: Asegurar visibilidad del dropdown */
 .phone-dropdown-wrapper {
     position: relative !important;
     z-index: 100 !important;
 }
+
 .phone-options {
     z-index: 9999 !important;
     max-height: 300px !important;
     overflow-y: auto !important;
     background: #fff !important;
     box-shadow: 0 8px 20px rgba(0,0,0,0.2) !important;
+    border: 2px solid var(--primary) !important;
 }
-/* Asegurar que el fieldset no corte el dropdown */
+
+/* Asegurar que los contenedores padres no corten el dropdown */
 fieldset {
     overflow: visible !important;
 }
-/* Asegurar que el formulario no corte el dropdown */
+
 .registro-form {
     overflow: visible !important;
 }
-/* Asegurar que el card no corte el dropdown */
+
 .card {
     overflow: visible !important;
+}
+
+.form-grid {
+    overflow: visible !important;
+}
+
+/* Asegurar que el dropdown sea visible incluso si hay scroll */
+.phone-options {
+    position: absolute !important;
 }
 </style>
 
