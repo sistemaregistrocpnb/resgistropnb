@@ -2,29 +2,29 @@ window.initRegProcesados = function() {
   console.log("✅ Módulo reg-procesados.js cargado correctamente.");
   
   // ==========================================
-  // LISTAS DE DOCUMENTOS
+  // LISTAS DE DOCUMENTOS (Con mapeo a columnas reales de la BD)
   // ==========================================
   const docsUnicos = [
-    { id: 'portada', label: '📑 Portada' },
-    { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
-    { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
-    { id: 'datos_filiatorios', label: '👤 Datos Filiatorios' },
-    { id: 'acta_policial', label: '📋 Acta Policial' },
-    { id: 'derechos_imputado', label: '⚖️ Derechos del Imputado' },
-    { id: 'evaluacion_medica', label: '🏥 Evaluación Médica' },
-    { id: 'identificacion_cedula', label: '🆔 Identificación (Cédula)' },
-    { id: 'solicitud_examen_forense', label: '🔬 Solicitud de Examen Forense' },
-    { id: 'resultados_examen_forense', label: '🔬 Resultados del Examen Forense' },
-    { id: 'asistencia_comdepro', label: '🤝 Asistencia de Comdepro' },
-    { id: 'remision_estacionamiento', label: '🚗 Remisión a Estacionamiento' },
-    { id: 'planilla_pvr', label: '🚙 Planilla de Revisión de Vehículo (PVR)' },
-    { id: 'otros_documentos', label: '📎 Otros Documentos' }
+    { id: 'portada', label: '📑 Portada', dbColumn: 'portada' },
+    { id: 'oficio_remision', label: '📨 Oficio de Remisión', dbColumn: 'oficio_remision' },
+    { id: 'acta_denuncia', label: '📝 Acta de Denuncia', dbColumn: 'acta_denuncia' },
+    { id: 'datos_filiatorios', label: '👤 Datos Filiatorios', dbColumn: 'datos_filiatorios' },
+    { id: 'acta_policial', label: '📋 Acta Policial', dbColumn: 'acta_policial' },
+    { id: 'derechos_imputado', label: '⚖️ Derechos del Imputado', dbColumn: 'derechos_imputado' },
+    { id: 'evaluacion_medica', label: '🏥 Evaluación Médica', dbColumn: 'evaluacion_medica' },
+    { id: 'identificacion_cedula', label: '🆔 Identificación (Cédula)', dbColumn: 'identificacion_cedula' },
+    { id: 'solicitud_examen_forense', label: '🔬 Solicitud de Examen Forense', dbColumn: 'solicitud_examen_forense' },
+    { id: 'resultados_examen_forense', label: '🔬 Resultados del Examen Forense', dbColumn: 'resultados_examen_forense' },
+    { id: 'asistencia_comdepro', label: '🤝 Asistencia de Comdepro', dbColumn: 'asistencia_comdepro' },
+    { id: 'remision_estacionamiento', label: '🚗 Remisión a Estacionamiento', dbColumn: 'remision_estacionamiento' },
+    { id: 'planilla_pvr', label: '🚙 Planilla de Revisión de Vehículo (PVR)', dbColumn: 'planilla_pvr' },
+    { id: 'otros_documentos', label: '📎 Otros Documentos', dbColumn: 'otros_documentos' }
   ];
 
   const docsMultiples = [
-    { id: 'entrevista_multi', label: '🎤 Entrevistas (Múltiples)', max: 10, min: 1 },
-    { id: 'cadena_custodia', label: '⛓️ Cadena de Custodia', max: 10, min: 1 },
-    { id: 'inspecciones_tecnicas', label: '🔧 Inspecciones Técnicas', max: 10, min: 1 }
+    { id: 'entrevista_multi', label: '🎤 Entrevistas (Múltiples)', max: 10, min: 1, dbColumn: 'entrevista' },
+    { id: 'cadena_custodia', label: '⛓️ Cadena de Custodia', max: 10, min: 1, dbColumn: 'cadena_custodia' },
+    { id: 'inspecciones_tecnicas', label: '🔧 Inspecciones Técnicas', max: 10, min: 1, dbColumn: 'inspecciones_tecnicas' }
   ];
 
   const archivosMultiples = {};
@@ -467,6 +467,7 @@ window.initRegProcesados = function() {
         return mostrarMsg(msgForm, '⚠️ El tipo de delito es obligatorio.', 'error');
       }
 
+      // Validar documentos únicos
       for (const doc of docsUnicos) {
         const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
         if (radio && radio.value === 'si') {
@@ -477,6 +478,7 @@ window.initRegProcesados = function() {
         }
       }
 
+      // Validar documentos múltiples
       for (const doc of docsMultiples) {
         const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
         if (radio && radio.value === 'si') {
@@ -509,8 +511,11 @@ window.initRegProcesados = function() {
             const path = `${uid}/${ts}_${suffix}.pdf`;
             const { error } = await bucket.upload(path, file, { cacheControl: '3600', contentType: 'application/pdf' });
             if (error) throw new Error(`Error subiendo ${suffix}: ${error.message}`);
-            return bucket.getPublicUrl(path).data.publicUrl;
+            const url = bucket.getPublicUrl(path).data.publicUrl;
+            console.log(`✅ Archivo subido exitosamente: ${suffix} ->`, url);
+            return url;
           }
+          console.warn(`⚠️ No se encontró archivo para: ${suffix}`);
           return null;
         };
 
@@ -523,33 +528,13 @@ window.initRegProcesados = function() {
             if (error) throw new Error(`Error subiendo ${campo}[${i}]: ${error.message}`);
             urls.push(bucket.getPublicUrl(path).data.publicUrl);
           }
+          console.log(`✅ Archivos múltiples subidos exitosamente: ${campo} ->`, urls);
           return urls;
         };
 
         const dataOriginal = registroSeleccionado.datos;
         
-        // ✅ 2. RECOPILAR TODAS LAS URLs DE DOCUMENTOS EN UN SOLO OBJETO JSON
-        const documentosAdjuntos = {};
-
-        for (const doc of docsUnicos) {
-          const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-          if (radio && radio.value === 'si') {
-            documentosAdjuntos[doc.id] = await subirPDF(`file_${doc.id}`, doc.id);
-          } else {
-            documentosAdjuntos[doc.id] = null;
-          }
-        }
-
-        for (const doc of docsMultiples) {
-          const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-          if (radio && radio.value === 'si' && archivosMultiples[doc.id].length > 0) {
-            documentosAdjuntos[doc.id] = await subirPDFsMultiples(doc.id);
-          } else {
-            documentosAdjuntos[doc.id] = [];
-          }
-        }
-
-        // ✅ 3. CONSTRUIR EL OBJETO FINAL A INSERTAR (SIN COLUMNAS INDIVIDUALES DE DOCUMENTOS)
+        // ✅ 2. CONSTRUIR EL OBJETO FINAL A INSERTAR
         const dataToInsert = {
           tabla_origen: registroSeleccionado.origen,
           registro_id: registroSeleccionado.id,
@@ -558,13 +543,45 @@ window.initRegProcesados = function() {
           tipo_delito: tipoDelito,
           procesado_por: procesadoPor,
           observaciones: document.getElementById('proc_observaciones').value.trim() || null,
-          estatus: 'Procesado',
-          // Guardamos los datos originales Y las URLs de los documentos juntos en el JSON
-          datos_originales: {
-            ...dataOriginal,
-            documentos_adjuntos: documentosAdjuntos 
-          }
+          cedula: dataOriginal.cedula || null,
+          fecha_procesamiento: new Date().toISOString(),
+          estatus: 'Procesado'
         };
+
+        // ✅ 3. MAPEO INTELIGENTE CON DOBLE RESPALDO (Columna individual + JSON)
+        const documentosAdjuntos = {};
+
+        for (const doc of docsUnicos) {
+          const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+          if (radio && radio.value === 'si') {
+            const url = await subirPDF(`file_${doc.id}`, doc.id);
+            dataToInsert[doc.dbColumn] = url;          // Guarda en la columna individual (ej: 'portada')
+            documentosAdjuntos[doc.id] = url;          // Guarda también en el JSON de respaldo
+          } else {
+            dataToInsert[doc.dbColumn] = null;
+            documentosAdjuntos[doc.id] = null;
+          }
+        }
+
+        for (const doc of docsMultiples) {
+          const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+          if (radio && radio.value === 'si' && archivosMultiples[doc.id].length > 0) {
+            const urls = await subirPDFsMultiples(doc.id);
+            dataToInsert[doc.dbColumn] = urls;         // Guarda en la columna individual (ej: 'entrevista')
+            documentosAdjuntos[doc.id] = urls;         // Guarda también en el JSON de respaldo
+          } else {
+            dataToInsert[doc.dbColumn] = [];
+            documentosAdjuntos[doc.id] = [];
+          }
+        }
+
+        // Actualizamos el JSON de datos originales con las URLs de los documentos para respaldo total
+        dataToInsert.datos_originales = {
+          ...dataOriginal,
+          documentos_adjuntos: documentosAdjuntos
+        };
+
+        console.log("📦 Datos finales a insertar en BD:", dataToInsert);
 
         const { error: insErr } = await window.supabaseClient
           .from('registro_procesados')
