@@ -8,14 +8,14 @@ window.initRegProcesados = function() {
         { id: 'portada', label: '📑 Portada' },
         { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
         { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
-        { id: 'datos_filiatorios', label: ' Datos Filiatorios' },
+        { id: 'datos_filiatorios', label: ' 📝 Datos Filiatorios' },
         { id: 'acta_policial', label: '📋 Acta Policial' },
         { id: 'derechos_imputado', label: '⚖️ Derechos del Imputado' },
         { id: 'evaluacion_medica', label: '🏥 Evaluación Médica' },
         { id: 'identificacion_cedula', label: '🆔 Identificación (Cédula)' },
         { id: 'solicitud_examen_forense', label: '🔬 Solicitud de Examen Forense' },
         { id: 'resultados_examen_forense', label: '🔬 Resultados del Examen Forense' },
-        { id: 'asistencia_comdepro', label: ' Asistencia de Comdepro' },
+        { id: 'asistencia_comdepro', label: ' 🏛️ Asistencia de COMDEPRO' },
         { id: 'remision_estacionamiento', label: '🚗 Remisión a Estacionamiento' },
         { id: 'planilla_pvr', label: '🚙 Planilla de Revisión de Vehículo (PVR)' },
         { id: 'otros_documentos', label: '📎 Otros Documentos' }
@@ -23,8 +23,8 @@ window.initRegProcesados = function() {
 
     const docsMultiples = [
         { id: 'entrevista_multi', label: '🎤 Entrevistas (Múltiples)', max: 10, min: 1 },
-        { id: 'cadena_custodia', label: ' Cadena de Custodia', max: 10, min: 1 },
-        { id: 'inspecciones_tecnicas', label: ' Inspecciones Técnicas', max: 10, min: 1 }
+        { id: 'cadena_custodia', label: ' ⛓️ Cadena de Custodia', max: 10, min: 1 },
+        { id: 'inspecciones_tecnicas', label: '🔧 Inspecciones Técnicas', max: 10, min: 1 }
     ];
 
     const archivosMultiples = {};
