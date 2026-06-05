@@ -1,5 +1,5 @@
 window.initEditarProcesado = function() {
-    console.log("✅ Módulo editar-procesado.js cargado correctamente.");
+    console.log("⚙️ Iniciando módulo editar-procesado.js...");
     
     const docsUnicos = [
         { id: 'portada', label: '📑 Portada' },
@@ -53,6 +53,12 @@ window.initEditarProcesado = function() {
     const contenedorUnicos = document.getElementById('edit-docs-unicos-container');
     const contenedorMultiples = document.getElementById('edit-docs-multiples-container');
     const loadingOverlay = document.getElementById('edit-loading-overlay');
+    
+    // Verificación de elementos críticos
+    if (!btnBuscar || !inputBusqueda) {
+        console.error("❌ No se encontraron los elementos del buscador en el HTML. Verifica los IDs.");
+        return;
+    }
     
     const mostrarMsg = (el, txt, type) => {
         if (!el) return;
@@ -230,11 +236,9 @@ window.initEditarProcesado = function() {
         });
     }
     
-    // ✅ FUNCIÓN DE BÚSQUEDA CORREGIDA
     async function cargarProcesado(valor) {
         const val = valor.trim().toUpperCase();
         
-        // PASO 1: Buscar en columnas que SÍ existen
         const { data: dataColumnas, error: errColumnas } = await window.supabaseClient
             .from('registro_procesados')
             .select('*')
@@ -246,7 +250,6 @@ window.initEditarProcesado = function() {
             return dataColumnas;
         }
         
-        // PASO 2: Buscar dentro del JSON datos_originales
         const { data: dataJson, error: errJson } = await window.supabaseClient
             .from('registro_procesados')
             .select('*')
@@ -329,41 +332,43 @@ window.initEditarProcesado = function() {
         });
     }
     
-    if (btnBuscar && inputBusqueda) {
-        btnBuscar.addEventListener('click', async () => {
-            const val = inputBusqueda.value.trim();
-            if (val.length < 3) {
-                return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 3 caracteres.', 'error');
-            }
-            mostrarMsg(msgBusqueda, '🔍 Buscando procesado...', 'success');
-            btnBuscar.disabled = true;
-            form.style.display = 'none';
-            datosPanel.style.display = 'none';
-            
-            try {
-                const resultados = await cargarProcesado(val);
-                if (resultados.length === 0) {
-                    mostrarMsg(msgBusqueda, '❌ No se encontró ningún procesado con ese dato.', 'error');
-                } else {
-                    procesadoActual = resultados[0];
-                    mostrarMsg(msgBusqueda, `✅ ${resultados.length} procesado(s) encontrado(s). Mostrando el más reciente.`, 'success');
-                    mostrarDatosProcesado(procesadoActual);
-                    cargarArchivosEnForm(procesadoActual);
-                    form.style.display = 'block';
-                    window.scrollTo({ top: datosPanel.offsetTop - 20, behavior: 'smooth' });
-                }
-            } catch (err) {
-                console.error('Error en búsqueda:', err);
-                mostrarMsg(msgBusqueda, '❌ Error: ' + err.message, 'error');
-            } finally {
-                btnBuscar.disabled = false;
-            }
-        });
+    btnBuscar.addEventListener('click', async () => {
+        console.log("🔍 Botón de buscar presionado");
+        const val = inputBusqueda.value.trim();
+        if (val.length < 3) {
+            return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 3 caracteres.', 'error');
+        }
+        mostrarMsg(msgBusqueda, '🔍 Buscando procesado...', 'success');
+        btnBuscar.disabled = true;
+        form.style.display = 'none';
+        datosPanel.style.display = 'none';
         
-        inputBusqueda.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') { e.preventDefault(); btnBuscar.click(); }
-        });
-    }
+        try {
+            const resultados = await cargarProcesado(val);
+            if (resultados.length === 0) {
+                mostrarMsg(msgBusqueda, '❌ No se encontró ningún procesado con ese dato.', 'error');
+            } else {
+                procesadoActual = resultados[0];
+                mostrarMsg(msgBusqueda, `✅ ${resultados.length} procesado(s) encontrado(s). Mostrando el más reciente.`, 'success');
+                mostrarDatosProcesado(procesadoActual);
+                cargarArchivosEnForm(procesadoActual);
+                form.style.display = 'block';
+                window.scrollTo({ top: datosPanel.offsetTop - 20, behavior: 'smooth' });
+            }
+        } catch (err) {
+            console.error('Error en búsqueda:', err);
+            mostrarMsg(msgBusqueda, '❌ Error: ' + err.message, 'error');
+        } finally {
+            btnBuscar.disabled = false;
+        }
+    });
+    
+    inputBusqueda.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') { 
+            e.preventDefault(); 
+            btnBuscar.click(); 
+        }
+    });
     
     if (form) {
         form.addEventListener('submit', async (e) => {
@@ -486,5 +491,12 @@ window.initEditarProcesado = function() {
         });
     }
     
-    console.log("✅ Módulo editar-procesado.js inicializado correctamente");
+    console.log("✅ Módulo editar-procesado.js inicializado y listo correctamente");
 };
+
+// 🚀 AUTO-INICIALIZACIÓN: Se ejecuta automáticamente cuando el HTML está listo
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', window.initEditarProcesado);
+} else {
+    window.initEditarProcesado();
+}
