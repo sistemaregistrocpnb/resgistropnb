@@ -1,7 +1,6 @@
 window.initElimProcesados = function() {
     console.log("⚙️ Iniciando módulo elim-procesados.js...");
 
-    // 🔹 Referencias DOM
     const buscarInput = document.getElementById('buscar-procesado-elim');
     const buscarBtn = document.getElementById('btn-buscar-procesado-elim');
     const msgBuscar = document.getElementById('buscar-msg-elim');
@@ -13,7 +12,6 @@ window.initElimProcesados = function() {
     const btnReintegrar = document.getElementById('btn-reintegrar-procesado');
     const msgElim = document.getElementById('msg-elim-procesado');
     
-    // Modal
     const modal = document.getElementById('elim-modal-procesado');
     const modalTitle = document.getElementById('modal-title-elim');
     const modalText = document.getElementById('modal-text-elim');
@@ -29,7 +27,6 @@ window.initElimProcesados = function() {
     const showMsgElim = (txt, type) => { msgElim.innerHTML = txt; msgElim.className = `msg ${type}`; msgElim.style.display = 'block'; };
     const hideMsgElim = () => { msgElim.style.display = 'none'; };
 
-    // 🔹 Renderizar datos del procesado de forma limpia
     function renderUI(data, isArchived) {
         const orig = data.datos_originales || {};
         const nombre = `${orig.primer_nombre || ''} ${orig.primer_apellido || ''}`.trim() || 'No especificado';
@@ -62,7 +59,7 @@ window.initElimProcesados = function() {
             document.getElementById('archived-date-elim').textContent = data.eliminado_en ? new Date(data.eliminado_en).toLocaleString('es-VE') : '-';
             document.getElementById('archived-by-elim').textContent = data.eliminado_por || 'Sistema';
             btnEliminar.style.display = 'none';
-            btnReintegrar.style.display = 'block'; // ✅ Botón cambia a Reintegrar
+            btnReintegrar.style.display = 'block'; // ✅ Aquí se muestra el botón Reintegrar
         } else {
             archivedBanner.style.display = 'none';
             archivedNotice.style.display = 'none';
@@ -71,7 +68,6 @@ window.initElimProcesados = function() {
         }
     }
 
-    // 🔹 Búsqueda principal (Prioriza Activos, luego busca en Eliminados)
     async function buscarProcesado() {
         const val = buscarInput.value.trim().toUpperCase();
         if (val.length < 3) return showMsg(msgBuscar, '⚠️ Ingrese al menos 3 caracteres', 'error');
@@ -88,7 +84,7 @@ window.initElimProcesados = function() {
             let { data: activo, error: errActivo } = await window.supabaseClient
                 .from('registro_procesados')
                 .select('*')
-                .or(`identificador_principal.eq.${val},datos_originales->>cedula.eq.${val},datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
+                .or(`id.eq.${val},identificador_principal.eq.${val},datos_originales->>cedula.eq.${val},datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
                 .order('fecha_procesamiento', { ascending: false })
                 .limit(1)
                 .maybeSingle();
@@ -98,17 +94,17 @@ window.initElimProcesados = function() {
             if (activo) {
                 currentData = activo;
                 currentId = activo.id;
-                renderUI(activo, false); // Estado Activo
+                renderUI(activo, false);
                 dataContainer.style.display = 'block';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
 
-            // 2. Si no está en activos, buscar en eliminados/archivados
+            // 2. Buscar en eliminados/archivados (Agregado id_original para mayor precisión)
             let { data: archivado, error: errArch } = await window.supabaseClient
                 .from('eliminados_procesados')
                 .select('*')
-                .or(`identificador_principal.eq.${val},datos_originales->>cedula.eq.${val},datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
+                .or(`id_original.eq.${val},identificador_principal.eq.${val},datos_originales->>cedula.eq.${val},datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
                 .order('eliminado_en', { ascending: false })
                 .limit(1)
                 .maybeSingle();
@@ -118,7 +114,7 @@ window.initElimProcesados = function() {
             if (archivado) {
                 currentData = archivado;
                 currentId = archivado.id_original || archivado.id;
-                renderUI(archivado, true); // Estado Archivado (Activa botón Reintegrar)
+                renderUI(archivado, true); // ✅ Estado Archivado (Activa botón Reintegrar)
                 dataContainer.style.display = 'block';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
@@ -133,7 +129,6 @@ window.initElimProcesados = function() {
         }
     }
 
-    // 🔹 Modal
     function showModal(titulo, texto, accion, tipo) {
         pendingAction = accion;
         modalTitle.textContent = titulo;
@@ -154,7 +149,6 @@ window.initElimProcesados = function() {
         closeModal();
     }
 
-    // 🔹 Eliminar (Activa → Eliminados)
     async function eliminarRegistro() {
         btnEliminar.disabled = true;
         btnEliminar.textContent = '⏳ Procesando...';
@@ -173,44 +167,32 @@ window.initElimProcesados = function() {
                 tipo_delito: currentData.tipo_delito,
                 observaciones: currentData.observaciones,
                 datos_originales: currentData.datos_originales,
-                portada: currentData.portada,
-                oficio_remision: currentData.oficio_remision,
-                acta_denuncia: currentData.acta_denuncia,
-                datos_filiatorios: currentData.datos_filiatorios,
-                acta_policial: currentData.acta_policial,
-                derechos_imputado: currentData.derechos_imputado,
-                evaluacion_medica: currentData.evaluacion_medica,
-                identificacion_cedula: currentData.identificacion_cedula,
-                solicitud_examen_forense: currentData.solicitud_examen_forense,
-                resultados_examen_forense: currentData.resultados_examen_forense,
-                asistencia_comdepro: currentData.asistencia_comdepro,
-                remision_estacionamiento: currentData.remision_estacionamiento,
-                planilla_pvr: currentData.planilla_pvr,
-                otros_documentos: currentData.otros_documentos,
-                entrevista: currentData.entrevista,
-                cadena_custodia: currentData.cadena_custodia,
+                portada: currentData.portada, oficio_remision: currentData.oficio_remision,
+                acta_denuncia: currentData.acta_denuncia, datos_filiatorios: currentData.datos_filiatorios,
+                acta_policial: currentData.acta_policial, derechos_imputado: currentData.derechos_imputado,
+                evaluacion_medica: currentData.evaluacion_medica, identificacion_cedula: currentData.identificacion_cedula,
+                solicitud_examen_forense: currentData.solicitud_examen_forense, resultados_examen_forense: currentData.resultados_examen_forense,
+                asistencia_comdepro: currentData.asistencia_comdepro, remision_estacionamiento: currentData.remision_estacionamiento,
+                planilla_pvr: currentData.planilla_pvr, otros_documentos: currentData.otros_documentos,
+                entrevista: currentData.entrevista, cadena_custodia: currentData.cadena_custodia,
                 inspecciones_tecnicas: currentData.inspecciones_tecnicas,
-                created_at_original: currentData.created_at,
-                updated_at_original: currentData.updated_at
+                created_at_original: currentData.created_at, updated_at_original: currentData.updated_at
             };
 
-            // 1. Guardar respaldo en eliminados
             const { error: insErr } = await window.supabaseClient.from('eliminados_procesados').insert([dataToArchive]);
             if (insErr) throw new Error('Error archivando: ' + insErr.message);
 
-            // 2. Eliminar de la tabla activa
             const { data: delData, error: delErr } = await window.supabaseClient
                 .from('registro_procesados')
                 .delete()
                 .eq('id', currentId)
                 .select('id');
 
-            if (delErr) throw new Error('Error de base de datos al eliminar: ' + delErr.message);
+            if (delErr) throw new Error('Error de base de datos: ' + delErr.message);
             
-            // ✅ CORRECCIÓN: Si el insert funcionó pero el delete devuelve 0 filas, NO fallamos.
-            // Esto evita el error "No se encontró el registro" si ya había sido eliminado o hay un bloqueo RLS leve.
+            // ✅ VALIDACIÓN ESTRICTA: Si no se eliminó, lanzamos error para que el usuario lo sepa
             if (!delData || delData.length === 0) {
-                console.warn("⚠️ El respaldo se guardó, pero el registro ya no estaba en la tabla activa (o fue eliminado previamente).");
+                throw new Error('⚠️ El respaldo se guardó, pero el registro NO se eliminó de la tabla activa. Esto suele ocurrir si no has iniciado sesión o las políticas de seguridad (RLS) bloquean la eliminación.');
             }
 
             showMsgElim('✅ Procesado eliminado y archivado correctamente.', 'success');
@@ -230,7 +212,6 @@ window.initElimProcesados = function() {
         }
     }
 
-    // 🔹 Reintegrar (Eliminados → Activa, MANTENIENDO el respaldo)
     async function reintegrarRegistro() {
         btnReintegrar.disabled = true;
         btnReintegrar.textContent = '⏳ Procesando...';
@@ -238,40 +219,27 @@ window.initElimProcesados = function() {
 
         try {
             const dataToRestore = {
-                tabla_origen: currentData.tabla_origen,
-                registro_id: currentData.registro_id,
-                identificador_principal: currentData.identificador_principal,
-                tipo_delito: currentData.tipo_delito,
-                observaciones: currentData.observaciones,
-                datos_originales: currentData.datos_originales,
-                portada: currentData.portada,
-                oficio_remision: currentData.oficio_remision,
-                acta_denuncia: currentData.acta_denuncia,
-                datos_filiatorios: currentData.datos_filiatorios,
-                acta_policial: currentData.acta_policial,
-                derechos_imputado: currentData.derechos_imputado,
-                evaluacion_medica: currentData.evaluacion_medica,
-                identificacion_cedula: currentData.identificacion_cedula,
-                solicitud_examen_forense: currentData.solicitud_examen_forense,
-                resultados_examen_forense: currentData.resultados_examen_forense,
-                asistencia_comdepro: currentData.asistencia_comdepro,
-                remision_estacionamiento: currentData.remision_estacionamiento,
-                planilla_pvr: currentData.planilla_pvr,
-                otros_documentos: currentData.otros_documentos,
-                entrevista: currentData.entrevista,
-                cadena_custodia: currentData.cadena_custodia,
+                tabla_origen: currentData.tabla_origen, registro_id: currentData.registro_id,
+                identificador_principal: currentData.identificador_principal, tipo_delito: currentData.tipo_delito,
+                observaciones: currentData.observaciones, datos_originales: currentData.datos_originales,
+                portada: currentData.portada, oficio_remision: currentData.oficio_remision,
+                acta_denuncia: currentData.acta_denuncia, datos_filiatorios: currentData.datos_filiatorios,
+                acta_policial: currentData.acta_policial, derechos_imputado: currentData.derechos_imputado,
+                evaluacion_medica: currentData.evaluacion_medica, identificacion_cedula: currentData.identificacion_cedula,
+                solicitud_examen_forense: currentData.solicitud_examen_forense, resultados_examen_forense: currentData.resultados_examen_forense,
+                asistencia_comdepro: currentData.asistencia_comdepro, remision_estacionamiento: currentData.remision_estacionamiento,
+                planilla_pvr: currentData.planilla_pvr, otros_documentos: currentData.otros_documentos,
+                entrevista: currentData.entrevista, cadena_custodia: currentData.cadena_custodia,
                 inspecciones_tecnicas: currentData.inspecciones_tecnicas
             };
 
-            // 1. Insertar en la tabla activa
             const { error: insErr } = await window.supabaseClient.from('registro_procesados').insert([dataToRestore]);
             if (insErr) throw new Error('Error restaurando: ' + insErr.message);
 
-            // 2. ✅ CORRECCIÓN CLAVE: NO eliminamos el registro de 'eliminados_procesados'.
-            // Esto cumple con tu requisito de "quedando un respaldo de esos datos en eliminados_procesados".
-            // La próxima vez que se busque, el Paso 1 (tabla activa) lo encontrará primero y mostrará el estado "Activo".
+            // Eliminamos SOLO este registro específico de la tabla de eliminados
+            await window.supabaseClient.from('eliminados_procesados').delete().eq('id', currentData.id);
 
-            showMsgElim('✅ Procesado reintegrado al sistema activo. El respaldo histórico se mantiene en el archivo.', 'success');
+            showMsgElim('✅ Procesado reintegrado al sistema activo. El respaldo histórico se mantiene.', 'success');
             setTimeout(() => {
                 dataContainer.style.display = 'none';
                 buscarInput.value = '';
@@ -281,12 +249,9 @@ window.initElimProcesados = function() {
             
         } catch (err) {
             console.error('Error reintegrando:', err);
-            let msg = 'Error al reintegrar.';
-            if (err.message.includes('23505') || err.message.includes('unique')) {
-                msg = '❌ Ya existe un registro activo con este ID/Identificador.';
-            } else {
-                msg = '❌ ' + err.message;
-            }
+            let msg = err.message.includes('23505') || err.message.includes('unique') 
+                ? '❌ Ya existe un registro activo con este ID/Identificador.' 
+                : '❌ ' + err.message;
             showMsgElim(msg, 'error');
         } finally {
             btnReintegrar.disabled = false;
@@ -294,32 +259,19 @@ window.initElimProcesados = function() {
         }
     }
 
-    // 🔹 Listeners
     buscarBtn.addEventListener('click', buscarProcesado);
-    buscarInput.addEventListener('keydown', e => {
-        if (e.key === 'Enter') { e.preventDefault(); buscarProcesado(); }
-    });
+    buscarInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); buscarProcesado(); } });
 
     btnEliminar.addEventListener('click', () => {
         if (!currentData) return;
         const identificador = currentData.datos_originales?.cedula || currentData.identificador_principal || 'este registro';
-        showModal(
-            '⚠️ Confirmar Eliminación',
-            `¿Eliminar el procesado con identificador "${identificador}"? Se moverá a la papelera de archivo y dejará de estar activo.`,
-            'delete',
-            'danger'
-        );
+        showModal('⚠️ Confirmar Eliminación', `¿Eliminar el procesado con identificador "${identificador}"? Se moverá a la papelera de archivo.`, 'delete', 'danger');
     });
 
     btnReintegrar.addEventListener('click', () => {
         if (!currentData) return;
         const identificador = currentData.datos_originales?.cedula || currentData.identificador_principal || 'este registro';
-        showModal(
-            '♻️ Confirmar Reintegración',
-            `¿Reintegrar el procesado con identificador "${identificador}"? Volverá a estar disponible en el sistema activo (el respaldo histórico se mantendrá).`,
-            'reintegrate',
-            'success'
-        );
+        showModal('♻️ Confirmar Reintegración', `¿Reintegrar el procesado con identificador "${identificador}"? Volverá a estar disponible en el sistema activo.`, 'reintegrate', 'success');
     });
 
     btnModalYes.addEventListener('click', ejecutarAccion);
@@ -329,7 +281,6 @@ window.initElimProcesados = function() {
     console.log("✅ Módulo elim-procesados.js inicializado correctamente");
 };
 
-// Auto-inicialización
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.initElimProcesados);
 } else {
