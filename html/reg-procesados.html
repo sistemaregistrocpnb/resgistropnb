@@ -58,6 +58,22 @@
 .observaciones-section legend { color: #92400e; font-size: 1rem; }
 .observaciones-section textarea { background: #fffbeb; border: 1px solid #fcd34d; min-height: 80px; }
 @media (max-width: 600px) { .form-grid, .search-row { grid-template-columns: 1fr; flex-direction: column; } }
+    /* Overlay de carga para bloquear la pantalla */
+.loading-overlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(255, 255, 255, 0.9);
+  display: none; justify-content: center; align-items: center; flex-direction: column;
+  z-index: 9999; backdrop-filter: blur(4px);
+}
+.loading-overlay.active { display: flex; }
+.spinner {
+  width: 50px; height: 50px; border: 5px solid #e2e8f0;
+  border-top: 5px solid var(--primary); border-radius: 50%;
+  animation: spin 1s linear infinite; margin-bottom: 15px;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.loading-text { font-size: 1.1rem; font-weight: 600; color: var(--primary); text-align: center; }
+.loading-text small { font-weight: 400; color: #64748b; font-size: 0.9rem; display: block; margin-top: 5px; }
 </style>
 
 <div class="card">
@@ -135,4 +151,12 @@
         <button type="submit" class="btn-submit">💾 Registrar Procesado y Cambiar Estatus</button>
         <div id="msg-reg-procesados" class="msg"></div>
     </form>
+    <!-- OVERLAY DE CARGA (Bloquea la pantalla) -->
+<div id="loading-overlay" class="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">
+    ⏳ Procesando y subiendo archivos...
+    <small>Por favor, no cierre ni recargue esta ventana.</small>
+  </div>
+</div>
 </div>
