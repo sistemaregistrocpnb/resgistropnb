@@ -1,9 +1,6 @@
 window.initRegProcesados = function() {
   console.log("✅ Módulo reg-procesados.js cargado correctamente.");
   
-  // ==========================================
-  // LISTAS DE DOCUMENTOS (Con mapeo a columnas reales de la BD)
-  // ==========================================
   const docsUnicos = [
     { id: 'portada', label: '📑 Portada', dbColumn: 'portada' },
     { id: 'oficio_remision', label: '📨 Oficio de Remisión', dbColumn: 'oficio_remision' },
@@ -187,9 +184,6 @@ window.initRegProcesados = function() {
     el.style.display = 'block';
   };
 
-  // ==========================================
-  // DETECTAR COINCIDENCIAS
-  // ==========================================
   function detectarCoincidencias(reg, val, tabla) {
     const campos = [];
     const v = val.trim().toUpperCase();
@@ -200,144 +194,83 @@ window.initRegProcesados = function() {
     return campos;
   }
 
-  // ==========================================
-  // BÚSQUEDA EN LAS 4 TABLAS
-  // ==========================================
   async function buscarEnTodasLasTablas(valor) {
     const resultados = [];
     const val = valor.trim().toUpperCase();
     
     try {
-      // 1. REGISTRO_PERSONAS
-      const { data: personas, error: errPers } = await window.supabaseClient
-        .from('registro_personas')
-        .select('*')
-        .eq('cedula', val)
-        .eq('estatus', 'Verificación');
-        
+      const { data: personas, error: errPers } = await window.supabaseClient.from('registro_personas').select('*').eq('cedula', val).eq('estatus', 'Verificación');
       if (!errPers && personas) {
         personas.forEach(reg => {
-          const nombre = `${reg.primer_nombre || ''} ${reg.primer_apellido || ''}`.trim();
           resultados.push({
-            origen: 'registro_personas', id: reg.id,
-            tipo: '👤 Persona', icono: '👤', color: '#7c3aed', colorBg: '#f5f3ff',
-            tipoRegistro: 'persona',
-            datos: reg,
-            linea1: `${nombre} | C.I: ${reg.cedula || '-'}`,
-            linea2: `Sexo: ${reg.sexo || '-'} | Edad: ${reg.edad || '-'}`,
-            linea3: `Estación: ${reg.estacion_policial || '-'}`,
-            encontrado_por: ['Cédula']
+            origen: 'registro_personas', id: reg.id, tipo: '👤 Persona', icono: '👤', color: '#7c3aed', colorBg: '#f5f3ff', tipoRegistro: 'persona', datos: reg,
+            linea1: `${reg.primer_nombre || ''} ${reg.primer_apellido || ''} | C.I: ${reg.cedula || '-'}`,
+            linea2: `Sexo: ${reg.sexo || '-'} | Edad: ${reg.edad || '-'}`, linea3: `Estación: ${reg.estacion_policial || '-'}`, encontrado_por: ['Cédula']
           });
         });
       }
 
-      // 2. REGISTRO_MOTOS
-      const { data: motos, error: errMoto } = await window.supabaseClient
-        .from('registro_motos')
-        .select('*')
-        .or(`placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`)
-        .eq('estatus', 'Verificación');
-        
+      const { data: motos, error: errMoto } = await window.supabaseClient.from('registro_motos').select('*').or(`placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`).eq('estatus', 'Verificación');
       if (!errMoto && motos) {
         motos.forEach(reg => {
           resultados.push({
-            origen: 'registro_motos', id: reg.id,
-            tipo: '🏍️ Motocicleta', icono: '🏍️', color: '#dc2626', colorBg: '#fef2f2',
-            tipoRegistro: 'moto',
-            datos: reg,
-            linea1: `Placa: ${reg.placa || '-'}`,
-            linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
-            linea3: `Serial: ${reg.serial_carroceria || '-'}`,
+            origen: 'registro_motos', id: reg.id, tipo: '🏍️ Motocicleta', icono: '🏍️', color: '#dc2626', colorBg: '#fef2f2', tipoRegistro: 'moto', datos: reg,
+            linea1: `Placa: ${reg.placa || '-'}`, linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`, linea3: `Serial: ${reg.serial_carroceria || '-'}`,
             encontrado_por: detectarCoincidencias(reg, val, 'registro_motos')
           });
         });
       }
 
-      // 3. REGISTRO_AUTOMOVILES
-      const { data: autos, error: errAuto } = await window.supabaseClient
-        .from('registro_automoviles')
-        .select('*')
-        .or(`placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`)
-        .eq('estatus', 'Verificación');
-        
+      const { data: autos, error: errAuto } = await window.supabaseClient.from('registro_automoviles').select('*').or(`placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`).eq('estatus', 'Verificación');
       if (!errAuto && autos) {
         autos.forEach(reg => {
           resultados.push({
-            origen: 'registro_automoviles', id: reg.id,
-            tipo: '🚙 Automóvil', icono: '🚙', color: '#059669', colorBg: '#ecfdf5',
-            tipoRegistro: 'auto',
-            datos: reg,
-            linea1: `Placa: ${reg.placa || '-'}`,
-            linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`,
-            linea3: `Serial: ${reg.serial_carroceria || '-'}`,
+            origen: 'registro_automoviles', id: reg.id, tipo: '🚙 Automóvil', icono: '🚙', color: '#059669', colorBg: '#ecfdf5', tipoRegistro: 'auto', datos: reg,
+            linea1: `Placa: ${reg.placa || '-'}`, linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`, linea3: `Serial: ${reg.serial_carroceria || '-'}`,
             encontrado_por: detectarCoincidencias(reg, val, 'registro_automoviles')
           });
         });
       }
 
-      // 4. REGISTRO_VINCULADO
-      const { data: vinculados, error: errVinc } = await window.supabaseClient
-        .from('registro_vinculado')
-        .select('*')
-        .or(`cedula.eq.${val},placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`)
-        .eq('estatus', 'Verificación');
-        
+      const { data: vinculados, error: errVinc } = await window.supabaseClient.from('registro_vinculado').select('*').or(`cedula.eq.${val},placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`).eq('estatus', 'Verificación');
       if (!errVinc && vinculados) {
         vinculados.forEach(reg => {
-          const nombre = `${reg.primer_nombre || ''} ${reg.primer_apellido || ''}`.trim();
           resultados.push({
-            origen: 'registro_vinculado', id: reg.id,
-            tipo: '🔗 Persona + Vehículo', icono: '🔗', color: '#002b5c', colorBg: '#eff6ff',
-            tipoRegistro: 'vinculado',
-            datos: reg,
-            linea1: `👤 ${nombre} | C.I: ${reg.cedula || '-'}`,
-            linea2: `🚗 ${reg.tipo_vehiculo || ''} ${reg.marca_vehiculo || ''} | Placa: ${reg.placa || '-'}`,
-            linea3: `🏛️ ${reg.estacion_policial || '-'}`,
+            origen: 'registro_vinculado', id: reg.id, tipo: '🔗 Persona + Vehículo', icono: '🔗', color: '#002b5c', colorBg: '#eff6ff', tipoRegistro: 'vinculado', datos: reg,
+            linea1: `👤 ${reg.primer_nombre || ''} ${reg.primer_apellido || ''} | C.I: ${reg.cedula || '-'}`,
+            linea2: `🚗 ${reg.tipo_vehiculo || ''} ${reg.marca_vehiculo || ''} | Placa: ${reg.placa || '-'}`, linea3: `🏛️ ${reg.estacion_policial || '-'}`,
             encontrado_por: detectarCoincidencias(reg, val, 'registro_vinculado')
           });
         });
       }
-
       return resultados;
     } catch (err) {
-      console.error('Error en búsqueda multi-tabla:', err);
+      console.error('Error en búsqueda:', err);
       throw err;
     }
   }
 
-  // ==========================================
-  // MOSTRAR PANEL DE SELECCIÓN
-  // ==========================================
-  function mostrarPanelSeleccion(resultados, valorBuscado) {
+  function mostrarPanelSeleccion(resultados) {
     selectionList.innerHTML = '';
     resultCount.textContent = resultados.length;
-    
     resultados.forEach((res, index) => {
       const card = document.createElement('div');
-      card.style.cssText = `background: ${res.colorBg}; border: 2px solid ${res.color}; border-left: 6px solid ${res.color}; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s; margin-bottom: 12px;`;
+      card.style.cssText = `background: ${res.colorBg}; border: 2px solid ${res.color}; border-left: 6px solid ${res.color}; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 12px;`;
       card.innerHTML = `
         <div style="flex: 1;">
-          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-            <span style="font-size: 1.5rem;">${res.icono}</span>
-            <strong style="color: ${res.color}; font-size: 0.95rem;">${res.tipo}</strong>
-          </div>
-          <div style="font-size: 0.9rem; color: #334155; margin-bottom: 3px;">${res.linea1}</div>
-          <div style="font-size: 0.85rem; color: #475569; margin-bottom: 3px;">${res.linea2}</div>
-          <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 6px;">${res.linea3}</div>
-          <div style="font-size: 0.75rem; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; display: inline-block;">
-            🔎 Coincidencia en: <strong>${res.encontrado_por.join(', ')}</strong>
-          </div>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;"><span style="font-size: 1.5rem;">${res.icono}</span><strong style="color: ${res.color};">${res.tipo}</strong></div>
+          <div style="font-size: 0.9rem; color: #334155;">${res.linea1}</div>
+          <div style="font-size: 0.85rem; color: #475569;">${res.linea2}</div>
+          <div style="font-size: 0.8rem; color: #64748b;">${res.linea3}</div>
+          <div style="font-size: 0.75rem; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 6px;">🔎 Coincidencia: <strong>${res.encontrado_por.join(', ')}</strong></div>
         </div>
-        <button class="btn-seleccionar" data-index="${index}" style="padding: 12px 24px; background: ${res.color}; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; white-space: nowrap;">⚖️ Procesar</button>
+        <button class="btn-seleccionar" data-index="${index}" style="padding: 12px 24px; background: ${res.color}; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer;">⚖️ Procesar</button>
       `;
       selectionList.appendChild(card);
     });
 
     document.querySelectorAll('.btn-seleccionar').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const idx = parseInt(e.target.dataset.index);
-        seleccionarRegistro(resultados[idx]);
-      });
+      btn.addEventListener('click', (e) => seleccionarRegistro(resultados[parseInt(e.target.dataset.index)]));
     });
 
     selectionPanel.style.display = 'block';
@@ -346,19 +279,13 @@ window.initRegProcesados = function() {
     msgBusqueda.style.display = 'none';
   }
 
-  // ==========================================
-  // SELECCIONAR REGISTRO Y MOSTRAR DATOS
-  // ==========================================
   function seleccionarRegistro(resultado) {
     registroSeleccionado = resultado;
     selectionPanel.style.display = 'none';
     const data = resultado.datos;
 
     const badge = document.getElementById('tipo-vehiculo-badge');
-    if (badge) {
-      badge.textContent = ` ${resultado.tipo}`;
-      badge.style.display = 'inline-block';
-    }
+    if (badge) { badge.textContent = ` ${resultado.tipo}`; badge.style.display = 'inline-block'; }
 
     let html = '';
     if (resultado.origen === 'registro_personas' || resultado.origen === 'registro_vinculado') {
@@ -378,16 +305,10 @@ window.initRegProcesados = function() {
       html += `<div class="dato-fila"><span class="dato-label">🔢 Placa:</span><span class="dato-valor">${data.placa || '-'}</span></div>`;
       html += `<div class="dato-fila"><span class="dato-label">🔢 Serial Carrocería:</span><span class="dato-valor">${data.serial_carroceria || '-'}</span></div>`;
       html += `<div class="dato-fila"><span class="dato-label">🔢 Serial Motor:</span><span class="dato-valor">${data.serial_motor || '-'}</span></div>`;
-      
-      const marca = data.marca || data.marca_vehiculo;
-      const modelo = data.modelo || data.modelo_vehiculo;
-      const anio = data.anio || data.anio_vehiculo;
-      const color = data.color || data.color_vehiculo;
-      
-      html += `<div class="dato-fila"><span class="dato-label">🏭 Marca:</span><span class="dato-valor">${marca || '-'}</span></div>`;
-      html += `<div class="dato-fila"><span class="dato-label">📦 Modelo:</span><span class="dato-valor">${modelo || '-'}</span></div>`;
-      html += `<div class="dato-fila"><span class="dato-label">📅 Año:</span><span class="dato-valor">${anio || '-'}</span></div>`;
-      html += `<div class="dato-fila"><span class="dato-label"> Color:</span><span class="dato-valor">${color || '-'}</span></div>`;
+      html += `<div class="dato-fila"><span class="dato-label">🏭 Marca:</span><span class="dato-valor">${data.marca || data.marca_vehiculo || '-'}</span></div>`;
+      html += `<div class="dato-fila"><span class="dato-label">📦 Modelo:</span><span class="dato-valor">${data.modelo || data.modelo_vehiculo || '-'}</span></div>`;
+      html += `<div class="dato-fila"><span class="dato-label">📅 Año:</span><span class="dato-valor">${data.anio || data.anio_vehiculo || '-'}</span></div>`;
+      html += `<div class="dato-fila"><span class="dato-label"> Color:</span><span class="dato-valor">${data.color || data.color_vehiculo || '-'}</span></div>`;
     }
 
     datosContenido.innerHTML = html;
@@ -402,17 +323,12 @@ window.initRegProcesados = function() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // ==========================================
-  // LISTENER BÚSQUEDA
-  // ==========================================
   if (btnBuscar && inputBusqueda) {
     btnBuscar.addEventListener('click', async () => {
       const val = inputBusqueda.value.trim();
-      if (val.length < 5) {
-        return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 5 caracteres.', 'error');
-      }
+      if (val.length < 5) return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 5 caracteres.', 'error');
       
-      mostrarMsg(msgBusqueda, '🔍 Buscando en todos los registros (Verificación)...', 'success');
+      mostrarMsg(msgBusqueda, '🔍 Buscando...', 'success');
       btnBuscar.disabled = true;
       form.style.display = 'none';
       datosPanel.style.display = 'none';
@@ -426,20 +342,17 @@ window.initRegProcesados = function() {
           mostrarMsg(msgBusqueda, '✅ 1 registro encontrado.', 'success');
           setTimeout(() => seleccionarRegistro(resultados[0]), 300);
         } else {
-          mostrarMsg(msgBusqueda, `🔎 Se encontraron <strong>${resultados.length} registros</strong>. Seleccione cuál procesar:`, 'success');
-          setTimeout(() => mostrarPanelSeleccion(resultados, val), 300);
+          mostrarMsg(msgBusqueda, `🔎 Se encontraron <strong>${resultados.length} registros</strong>.`, 'success');
+          setTimeout(() => mostrarPanelSeleccion(resultados), 300);
         }
       } catch (err) {
-        console.error('Error en búsqueda:', err);
         mostrarMsg(msgBusqueda, '❌ Error: ' + err.message, 'error');
       } finally {
         btnBuscar.disabled = false;
       }
     });
 
-    inputBusqueda.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); btnBuscar.click(); }
-    });
+    inputBusqueda.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); btnBuscar.click(); } });
   }
 
   if (btnCancelSearch) {
@@ -451,44 +364,28 @@ window.initRegProcesados = function() {
     });
   }
 
-  // ==========================================
-  // ENVÍO DEL FORMULARIO
-  // ==========================================
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      
-      if (!registroSeleccionado) {
-        return mostrarMsg(msgForm, '❌ Debe buscar y seleccionar un registro primero.', 'error');
-      }
+      if (!registroSeleccionado) return mostrarMsg(msgForm, '❌ Debe buscar y seleccionar un registro primero.', 'error');
       
       const tipoDelito = document.getElementById('proc_tipo_delito').value.trim();
-      if (!tipoDelito) {
-        return mostrarMsg(msgForm, '⚠️ El tipo de delito es obligatorio.', 'error');
-      }
+      if (!tipoDelito) return mostrarMsg(msgForm, '⚠️ El tipo de delito es obligatorio.', 'error');
 
-      // Validar documentos únicos
       for (const doc of docsUnicos) {
         const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
         if (radio && radio.value === 'si') {
-          const fileInput = document.getElementById(`file_${doc.id}`);
-          if (!fileInput.files || fileInput.files.length === 0) {
-            return mostrarMsg(msgForm, `⚠️ Debe subir un PDF para: ${doc.label}`, 'error');
-          }
+          if (!document.getElementById(`file_${doc.id}`).files?.length) return mostrarMsg(msgForm, `⚠️ Debe subir un PDF para: ${doc.label}`, 'error');
         }
       }
 
-      // Validar documentos múltiples
       for (const doc of docsMultiples) {
         const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-        if (radio && radio.value === 'si') {
-          if (archivosMultiples[doc.id].length < doc.min) {
-            return mostrarMsg(msgForm, `❌ Debe subir al menos ${doc.min} PDF para: ${doc.label}`, 'error');
-          }
+        if (radio && radio.value === 'si' && archivosMultiples[doc.id].length < doc.min) {
+          return mostrarMsg(msgForm, `❌ Debe subir al menos ${doc.min} PDF para: ${doc.label}`, 'error');
         }
       }
 
-      // ✅ 1. ACTIVAR PANTALLA DE CARGA Y BLOQUEAR INTERFAZ
       const loadingOverlay = document.getElementById('loading-overlay');
       if (loadingOverlay) loadingOverlay.classList.add('active');
       
@@ -499,64 +396,56 @@ window.initRegProcesados = function() {
 
       try {
         const { data: { user } } = await window.supabaseClient.auth.getUser();
-        const procesadoPor = user?.email || 'usuario@sistema';
         const bucket = window.supabaseClient.storage.from('procesados_documentos');
         const uid = sessionStorage.getItem('pnb_user_id') || 'user';
         const ts = Date.now();
 
         const subirPDF = async (fileInputId, suffix) => {
           const fileInput = document.getElementById(fileInputId);
-          if (fileInput && fileInput.files && fileInput.files[0]) {
-            const file = fileInput.files[0];
+          if (fileInput?.files?.[0]) {
             const path = `${uid}/${ts}_${suffix}.pdf`;
-            const { error } = await bucket.upload(path, file, { cacheControl: '3600', contentType: 'application/pdf' });
+            const { error } = await bucket.upload(path, fileInput.files[0], { contentType: 'application/pdf' });
             if (error) throw new Error(`Error subiendo ${suffix}: ${error.message}`);
-            const url = bucket.getPublicUrl(path).data.publicUrl;
-            console.log(`✅ Archivo subido exitosamente: ${suffix} ->`, url);
-            return url;
+            return bucket.getPublicUrl(path).data.publicUrl;
           }
-          console.warn(`⚠️ No se encontró archivo para: ${suffix}`);
           return null;
         };
 
         const subirPDFsMultiples = async (campo) => {
           const urls = [];
           for (let i = 0; i < archivosMultiples[campo].length; i++) {
-            const file = archivosMultiples[campo][i];
             const path = `${uid}/${ts}_${campo}_${i}.pdf`;
-            const { error } = await bucket.upload(path, file, { cacheControl: '3600', contentType: 'application/pdf' });
+            const { error } = await bucket.upload(path, archivosMultiples[campo][i], { contentType: 'application/pdf' });
             if (error) throw new Error(`Error subiendo ${campo}[${i}]: ${error.message}`);
             urls.push(bucket.getPublicUrl(path).data.publicUrl);
           }
-          console.log(`✅ Archivos múltiples subidos exitosamente: ${campo} ->`, urls);
           return urls;
         };
 
         const dataOriginal = registroSeleccionado.datos;
-        
-        // ✅ 2. CONSTRUIR EL OBJETO FINAL A INSERTAR
+        const documentosAdjuntos = {};
+
+        // ✅ CONSTRUCCIÓN SEGURA: SOLO COLUMNAS QUE EXISTEN EN EL CSV
         const dataToInsert = {
           tabla_origen: registroSeleccionado.origen,
           registro_id: registroSeleccionado.id,
           tipo_registro: registroSeleccionado.tipoRegistro || '',
           identificador_principal: document.getElementById('proc_identificador').value,
           tipo_delito: tipoDelito,
-          procesado_por: procesadoPor,
+          procesado_por: user?.email || 'usuario@sistema',
           observaciones: document.getElementById('proc_observaciones').value.trim() || null,
           cedula: dataOriginal.cedula || null,
           fecha_procesamiento: new Date().toISOString(),
           estatus: 'Procesado'
         };
 
-        // ✅ 3. MAPEO INTELIGENTE CON DOBLE RESPALDO (Columna individual + JSON)
-        const documentosAdjuntos = {};
-
+        // Mapeo de documentos a columnas reales + respaldo en JSON
         for (const doc of docsUnicos) {
           const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-          if (radio && radio.value === 'si') {
+          if (radio?.value === 'si') {
             const url = await subirPDF(`file_${doc.id}`, doc.id);
-            dataToInsert[doc.dbColumn] = url;          // Guarda en la columna individual (ej: 'portada')
-            documentosAdjuntos[doc.id] = url;          // Guarda también en el JSON de respaldo
+            dataToInsert[doc.dbColumn] = url;
+            documentosAdjuntos[doc.id] = url;
           } else {
             dataToInsert[doc.dbColumn] = null;
             documentosAdjuntos[doc.id] = null;
@@ -565,38 +454,26 @@ window.initRegProcesados = function() {
 
         for (const doc of docsMultiples) {
           const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-          if (radio && radio.value === 'si' && archivosMultiples[doc.id].length > 0) {
+          if (radio?.value === 'si' && archivosMultiples[doc.id].length > 0) {
             const urls = await subirPDFsMultiples(doc.id);
-            dataToInsert[doc.dbColumn] = urls;         // Guarda en la columna individual (ej: 'entrevista')
-            documentosAdjuntos[doc.id] = urls;         // Guarda también en el JSON de respaldo
+            dataToInsert[doc.dbColumn] = urls;
+            documentosAdjuntos[doc.id] = urls;
           } else {
             dataToInsert[doc.dbColumn] = [];
             documentosAdjuntos[doc.id] = [];
           }
         }
 
-        // Actualizamos el JSON de datos originales con las URLs de los documentos para respaldo total
-        dataToInsert.datos_originales = {
-          ...dataOriginal,
-          documentos_adjuntos: documentosAdjuntos
-        };
+        // Guardamos TODO el registro original + los documentos en el campo JSON
+        dataToInsert.datos_originales = { ...dataOriginal, documentos_adjuntos: documentosAdjuntos };
 
-        console.log("📦 Datos finales a insertar en BD:", dataToInsert);
+        const { error: insErr } = await window.supabaseClient.from('registro_procesados').insert([dataToInsert]);
+        if (insErr) throw new Error(`Error al registrar: ${insErr.message}`);
 
-        const { error: insErr } = await window.supabaseClient
-          .from('registro_procesados')
-          .insert([dataToInsert]);
-          
-        if (insErr) throw new Error(`Error al registrar procesado: ${insErr.message}`);
-
-        const { error: updErr } = await window.supabaseClient
-          .from(registroSeleccionado.origen)
-          .update({ estatus: 'Procesado' })
-          .eq('id', registroSeleccionado.id);
-          
+        const { error: updErr } = await window.supabaseClient.from(registroSeleccionado.origen).update({ estatus: 'Procesado' }).eq('id', registroSeleccionado.id);
         if (updErr) throw new Error(`Error al cambiar estatus: ${updErr.message}`);
 
-        mostrarMsg(msgForm, '✅ Procesado registrado exitosamente. El estatus del registro original cambió a "Procesado".', 'success');
+        mostrarMsg(msgForm, '✅ Procesado registrado exitosamente.', 'success');
         
         setTimeout(() => {
           form.style.display = 'none';
@@ -605,10 +482,7 @@ window.initRegProcesados = function() {
           msgBusqueda.style.display = 'none';
           registroSeleccionado = null;
           form.reset();
-          docsMultiples.forEach(d => {
-            archivosMultiples[d.id] = [];
-            actualizarListaArchivos(d.id, d.max);
-          });
+          docsMultiples.forEach(d => { archivosMultiples[d.id] = []; actualizarListaArchivos(d.id, d.max); });
           document.querySelectorAll('.doc-upload-area').forEach(area => area.classList.remove('active'));
           document.querySelectorAll('.file-status-container').forEach(c => c.innerHTML = '');
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -618,10 +492,8 @@ window.initRegProcesados = function() {
         console.error('Error al procesar:', err);
         mostrarMsg(msgForm, '❌ Error: ' + err.message, 'error');
       } finally {
-        // ✅ 4. DESACTIVAR PANTALLA DE CARGA Y RESTAURAR INTERFAZ
         const loadingOverlay = document.getElementById('loading-overlay');
         if (loadingOverlay) loadingOverlay.classList.remove('active');
-        
         const btnSubmit = form.querySelector('.btn-submit');
         btnSubmit.disabled = false;
         btnSubmit.textContent = '💾 Registrar Procesado y Cambiar Estatus';
