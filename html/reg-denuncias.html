@@ -1,13 +1,166 @@
 <style>
-.denuncias-container { padding: 20px; }
-.denuncias-card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-.denuncias-card h3 { color: #002b5c; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #d4c9a8; }
+:root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; }
+.registro-form fieldset { border: 1px solid var(--beige-border); border-radius: 8px; padding: 16px; margin-bottom: 18px; background: #fafbfc; }
+.registro-form legend { font-weight: 600; color: var(--primary); font-size: 0.95rem; padding: 0 8px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.registro-form label { font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; display: block; }
+.registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; }
+.registro-form input:focus, .registro-form select:focus, .registro-form textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,43,92,0.1); }
+.btn-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 15px; font-size: 1rem; }
+.btn-submit:hover { background: var(--secondary); }
+.btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+.msg { padding: 10px; margin-top: 12px; border-radius: 5px; text-align: center; display: none; }
+.msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+
+/* Dropdown de banderas */
+.phone-dropdown-wrapper { position: relative; width: 100%; }
+.phone-options { max-height: 240px; overflow-y: auto; position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1.5px solid var(--beige-border); border-radius: 0 0 5px 5px; z-index: 20; box-shadow: 0 6px 16px rgba(0,0,0,0.12); display: none; margin-top: 2px; }
+.phone-option { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: 0.15s; }
+.phone-option:hover { background: #f8fafc; }
+.phone-option img { width: 20px; height: 14px; object-fit: contain; border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+.phone-option .code { font-weight: 600; min-width: 35px; color: #334155; }
+.phone-option .country { color: #475569; font-size: 0.85rem; }
+.phone-display { border: 1.5px solid var(--beige-border); border-radius: 5px; padding: 9px 10px; background: #fff; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; user-select: none; height: 42px; box-sizing: border-box; }
+
+/* Documentos */
+.doc-item { background: #fff; border: 1px solid var(--beige-border); border-radius: 6px; padding: 12px; margin-bottom: 10px; }
+.doc-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.doc-header label { font-weight: 600; color: var(--primary); margin: 0; flex: 1; }
+.doc-toggle { display: flex; align-items: center; gap: 8px; }
+.doc-toggle label { font-weight: 500; font-size: 0.85rem; margin: 0; }
+.doc-upload-area { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--beige-border); display: none; }
+.doc-upload-area.active { display: block; }
+.doc-upload-area input[type="file"] { margin-bottom: 8px; padding: 8px; background: #f8fafc; border-radius: 4px; width: 100%; border: 1px solid var(--beige-border); }
+.file-loaded { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #dbeafe; border: 1px solid #93c5fd; border-radius: 6px; margin-top: 8px; font-size: 0.85rem; color: #1e40af; font-weight: 600; }
+.file-loaded .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-loaded .btn-remove { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.75rem; font-weight: 600; }
+.btn-add-file { padding: 6px 14px; background: var(--secondary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-top: 6px; font-weight: 600; }
+.file-count { font-size: 0.75rem; color: #64748b; margin-top: 4px; font-weight: 600; }
+.file-item-multiple { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #f8fafc; border-radius: 4px; margin-bottom: 4px; font-size: 0.85rem; border: 1px solid #e2e8f0; }
+.file-item-multiple .file-actions { display: flex; gap: 4px; }
+.file-item-multiple button { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.75rem; }
+
+.loading-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255, 255, 255, 0.9); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 9999; backdrop-filter: blur(4px); }
+.loading-overlay.active { display: flex; }
+.spinner { width: 50px; height: 50px; border: 5px solid #e2e8f0; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.loading-text { font-size: 1.1rem; font-weight: 600; color: var(--primary); text-align: center; }
+
+@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
 </style>
 
-<div class="denuncias-card">
-    <h3>📝 Registrar Denuncia</h3>
-    <p style="color:#64748b; padding: 30px; text-align: center;">
-        🚧 <strong>Módulo en desarrollo</strong><br>
-        Este módulo permitirá registrar denuncias ciudadanas con todos los datos del denunciante, denunciado y hechos ocurridos.
-    </p>
+<div class="card">
+<h3>📝 Registro de Denuncia</h3>
+<form id="form-reg-denuncias" class="registro-form" novalidate>
+
+<fieldset>
+<legend>📅 Fecha y Estación</legend>
+<div class="form-grid">
+<div class="form-group">
+<label>Fecha y Hora</label>
+<input type="text" id="d_fecha_hora" readonly style="background: #f1f5f9; cursor: not-allowed;">
+</div>
+<div class="form-group" style="grid-column: span 2;">
+<label>Estación Policial *</label>
+<select id="d_estacion" required>
+<option value="">Seleccione estación...</option>
+<option value="EPM MARACAIBO">EPM MARACAIBO</option>
+<option value="EPM SAN FRANCISCO">EPM SAN FRANCISCO</option>
+<option value="EPM LA CAÑADA">EPM LA CAÑADA</option>
+<option value="EPM ESTACION POLICIAL JESUS E. LOSADA">EPM ESTACION POLICIAL JESUS E. LOSADA</option>
+<option value="EPP CRISTO DE ARANZA">EPP CRISTO DE ARANZA</option>
+<option value="EPP LUIS HURTADO">EPP LUIS HURTADO</option>
+<option value="EPP DAGNINO">EPP DAGNINO</option>
+<option value="EPP OLEGARIO VILLALOBOS">EPP OLEGARIO VILLALOBOS</option>
+<option value="EPP CHIQUINQUIRA">EPP CHIQUINQUIRA</option>
+<option value="EPP FRANCISCO EUGENIO">EPP FRANCISCO EUGENIO</option>
+<option value="EPP CARACCIOLO">EPP CARACCIOLO</option>
+<option value="EPP IDELFONSO">EPP IDELFONSO</option>
+<option value="EPP VENANCIO PULGAR">EPP VENANCIO PULGAR</option>
+<option value="EPP COQUIVACOA-ZAPARA">EPP COQUIVACOA-ZAPARA</option>
+<option value="EPP RAUL LEONI">EPP RAUL LEONI</option>
+<option value="EPP ANTONIO BORJAS ROMERO">EPP ANTONIO BORJAS ROMERO</option>
+<option value="EPP JUANA DE AVILA">EPP JUANA DE AVILA</option>
+<option value="EPP SAN ISIDRO">EPP SAN ISIDRO</option>
+<option value="EPP CASIQUE MARA">EPP CASIQUE MARA</option>
+<option value="EPP BOLIVAR">EPP BOLIVAR</option>
+<option value="EPP EL BAJO">EPP EL BAJO</option>
+<option value="EPP DOMITILA">EPP DOMITILA</option>
+<option value="EPP CORTIJOS">EPP CORTIJOS</option>
+<option value="EPP MARCIAL HERNANDEZ">EPP MARCIAL HERNANDEZ</option>
+<option value="EPP POTRERITO">EPP POTRERITO</option>
+<option value="EPP ANDRES BELLO">EPP ANDRES BELLO</option>
+<option value="EPP SANTA LUCIA">EPP SANTA LUCIA</option>
+</select>
+</div>
+</div>
+</fieldset>
+
+<fieldset>
+<legend>👤 Datos del Denunciante</legend>
+<div class="form-grid">
+<div class="form-group"><label>Primer Nombre *</label><input type="text" id="d_nombre1" required></div>
+<div class="form-group"><label>Segundo Nombre</label><input type="text" id="d_nombre2"></div>
+<div class="form-group"><label>Primer Apellido *</label><input type="text" id="d_apellido1" required></div>
+<div class="form-group"><label>Segundo Apellido</label><input type="text" id="d_apellido2"></div>
+</div>
+
+<div class="form-grid" style="margin-top: 14px;">
+<div class="form-group" style="grid-column: span 2;">
+<label>Teléfono</label>
+<div style="display: flex; gap: 10px; align-items: center;">
+<div class="phone-dropdown-wrapper" style="width: 210px; flex-shrink: 0; position: relative;">
+<select id="d_tlf_pais" style="position: absolute; opacity: 0; pointer-events: none; width: 100%; height: 100%; z-index: 1;">
+<option value="">--</option>
+<option value="+58">Venezuela</option>
+<option value="+1">Estados Unidos</option>
+<option value="+57">Colombia</option>
+<option value="+52">México</option>
+<option value="+34">España</option>
+</select>
+<div class="phone-display">
+<img id="d-tlf-flag-img" src="https://flagcdn.com/w20/xx.png" style="width: 18px; height: 13px; object-fit: contain; border-radius: 2px;">
+<span id="d-tlf-code-text" style="font-weight: 600; min-width: 30px;">+XX</span>
+<span style="color: #cbd5e1;">|</span>
+<span id="d-tlf-country-text" style="color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.8rem;">País</span>
+<span style="margin-left: auto; font-size: 0.5rem; color: #94a3b8;">▼</span>
+</div>
+<div class="phone-options" style="display: none;"></div>
+</div>
+<input type="text" id="d_tlf_num" placeholder="Número de teléfono" style="flex: 1;">
+</div>
+</div>
+<div class="form-group" style="grid-column: span 2;">
+<label>Dirección</label>
+<input type="text" id="d_direccion" placeholder="Dirección completa">
+</div>
+</div>
+</fieldset>
+
+<fieldset>
+<legend>📄 Documentos Únicos (PDF)</legend>
+<p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Active el interruptor para cargar cada documento.</p>
+<div id="docs-unicos-container"></div>
+</fieldset>
+
+<fieldset>
+<legend>📁 Documentos Múltiples (PDF)</legend>
+<p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Puede cargar hasta 10 archivos por categoría.</p>
+<div id="docs-multiples-container"></div>
+</fieldset>
+
+<fieldset>
+<legend>📝 Observaciones</legend>
+<textarea id="d_observaciones" rows="4" placeholder="Detalles adicionales de la denuncia..."></textarea>
+</fieldset>
+
+<button type="submit" class="btn-submit">✅ Registrar Denuncia</button>
+<div id="msg-reg-denuncias" class="msg"></div>
+</form>
+</div>
+
+<div id="loading-overlay" class="loading-overlay">
+<div class="spinner"></div>
+<div class="loading-text">⏳ Registrando denuncia...</div>
 </div>
