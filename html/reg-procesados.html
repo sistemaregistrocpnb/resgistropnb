@@ -57,8 +57,8 @@
 .observaciones-section { background: #fef3c7; border: 2px solid #fcd34d; border-radius: 8px; padding: 16px; margin-top: 20px; }
 .observaciones-section legend { color: #92400e; font-size: 1rem; }
 .observaciones-section textarea { background: #fffbeb; border: 1px solid #fcd34d; min-height: 80px; }
-@media (max-width: 600px) { .form-grid, .search-row { grid-template-columns: 1fr; flex-direction: column; } }
-    /* Overlay de carga para bloquear la pantalla */
+
+/* ✅ OVERLAY DE CARGA (NUEVO) */
 .loading-overlay {
   position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
   background: rgba(255, 255, 255, 0.9);
@@ -74,89 +74,84 @@
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 .loading-text { font-size: 1.1rem; font-weight: 600; color: var(--primary); text-align: center; }
 .loading-text small { font-weight: 400; color: #64748b; font-size: 0.9rem; display: block; margin-top: 5px; }
+
+@media (max-width: 600px) { .form-grid, .search-row { grid-template-columns: 1fr; flex-direction: column; } }
 </style>
 
 <div class="card">
-    <h3>⚖️ Registrar Procesado</h3>
+  <h3>⚖️ Registrar Procesado</h3>
+  
+  <div class="search-box">
+    <label>🔍 Buscar en todos los registros por Cédula, Placa, Serial de Carrocería o Motor:</label>
+    <div class="search-row">
+      <input type="text" id="proc_busqueda_input" placeholder="Ej: 12345678 o AA123BC..." maxlength="20">
+      <button id="proc_btn_buscar" class="btn-search">🔍 Buscar</button>
+    </div>
+    <div id="proc_msg_busqueda" class="msg"></div>
+  </div>
 
-    <!-- BÚSQUEDA MULTI-TABLA -->
-    <div class="search-box">
-        <label>🔍 Buscar en todos los registros por Cédula, Placa, Serial de Carrocería o Motor:</label>
-        <div class="search-row">
-            <input type="text" id="proc_busqueda_input" placeholder="Ej: 12345678 o AA123BC..." maxlength="20">
-            <button id="proc_btn_buscar" class="btn-search">🔍 Buscar</button>
+  <div id="selection-panel">
+    <div class="selection-header">
+      <h4>🔎 Múltiples coincidencias encontradas</h4>
+      <p>Se encontraron <strong><span id="result-count">0</span> registros</strong>. Seleccione cuál procesar:</p>
+    </div>
+    <div id="selection-list"></div>
+    <button id="btn-cancelar-seleccion" class="btn-cancel-search">Cancelar búsqueda</button>
+  </div>
+
+  <div id="datos-encontrados-panel" class="datos-encontrados" style="display: none;">
+    <div class="datos-encontrados-header">
+      <h4>📋 Registro a Procesar</h4>
+      <span id="tipo-vehiculo-badge" class="tipo-badge" style="display: none;"></span>
+    </div>
+    <div id="datos-contenido"></div>
+  </div>
+
+  <form id="form-reg-procesados" class="registro-form" novalidate style="display: none;">
+    <input type="hidden" id="proc_tabla_origen">
+    <input type="hidden" id="proc_registro_id">
+    <input type="hidden" id="proc_tipo_registro">
+    <input type="hidden" id="proc_identificador">
+
+    <fieldset>
+      <legend>⚖️ Tipo de Delito</legend>
+      <div class="form-grid">
+        <div class="form-group campo-obligatorio" style="grid-column: span 2;">
+          <label>Tipo de Delito</label>
+          <input type="text" id="proc_tipo_delito" placeholder="Ej: Robo agravado, Homicidio, Secuestro..." required>
         </div>
-        <div id="proc_msg_busqueda" class="msg"></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>📄 Documentos del Proceso (PDF)</legend>
+      <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Seleccione "Sí" para habilitar la carga.</p>
+      <div id="docs-unicos-container"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>📁 Documentos Múltiples (1 a 10 archivos PDF cada uno)</legend>
+      <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Mínimo 1, máximo 10 por categoría.</p>
+      <div id="docs-multiples-container"></div>
+    </fieldset>
+
+    <div class="observaciones-section">
+      <fieldset style="background: transparent; border: none; padding: 0; margin: 0;">
+        <legend>📝 Observaciones (Opcional)</legend>
+        <textarea id="proc_observaciones" rows="4" placeholder="Notas adicionales sobre el proceso..."></textarea>
+      </fieldset>
     </div>
 
-    <!-- PANEL DE SELECCIÓN -->
-    <div id="selection-panel">
-        <div class="selection-header">
-            <h4>🔎 Múltiples coincidencias encontradas</h4>
-            <p>Se encontraron <strong><span id="result-count">0</span> registros</strong>. Seleccione cuál procesar:</p>
-        </div>
-        <div id="selection-list"></div>
-        <button id="btn-cancelar-seleccion" class="btn-cancel-search"> Cancelar búsqueda</button>
-    </div>
+    <button type="submit" class="btn-submit">💾 Registrar Procesado y Cambiar Estatus</button>
+    <div id="msg-reg-procesados" class="msg"></div>
+  </form>
+</div>
 
-    <!-- DATOS ENCONTRADOS -->
-    <div id="datos-encontrados-panel" class="datos-encontrados" style="display: none;">
-        <div class="datos-encontrados-header">
-            <h4>📋 Registro a Procesar</h4>
-            <span id="tipo-vehiculo-badge" class="tipo-badge" style="display: none;"></span>
-        </div>
-        <div id="datos-contenido"></div>
-    </div>
-
-    <!-- FORMULARIO -->
-    <form id="form-reg-procesados" class="registro-form" novalidate style="display: none;">
-        <input type="hidden" id="proc_tabla_origen">
-        <input type="hidden" id="proc_registro_id">
-        <input type="hidden" id="proc_tipo_registro">
-        <input type="hidden" id="proc_identificador">
-
-        <!-- TIPO DE DELITO (OBLIGATORIO) -->
-        <fieldset>
-            <legend>⚖️ Tipo de Delito</legend>
-            <div class="form-grid">
-                <div class="form-group campo-obligatorio" style="grid-column: span 2;">
-                    <label>Tipo de Delito</label>
-                    <input type="text" id="proc_tipo_delito" placeholder="Ej: Robo agravado, Homicidio, Secuestro..." required>
-                </div>
-            </div>
-        </fieldset>
-
-        <!-- DOCUMENTOS ÚNICOS -->
-        <fieldset>
-            <legend>📄 Documentos del Proceso (PDF)</legend>
-            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Seleccione "Sí" para habilitar la carga.</p>
-            <div id="docs-unicos-container"></div>
-        </fieldset>
-
-        <!-- DOCUMENTOS MÚLTIPLES -->
-        <fieldset>
-            <legend>📁 Documentos Múltiples (1 a 10 archivos PDF cada uno)</legend>
-            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Mínimo 1, máximo 10 por categoría.</p>
-            <div id="docs-multiples-container"></div>
-        </fieldset>
-
-        <!-- OBSERVACIONES -->
-        <div class="observaciones-section">
-            <fieldset style="background: transparent; border: none; padding: 0; margin: 0;">
-                <legend>📝 Observaciones (Opcional)</legend>
-                <textarea id="proc_observaciones" rows="4" placeholder="Notas adicionales sobre el proceso..."></textarea>
-            </fieldset>
-        </div>
-
-        <button type="submit" class="btn-submit">💾 Registrar Procesado y Cambiar Estatus</button>
-        <div id="msg-reg-procesados" class="msg"></div>
-    </form>
-    <!-- OVERLAY DE CARGA (Bloquea la pantalla) -->
+<!-- ✅ OVERLAY DE CARGA (Bloquea la pantalla) -->
 <div id="loading-overlay" class="loading-overlay">
   <div class="spinner"></div>
   <div class="loading-text">
     ⏳ Procesando y subiendo archivos...
     <small>Por favor, no cierre ni recargue esta ventana.</small>
   </div>
-</div>
 </div>
