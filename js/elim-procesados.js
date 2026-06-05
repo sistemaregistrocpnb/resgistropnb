@@ -139,28 +139,40 @@ window.initElimProcesados = function() {
         closeModal();
     }
 
+    // 🔹 Eliminar (Activa → Eliminados)
     async function eliminarRegistro() {
-        btnEliminar.disabled = true; btnEliminar.textContent = '⏳ Procesando...'; hideMsgElim();
+        btnEliminar.disabled = true;
+        btnEliminar.textContent = '⏳ Procesando...';
+        hideMsgElim();
+
         try {
             const { data: { user } } = await window.supabaseClient.auth.getUser();
             const eliminadoPor = user?.email || sessionStorage.getItem('pnb_user_email') || 'usuario@sistema';
             
+            // ✅ MAPEO CORREGIDO: Sin 'usuario_registro'
             const dataToArchive = {
-                id_original: currentId, eliminado_por: eliminadoPor,
-                tabla_origen: currentData.tabla_origen, registro_id: currentData.registro_id,
-                identificador_principal: currentData.identificador_principal, tipo_delito: currentData.tipo_delito,
-                observaciones: currentData.observaciones, datos_originales: currentData.datos_originales,
-                tipo_registro: currentData.tipo_registro || 'procesado', // ✅ Campos obligatorios
+                id_original: currentId,
+                eliminado_por: eliminadoPor,
+                tabla_origen: currentData.tabla_origen,
+                registro_id: currentData.registro_id,
+                identificador_principal: currentData.identificador_principal,
+                tipo_delito: currentData.tipo_delito,
+                observaciones: currentData.observaciones,
+                datos_originales: currentData.datos_originales,
+                tipo_registro: currentData.tipo_registro || 'procesado',
                 estatus: currentData.estatus || 'activo',
                 fecha_procesamiento: currentData.fecha_procesamiento || currentData.created_at,
-                usuario_registro: currentData.usuario_registro || eliminadoPor,
-                portada: currentData.portada, oficio_remision: currentData.oficio_remision, acta_denuncia: currentData.acta_denuncia,
-                datos_filiatorios: currentData.datos_filiatorios, acta_policial: currentData.acta_policial, derechos_imputado: currentData.derechos_imputado,
+                // ❌ ELIMINADO: usuario_registro: currentData.usuario_registro || eliminadoPor,
+                
+                portada: currentData.portada, oficio_remision: currentData.oficio_remision,
+                acta_denuncia: currentData.acta_denuncia, datos_filiatorios: currentData.datos_filiatorios,
+                acta_policial: currentData.acta_policial, derechos_imputado: currentData.derechos_imputado,
                 evaluacion_medica: currentData.evaluacion_medica, identificacion_cedula: currentData.identificacion_cedula,
                 solicitud_examen_forense: currentData.solicitud_examen_forense, resultados_examen_forense: currentData.resultados_examen_forense,
                 asistencia_comdepro: currentData.asistencia_comdepro, remision_estacionamiento: currentData.remision_estacionamiento,
                 planilla_pvr: currentData.planilla_pvr, otros_documentos: currentData.otros_documentos,
-                entrevista: currentData.entrevista, cadena_custodia: currentData.cadena_custodia, inspecciones_tecnicas: currentData.inspecciones_tecnicas,
+                entrevista: currentData.entrevista, cadena_custodia: currentData.cadena_custodia,
+                inspecciones_tecnicas: currentData.inspecciones_tecnicas,
                 created_at_original: currentData.created_at, updated_at_original: currentData.updated_at
             };
 
@@ -180,28 +192,40 @@ window.initElimProcesados = function() {
             console.error('💥 Error crítico:', err);
             showMsgElim('❌ ' + err.message, 'error');
         } finally {
-            btnEliminar.disabled = false; btnEliminar.textContent = '🗑️ Eliminar Procesado del Sistema';
+            btnEliminar.disabled = false;
+            btnEliminar.textContent = '🗑️ Eliminar Procesado del Sistema';
         }
     }
 
+    // 🔹 Reintegrar (Eliminados → Activa)
     async function reintegrarRegistro() {
-        btnReintegrar.disabled = true; btnReintegrar.textContent = '⏳ Procesando...'; hideMsgElim();
+        btnReintegrar.disabled = true;
+        btnReintegrar.textContent = '⏳ Procesando...';
+        hideMsgElim();
+
         try {
+            // ✅ MAPEO CORREGIDO: Sin 'usuario_registro'
             const dataToRestore = {
-                tabla_origen: currentData.tabla_origen, registro_id: currentData.registro_id,
-                identificador_principal: currentData.identificador_principal, tipo_delito: currentData.tipo_delito,
-                observaciones: currentData.observaciones, datos_originales: currentData.datos_originales,
-                tipo_registro: currentData.tipo_registro || 'procesado', // ✅ Campos obligatorios
+                tabla_origen: currentData.tabla_origen,
+                registro_id: currentData.registro_id,
+                identificador_principal: currentData.identificador_principal,
+                tipo_delito: currentData.tipo_delito,
+                observaciones: currentData.observaciones,
+                datos_originales: currentData.datos_originales,
+                tipo_registro: currentData.tipo_registro || 'procesado',
                 estatus: currentData.estatus || 'activo',
                 fecha_procesamiento: currentData.fecha_procesamiento || currentData.created_at_original || new Date().toISOString(),
-                usuario_registro: currentData.usuario_registro || 'sistema',
-                portada: currentData.portada, oficio_remision: currentData.oficio_remision, acta_denuncia: currentData.acta_denuncia,
-                datos_filiatorios: currentData.datos_filiatorios, acta_policial: currentData.acta_policial, derechos_imputado: currentData.derechos_imputado,
+                // ❌ ELIMINADO: usuario_registro: currentData.usuario_registro || 'sistema',
+                
+                portada: currentData.portada, oficio_remision: currentData.oficio_remision,
+                acta_denuncia: currentData.acta_denuncia, datos_filiatorios: currentData.datos_filiatorios,
+                acta_policial: currentData.acta_policial, derechos_imputado: currentData.derechos_imputado,
                 evaluacion_medica: currentData.evaluacion_medica, identificacion_cedula: currentData.identificacion_cedula,
                 solicitud_examen_forense: currentData.solicitud_examen_forense, resultados_examen_forense: currentData.resultados_examen_forense,
                 asistencia_comdepro: currentData.asistencia_comdepro, remision_estacionamiento: currentData.remision_estacionamiento,
                 planilla_pvr: currentData.planilla_pvr, otros_documentos: currentData.otros_documentos,
-                entrevista: currentData.entrevista, cadena_custodia: currentData.cadena_custodia, inspecciones_tecnicas: currentData.inspecciones_tecnicas
+                entrevista: currentData.entrevista, cadena_custodia: currentData.cadena_custodia,
+                inspecciones_tecnicas: currentData.inspecciones_tecnicas
             };
 
             const { error: insErr } = await window.supabaseClient.from('registro_procesados').insert([dataToRestore]);
@@ -211,13 +235,15 @@ window.initElimProcesados = function() {
             setTimeout(() => { dataContainer.style.display = 'none'; buscarInput.value = ''; hideMsg(msgBuscar); hideMsgElim(); }, 4000);
         } catch (err) {
             console.error('Error reintegrando:', err);
-            let msg = err.message.includes('23505') || err.message.includes('unique') ? '❌ Ya existe un registro activo con este ID.' : '❌ ' + err.message;
+            let msg = err.message.includes('23505') || err.message.includes('unique') 
+                ? '❌ Ya existe un registro activo con este ID.' 
+                : '❌ ' + err.message;
             showMsgElim(msg, 'error');
         } finally {
-            btnReintegrar.disabled = false; btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo';
+            btnReintegrar.disabled = false;
+            btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo';
         }
     }
-
     buscarBtn.addEventListener('click', buscarProcesado);
     buscarInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); buscarProcesado(); } });
 
