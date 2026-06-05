@@ -1,6 +1,9 @@
 window.initRegProcesados = function() {
   console.log("✅ Módulo reg-procesados.js cargado correctamente.");
   
+  // ==========================================
+  // LISTAS DE DOCUMENTOS (Con mapeo exacto a las columnas de tu CSV)
+  // ==========================================
   const docsUnicos = [
     { id: 'portada', label: '📑 Portada', dbColumn: 'portada' },
     { id: 'oficio_remision', label: '📨 Oficio de Remisión', dbColumn: 'oficio_remision' },
@@ -89,14 +92,7 @@ window.initRegProcesados = function() {
     const statusContainer = document.getElementById(`status-${docId}`);
     if (!statusContainer) return;
     if (input.files && input.files[0]) {
-      const file = input.files[0];
-      statusContainer.innerHTML = `
-        <div class="file-loaded">
-          <span>✅</span>
-          <span class="file-name">${file.name}</span>
-          <button type="button" class="btn-remove" onclick="removerArchivo('${docId}')">❌ Quitar</button>
-        </div>
-      `;
+      statusContainer.innerHTML = `<div class="file-loaded"><span>✅</span><span class="file-name">${input.files[0].name}</span><button type="button" class="btn-remove" onclick="removerArchivo('${docId}')">❌ Quitar</button></div>`;
     } else {
       statusContainer.innerHTML = '';
     }
@@ -115,10 +111,7 @@ window.initRegProcesados = function() {
     if (!input || !input.files || input.files.length === 0) return;
     
     const disponibles = max - archivosMultiples[campo].length;
-    if (disponibles <= 0) {
-      alert(`Máximo ${max} archivos permitidos`);
-      return;
-    }
+    if (disponibles <= 0) { alert(`Máximo ${max} archivos permitidos`); return; }
 
     let agregados = 0;
     const archivosAgregados = [];
@@ -144,7 +137,6 @@ window.initRegProcesados = function() {
     const list = document.getElementById(`list-${campo}`);
     const count = document.getElementById(`count-${campo}`);
     if (!list || !count) return;
-    
     list.innerHTML = '';
     archivosMultiples[campo].forEach((file, index) => {
       const item = document.createElement('div');
@@ -174,7 +166,6 @@ window.initRegProcesados = function() {
   const datosContenido = document.getElementById('datos-contenido');
   const form = document.getElementById('form-reg-procesados');
   const msgForm = document.getElementById('msg-reg-procesados');
-  
   let registroSeleccionado = null;
 
   const mostrarMsg = (el, txt, type) => {
@@ -197,51 +188,25 @@ window.initRegProcesados = function() {
   async function buscarEnTodasLasTablas(valor) {
     const resultados = [];
     const val = valor.trim().toUpperCase();
-    
     try {
       const { data: personas, error: errPers } = await window.supabaseClient.from('registro_personas').select('*').eq('cedula', val).eq('estatus', 'Verificación');
       if (!errPers && personas) {
-        personas.forEach(reg => {
-          resultados.push({
-            origen: 'registro_personas', id: reg.id, tipo: '👤 Persona', icono: '👤', color: '#7c3aed', colorBg: '#f5f3ff', tipoRegistro: 'persona', datos: reg,
-            linea1: `${reg.primer_nombre || ''} ${reg.primer_apellido || ''} | C.I: ${reg.cedula || '-'}`,
-            linea2: `Sexo: ${reg.sexo || '-'} | Edad: ${reg.edad || '-'}`, linea3: `Estación: ${reg.estacion_policial || '-'}`, encontrado_por: ['Cédula']
-          });
-        });
+        personas.forEach(reg => resultados.push({ origen: 'registro_personas', id: reg.id, tipo: '👤 Persona', icono: '👤', color: '#7c3aed', colorBg: '#f5f3ff', tipoRegistro: 'persona', datos: reg, linea1: `${reg.primer_nombre || ''} ${reg.primer_apellido || ''} | C.I: ${reg.cedula || '-'}`, linea2: `Sexo: ${reg.sexo || '-'} | Edad: ${reg.edad || '-'}`, linea3: `Estación: ${reg.estacion_policial || '-'}`, encontrado_por: ['Cédula'] }));
       }
 
       const { data: motos, error: errMoto } = await window.supabaseClient.from('registro_motos').select('*').or(`placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`).eq('estatus', 'Verificación');
       if (!errMoto && motos) {
-        motos.forEach(reg => {
-          resultados.push({
-            origen: 'registro_motos', id: reg.id, tipo: '🏍️ Motocicleta', icono: '🏍️', color: '#dc2626', colorBg: '#fef2f2', tipoRegistro: 'moto', datos: reg,
-            linea1: `Placa: ${reg.placa || '-'}`, linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`, linea3: `Serial: ${reg.serial_carroceria || '-'}`,
-            encontrado_por: detectarCoincidencias(reg, val, 'registro_motos')
-          });
-        });
+        motos.forEach(reg => resultados.push({ origen: 'registro_motos', id: reg.id, tipo: '🏍️ Motocicleta', icono: '🏍️', color: '#dc2626', colorBg: '#fef2f2', tipoRegistro: 'moto', datos: reg, linea1: `Placa: ${reg.placa || '-'}`, linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`, linea3: `Serial: ${reg.serial_carroceria || '-'}`, encontrado_por: detectarCoincidencias(reg, val, 'registro_motos') }));
       }
 
       const { data: autos, error: errAuto } = await window.supabaseClient.from('registro_automoviles').select('*').or(`placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`).eq('estatus', 'Verificación');
       if (!errAuto && autos) {
-        autos.forEach(reg => {
-          resultados.push({
-            origen: 'registro_automoviles', id: reg.id, tipo: '🚙 Automóvil', icono: '🚙', color: '#059669', colorBg: '#ecfdf5', tipoRegistro: 'auto', datos: reg,
-            linea1: `Placa: ${reg.placa || '-'}`, linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`, linea3: `Serial: ${reg.serial_carroceria || '-'}`,
-            encontrado_por: detectarCoincidencias(reg, val, 'registro_automoviles')
-          });
-        });
+        autos.forEach(reg => resultados.push({ origen: 'registro_automoviles', id: reg.id, tipo: '🚙 Automóvil', icono: '🚙', color: '#059669', colorBg: '#ecfdf5', tipoRegistro: 'auto', datos: reg, linea1: `Placa: ${reg.placa || '-'}`, linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`, linea3: `Serial: ${reg.serial_carroceria || '-'}`, encontrado_por: detectarCoincidencias(reg, val, 'registro_automoviles') }));
       }
 
       const { data: vinculados, error: errVinc } = await window.supabaseClient.from('registro_vinculado').select('*').or(`cedula.eq.${val},placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`).eq('estatus', 'Verificación');
       if (!errVinc && vinculados) {
-        vinculados.forEach(reg => {
-          resultados.push({
-            origen: 'registro_vinculado', id: reg.id, tipo: '🔗 Persona + Vehículo', icono: '🔗', color: '#002b5c', colorBg: '#eff6ff', tipoRegistro: 'vinculado', datos: reg,
-            linea1: `👤 ${reg.primer_nombre || ''} ${reg.primer_apellido || ''} | C.I: ${reg.cedula || '-'}`,
-            linea2: `🚗 ${reg.tipo_vehiculo || ''} ${reg.marca_vehiculo || ''} | Placa: ${reg.placa || '-'}`, linea3: `🏛️ ${reg.estacion_policial || '-'}`,
-            encontrado_por: detectarCoincidencias(reg, val, 'registro_vinculado')
-          });
-        });
+        vinculados.forEach(reg => resultados.push({ origen: 'registro_vinculado', id: reg.id, tipo: '🔗 Persona + Vehículo', icono: '🔗', color: '#002b5c', colorBg: '#eff6ff', tipoRegistro: 'vinculado', datos: reg, linea1: `👤 ${reg.primer_nombre || ''} ${reg.primer_apellido || ''} | C.I: ${reg.cedula || '-'}`, linea2: `🚗 ${reg.tipo_vehiculo || ''} ${reg.marca_vehiculo || ''} | Placa: ${reg.placa || '-'}`, linea3: `🏛️ ${reg.estacion_policial || '-'}`, encontrado_por: detectarCoincidencias(reg, val, 'registro_vinculado') }));
       }
       return resultados;
     } catch (err) {
@@ -268,11 +233,9 @@ window.initRegProcesados = function() {
       `;
       selectionList.appendChild(card);
     });
-
     document.querySelectorAll('.btn-seleccionar').forEach(btn => {
       btn.addEventListener('click', (e) => seleccionarRegistro(resultados[parseInt(e.target.dataset.index)]));
     });
-
     selectionPanel.style.display = 'block';
     form.style.display = 'none';
     datosPanel.style.display = 'none';
@@ -351,7 +314,6 @@ window.initRegProcesados = function() {
         btnBuscar.disabled = false;
       }
     });
-
     inputBusqueda.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); btnBuscar.click(); } });
   }
 
@@ -364,6 +326,9 @@ window.initRegProcesados = function() {
     });
   }
 
+  // ==========================================
+  // ENVÍO DEL FORMULARIO (BLINDADO)
+  // ==========================================
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -425,7 +390,7 @@ window.initRegProcesados = function() {
         const dataOriginal = registroSeleccionado.datos;
         const documentosAdjuntos = {};
 
-        // ✅ CONSTRUCCIÓN SEGURA: SOLO COLUMNAS QUE EXISTEN EN EL CSV
+        // ✅ CONSTRUCCIÓN SEGURA: SOLO COLUMNAS QUE EXISTEN EN TU CSV
         const dataToInsert = {
           tabla_origen: registroSeleccionado.origen,
           registro_id: registroSeleccionado.id,
@@ -466,6 +431,8 @@ window.initRegProcesados = function() {
 
         // Guardamos TODO el registro original + los documentos en el campo JSON
         dataToInsert.datos_originales = { ...dataOriginal, documentos_adjuntos: documentosAdjuntos };
+
+        console.log("📦 Datos finales a insertar en BD:", dataToInsert);
 
         const { error: insErr } = await window.supabaseClient.from('registro_procesados').insert([dataToInsert]);
         if (insErr) throw new Error(`Error al registrar: ${insErr.message}`);
