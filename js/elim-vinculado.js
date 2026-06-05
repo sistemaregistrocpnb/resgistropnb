@@ -1,5 +1,8 @@
+// ✅ MARCA DE VERIFICACIÓN: Si ves este mensaje en la consola, el archivo se actualizó correctamente.
+console.log("✅ VERSIÓN FINAL: elim-vinculados.js cargado (SIN AWAIT ERRÓNEO)");
+
 window.initElimVinculados = function() {
-  console.log("✅ Módulo elim-vinculados.js cargado correctamente.");
+  console.log("✅ Módulo initElimVinculados ejecutándose...");
 
   // 🔹 Referencias DOM
   const buscarInput = document.getElementById('buscar-input-elim-vinc');
@@ -90,7 +93,7 @@ window.initElimVinculados = function() {
   }
 
   // ==========================================
-  // 🔍 BÚSQUEDA MULTI-TABLA Y DETECCIÓN CRUZADA
+  // 🔍 BÚSQUEDA MULTI-TABLA (ASYNC)
   // ==========================================
   function detectarCoincidencias(reg, val) {
     const campos = [];
@@ -136,7 +139,6 @@ window.initElimVinculados = function() {
           });
         });
       }
-
       return resultados;
     } catch (err) {
       console.error('Error en búsqueda:', err);
@@ -144,16 +146,13 @@ window.initElimVinculados = function() {
     }
   }
 
-  // ✅ FUNCIÓN SIN 'AWAIT' (Infalible contra errores de sintaxis)
+  // ✅ ESTA FUNCIÓN NO TIENE NINGÚN 'AWAIT'. ES 100% SÍNCRONA.
   function mostrarPanelSeleccion(resultados, valorBuscado) {
     selectionList.innerHTML = '';
     resultCount.textContent = resultados.length;
     
-    // Verificamos alerta cruzada usando SOLO los datos ya obtenidos en buscarEnTodasLasTablas
     const tieneVinculado = resultados.some(r => r.origen === 'registro_vinculado' || r.origen === 'eliminados_vinculados');
     
-    // Opcional: si quieres verificar si también existe en motos/autos, puedes hacerlo aquí, 
-    // pero para evitar cualquier 'await', nos basamos en que el operador ya ve los resultados.
     if (crossWarning) {
       if (tieneVinculado && resultados.length > 1) {
         crossWarning.innerHTML = `<strong>⚠️ ALERTA CRUZADA:</strong> Se encontraron múltiples registros. Verifique que no haya duplicidad con vehículos individuales.`;
@@ -208,7 +207,7 @@ window.initElimVinculados = function() {
     if (crossWarning) crossWarning.style.display = 'none';
   }
 
-  // 🔍 LISTENER PRINCIPAL DE BÚSQUEDA
+  // 🔍 LISTENER PRINCIPAL DE BÚSQUEDA (ASYNC)
   if (buscarBtn && buscarInput) {
     buscarBtn.addEventListener('click', async () => {
       const val = buscarInput.value.trim();
@@ -284,7 +283,7 @@ window.initElimVinculados = function() {
   if (btnModalYes) btnModalYes.addEventListener('click', ejecutarAccion);
 
   // ==========================================
-  // 🔹 ELIMINAR (Activa → Archivada)
+  // 🔹 ELIMINAR (ASYNC)
   // ==========================================
   async function eliminarRegistro() {
     if (!currentData) return;
@@ -353,7 +352,7 @@ window.initElimVinculados = function() {
       const delRes = await window.supabaseClient.from('registro_vinculado').delete().eq('id', currentData.id);
       if (delRes.error) throw delRes.error;
       
-      showMsgElim('✅ Registro vinculado eliminado y archivado correctamente como respaldo histórico.', 'success');
+      showMsgElim('✅ Registro vinculado eliminado y archivado correctamente.', 'success');
       setTimeout(() => {
         dataContainer.style.display = 'none';
         buscarInput.value = '';
@@ -372,7 +371,7 @@ window.initElimVinculados = function() {
   }
 
   // ==========================================
-  // 🔹 REINTEGRAR (Archivada → Activa)
+  // 🔹 REINTEGRAR (ASYNC)
   // ==========================================
   async function reintegrarRegistro() {
     if (!currentData) return;
@@ -436,7 +435,7 @@ window.initElimVinculados = function() {
       const delRes = await window.supabaseClient.from('eliminados_vinculados').delete().eq('id', currentData.id);
       if (delRes.error) throw delRes.error;
       
-      showMsgElim('✅ Registro vinculado reintegrado al sistema activo exitosamente.', 'success');
+      showMsgElim('✅ Registro vinculado reintegrado al sistema activo.', 'success');
       setTimeout(() => {
         dataContainer.style.display = 'none';
         buscarInput.value = '';
@@ -448,7 +447,7 @@ window.initElimVinculados = function() {
       console.error('Error reintegrando:', err);
       let msg = 'Error al reintegrar.';
       if (err.message.includes('23505') || err.message.includes('unique') || err.message.includes('duplicate key')) {
-        msg = '❌ <strong>No se puede reintegrar:</strong> La cédula, placa o serial ya se encuentra en uso por otro registro en el sistema activo.<br><small style="color:#64748b;">Este registro eliminado se conserva en la tabla de respaldo como historial.</small>';
+        msg = '❌ <strong>No se puede reintegrar:</strong> La cédula, placa o serial ya se encuentra en uso.<br><small style="color:#64748b;">Este registro se conserva como historial.</small>';
       } else {
         msg = '❌ ' + err.message;
       }
@@ -460,19 +459,19 @@ window.initElimVinculados = function() {
   }
 
   // ==========================================
-  // 🔹 LISTENERS DE BOTONES DE ACCIÓN
+  // 🔹 LISTENERS DE BOTONES
   // ==========================================
   if (btnEliminar) {
     btnEliminar.addEventListener('click', () => {
       if (!currentData) return;
-      showModal('⚠️ Confirmar Eliminación', `¿Está seguro de eliminar este registro vinculado (C.I: ${currentData.cedula}, Placa: ${currentData.placa})? Se moverá a la tabla de respaldo histórico.`, 'delete', 'danger');
+      showModal('⚠️ Confirmar Eliminación', `¿Está seguro de eliminar este registro vinculado (C.I: ${currentData.cedula})?`, 'delete', 'danger');
     });
   }
 
   if (btnReintegrar) {
     btnReintegrar.addEventListener('click', () => {
       if (!currentData) return;
-      showModal('⚠️ Confirmar Reintegración', `¿Está seguro de reintegrar este registro vinculado (C.I: ${currentData.cedula}, Placa: ${currentData.placa}) al sistema activo?`, 'reintegrate', 'success');
+      showModal('⚠️ Confirmar Reintegración', `¿Está seguro de reintegrar este registro (C.I: ${currentData.cedula}) al sistema activo?`, 'reintegrate', 'success');
     });
   }
 
