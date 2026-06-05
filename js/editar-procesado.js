@@ -1,5 +1,5 @@
 window.initEditarProcesado = function() {
-  console.log("✅ Módulo editar-procesado.js cargado correctamente.");
+  console.log("✅ Módulo mod-procesados.js cargado correctamente.");
 
   const docsUnicos = [
     { id: 'portada', label: '📑 Portada' },
@@ -24,13 +24,12 @@ window.initEditarProcesado = function() {
     { id: 'inspecciones_tecnicas', label: '🔧 Inspecciones Técnicas', max: 10 }
   ];
 
-  // Estado global del editor
   let procesadoActual = null;
-  const archivosActuales = {}; // URLs actuales de la BD
-  const archivosNuevos = {};   // Archivos nuevos seleccionados
-  const archivosAEliminar = {}; // IDs de archivos a eliminar
-  const archivosMultiplesNuevos = {}; // Nuevos archivos múltiples por campo
-  const archivosMultiplesEliminados = {}; // URLs de archivos múltiples eliminados
+  const archivosActuales = {};
+  const archivosNuevos = {};
+  const archivosAEliminar = {};
+  const archivosMultiplesNuevos = {};
+  const archivosMultiplesEliminados = {};
 
   docsUnicos.forEach(d => {
     archivosActuales[d.id] = null;
@@ -43,9 +42,6 @@ window.initEditarProcesado = function() {
     archivosMultiplesEliminados[d.id] = [];
   });
 
-  // ==========================================
-  // REFERENCIAS DOM
-  // ==========================================
   const btnBuscar = document.getElementById('edit_btn_buscar');
   const inputBusqueda = document.getElementById('edit_busqueda_input');
   const msgBusqueda = document.getElementById('edit_msg_busqueda');
@@ -64,9 +60,6 @@ window.initEditarProcesado = function() {
     el.style.display = 'block';
   };
 
-  // ==========================================
-  // GENERAR DOCUMENTOS EN DOM
-  // ==========================================
   function generarDocsUnicos() {
     if (!contenedorUnicos) return;
     contenedorUnicos.innerHTML = '';
@@ -114,15 +107,12 @@ window.initEditarProcesado = function() {
   generarDocsUnicos();
   generarDocsMultiples();
 
-  // ==========================================
-  // FUNCIONES GLOBALES DE UI
-  // ==========================================
   window.mostrarNuevoArchivo = function(docId, input) {
     const statusContainer = document.getElementById(`status-${docId}`);
     if (!statusContainer) return;
     if (input.files && input.files[0]) {
       archivosNuevos[docId] = input.files[0];
-      archivosAEliminar[docId] = true; // Si hay uno nuevo, marcamos el viejo para eliminar
+      archivosAEliminar[docId] = true;
       statusContainer.innerHTML = `
         <div class="file-loaded">
           <span>🔄</span>
@@ -212,7 +202,6 @@ window.initEditarProcesado = function() {
     archivosAEliminar[docId] = true;
     archivosNuevos[docId] = null;
     
-    // Ocultar el bloque del archivo actual
     const currentDiv = document.getElementById(`current-${docId}`);
     if (currentDiv) currentDiv.innerHTML = '<p style="color: #dc2626; font-size: 0.85rem; margin-top: 10px;">🗑️ Archivo marcado para eliminar (se guardará al actualizar)</p>';
   };
@@ -250,38 +239,37 @@ window.initEditarProcesado = function() {
     });
   }
 
-// ==========================================
-// CARGAR PROCESADO DESDE LA BD (CORREGIDO)
-// ==========================================
-async function cargarProcesado(valor) {
-  const val = valor.trim().toUpperCase();
-  
-  // ✅ PASO 1: Buscar en columnas que SÍ existen
-  const { data: dataColumnas, error: errColumnas } = await window.supabaseClient
-    .from('registro_procesados')
-    .select('*')
-    .or(`identificador_principal.eq.${val},cedula.eq.${val}`)
-    .order('fecha_procesamiento', { ascending: false })
-    .limit(5);
-  
-  if (!errColumnas && dataColumnas && dataColumnas.length > 0) {
-    return dataColumnas;
+  // ✅ FUNCIÓN DE BÚSQUEDA CORREGIDA
+  async function cargarProcesado(valor) {
+    const val = valor.trim().toUpperCase();
+    
+    // PASO 1: Buscar en columnas que SÍ existen
+    const { data: dataColumnas, error: errColumnas } = await window.supabaseClient
+      .from('registro_procesados')
+      .select('*')
+      .or(`identificador_principal.eq.${val},cedula.eq.${val}`)
+      .order('fecha_procesamiento', { ascending: false })
+      .limit(5);
+    
+    if (!errColumnas && dataColumnas && dataColumnas.length > 0) {
+      return dataColumnas;
+    }
+    
+    // PASO 2: Buscar dentro del JSON datos_originales
+    const { data: dataJson, error: errJson } = await window.supabaseClient
+      .from('registro_procesados')
+      .select('*')
+      .or(`datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
+      .order('fecha_procesamiento', { ascending: false })
+      .limit(5);
+    
+    if (!errJson && dataJson && dataJson.length > 0) {
+      return dataJson;
+    }
+    
+    return [];
   }
-  
-  // ✅ PASO 2: Buscar dentro del JSON datos_originales (placa, serial, etc.)
-  const { data: dataJson, error: errJson } = await window.supabaseClient
-    .from('registro_procesados')
-    .select('*')
-    .or(`datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
-    .order('fecha_procesamiento', { ascending: false })
-    .limit(5);
-  
-  if (!errJson && dataJson && dataJson.length > 0) {
-    return dataJson;
-  }
-  
-  return [];
-}
+
   function mostrarDatosProcesado(proc) {
     const data = proc.datos_originales || {};
     let html = '';
@@ -304,7 +292,6 @@ async function cargarProcesado(valor) {
   }
 
   function cargarArchivosEnForm(proc) {
-    // Resetear estado
     docsUnicos.forEach(d => {
       archivosActuales[d.id] = null;
       archivosNuevos[d.id] = null;
@@ -316,14 +303,12 @@ async function cargarProcesado(valor) {
       archivosMultiplesEliminados[d.id] = [];
     });
 
-    // Cargar datos del procesado
     document.getElementById('edit_procesado_id').value = proc.id;
     document.getElementById('edit_tabla_origen').value = proc.tabla_origen;
     document.getElementById('edit_registro_id').value = proc.registro_id;
     document.getElementById('edit_tipo_delito').value = proc.tipo_delito || '';
     document.getElementById('edit_observaciones').value = proc.observaciones || '';
 
-    // Cargar documentos únicos actuales
     docsUnicos.forEach(doc => {
       const currentDiv = document.getElementById(`current-${doc.id}`);
       const url = proc[doc.id];
@@ -349,7 +334,6 @@ async function cargarProcesado(valor) {
       }
     });
 
-    // Cargar documentos múltiples actuales
     docsMultiples.forEach(doc => {
       const urls = proc[doc.id] || [];
       archivosActuales[doc.id] = Array.isArray(urls) ? urls : [];
@@ -358,50 +342,44 @@ async function cargarProcesado(valor) {
     });
   }
 
-  // ==========================================
-  // LISTENER BÚSQUEDA
-  // ==========================================
   if (btnBuscar && inputBusqueda) {
-  btnBuscar.addEventListener('click', async () => {
-    const val = inputBusqueda.value.trim();
-    if (val.length < 3) {
-      return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 3 caracteres.', 'error');
-    }
-    
-    mostrarMsg(msgBusqueda, '🔍 Buscando procesado...', 'success');
-    btnBuscar.disabled = true;
-    form.style.display = 'none';
-    datosPanel.style.display = 'none';
-    
-    try {
-      const resultados = await cargarProcesado(val);
-      
-      if (resultados.length === 0) {
-        mostrarMsg(msgBusqueda, '❌ No se encontró ningún procesado con ese dato.', 'error');
-      } else {
-        procesadoActual = resultados[0]; // Tomamos el más reciente
-        mostrarMsg(msgBusqueda, `✅ ${resultados.length} procesado(s) encontrado(s). Mostrando el más reciente.`, 'success');
-        mostrarDatosProcesado(procesadoActual);
-        cargarArchivosEnForm(procesadoActual);
-        form.style.display = 'block';
-        window.scrollTo({ top: datosPanel.offsetTop - 20, behavior: 'smooth' });
+    btnBuscar.addEventListener('click', async () => {
+      const val = inputBusqueda.value.trim();
+      if (val.length < 3) {
+        return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 3 caracteres.', 'error');
       }
-    } catch (err) {
-      console.error('Error en búsqueda:', err);
-      mostrarMsg(msgBusqueda, '❌ Error: ' + err.message, 'error');
-    } finally {
-      btnBuscar.disabled = false;
-    }
-  });
+      
+      mostrarMsg(msgBusqueda, '🔍 Buscando procesado...', 'success');
+      btnBuscar.disabled = true;
+      form.style.display = 'none';
+      datosPanel.style.display = 'none';
+      
+      try {
+        const resultados = await cargarProcesado(val);
+        
+        if (resultados.length === 0) {
+          mostrarMsg(msgBusqueda, '❌ No se encontró ningún procesado con ese dato.', 'error');
+        } else {
+          procesadoActual = resultados[0];
+          mostrarMsg(msgBusqueda, `✅ ${resultados.length} procesado(s) encontrado(s). Mostrando el más reciente.`, 'success');
+          mostrarDatosProcesado(procesadoActual);
+          cargarArchivosEnForm(procesadoActual);
+          form.style.display = 'block';
+          window.scrollTo({ top: datosPanel.offsetTop - 20, behavior: 'smooth' });
+        }
+      } catch (err) {
+        console.error('Error en búsqueda:', err);
+        mostrarMsg(msgBusqueda, '❌ Error: ' + err.message, 'error');
+      } finally {
+        btnBuscar.disabled = false;
+      }
+    });
 
-  inputBusqueda.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); btnBuscar.click(); }
-  });
-}
+    inputBusqueda.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); btnBuscar.click(); }
+    });
+  }
 
-  // ==========================================
-  // ENVÍO DEL FORMULARIO (ACTUALIZAR)
-  // ==========================================
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -415,7 +393,6 @@ async function cargarProcesado(valor) {
         return mostrarMsg(msgForm, '⚠️ El tipo de delito es obligatorio.', 'error');
       }
 
-      // Activar overlay
       if (loadingOverlay) loadingOverlay.classList.add('active');
       const btnSubmit = form.querySelector('.btn-submit');
       btnSubmit.disabled = true;
@@ -432,49 +409,37 @@ async function cargarProcesado(valor) {
           observaciones: document.getElementById('edit_observaciones').value.trim() || null
         };
 
-        // ==========================================
-        // PROCESAR DOCUMENTOS ÚNICOS
-        // ==========================================
         for (const doc of docsUnicos) {
           const urlActual = archivosActuales[doc.id];
           const archivoNuevo = archivosNuevos[doc.id];
           const marcadoEliminar = archivosAEliminar[doc.id];
 
           if (archivoNuevo) {
-            // CASO 1: Hay archivo nuevo → Subir y reemplazar
             const path = `${uid}/${ts}_${doc.id}.pdf`;
             const { error } = await bucket.upload(path, archivoNuevo, { contentType: 'application/pdf' });
             if (error) throw new Error(`Error subiendo ${doc.id}: ${error.message}`);
             const newUrl = bucket.getPublicUrl(path).data.publicUrl;
             dataToUpdate[doc.id] = newUrl;
             
-            // Opcional: eliminar el archivo viejo del storage
             if (urlActual) {
               const oldPath = urlActual.split('/procesados_documentos/')[1];
               if (oldPath) await bucket.remove([oldPath]).catch(e => console.warn('No se pudo borrar archivo viejo:', e));
             }
           } else if (marcadoEliminar) {
-            // CASO 2: Marcado para eliminar
             dataToUpdate[doc.id] = null;
             if (urlActual) {
               const oldPath = urlActual.split('/procesados_documentos/')[1];
               if (oldPath) await bucket.remove([oldPath]).catch(e => console.warn('No se pudo borrar archivo viejo:', e));
             }
           }
-          // CASO 3: No hay cambios → No se incluye en dataToUpdate (se mantiene igual)
         }
 
-        // ==========================================
-        // PROCESAR DOCUMENTOS MÚLTIPLES
-        // ==========================================
         for (const doc of docsMultiples) {
           const urlsActuales = archivosActuales[doc.id] || [];
           const archivosNuevosCampo = archivosMultiplesNuevos[doc.id] || [];
           const urlsEliminadas = archivosMultiplesEliminados[doc.id] || [];
           
-          // Si hay cambios (nuevos o eliminados)
           if (archivosNuevosCampo.length > 0 || urlsEliminadas.length > 0) {
-            // Subir archivos nuevos
             const nuevasUrls = [];
             for (let i = 0; i < archivosNuevosCampo.length; i++) {
               const path = `${uid}/${ts}_${doc.id}_${Date.now()}_${i}.pdf`;
@@ -483,24 +448,18 @@ async function cargarProcesado(valor) {
               nuevasUrls.push(bucket.getPublicUrl(path).data.publicUrl);
             }
             
-            // Eliminar archivos marcados del storage
             for (const oldUrl of urlsEliminadas) {
               const oldPath = oldUrl.split('/procesados_documentos/')[1];
               if (oldPath) await bucket.remove([oldPath]).catch(e => console.warn('No se pudo borrar:', e));
             }
             
-            // Combinar: actuales - eliminados + nuevos
             const finales = [...urlsActuales, ...nuevasUrls];
             dataToUpdate[doc.id] = finales;
           }
         }
 
-        // ==========================================
-        // ACTUALIZAR DATOS_ORIGINALES (JSON)
-        // ==========================================
         const datosOriginales = procesadoActual.datos_originales || {};
         if (datosOriginales.documentos_adjuntos) {
-          // Actualizar el JSON de respaldo con las nuevas URLs
           for (const doc of docsUnicos) {
             if (dataToUpdate[doc.id] !== undefined) {
               datosOriginales.documentos_adjuntos[doc.id] = dataToUpdate[doc.id];
@@ -514,9 +473,6 @@ async function cargarProcesado(valor) {
           dataToUpdate.datos_originales = datosOriginales;
         }
 
-        // ==========================================
-        // EJECUTAR UPDATE EN SUPABASE
-        // ==========================================
         const { error: updErr } = await window.supabaseClient
           .from('registro_procesados')
           .update(dataToUpdate)
@@ -547,5 +503,5 @@ async function cargarProcesado(valor) {
     });
   }
   
-  console.log("✅ Módulo editar-procesado.js inicializado correctamente");
+  console.log("✅ Módulo mod-procesados.js inicializado correctamente");
 };
