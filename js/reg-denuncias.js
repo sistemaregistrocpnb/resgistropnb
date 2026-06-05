@@ -32,7 +32,9 @@ window.initRegDenuncias = function() {
     docsUnicos.forEach(d => archivosUnicos[d.id] = null);
     docsMultiples.forEach(d => archivosMultiples[d.id] = []);
 
-    // Generar documentos únicos con selector SÍ/NO
+    // ==========================================
+    // GENERAR DOCUMENTOS EN DOM (Idéntico a reg-procesados)
+    // ==========================================
     const contenedorUnicos = document.getElementById('docs-unicos-container');
     if (contenedorUnicos) {
         docsUnicos.forEach(doc => {
@@ -46,16 +48,15 @@ window.initRegDenuncias = function() {
                         <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
                     </div>
                 </div>
-                <div class="doc-upload-area" id="upload_${doc.id}">
+                <div class="doc-upload-area" id="upload-${doc.id}">
                     <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="cargarDocUnico('${doc.id}', this)">
-                    <div id="status_${doc.id}"></div>
+                    <div id="status-${doc.id}"></div>
                 </div>
             `;
             contenedorUnicos.appendChild(div);
         });
     }
 
-    // Generar documentos múltiples
     const contenedorMultiples = document.getElementById('docs-multiples-container');
     if (contenedorMultiples) {
         docsMultiples.forEach(doc => {
@@ -64,35 +65,48 @@ window.initRegDenuncias = function() {
             div.innerHTML = `
                 <div class="doc-header">
                     <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Máximo ${doc.max})</span></label>
+                    <div class="doc-si-no">
+                        <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
+                        <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                    </div>
                 </div>
-                <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
-                <button type="button" class="btn-add-file" onclick="agregarMultiples('${doc.id}', ${doc.max})">➕ Agregar archivos</button>
-                <div class="file-count" id="count_${doc.id}">0 archivos cargados</div>
-                <div id="list_${doc.id}" style="margin-top: 8px;"></div>
+                <div class="doc-upload-area" id="upload-${doc.id}">
+                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
+                    <button type="button" class="btn-add-file" onclick="agregarMultiples('${doc.id}', ${doc.max})">➕ Agregar archivos</button>
+                    <div class="file-count" id="count-${doc.id}">0 archivos cargados</div>
+                    <div id="list-${doc.id}" style="margin-top: 8px;"></div>
+                </div>
             `;
             contenedorMultiples.appendChild(div);
         });
     }
 
     // ==========================================
-    // FUNCIONES GLOBALES DE UI (Igual que reg-procesados)
+    // FUNCIONES GLOBALES DE UI
     // ==========================================
     window.toggleDocField = function(campo, mostrar) {
-        const area = document.getElementById(`upload_${campo}`);
+        const area = document.getElementById(`upload-${campo}`);
         if (area) {
             if (mostrar) {
                 area.classList.add('active');
             } else {
                 area.classList.remove('active');
-                archivosUnicos[campo] = null;
-                document.getElementById(`status_${campo}`).innerHTML = '';
-                document.getElementById(`file_${campo}`).value = '';
+                // Limpiar archivos si se cambia a "No"
+                if (archivosUnicos[campo] !== undefined) {
+                    archivosUnicos[campo] = null;
+                    document.getElementById(`status-${campo}`).innerHTML = '';
+                    document.getElementById(`file_${campo}`).value = '';
+                }
+                if (archivosMultiples[campo] !== undefined) {
+                    archivosMultiples[campo] = [];
+                    actualizarListaMultiples(campo, docsMultiples.find(d => d.id === campo).max);
+                }
             }
         }
     };
 
     window.cargarDocUnico = function(docId, input) {
-        const statusDiv = document.getElementById(`status_${docId}`);
+        const statusDiv = document.getElementById(`status-${docId}`);
         if (input.files && input.files[0]) {
             archivosUnicos[docId] = input.files[0];
             statusDiv.innerHTML = `
@@ -107,7 +121,7 @@ window.initRegDenuncias = function() {
 
     window.quitarDocUnico = function(docId) {
         archivosUnicos[docId] = null;
-        document.getElementById(`status_${docId}`).innerHTML = '';
+        document.getElementById(`status-${docId}`).innerHTML = '';
         document.getElementById(`file_${docId}`).value = '';
     };
 
@@ -137,8 +151,8 @@ window.initRegDenuncias = function() {
     };
 
     function actualizarListaMultiples(docId, max) {
-        const listDiv = document.getElementById(`list_${docId}`);
-        const countDiv = document.getElementById(`count_${docId}`);
+        const listDiv = document.getElementById(`list-${docId}`);
+        const countDiv = document.getElementById(`count-${docId}`);
         if (!listDiv || !countDiv) return;
 
         listDiv.innerHTML = '';
@@ -154,7 +168,7 @@ window.initRegDenuncias = function() {
             listDiv.appendChild(item);
         });
 
-        countDiv.textContent = `${archivosMultiples[docId].length} archivos cargados`;
+        countDiv.textContent = `${archivosMultiples[docId].length} de ${max} archivos`;
     }
 
     window.quitarMultiple = function(docId, index, max) {
@@ -239,6 +253,21 @@ window.initRegDenuncias = function() {
             }
         }
 
+        // Validar documentos múltiples marcados como Sí
+        for (const doc of docsMultiples) {
+            const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+            if (radio && radio.value === 'si') {
+                if (!archivosMultiples[doc.id] || archivosMultiples[doc.id].length === 0) {
+                    if (msg) {
+                        msg.textContent = `⚠️ Debe subir al menos un PDF para: ${doc.label}`;
+                        msg.className = 'msg error';
+                        msg.style.display = 'block';
+                    }
+                    return;
+                }
+            }
+        }
+
         btn.disabled = true;
         btn.textContent = '⏳ Registrando...';
         if (msg) msg.style.display = 'none';
@@ -270,14 +299,19 @@ window.initRegDenuncias = function() {
             // Subir documentos múltiples
             const docsMultiplesUrls = {};
             for (const doc of docsMultiples) {
-                const urls = [];
-                for (let i = 0; i < archivosMultiples[doc.id].length; i++) {
-                    const path = `${uid}/${ts}_${doc.id}_${i}.pdf`;
-                    const { error } = await bucket.upload(path, archivosMultiples[doc.id][i], { contentType: 'application/pdf' });
-                    if (error) throw new Error(`Error subiendo ${doc.label}[${i}]: ${error.message}`);
-                    urls.push(bucket.getPublicUrl(path).data.publicUrl);
+                const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+                if (radio && radio.value === 'si' && archivosMultiples[doc.id] && archivosMultiples[doc.id].length > 0) {
+                    const urls = [];
+                    for (let i = 0; i < archivosMultiples[doc.id].length; i++) {
+                        const path = `${uid}/${ts}_${doc.id}_${i}.pdf`;
+                        const { error } = await bucket.upload(path, archivosMultiples[doc.id][i], { contentType: 'application/pdf' });
+                        if (error) throw new Error(`Error subiendo ${doc.label}[${i}]: ${error.message}`);
+                        urls.push(bucket.getPublicUrl(path).data.publicUrl);
+                    }
+                    docsMultiplesUrls[doc.id] = urls;
+                } else {
+                    docsMultiplesUrls[doc.id] = null;
                 }
-                docsMultiplesUrls[doc.id] = urls.length > 0 ? urls : null;
             }
 
             // Preparar datos
@@ -329,7 +363,7 @@ window.initRegDenuncias = function() {
             // Resetear documentos
             docsUnicos.forEach(d => {
                 archivosUnicos[d.id] = null;
-                document.getElementById(`status_${d.id}`).innerHTML = '';
+                document.getElementById(`status-${d.id}`).innerHTML = '';
             });
 
             docsMultiples.forEach(d => {
