@@ -528,9 +528,28 @@ window.initRegProcesados = function() {
 
         const dataOriginal = registroSeleccionado.datos;
         
-        // ✅ CONSTRUCCIÓN SEGURA DEL OBJETO A INSERTAR
-        // Se eliminaron los mapeos manuales (Object.assign) que causaban errores 
-        // de "columna no encontrada". Toda la información se guarda intacta en 'datos_originales'.
+        // ✅ 2. RECOPILAR TODAS LAS URLs DE DOCUMENTOS EN UN SOLO OBJETO JSON
+        const documentosAdjuntos = {};
+
+        for (const doc of docsUnicos) {
+          const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+          if (radio && radio.value === 'si') {
+            documentosAdjuntos[doc.id] = await subirPDF(`file_${doc.id}`, doc.id);
+          } else {
+            documentosAdjuntos[doc.id] = null;
+          }
+        }
+
+        for (const doc of docsMultiples) {
+          const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+          if (radio && radio.value === 'si' && archivosMultiples[doc.id].length > 0) {
+            documentosAdjuntos[doc.id] = await subirPDFsMultiples(doc.id);
+          } else {
+            documentosAdjuntos[doc.id] = [];
+          }
+        }
+
+        // ✅ 3. CONSTRUIR EL OBJETO FINAL A INSERTAR (SIN COLUMNAS INDIVIDUALES DE DOCUMENTOS)
         const dataToInsert = {
           tabla_origen: registroSeleccionado.origen,
           registro_id: registroSeleccionado.id,
@@ -539,27 +558,13 @@ window.initRegProcesados = function() {
           tipo_delito: tipoDelito,
           procesado_por: procesadoPor,
           observaciones: document.getElementById('proc_observaciones').value.trim() || null,
-          datos_originales: dataOriginal, // ¡Aquí está TODA la información del registro original (dirección, estación, vehículo, etc.)!
-          estatus: 'Procesado'
+          estatus: 'Procesado',
+          // Guardamos los datos originales Y las URLs de los documentos juntos en el JSON
+          datos_originales: {
+            ...dataOriginal,
+            documentos_adjuntos: documentosAdjuntos 
+          }
         };
-
-        for (const doc of docsUnicos) {
-          const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-          if (radio && radio.value === 'si') {
-            dataToInsert[doc.id] = await subirPDF(`file_${doc.id}`, doc.id);
-          } else {
-            dataToInsert[doc.id] = null;
-          }
-        }
-
-        for (const doc of docsMultiples) {
-          const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-          if (radio && radio.value === 'si' && archivosMultiples[doc.id].length > 0) {
-            dataToInsert[doc.id] = await subirPDFsMultiples(doc.id);
-          } else {
-            dataToInsert[doc.id] = [];
-          }
-        }
 
         const { error: insErr } = await window.supabaseClient
           .from('registro_procesados')
@@ -596,7 +601,7 @@ window.initRegProcesados = function() {
         console.error('Error al procesar:', err);
         mostrarMsg(msgForm, '❌ Error: ' + err.message, 'error');
       } finally {
-        // ✅ 2. DESACTIVAR PANTALLA DE CARGA Y RESTAURAR INTERFAZ
+        // ✅ 4. DESACTIVAR PANTALLA DE CARGA Y RESTAURAR INTERFAZ
         const loadingOverlay = document.getElementById('loading-overlay');
         if (loadingOverlay) loadingOverlay.classList.remove('active');
         
