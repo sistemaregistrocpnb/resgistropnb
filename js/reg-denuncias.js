@@ -33,13 +33,14 @@ window.initRegDenuncias = function() {
     docsMultiples.forEach(d => archivosMultiples[d.id] = []);
 
     // ==========================================
-    // GENERAR DOCUMENTOS EN DOM (Idéntico a reg-procesados)
+    // GENERAR DOCUMENTOS EN DOM
     // ==========================================
     const contenedorUnicos = document.getElementById('docs-unicos-container');
     if (contenedorUnicos) {
         docsUnicos.forEach(doc => {
             const div = document.createElement('div');
             div.className = 'doc-item';
+            // ✅ "No" tiene el atributo checked por defecto
             div.innerHTML = `
                 <div class="doc-header">
                     <label>${doc.label}</label>
@@ -62,6 +63,7 @@ window.initRegDenuncias = function() {
         docsMultiples.forEach(doc => {
             const div = document.createElement('div');
             div.className = 'doc-item';
+            // ✅ "No" tiene el atributo checked por defecto
             div.innerHTML = `
                 <div class="doc-header">
                     <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Máximo ${doc.max})</span></label>
@@ -88,18 +90,22 @@ window.initRegDenuncias = function() {
         const area = document.getElementById(`upload-${campo}`);
         if (area) {
             if (mostrar) {
-                area.classList.add('active');
+                area.classList.add('active'); // Muestra el área
             } else {
-                area.classList.remove('active');
-                // Limpiar archivos si se cambia a "No"
+                area.classList.remove('active'); // Oculta el área
+                
+                // Limpia cualquier dato residual si se cambia a "No"
                 if (archivosUnicos[campo] !== undefined) {
                     archivosUnicos[campo] = null;
-                    document.getElementById(`status-${campo}`).innerHTML = '';
-                    document.getElementById(`file_${campo}`).value = '';
+                    const status = document.getElementById(`status-${campo}`);
+                    if (status) status.innerHTML = '';
+                    const fileInput = document.getElementById(`file_${campo}`);
+                    if (fileInput) fileInput.value = '';
                 }
                 if (archivosMultiples[campo] !== undefined) {
                     archivosMultiples[campo] = [];
-                    actualizarListaMultiples(campo, docsMultiples.find(d => d.id === campo).max);
+                    const docMax = docsMultiples.find(d => d.id === campo)?.max || 10;
+                    actualizarListaMultiples(campo, docMax);
                 }
             }
         }
@@ -121,8 +127,10 @@ window.initRegDenuncias = function() {
 
     window.quitarDocUnico = function(docId) {
         archivosUnicos[docId] = null;
-        document.getElementById(`status-${docId}`).innerHTML = '';
-        document.getElementById(`file_${docId}`).value = '';
+        const statusDiv = document.getElementById(`status-${docId}`);
+        if (statusDiv) statusDiv.innerHTML = '';
+        const fileInput = document.getElementById(`file_${docId}`);
+        if (fileInput) fileInput.value = '';
     };
 
     window.agregarMultiples = function(docId, max) {
@@ -363,7 +371,8 @@ window.initRegDenuncias = function() {
             // Resetear documentos
             docsUnicos.forEach(d => {
                 archivosUnicos[d.id] = null;
-                document.getElementById(`status-${d.id}`).innerHTML = '';
+                const status = document.getElementById(`status-${d.id}`);
+                if (status) status.innerHTML = '';
             });
 
             docsMultiples.forEach(d => {
