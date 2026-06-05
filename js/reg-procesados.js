@@ -553,26 +553,26 @@ window.initRegProcesados = function() {
                         direccion_detencion: dataOriginal.direccion_detencion,
                         estatus: 'Procesado'
                     });
-                } else if (registroSeleccionado.origen === 'registro_vinculado') {
-                    Object.assign(dataToInsert, {
-                        cedula: dataOriginal.cedula,
-                        nombre_completo: `${dataOriginal.primer_nombre || ''} ${dataOriginal.primer_apellido || ''}`.trim(),
-                        nacionalidad: dataOriginal.nacionalidad,
-                        sexo: dataOriginal.sexo,
-                        placa: dataOriginal.placa,
-                        serial_carroceria: dataOriginal.serial_carroceria,
-                        serial_motor: dataOriginal.serial_motor,
-                        marca_vehiculo: dataOriginal.marca_vehiculo,
-                        modelo_vehiculo: dataOriginal.modelo_vehiculo,
-                        anio_vehiculo: dataOriginal.anio_vehiculo,
-                        color_vehiculo: dataOriginal.color_vehiculo,
-                        tipo_vehiculo: dataOriginal.tipo_vehiculo,
-                        estacion_policial: dataOriginal.estacion_policial,
-                        direccion_detencion: dataOriginal.direccion_detencion,
-                        estatus: 'Procesado'
-                    });
-                }
-
+        } else if (registroSeleccionado.origen === 'registro_vinculado') {
+  Object.assign(dataToInsert, {
+    cedula: dataOriginal.cedula,
+    nombre_completo: `${dataOriginal.primer_nombre || ''} ${dataOriginal.primer_apellido || ''}`.trim(),
+    nacionalidad: dataOriginal.nacionalidad,
+    sexo: dataOriginal.sexo,
+    placa: dataOriginal.placa,
+    serial_carroceria: dataOriginal.serial_carroceria,
+    serial_motor: dataOriginal.serial_motor,
+    // ✅ Mapeamos a los campos estándar de registro_procesados (sin el sufijo _vehiculo)
+    marca: dataOriginal.marca_vehiculo,
+    modelo: dataOriginal.modelo_vehiculo,
+    anio: dataOriginal.anio_vehiculo,
+    color: dataOriginal.color_vehiculo,
+    tipo_vehiculo: dataOriginal.tipo_vehiculo,
+    estacion_policial: dataOriginal.estacion_policial,
+    direccion_detencion: dataOriginal.direccion_detencion,
+    estatus: 'Procesado'
+  });
+}
                 // Documentos únicos
                 for (const doc of docsUnicos) {
                     const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
