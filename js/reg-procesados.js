@@ -441,117 +441,226 @@ window.initRegProcesados = function() {
     // ==========================================
     // ENVÍO DEL FORMULARIO
     // ==========================================
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!registroSeleccionado) {
-                return mostrarMsg(msgForm, '❌ Debe buscar y seleccionar un registro primero.', 'error');
-            }
-            const tipoDelito = document.getElementById('proc_tipo_delito').value.trim();
-            if (!tipoDelito) {
-                return mostrarMsg(msgForm, ' El tipo de delito es obligatorio.', 'error');
-            }
+   if (form) {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!registroSeleccionado) {
+      return mostrarMsg(msgForm, '❌ Debe buscar y seleccionar un registro primero.', 'error');
+    }
+    const tipoDelito = document.getElementById('proc_tipo_delito').value.trim();
+    if (!tipoDelito) {
+      return mostrarMsg(msgForm, '⚠️ El tipo de delito es obligatorio.', 'error');
+    }
 
-            // Validar documentos únicos marcados como Sí
-            for (const doc of docsUnicos) {
-                const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-                if (radio && radio.value === 'si') {
-                    const fileInput = document.getElementById(`file_${doc.id}`);
-                    if (!fileInput.files || fileInput.files.length === 0) {
-                        return mostrarMsg(msgForm, `⚠️ Debe subir un PDF para: ${doc.label}`, 'error');
-                    }
-                }
-            }
-            // Validar documentos múltiples
-            for (const doc of docsMultiples) {
-                const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-                if (radio && radio.value === 'si') {
-                    if (archivosMultiples[doc.id].length < doc.min) {
-                        return mostrarMsg(msgForm, `❌ Debe subir al menos ${doc.min} PDF para: ${doc.label}`, 'error');
-                    }
-                }
-            }
+    // Validar documentos únicos marcados como Sí
+    for (const doc of docsUnicos) {
+      const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+      if (radio && radio.value === 'si') {
+        const fileInput = document.getElementById(`file_${doc.id}`);
+        if (!fileInput.files || fileInput.files.length === 0) {
+          return mostrarMsg(msgForm, `⚠️ Debe subir un PDF para: ${doc.label}`, 'error');
+        }
+      }
+    }
 
-            const btnSubmit = form.querySelector('.btn-submit');
-            btnSubmit.disabled = true;
-            btnSubmit.textContent = '⏳ Procesando...';
-            msgForm.style.display = 'none';
+    // Validar documentos múltiples
+    for (const doc of docsMultiples) {
+      const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+      if (radio && radio.value === 'si') {
+        if (archivosMultiples[doc.id].length < doc.min) {
+          return mostrarMsg(msgForm, `❌ Debe subir al menos ${doc.min} PDF para: ${doc.label}`, 'error');
+        }
+      }
+    }
 
-            try {
-                const { data: { user } } = await window.supabaseClient.auth.getUser();
-                const procesadoPor = user?.email || 'usuario@sistema';
-                const bucket = window.supabaseClient.storage.from('procesados_documentos');
-                const uid = sessionStorage.getItem('pnb_user_id') || 'user';
-                const ts = Date.now();
+    // ✅ 1. ACTIVAR PANTALLA DE CARGA Y BLOQUEAR INTERFAZ
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) loadingOverlay.classList.add('active');
+    form.style.pointerEvents = 'none'; // Evita clics en el formulario
+    form.style.opacity = '0.6';        // Efecto visual de deshabilitado
 
-                // Subir PDF único
-                const subirPDF = async (fileInputId, suffix) => {
-                    const fileInput = document.getElementById(fileInputId);
-                    if (fileInput && fileInput.files && fileInput.files[0]) {
-                        const file = fileInput.files[0];
-                        const path = `${uid}/${ts}_${suffix}.pdf`;
-                        const { error } = await bucket.upload(path, file, { cacheControl: '3600', contentType: 'application/pdf' });
-                        if (error) throw new Error(`Error subiendo ${suffix}: ${error.message}`);
-                        return bucket.getPublicUrl(path).data.publicUrl;
-                    }
-                    return null;
-                };
+    const btnSubmit = form.querySelector('.btn-submit');
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = '⏳ Procesando...';
+    msgForm.style.display = 'none';
 
-                // Subir PDFs múltiples
-                const subirPDFsMultiples = async (campo) => {
-                    const urls = [];
-                    for (let i = 0; i < archivosMultiples[campo].length; i++) {
-                        const file = archivosMultiples[campo][i];
-                        const path = `${uid}/${ts}_${campo}_${i}.pdf`;
-                        const { error } = await bucket.upload(path, file, { cacheControl: '3600', contentType: 'application/pdf' });
-                        if (error) throw new Error(`Error subiendo ${campo}[${i}]: ${error.message}`);
-                        urls.push(bucket.getPublicUrl(path).data.publicUrl);
-                    }
-                    return urls;
-                };
+    try {
+      const { data: { user } } = await window.supabaseClient.auth.getUser();
+      const procesadoPor = user?.email || 'usuario@sistema';
+      const bucket = window.supabaseClient.storage.from('procesados_documentos');
+      const uid = sessionStorage.getItem('pnb_user_id') || 'user';
+      const ts = Date.now();
 
-                // Copiar TODOS los datos del registro original
-                const dataOriginal = registroSeleccionado.datos;
-                const dataToInsert = {
-                    // Metadatos del proceso
-                    tabla_origen: registroSeleccionado.origen,
-                    registro_id: registroSeleccionado.id,
-                    tipo_registro: registroSeleccionado.tipoRegistro || '',
-                    identificador_principal: document.getElementById('proc_identificador').value,
-                    tipo_delito: tipoDelito,
-                    procesado_por: procesadoPor,
-                    observaciones: document.getElementById('proc_observaciones').value.trim() || null,
-                    // Copia de los datos originales (JSON)
-                    datos_originales: dataOriginal
-                };
+      // ... (Mantén intactas las funciones subirPDF y subirPDFsMultiples aquí) ...
+      const subirPDF = async (fileInputId, suffix) => {
+        const fileInput = document.getElementById(fileInputId);
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+          const file = fileInput.files[0];
+          const path = `${uid}/${ts}_${suffix}.pdf`;
+          const { error } = await bucket.upload(path, file, { cacheControl: '3600', contentType: 'application/pdf' });
+          if (error) throw new Error(`Error subiendo ${suffix}: ${error.message}`);
+          return bucket.getPublicUrl(path).data.publicUrl;
+        }
+        return null;
+      };
 
-                // Agregar campos específicos según el tipo de registro
-                if (registroSeleccionado.origen === 'registro_personas') {
-                    Object.assign(dataToInsert, {
-                        cedula: dataOriginal.cedula,
-                        nombre_completo: `${dataOriginal.primer_nombre || ''} ${dataOriginal.segundo_nombre || ''} ${dataOriginal.primer_apellido || ''} ${dataOriginal.segundo_apellido || ''}`.trim(),
-                        nacionalidad: dataOriginal.nacionalidad,
-                        sexo: dataOriginal.sexo,
-                        edad: dataOriginal.edad,
-                        estacion_policial: dataOriginal.estacion_policial,
-                        direccion_detencion: dataOriginal.direccion_detencion,
-                        estatus: 'Procesado'
-                    });
-                } else if (registroSeleccionado.origen === 'registro_motos' || registroSeleccionado.origen === 'registro_automoviles') {
-                    Object.assign(dataToInsert, {
-                        placa: dataOriginal.placa,
-                        serial_carroceria: dataOriginal.serial_carroceria,
-                        serial_motor: dataOriginal.serial_motor,
-                        marca: dataOriginal.marca,
-                        modelo: dataOriginal.modelo,
-                        anio: dataOriginal.anio,
-                        color: dataOriginal.color,
-                        cilindraje: dataOriginal.cilindraje,
-                        tipo_vehiculo: registroSeleccionado.origen === 'registro_motos' ? 'Motocicleta' : 'Automóvil',
-                        estacion_policial: dataOriginal.estacion_policial,
-                        direccion_detencion: dataOriginal.direccion_detencion,
-                        estatus: 'Procesado'
-                    });
+      const subirPDFsMultiples = async (campo) => {
+        const urls = [];
+        for (let i = 0; i < archivosMultiples[campo].length; i++) {
+          const file = archivosMultiples[campo][i];
+          const path = `${uid}/${ts}_${campo}_${i}.pdf`;
+          const { error } = await bucket.upload(path, file, { cacheControl: '3600', contentType: 'application/pdf' });
+          if (error) throw new Error(`Error subiendo ${campo}[${i}]: ${error.message}`);
+          urls.push(bucket.getPublicUrl(path).data.publicUrl);
+        }
+        return urls;
+      };
+
+      const dataOriginal = registroSeleccionado.datos;
+      const dataToInsert = {
+        tabla_origen: registroSeleccionado.origen,
+        registro_id: registroSeleccionado.id,
+        tipo_registro: registroSeleccionado.tipoRegistro || '',
+        identificador_principal: document.getElementById('proc_identificador').value,
+        tipo_delito: tipoDelito,
+        procesado_por: procesadoPor,
+        observaciones: document.getElementById('proc_observaciones').value.trim() || null,
+        datos_originales: dataOriginal
+      };
+
+      // ... (Aquí van los bloques Object.assign que corregiste en el punto A) ...
+      if (registroSeleccionado.origen === 'registro_personas') {
+        Object.assign(dataToInsert, {
+          cedula: dataOriginal.cedula,
+          nombre_completo: `${dataOriginal.primer_nombre || ''} ${dataOriginal.segundo_nombre || ''} ${dataOriginal.primer_apellido || ''} ${dataOriginal.segundo_apellido || ''}`.trim(),
+          nacionalidad: dataOriginal.nacionalidad,
+          sexo: dataOriginal.sexo,
+          edad: dataOriginal.edad,
+          estacion_policial: dataOriginal.estacion_policial,
+          direccion_detencion: dataOriginal.direccion_detencion,
+          estatus: 'Procesado'
+        });
+      } else if (registroSeleccionado.origen === 'registro_motos' || registroSeleccionado.origen === 'registro_automoviles') {
+        Object.assign(dataToInsert, {
+          placa: dataOriginal.placa,
+          serial_carroceria: dataOriginal.serial_carroceria,
+          serial_motor: dataOriginal.serial_motor,
+          tipo_vehiculo: registroSeleccionado.origen === 'registro_motos' ? 'Motocicleta' : 'Automóvil',
+          estacion_policial: dataOriginal.estacion_policial,
+          direccion_detencion: dataOriginal.direccion_detencion,
+          estatus: 'Procesado'
+        });
+      } else if (registroSeleccionado.origen === 'registro_vinculado') {
+        Object.assign(dataToInsert, {
+          cedula: dataOriginal.cedula,
+          nombre_completo: `${dataOriginal.primer_nombre || ''} ${dataOriginal.primer_apellido || ''}`.trim(),
+          nacionalidad: dataOriginal.nacionalidad,
+          sexo: dataOriginal.sexo,
+          placa: dataOriginal.placa,
+          serial_carroceria: dataOriginal.serial_carroceria,
+          serial_motor: dataOriginal.serial_motor,
+          tipo_vehiculo: dataOriginal.tipo_vehiculo,
+          estacion_policial: dataOriginal.estacion_policial,
+          direccion_detencion: dataOriginal.direccion_detencion,
+          estatus: 'Procesado'
+        });
+      }
+
+      for (const doc of docsUnicos) {
+        const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+        if (radio && radio.value === 'si') {
+          dataToInsert[doc.id] = await subirPDF(`file_${doc.id}`, doc.id);
+        } else {
+          dataToInsert[doc.id] = null;
+        }
+      }
+
+      for (const doc of docsMultiples) {
+        const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+        if (radio && radio.value === 'si' && archivosMultiples[doc.id].length > 0) {
+          dataToInsert[doc.id] = await subirPDFsMultiples(doc.id);
+        } else {
+          dataToInsert[doc.id] = [];
+        }
+      }
+
+      const { error: insErr } = await window.supabaseClient.from('registro_procesados').insert([dataToInsert]);
+      if (insErr) throw new Error(`Error al registrar procesado: ${insErr.message}`);
+
+      const { error: updErr } = await window.supabaseClient
+        .from(registroSeleccionado.origen)
+        .update({ estatus: 'Procesado' })
+        .eq('id', registroSeleccionado.id);
+      if (updErr) throw new Error(`Error al cambiar estatus: ${updErr.message}`);
+
+      mostrarMsg(msgForm, '✅ Procesado registrado exitosamente. El estatus del registro original cambió a "Procesado".', 'success');
+      
+      setTimeout(() => {
+        form.style.display = 'none';
+        datosPanel.style.display = 'none';
+        inputBusqueda.value = '';
+        msgBusqueda.style.display = 'none';
+        registroSeleccionado = null;
+        form.reset();
+        docsMultiples.forEach(d => {
+          archivosMultiples[d.id] = [];
+          actualizarListaArchivos(d.id, d.max);
+        });
+        document.querySelectorAll('.doc-upload-area').forEach(area => area.classList.remove('active'));
+        document.querySelectorAll('.file-status-container').forEach(c => c.innerHTML = '');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 3000);
+
+    } catch (err) {
+      console.error('Error al procesar:', err);
+      mostrarMsg(msgForm, '❌ Error: ' + err.message, 'error');
+    } finally {
+      // ✅ 2. DESACTIVAR PANTALLA DE CARGA Y RESTAURAR INTERFAZ
+      if (loadingOverlay) loadingOverlay.classList.remove('active');
+      form.style.pointerEvents = 'auto';
+      form.style.opacity = '1';
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = '💾 Registrar Procesado y Cambiar Estatus';
+    }
+  });
+}
+            // Agregar campos específicos según el tipo de registro (Solo campos seguros que existen en la tabla)
+if (registroSeleccionado.origen === 'registro_personas') {
+  Object.assign(dataToInsert, {
+    cedula: dataOriginal.cedula,
+    nombre_completo: `${dataOriginal.primer_nombre || ''} ${dataOriginal.segundo_nombre || ''} ${dataOriginal.primer_apellido || ''} ${dataOriginal.segundo_apellido || ''}`.trim(),
+    nacionalidad: dataOriginal.nacionalidad,
+    sexo: dataOriginal.sexo,
+    edad: dataOriginal.edad,
+    estacion_policial: dataOriginal.estacion_policial,
+    direccion_detencion: dataOriginal.direccion_detencion,
+    estatus: 'Procesado'
+  });
+} else if (registroSeleccionado.origen === 'registro_motos' || registroSeleccionado.origen === 'registro_automoviles') {
+  Object.assign(dataToInsert, {
+    placa: dataOriginal.placa,
+    serial_carroceria: dataOriginal.serial_carroceria,
+    serial_motor: dataOriginal.serial_motor,
+    tipo_vehiculo: registroSeleccionado.origen === 'registro_motos' ? 'Motocicleta' : 'Automóvil',
+    estacion_policial: dataOriginal.estacion_policial,
+    direccion_detencion: dataOriginal.direccion_detencion,
+    estatus: 'Procesado'
+  });
+} else if (registroSeleccionado.origen === 'registro_vinculado') {
+  Object.assign(dataToInsert, {
+    cedula: dataOriginal.cedula,
+    nombre_completo: `${dataOriginal.primer_nombre || ''} ${dataOriginal.primer_apellido || ''}`.trim(),
+    nacionalidad: dataOriginal.nacionalidad,
+    sexo: dataOriginal.sexo,
+    placa: dataOriginal.placa,
+    serial_carroceria: dataOriginal.serial_carroceria,
+    serial_motor: dataOriginal.serial_motor,
+    tipo_vehiculo: dataOriginal.tipo_vehiculo,
+    estacion_policial: dataOriginal.estacion_policial,
+    direccion_detencion: dataOriginal.direccion_detencion,
+    estatus: 'Procesado'
+  });
+}
         } else if (registroSeleccionado.origen === 'registro_vinculado') {
   Object.assign(dataToInsert, {
     cedula: dataOriginal.cedula,
