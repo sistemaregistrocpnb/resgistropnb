@@ -174,7 +174,8 @@ window.initElimProcesados = function() {
         hideMsgElim();
 
         try {
-            const user = sessionStorage.getItem('pnb_user_email') || 'usuario@sistema'; // Ajusta según cómo guardes el usuario
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+const eliminadoPor = user?.email || sessionStorage.getItem('pnb_user_email') || 'usuario@sistema';
             
             // Preparar datos para archivar
             const dataToArchive = {
