@@ -1,0 +1,90 @@
+<style>
+:root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; }
+.card { background: #fff; border-radius: 10px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+.card h3 { color: var(--primary); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--beige-border); }
+.search-box { padding: 16px; background: #f8fafc; border: 1.5px dashed var(--beige-border); border-radius: 8px; margin-bottom: 20px; }
+.search-box label { font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; display: block; }
+.search-row { display: flex; gap: 10px; }
+.search-row input { flex: 1; padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; }
+.search-row button { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
+.search-msg { margin-top: 8px; font-size: 0.85rem; display: none; }
+.search-msg.error { color: #dc2626; }
+.search-msg.success { color: #15803d; }
+.search-msg.archived { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; padding: 8px; border-radius: 4px; margin-top: 8px; display: none; }
+
+/* Estilos de visualización de datos del procesado */
+.data-summary { background: #f8fafc; border: 1px solid var(--beige-border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+.data-row { display: flex; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; }
+.data-row:last-child { border-bottom: none; }
+.data-label { font-weight: 600; color: var(--primary); min-width: 180px; font-size: 0.9rem; }
+.data-value { color: #334155; flex: 1; font-size: 0.9rem; word-break: break-word; }
+
+.btn-eliminar { width: 100%; padding: 14px; background: #dc2626; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 20px; font-size: 1rem; }
+.btn-eliminar:hover { background: #b91c1c; }
+.btn-eliminar:disabled { background: #fca5a5; cursor: not-allowed; }
+.btn-reintegrar { width: 100%; padding: 14px; background: #059669; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 20px; font-size: 1rem; display: none; }
+.btn-reintegrar:hover { background: #047857; }
+.btn-reintegrar:disabled { background: #6ee7b7; cursor: not-allowed; }
+.msg { padding: 12px; margin-top: 15px; border-radius: 5px; text-align: center; display: none; }
+.msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.archived-banner { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 12px; margin-bottom: 16px; display: none; text-align: center; }
+.archived-banner strong { color: #92400e; }
+
+/* Modal */
+.elim-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; animation: fadeIn 0.2s; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.elim-modal-box { background: #fff; padding: 24px; border-radius: 10px; width: 90%; max-width: 440px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-top: 4px solid var(--primary); }
+.elim-modal-box h4 { margin: 0 0 12px; color: var(--primary); font-size: 1.1rem; }
+.elim-modal-box p { margin: 0 0 24px; color: #475569; line-height: 1.6; font-size: 0.95rem; }
+.elim-btns { display: flex; gap: 12px; justify-content: center; }
+.btn-modal-danger { background: #dc2626; color: #fff; border: none; padding: 11px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; flex: 1; max-width: 140px; }
+.btn-modal-cancel { background: #e2e8f0; color: #334155; border: none; padding: 11px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; flex: 1; max-width: 140px; }
+.btn-modal-success { background: #059669; color: #fff; border: none; padding: 11px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; flex: 1; max-width: 140px; }
+.btn-modal-danger:hover { background: #b91c1c; }
+.btn-modal-cancel:hover { background: #cbd5e1; }
+.btn-modal-success:hover { background: #047857; }
+@media (max-width: 600px) { .search-row, .data-row { flex-direction: column; } .data-label { min-width: 100%; margin-bottom: 4px; } }
+</style>
+
+<div class="card">
+    <h3>🗑️ Eliminar / Reintegrar Procesado</h3>
+    <div class="search-box">
+        <label>🔍 Buscar por Cédula, Placa, Serial o ID del Registro:</label>
+        <div class="search-row">
+            <input type="text" id="buscar-procesado-elim" placeholder="Ej: 19451803 o AA123BC...">
+            <button id="btn-buscar-procesado-elim">Buscar</button>
+        </div>
+        <div id="buscar-msg-elim" class="search-msg"></div>
+        <div id="archived-notice-elim" class="search-msg archived">
+            🔒 Este registro fue eliminado anteriormente. Use el botón <strong>Reintegrar</strong> para volver a activarlo.
+        </div>
+    </div>
+
+    <div id="elim-procesado-data-container" style="display: none;">
+        <div id="archived-banner-elim" class="archived-banner">
+            <strong>🗄️ Registro Archivado</strong><br>
+            Eliminado el <span id="archived-date-elim">-</span> por <span id="archived-by-elim">-</span>
+        </div>
+
+        <div class="data-summary" id="elim-procesado-resumen">
+            <!-- Se llena dinámicamente con JS -->
+        </div>
+
+        <button id="btn-eliminar-procesado" class="btn-eliminar">🗑️ Eliminar Procesado del Sistema</button>
+        <button id="btn-reintegrar-procesado" class="btn-reintegrar">♻️ Reintegrar al Sistema Activo</button>
+        <div id="msg-elim-procesado" class="msg"></div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación -->
+<div id="elim-modal-procesado" class="elim-modal">
+    <div class="elim-modal-box">
+        <h4 id="modal-title-elim">⚠️ Confirmar Acción</h4>
+        <p id="modal-text-elim">¿Está seguro?</p>
+        <div class="elim-btns">
+            <button id="btn-modal-yes-elim" class="btn-modal-danger">✅ Confirmar</button>
+            <button id="btn-modal-no-elim" class="btn-modal-cancel">❌ Cancelar</button>
+        </div>
+    </div>
+</div>
