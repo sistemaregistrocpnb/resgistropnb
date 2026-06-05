@@ -23,7 +23,7 @@
 .phone-option .country { color: #475569; font-size: 0.85rem; }
 .phone-display { border: 1.5px solid var(--beige-border); border-radius: 5px; padding: 9px 10px; background: #fff; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; user-select: none; height: 42px; box-sizing: border-box; }
 
-/* Documentos y Selectores Sí/No */
+/* Documentos y Selectores Sí/No (Idéntico a reg-procesados) */
 .doc-item { background: #fff; border: 1px solid var(--beige-border); border-radius: 6px; padding: 12px; margin-bottom: 10px; }
 .doc-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
 .doc-header label { font-weight: 600; color: var(--primary); margin: 0; flex: 1; }
@@ -35,9 +35,10 @@
 .doc-upload-area { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--beige-border); display: none; }
 .doc-upload-area.active { display: block; }
 .doc-upload-area input[type="file"] { margin-bottom: 8px; padding: 8px; background: #f8fafc; border-radius: 4px; width: 100%; border: 1px solid var(--beige-border); }
-.file-loaded { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #dcfce7; border: 1px solid #86efac; border-radius: 6px; margin-top: 8px; font-size: 0.85rem; color: #15803d; font-weight: 600; }
-.file-loaded .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.file-loaded .btn-remove { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.75rem; font-weight: 600; }
+.file-loaded { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #dcfce7; border: 1px solid #86efac; border-radius: 6px; margin-top: 8px; font-size: 0.85rem; color: #15803d; font-weight: 600; animation: fadeInCheck 0.3s ease-in; }
+.file-loaded .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #166534; }
+.file-loaded .btn-remove { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.75rem; font-weight: 600; margin-left: auto; }
+@keyframes fadeInCheck { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
 .btn-add-file { padding: 6px 14px; background: var(--secondary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-top: 6px; font-weight: 600; }
 .file-count { font-size: 0.75rem; color: #64748b; margin-top: 4px; font-weight: 600; }
@@ -149,7 +150,7 @@
 
         <fieldset>
             <legend>📁 Documentos Múltiples (PDF)</legend>
-            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Puede cargar hasta 10 archivos por categoría.</p>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Seleccione "Sí" para habilitar la carga (Máximo 10 archivos por categoría).</p>
             <div id="docs-multiples-container"></div>
         </fieldset>
 
