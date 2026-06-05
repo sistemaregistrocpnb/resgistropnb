@@ -253,23 +253,44 @@ window.initEditarProcesado = function() {
   // ==========================================
   // CARGAR PROCESADO DESDE LA BD
   // ==========================================
-  async function cargarProcesado(valor) {
-    const val = valor.trim();
-    
-    // Intentar buscar por cédula, placa o ID
-    const { data, error } = await window.supabaseClient
+// ==========================================
+// CARGAR PROCESADO DESDE LA BD (CORREGIDO)
+// ==========================================
+async function cargarProcesado(valor) {
+  const val = valor.trim().toUpperCase();
+  
+  // ✅ BÚSQUEDA SOLO EN COLUMNAS QUE EXISTEN
+  const { data, error } = await window.supabaseClient
+    .from('registro_procesados')
+    .select('*')
+    .or(`identificador_principal.eq.${val},cedula.eq.${val}`)
+    .order('fecha_procesamiento', { ascending: false })
+    .limit(5);
+  
+  if (error) {
+    console.error('Error en consulta:', error);
+    throw error;
+  }
+  
+  if (!data || data.length === 0) {
+    // ✅ BÚSQUEDA SECUNDARIA EN EL JSON (para placa, serial, etc.)
+    const { data: jsonData, error: jsonError } = await window.supabaseClient
       .from('registro_procesados')
       .select('*')
-      .or(`identificador_principal.eq.${val},cedula.eq.${val}`)
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .or(`datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
+      .order('fecha_procesamiento', { ascending: false })
+      .limit(5);
     
-    if (error) throw error;
-    if (!data || data.length === 0) return null;
+    if (jsonError) {
+      console.warn('Búsqueda en JSON falló:', jsonError);
+      return [];
+    }
     
-    return data[0];
+    return jsonData || [];
   }
-
+  
+  return data;
+}
   function mostrarDatosProcesado(proc) {
     const data = proc.datos_originales || {};
     let html = '';
