@@ -32,7 +32,7 @@ window.initRegDenuncias = function() {
     docsUnicos.forEach(d => archivosUnicos[d.id] = null);
     docsMultiples.forEach(d => archivosMultiples[d.id] = []);
 
-    // Generar documentos únicos
+    // Generar documentos únicos con selector SÍ/NO
     const contenedorUnicos = document.getElementById('docs-unicos-container');
     if (contenedorUnicos) {
         docsUnicos.forEach(doc => {
@@ -41,9 +41,9 @@ window.initRegDenuncias = function() {
             div.innerHTML = `
                 <div class="doc-header">
                     <label>${doc.label}</label>
-                    <div class="doc-toggle">
-                        <label>¿Cargar?</label>
-                        <input type="checkbox" id="toggle_${doc.id}" onchange="toggleDocUnico('${doc.id}')">
+                    <div class="doc-si-no">
+                        <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
+                        <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
                     </div>
                 </div>
                 <div class="doc-upload-area" id="upload_${doc.id}">
@@ -74,17 +74,20 @@ window.initRegDenuncias = function() {
         });
     }
 
-    // Funciones globales
-    window.toggleDocUnico = function(docId) {
-        const checkbox = document.getElementById(`toggle_${docId}`);
-        const uploadArea = document.getElementById(`upload_${docId}`);
-        if (checkbox.checked) {
-            uploadArea.classList.add('active');
-        } else {
-            uploadArea.classList.remove('active');
-            archivosUnicos[docId] = null;
-            document.getElementById(`status_${docId}`).innerHTML = '';
-            document.getElementById(`file_${docId}`).value = '';
+    // ==========================================
+    // FUNCIONES GLOBALES DE UI (Igual que reg-procesados)
+    // ==========================================
+    window.toggleDocField = function(campo, mostrar) {
+        const area = document.getElementById(`upload_${campo}`);
+        if (area) {
+            if (mostrar) {
+                area.classList.add('active');
+            } else {
+                area.classList.remove('active');
+                archivosUnicos[campo] = null;
+                document.getElementById(`status_${campo}`).innerHTML = '';
+                document.getElementById(`file_${campo}`).value = '';
+            }
         }
     };
 
@@ -94,9 +97,9 @@ window.initRegDenuncias = function() {
             archivosUnicos[docId] = input.files[0];
             statusDiv.innerHTML = `
                 <div class="file-loaded">
-                    <span>📄</span>
+                    <span>✅</span>
                     <span class="file-name">${input.files[0].name}</span>
-                    <button type="button" class="btn-remove" onclick="quitarDocUnico('${docId}')">❌</button>
+                    <button type="button" class="btn-remove" onclick="quitarDocUnico('${docId}')">❌ Quitar</button>
                 </div>
             `;
         }
@@ -159,7 +162,9 @@ window.initRegDenuncias = function() {
         actualizarListaMultiples(docId, max);
     };
 
-    // Dropdown de banderas
+    // ==========================================
+    // DROPDOWN DE BANDERAS
+    // ==========================================
     const nativeSelect = document.getElementById('d_tlf_pais');
     const displayBox = document.querySelector('.phone-display');
     const optionsBox = document.querySelector('.phone-options');
@@ -199,7 +204,9 @@ window.initRegDenuncias = function() {
         });
     }
 
-    // Envío del formulario
+    // ==========================================
+    // ENVÍO DEL FORMULARIO
+    // ==========================================
     const form = document.getElementById('form-reg-denuncias');
     const btn = form?.querySelector('.btn-submit');
     const msg = document.getElementById('msg-reg-denuncias');
@@ -215,6 +222,21 @@ window.initRegDenuncias = function() {
         if (!form.checkValidity()) {
             form.reportValidity();
             return;
+        }
+
+        // Validar documentos únicos marcados como Sí
+        for (const doc of docsUnicos) {
+            const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+            if (radio && radio.value === 'si') {
+                if (!archivosUnicos[doc.id]) {
+                    if (msg) {
+                        msg.textContent = `⚠️ Debe subir un PDF para: ${doc.label}`;
+                        msg.className = 'msg error';
+                        msg.style.display = 'block';
+                    }
+                    return;
+                }
+            }
         }
 
         btn.disabled = true;
@@ -234,7 +256,8 @@ window.initRegDenuncias = function() {
             // Subir documentos únicos
             const docsUnicosUrls = {};
             for (const doc of docsUnicos) {
-                if (archivosUnicos[doc.id]) {
+                const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+                if (radio && radio.value === 'si' && archivosUnicos[doc.id]) {
                     const path = `${uid}/${ts}_${doc.id}.pdf`;
                     const { error } = await bucket.upload(path, archivosUnicos[doc.id], { contentType: 'application/pdf' });
                     if (error) throw new Error(`Error subiendo ${doc.label}: ${error.message}`);
@@ -292,9 +315,9 @@ window.initRegDenuncias = function() {
                 setTimeout(() => msg.style.display = 'none', 4000);
             }
 
+            // Resetear formulario
             form.reset();
             
-            // Resetear fecha
             if (fechaInput) {
                 const ahora = new Date();
                 fechaInput.value = ahora.toLocaleString('es-VE', { 
@@ -306,8 +329,6 @@ window.initRegDenuncias = function() {
             // Resetear documentos
             docsUnicos.forEach(d => {
                 archivosUnicos[d.id] = null;
-                document.getElementById(`toggle_${d.id}`).checked = false;
-                document.getElementById(`upload_${d.id}`).classList.remove('active');
                 document.getElementById(`status_${d.id}`).innerHTML = '';
             });
 
