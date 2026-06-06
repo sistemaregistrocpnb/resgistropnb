@@ -1,5 +1,5 @@
 window.initRegDenuncias = function() {
-    // 🛡️ PREVENIR EJECUCIÓN DUPLICADA (Soluciona el parpadeo del dropdown)
+    // 🛡️ 1. PREVENIR EJECUCIÓN DUPLICADA (Evita que se reinicie y borre todo)
     if (window._regDenunciasInitialized) {
         console.log("⚠️ Módulo ya inicializado. Omitiendo ejecución duplicada...");
         return;
@@ -7,19 +7,12 @@ window.initRegDenuncias = function() {
     window._regDenunciasInitialized = true;
 
     console.log("⚙️ Iniciando módulo reg-denuncias.js...");
-    // ... (el resto del código sigue igual)
 
-    // 🔹 FUNCIÓN DE INICIALIZACIÓN SEGURA CON REINTENTOS
     function iniciarModulo(intentos = 0) {
         const form = document.getElementById('form-reg-denuncias');
         const btn = form?.querySelector('.btn-submit');
         const msg = document.getElementById('msg-reg-denuncias');
         const loadingOverlay = document.getElementById('loading-overlay');
-
-        // Verificar elementos del teléfono
-        const nativeSelect = document.getElementById('d_tlf_pais');
-        const displayBox = document.querySelector('.phone-display');
-        const optionsBox = document.querySelector('.phone-options');
 
         if (!form || !btn) {
             if (intentos < 10) {
@@ -38,7 +31,7 @@ window.initRegDenuncias = function() {
         const fechaInput = document.getElementById('d_fecha_hora');
         if (fechaInput) {
             const ahora = new Date();
-            fechaInput.value = ahora.toLocaleString('es-VE', { 
+            fechaInput.value = ahora.toLocaleString('es-VE', {
                 year: 'numeric', month: '2-digit', day: '2-digit',
                 hour: '2-digit', minute: '2-digit', second: '2-digit'
             });
@@ -61,7 +54,6 @@ window.initRegDenuncias = function() {
 
         const archivosUnicos = {};
         const archivosMultiples = {};
-
         docsUnicos.forEach(d => archivosUnicos[d.id] = null);
         docsMultiples.forEach(d => archivosMultiples[d.id] = []);
 
@@ -80,12 +72,12 @@ window.initRegDenuncias = function() {
                     <div class="doc-header">
                         <label>${doc.label}</label>
                         <div class="doc-si-no">
-                            <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
-                            <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                            <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="window.toggleDocField('${doc.id}', false)"><span>No</span></label>
+                            <label><input type="radio" name="doc_${doc.id}" value="si" onchange="window.toggleDocField('${doc.id}', true)"><span>Sí</span></label>
                         </div>
                     </div>
                     <div class="doc-upload-area" id="upload-${doc.id}">
-                        <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="cargarDocUnico('${doc.id}', this)">
+                        <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="window.cargarDocUnico('${doc.id}', this)">
                         <div id="status-${doc.id}"></div>
                     </div>
                 `;
@@ -102,13 +94,13 @@ window.initRegDenuncias = function() {
                     <div class="doc-header">
                         <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Máximo ${doc.max})</span></label>
                         <div class="doc-si-no">
-                            <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
-                            <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                            <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="window.toggleDocField('${doc.id}', false)"><span>No</span></label>
+                            <label><input type="radio" name="doc_${doc.id}" value="si" onchange="window.toggleDocField('${doc.id}', true)"><span>Sí</span></label>
                         </div>
                     </div>
                     <div class="doc-upload-area" id="upload-${doc.id}">
                         <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
-                        <button type="button" class="btn-add-file" onclick="agregarMultiples('${doc.id}', ${doc.max})">➕ Agregar archivos</button>
+                        <button type="button" class="btn-add-file" onclick="window.agregarMultiples('${doc.id}', ${doc.max})">➕ Agregar archivos</button>
                         <div class="file-count" id="count-${doc.id}">0 archivos cargados</div>
                         <div id="list-${doc.id}" style="margin-top: 8px;"></div>
                     </div>
@@ -127,6 +119,7 @@ window.initRegDenuncias = function() {
                     area.classList.add('active');
                 } else {
                     area.classList.remove('active');
+                    // 🔄 Limpiar estado interno si se oculta
                     if (archivosUnicos[campo] !== undefined) {
                         archivosUnicos[campo] = null;
                         const status = document.getElementById(`status-${campo}`);
@@ -137,7 +130,7 @@ window.initRegDenuncias = function() {
                     if (archivosMultiples[campo] !== undefined) {
                         archivosMultiples[campo] = [];
                         const docMax = docsMultiples.find(d => d.id === campo)?.max || 10;
-                        actualizarListaMultiples(campo, docMax);
+                        window.actualizarListaMultiples(campo, docMax);
                     }
                 }
             }
@@ -151,7 +144,7 @@ window.initRegDenuncias = function() {
                     <div class="file-loaded">
                         <span>✅</span>
                         <span class="file-name">${input.files[0].name}</span>
-                        <button type="button" class="btn-remove" onclick="quitarDocUnico('${docId}')">❌ Quitar</button>
+                        <button type="button" class="btn-remove" onclick="window.quitarDocUnico('${docId}')">❌ Quitar</button>
                     </div>
                 `;
             }
@@ -168,15 +161,15 @@ window.initRegDenuncias = function() {
         window.agregarMultiples = function(docId, max) {
             const input = document.getElementById(`file_${docId}`);
             if (!input || !input.files || input.files.length === 0) return;
-
+            
             const actuales = archivosMultiples[docId].length;
             const disponibles = max - actuales;
-
+            
             if (disponibles <= 0) {
                 alert(`Máximo ${max} archivos permitidos`);
                 return;
             }
-
+            
             let agregados = 0;
             for (const file of input.files) {
                 if (agregados >= disponibles) break;
@@ -185,16 +178,15 @@ window.initRegDenuncias = function() {
                     agregados++;
                 }
             }
-
-            actualizarListaMultiples(docId, max);
-            input.value = '';
+            window.actualizarListaMultiples(docId, max);
+            input.value = ''; // Limpiar input para permitir seleccionar el mismo archivo de nuevo si se borró
         };
 
-        function actualizarListaMultiples(docId, max) {
+        window.actualizarListaMultiples = function(docId, max) {
             const listDiv = document.getElementById(`list-${docId}`);
             const countDiv = document.getElementById(`count-${docId}`);
             if (!listDiv || !countDiv) return;
-
+            
             listDiv.innerHTML = '';
             archivosMultiples[docId].forEach((file, index) => {
                 const item = document.createElement('div');
@@ -202,48 +194,41 @@ window.initRegDenuncias = function() {
                 item.innerHTML = `
                     <span>📄 ${file.name}</span>
                     <div class="file-actions">
-                        <button type="button" onclick="quitarMultiple('${docId}', ${index}, ${max})">❌</button>
+                        <button type="button" onclick="window.quitarMultiple('${docId}', ${index}, ${max})">❌</button>
                     </div>
                 `;
                 listDiv.appendChild(item);
             });
-
             countDiv.textContent = `${archivosMultiples[docId].length} de ${max} archivos`;
-        }
+        };
 
         window.quitarMultiple = function(docId, index, max) {
             archivosMultiples[docId].splice(index, 1);
-            actualizarListaMultiples(docId, max);
+            window.actualizarListaMultiples(docId, max);
         };
 
         // ==========================================
-        // 🔹 DROPDOWN DE BANDERAS (CON LOGS DETALLADOS)
+        // 🔹 DROPDOWN DE BANDERAS
         // ==========================================
-        console.log("🔍 Buscando elementos del dropdown de teléfono...");
-        console.log("  - nativeSelect:", nativeSelect ? "✅ Encontrado" : "❌ NO encontrado");
-        console.log("  - displayBox:", displayBox ? "✅ Encontrado" : "❌ NO encontrado");
-        console.log("  - optionsBox:", optionsBox ? "✅ Encontrado" : "❌ NO encontrado");
-
+        const nativeSelect = document.getElementById('d_tlf_pais');
+        const displayBox = document.querySelector('.phone-display');
+        const optionsBox = document.querySelector('.phone-options');
         const flagImg = document.getElementById('d-tlf-flag-img');
         const codeText = document.getElementById('d-tlf-code-text');
         const countryText = document.getElementById('d-tlf-country-text');
 
-        const isoMap = { 
-            "Afganistán":"af","Albania":"al","Alemania":"de","Andorra":"ad","Angola":"ao","Antigua y Barbuda":"ag","Arabia Saudita":"sa","Argelia":"dz","Argentina":"ar","Armenia":"am","Australia":"au","Austria":"at","Azerbaiyán":"az","Bahamas":"bs","Baréin":"bh","Bangladés":"bd","Barbados":"bb","Bélgica":"be","Belice":"bz","Benín":"bj","Bielorrusia":"by","Birmania":"mm","Bolivia":"bo","Bosnia y Herzegovina":"ba","Botsuana":"bw","Brasil":"br","Brunéi":"bn","Bulgaria":"bg","Burkina Faso":"bf","Burundi":"bi","Bután":"bt","Cabo Verde":"cv","Camboya":"kh","Camerún":"cm","Canadá":"ca","Catar":"qa","Rep. Centroafricana":"cf","Chad":"td","Rep. Checa":"cz","Chile":"cl","China":"cn","Chipre":"cy","Colombia":"co","Comoras":"km","Corea del Norte":"kp","Corea del Sur":"kr","Costa de Marfil":"ci","Costa Rica":"cr","Croacia":"hr","Cuba":"cu","Dinamarca":"dk","Dominica":"dm","Ecuador":"ec","Egipto":"eg","El Salvador":"sv","Emiratos Árabes":"ae","Eritrea":"er","Eslovaquia":"sk","Eslovenia":"si","España":"es","Estados Unidos":"us","Estonia":"ee","Etiopía":"et","Filipinas":"ph","Finlandia":"fi","Fiyi":"fj","Francia":"fr","Gabón":"ga","Gambia":"gm","Georgia":"ge","Ghana":"gh","Granada":"gd","Grecia":"gr","Guatemala":"gt","Guinea":"gn","Guinea Ecuatorial":"gq","Guinea-Bisáu":"gw","Guyana":"gy","Haití":"ht","Honduras":"hn","Hungría":"hu","India":"in","Indonesia":"id","Irak":"iq","Irán":"ir","Irlanda":"ie","Islandia":"is","Israel":"il","Italia":"it","Jamaica":"jm","Japón":"jp","Jordania":"jo","Kazajistán":"kz","Kenia":"ke","Kirguistán":"kg","Kiribati":"ki","Kuwait":"kw","Laos":"la","Lesoto":"ls","Letonia":"lv","Líbano":"lb","Liberia":"lr","Libia":"ly","Liechtenstein":"li","Lituania":"lt","Luxemburgo":"lu","Macedonia del Norte":"mk","Madagascar":"mg","Malasia":"my","Malaui":"mw","Maldivas":"mv","Malí":"ml","Malta":"mt","Marruecos":"ma","Mauricio":"mu","Mauritania":"mr","México":"mx","Micronesia":"fm","Moldavia":"md","Mónaco":"mc","Mongolia":"mn","Montenegro":"me","Mozambique":"mz","Namibia":"na","Nauru":"nr","Nepal":"np","Nicaragua":"ni","Níger":"ne","Nigeria":"ng","Nueva Zelanda":"nz","Noruega":"no","Omán":"om","Países Bajos":"nl","Pakistán":"pk","Palaos":"pw","Palestina":"ps","Panamá":"pa","Papúa Nueva Guinea":"pg","Paraguay":"py","Perú":"pe","Polonia":"pl","Portugal":"pt","Reino Unido":"gb","Puerto Rico":"pr","Ruanda":"rw","Rumania":"ro","Rusia":"ru","Samoa":"ws","San Marino":"sm","Santa Lucía":"lc","Santo Tomé y Príncipe":"st","San Vicente y las Granadinas":"vc","Senegal":"sn","Serbia":"rs","Seychelles":"sc","Sierra Leona":"sl","Singapur":"sg","Siria":"sy","Somalia":"so","Sudáfrica":"za","Sudán":"sd","Sudán del Sur":"ss","Suecia":"se","Suiza":"ch","Surinam":"sr","Esuatini":"sz","Tayikistán":"tj","Tanzania":"tz","Tailandia":"th","Timor Oriental":"tl","Togo":"tg","Tonga":"to","Trinidad y Tobago":"tt","Túnez":"tn","Turquía":"tr","Turkmenistán":"tm","Tuvalu":"tv","Ucrania":"ua","Uganda":"ug","Uruguay":"uy","Uzbekistán":"uz","Vanuatu":"vu","Vaticano":"va","Venezuela":"ve","Vietnam":"vn","Yemen":"ye","Yibuti":"dj","Zambia":"zm","Zimbabue":"zw" 
+        const isoMap = {
+            "Afganistán":"af","Albania":"al","Alemania":"de","Andorra":"ad","Angola":"ao","Antigua y Barbuda":"ag","Arabia Saudita":"sa","Argelia":"dz","Argentina":"ar","Armenia":"am","Australia":"au","Austria":"at","Azerbaiyán":"az","Bahamas":"bs","Baréin":"bh","Bangladés":"bd","Barbados":"bb","Bélgica":"be","Belice":"bz","Benín":"bj","Bielorrusia":"by","Birmania":"mm","Bolivia":"bo","Bosnia y Herzegovina":"ba","Botsuana":"bw","Brasil":"br","Brunéi":"bn","Bulgaria":"bg","Burkina Faso":"bf","Burundi":"bi","Bután":"bt","Cabo Verde":"cv","Camboya":"kh","Camerún":"cm","Canadá":"ca","Catar":"qa","Rep. Centroafricana":"cf","Chad":"td","Rep. Checa":"cz","Chile":"cl","China":"cn","Chipre":"cy","Colombia":"co","Comoras":"km","Corea del Norte":"kp","Corea del Sur":"kr","Costa de Marfil":"ci","Costa Rica":"cr","Croacia":"hr","Cuba":"cu","Dinamarca":"dk","Dominica":"dm","Ecuador":"ec","Egipto":"eg","El Salvador":"sv","Emiratos Árabes":"ae","Eritrea":"er","Eslovaquia":"sk","Eslovenia":"si","España":"es","Estados Unidos":"us","Estonia":"ee","Etiopía":"et","Filipinas":"ph","Finlandia":"fi","Fiyi":"fj","Francia":"fr","Gabón":"ga","Gambia":"gm","Georgia":"ge","Ghana":"gh","Granada":"gd","Grecia":"gr","Guatemala":"gt","Guinea":"gn","Guinea Ecuatorial":"gq","Guinea-Bisáu":"gw","Guyana":"gy","Haití":"ht","Honduras":"hn","Hungría":"hu","India":"in","Indonesia":"id","Irak":"iq","Irán":"ir","Irlanda":"ie","Islandia":"is","Israel":"il","Italia":"it","Jamaica":"jm","Japón":"jp","Jordania":"jo","Kazajistán":"kz","Kenia":"ke","Kirguistán":"kg","Kiribati":"ki","Kuwait":"kw","Laos":"la","Lesoto":"ls","Letonia":"lv","Líbano":"lb","Liberia":"lr","Libia":"ly","Liechtenstein":"li","Lituania":"lt","Luxemburgo":"lu","Macedonia del Norte":"mk","Madagascar":"mg","Malasia":"my","Malaui":"mw","Maldivas":"mv","Malí":"ml","Malta":"mt","Marruecos":"ma","Mauricio":"mu","Mauritania":"mr","México":"mx","Micronesia":"fm","Moldavia":"md","Mónaco":"mc","Mongolia":"mn","Montenegro":"me","Mozambique":"mz","Namibia":"na","Nauru":"nr","Nepal":"np","Nicaragua":"ni","Níger":"ne","Nigeria":"ng","Nueva Zelanda":"nz","Noruega":"no","Omán":"om","Países Bajos":"nl","Pakistán":"pk","Palaos":"pw","Palestina":"ps","Panamá":"pa","Papúa Nueva Guinea":"pg","Paraguay":"py","Perú":"pe","Polonia":"pl","Portugal":"pt","Reino Unido":"gb","Puerto Rico":"pr","Ruanda":"rw","Rumania":"ro","Rusia":"ru","Samoa":"ws","San Marino":"sm","Santa Lucía":"lc","Santo Tomé y Príncipe":"st","San Vicente y las Granadinas":"vc","Senegal":"sn","Serbia":"rs","Seychelles":"sc","Sierra Leona":"sl","Singapur":"sg","Siria":"sy","Somalia":"so","Sudáfrica":"za","Sudán":"sd","Sudán del Sur":"ss","Suecia":"se","Suiza":"ch","Surinam":"sr","Esuatini":"sz","Tayikistán":"tj","Tanzania":"tz","Tailandia":"th","Timor Oriental":"tl","Togo":"tg","Tonga":"to","Trinidad y Tobago":"tt","Túnez":"tn","Turquía":"tr","Turkmenistán":"tm","Tuvalu":"tv","Ucrania":"ua","Uganda":"ug","Uruguay":"uy","Uzbekistán":"uz","Vanuatu":"vu","Vaticano":"va","Venezuela":"ve","Vietnam":"vn","Yemen":"ye","Yibuti":"dj","Zambia":"zm","Zimbabue":"zw"
         };
 
         if (nativeSelect && displayBox && optionsBox) {
-            console.log("✅ Todos los elementos del teléfono encontrados. Generando banderas...");
             optionsBox.innerHTML = '';
-            
-            let opcionesGeneradas = 0;
             Array.from(nativeSelect.options).forEach(opt => {
                 if (!opt.value) return;
                 const iso = isoMap[opt.text] || opt.value.replace('+','').toLowerCase();
                 const div = document.createElement('div');
                 div.className = 'phone-option';
                 div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.8rem;">${opt.text}</span>`;
-                div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:0.15s;';
                 div.onmouseenter = () => div.style.background = '#f8fafc';
                 div.onmouseleave = () => div.style.background = '';
                 div.addEventListener('click', () => {
@@ -254,24 +239,18 @@ window.initRegDenuncias = function() {
                     optionsBox.style.display = 'none';
                 });
                 optionsBox.appendChild(div);
-                opcionesGeneradas++;
-            });
-            
-            console.log(`✅ Lista generada con ${opcionesGeneradas} países.`);
-
-            displayBox.addEventListener('click', (e) => { 
-                e.stopPropagation(); 
-                optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block'; 
-                console.log("🔽 Dropdown de teléfono clickeado. Estado:", optionsBox.style.display);
             });
 
-            document.addEventListener('click', (e) => { 
+            displayBox.addEventListener('click', (e) => {
+                e.stopPropagation();
+                optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block';
+            });
+
+            document.addEventListener('click', (e) => {
                 if (!e.target.closest('.phone-dropdown-wrapper')) {
-                    optionsBox.style.display = 'none'; 
+                    optionsBox.style.display = 'none';
                 }
             });
-        } else {
-            console.error("❌ ERROR: No se pudieron inicializar los elementos del teléfono. Verifica que el HTML tenga los IDs correctos.");
         }
 
         // ==========================================
@@ -322,9 +301,8 @@ window.initRegDenuncias = function() {
             try {
                 const bucket = window.supabaseClient.storage.from('denuncias_documentos');
                 const { data: { user } } = await window.supabaseClient.auth.getUser();
-                
                 if (!user) throw new Error('Debe iniciar sesión para registrar una denuncia.');
-
+                
                 const uid = user.id;
                 const ts = Date.now();
 
@@ -363,7 +341,7 @@ window.initRegDenuncias = function() {
                 // Preparar datos
                 const tlfPais = document.getElementById('d_tlf_pais')?.value;
                 const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '');
-
+                
                 const data = {
                     estacion_policial: document.getElementById('d_estacion')?.value,
                     primer_nombre: document.getElementById('d_nombre1')?.value.trim(),
@@ -395,27 +373,26 @@ window.initRegDenuncias = function() {
                     setTimeout(() => msg.style.display = 'none', 4000);
                 }
 
-                // Resetear formulario
+                // 🔄 RESET SINCRONIZADO DEL FORMULARIO
                 form.reset();
                 
+                // Actualizar fecha nuevamente
                 if (fechaInput) {
                     const ahora = new Date();
-                    fechaInput.value = ahora.toLocaleString('es-VE', { 
+                    fechaInput.value = ahora.toLocaleString('es-VE', {
                         year: 'numeric', month: '2-digit', day: '2-digit',
                         hour: '2-digit', minute: '2-digit', second: '2-digit'
                     });
                 }
 
-                // Resetear documentos
+                // Forzar la sincronización visual de los documentos después del reset
+                // (form.reset() no dispara los eventos onchange, hay que hacerlo manualmente)
                 docsUnicos.forEach(d => {
-                    archivosUnicos[d.id] = null;
-                    const status = document.getElementById(`status-${d.id}`);
-                    if (status) status.innerHTML = '';
+                    window.toggleDocField(d.id, false);
                 });
-
+                
                 docsMultiples.forEach(d => {
-                    archivosMultiples[d.id] = [];
-                    actualizarListaMultiples(d.id, d.max);
+                    window.toggleDocField(d.id, false);
                 });
 
                 // Resetear teléfono
@@ -445,7 +422,7 @@ window.initRegDenuncias = function() {
     iniciarModulo();
 };
 
-// Auto-inicialización de respaldo
+// Auto-inicialización de respaldo segura
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.initRegDenuncias);
 } else {
