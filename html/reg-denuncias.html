@@ -1,418 +1,478 @@
 <style>
-  :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; }
-  .registro-form fieldset { border: 1px solid var(--beige-border); border-radius: 8px; padding: 16px; margin-bottom: 18px; background: #fafbfc; }
-  .registro-form legend { font-weight: 600; color: var(--primary); font-size: 0.95rem; padding: 0 8px; }
-  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
-  .registro-form label { font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; display: block; }
-  .registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; box-sizing: border-box; }
-  .registro-form input:focus, .registro-form select:focus, .registro-form textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,43,92,0.1); }
-  .btn-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 15px; font-size: 1rem; }
-  .btn-submit:hover { background: var(--secondary); }
-  .btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+  :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; --danger: #dc2626; }
+  
+  .con-search-box {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--beige-border);
+    margin-bottom: 15px;
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+  .con-search-field {
+    flex: 1;
+    min-width: 200px;
+  }
+  .con-search-field label {
+    font-weight: 600;
+    color: var(--primary);
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+  }
+  .con-search-field input {
+    width: 100%;
+    padding: 10px;
+    border: 1.5px solid var(--beige-border);
+    border-radius: 5px;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+  .con-search-field small {
+    color: #64748b;
+    font-size: 0.75rem;
+    display: block;
+    margin-top: 4px;
+  }
+  .con-search-options {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0;
+  }
+  .con-search-options input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+  .con-search-options label {
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #475569;
+    user-select: none;
+  }
+  .con-btn {
+    padding: 10px 20px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    height: 42px;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .con-btn:hover:not(:disabled) { background: var(--secondary); }
+  .con-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  .con-btn-secondary {
+    background: #64748b;
+  }
+  .con-btn-secondary:hover:not(:disabled) { background: #475569; }
+
+  .con-table-container {
+    background: white;
+    border: 1px solid var(--beige-border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 15px;
+  }
+  .con-table-header {
+    background: var(--primary);
+    color: white;
+    padding: 12px 16px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .con-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .con-table th {
+    background: #f1f5f9;
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 0.8rem;
+    color: var(--primary);
+    font-weight: 700;
+    border-bottom: 2px solid var(--beige-border);
+    text-transform: uppercase;
+  }
+  .con-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.85rem;
+    color: #334155;
+  }
+  .con-table tr:hover {
+    background: #f8fafc;
+  }
+  .con-table .numero-denuncia {
+    font-weight: 700;
+    color: var(--primary);
+    font-family: monospace;
+  }
+  .con-table .badge-eliminado {
+    background: #fee2e2;
+    color: #b91c1c;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-left: 6px;
+  }
+  .con-table .badge-activo {
+    background: #dcfce7;
+    color: #15803d;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-left: 6px;
+  }
+  .con-btn-ver {
+    padding: 5px 12px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .con-btn-ver:hover { background: var(--secondary); }
+
+  .con-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 15px;
+    background: #f8fafc;
+    border-top: 1px solid var(--beige-border);
+  }
+  .con-pagination button {
+    padding: 6px 12px;
+    background: white;
+    border: 1px solid var(--beige-border);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--primary);
+    font-weight: 600;
+  }
+  .con-pagination button:hover:not(:disabled) {
+    background: var(--primary);
+    color: white;
+  }
+  .con-pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .con-pagination button.active {
+    background: var(--primary);
+    color: white;
+  }
+  .con-pagination-info {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0 10px;
+  }
+
   .msg { padding: 10px; margin-top: 12px; border-radius: 5px; text-align: center; display: none; }
   .msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
   .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-  
-  /* Dropdown de banderas */
-  .phone-dropdown-wrapper { position: relative; width: 100%; z-index: 100 !important; }
-  .phone-options { max-height: 350px !important; overflow-y: auto !important; position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: #fff !important; border: 2px solid var(--beige-border) !important; border-radius: 0 0 8px 8px !important; z-index: 9999 !important; box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important; display: none; margin-top: 2px; }
-  .phone-search-input { width: 100%; padding: 10px; border: none; border-bottom: 2px solid var(--beige-border); font-size: 0.9rem; outline: none; box-sizing: border-box; position: sticky; top: 0; background: white; z-index: 10; }
-  .phone-option { display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background 0.15s; }
-  .phone-option:hover { background: #f0f4f8; }
-  .phone-option img { width: 20px; height: 14px; object-fit: contain; border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
-  .phone-option .code { font-weight: 600; min-width: 35px; color: #334155; }
-  .phone-option .country { color: #475569; font-size: 0.85rem; }
-  .phone-display { border: 1.5px solid var(--beige-border); border-radius: 5px; padding: 9px 10px; background: #fff; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; user-select: none; height: 42px; box-sizing: border-box; }
-  
-  /* Scrollbar personalizada */
-  .phone-options::-webkit-scrollbar { width: 8px; }
-  .phone-options::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-  .phone-options::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
-  .phone-options::-webkit-scrollbar-thumb:hover { background: var(--secondary); }
-  
-  /* Documentos y Selectores Sí/No */
-  .doc-item { background: #fff; border: 1px solid var(--beige-border); border-radius: 6px; padding: 12px; margin-bottom: 10px; }
-  .doc-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-  .doc-header label { font-weight: 600; color: var(--primary); margin: 0; flex: 1; }
-  .doc-si-no { display: flex; gap: 4px; }
-  .doc-si-no label { display: flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 500; font-size: 0.85rem; padding: 6px 14px; border: 1px solid var(--beige-border); border-radius: 4px; transition: all 0.2s; background: #fff; color: var(--primary); }
-  .doc-si-no input[type="radio"] { display: none; }
-  .doc-si-no label:has(input:checked) { background: var(--primary); color: white; border-color: var(--primary); }
-  .doc-upload-area { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--beige-border); display: none; }
-  .doc-upload-area.active { display: block; }
-  .doc-upload-area input[type="file"] { margin-bottom: 8px; padding: 8px; background: #f8fafc; border-radius: 4px; width: 100%; border: 1px solid var(--beige-border); }
-  .file-loaded { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #dcfce7; border: 1px solid #86efac; border-radius: 6px; margin-top: 8px; font-size: 0.85rem; color: #15803d; font-weight: 600; }
-  .file-loaded .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #166534; }
-  .file-loaded .btn-remove { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.75rem; font-weight: 600; margin-left: auto; }
-  .btn-add-file { padding: 6px 14px; background: var(--secondary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-top: 6px; font-weight: 600; }
-  .file-count { font-size: 0.75rem; color: #64748b; margin-top: 4px; font-weight: 600; }
-  .file-item-multiple { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #f8fafc; border-radius: 4px; margin-bottom: 4px; font-size: 0.85rem; border: 1px solid #e2e8f0; }
-  .file-item-multiple .file-actions { display: flex; gap: 4px; }
-  .file-item-multiple button { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.75rem; }
-  
-  /* Loading Overlay */
-  .loading-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255, 255, 255, 0.9); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 9999; backdrop-filter: blur(4px); }
-  .loading-overlay.active { display: flex; }
-  .spinner { width: 50px; height: 50px; border: 5px solid #e2e8f0; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
-  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-  .loading-text { font-size: 1.1rem; font-weight: 600; color: var(--primary); text-align: center; }
-  
-  /* Asegurar que los contenedores padres no corten el dropdown */
-  fieldset, .registro-form, .card, .form-grid { overflow: visible !important; }
-  @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+  .msg.info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+
+  .con-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9998;
+    padding: 20px;
+  }
+  .con-modal-overlay.active { display: flex; }
+  .con-modal {
+    background: white;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .con-modal-header {
+    background: var(--primary);
+    color: white;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 10px 10px 0 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .con-modal-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+  .con-modal-close {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    line-height: 1;
+  }
+  .con-modal-body {
+    padding: 25px;
+  }
+  .con-modal-actions {
+    padding: 15px 20px;
+    background: #f8fafc;
+    border-top: 1px solid var(--beige-border);
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    border-radius: 0 0 10px 10px;
+    position: sticky;
+    bottom: 0;
+  }
+  .con-btn-pdf {
+    background: #dc2626;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .con-btn-pdf:hover:not(:disabled) { background: #b91c1c; }
+  .con-btn-pdf:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+  }
+  .con-btn-print {
+    background: var(--primary);
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .con-btn-print:hover { background: var(--secondary); }
+
+  .ficha-denuncia {
+    font-family: Arial, sans-serif;
+    color: #1e293b;
+    padding: 10px;
+  }
+  .ficha-header {
+    text-align: center;
+    border-bottom: 3px solid var(--primary);
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+  }
+  .ficha-header h1 {
+    color: var(--primary);
+    margin: 0 0 5px 0;
+    font-size: 1.5rem;
+  }
+  .ficha-header h2 {
+    color: var(--secondary);
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  .ficha-header .numero-grande {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-top: 10px;
+    font-family: monospace;
+    letter-spacing: 2px;
+  }
+  .ficha-section {
+    margin-bottom: 20px;
+  }
+  .ficha-section-title {
+    background: var(--primary);
+    color: white;
+    padding: 8px 12px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+    border-radius: 4px;
+  }
+  .ficha-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .ficha-field {
+    background: #f8fafc;
+    padding: 8px 12px;
+    border-left: 3px solid var(--secondary);
+    border-radius: 2px;
+  }
+  .ficha-field.full {
+    grid-column: span 2;
+  }
+  .ficha-label {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .ficha-value {
+    font-size: 0.95rem;
+    color: #1e293b;
+    font-weight: 500;
+    word-break: break-word;
+  }
+  .ficha-docs-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .ficha-docs-list li {
+    padding: 6px 10px;
+    background: #f1f5f9;
+    margin-bottom: 4px;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ficha-docs-list li a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .ficha-docs-list li a:hover {
+    text-decoration: underline;
+  }
+  .ficha-eliminado-aviso {
+    background: #fee2e2;
+    border: 2px solid var(--danger);
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+  .ficha-eliminado-aviso strong {
+    color: var(--danger);
+  }
+
+  @media print {
+    body * { visibility: hidden; }
+    .ficha-denuncia, .ficha-denuncia * { visibility: visible; }
+    .ficha-denuncia {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      padding: 20px;
+    }
+    .con-modal-header, .con-modal-actions { display: none !important; }
+    .con-modal-overlay {
+      position: static;
+      background: white;
+      padding: 0;
+    }
+    .con-modal {
+      box-shadow: none;
+      max-height: none;
+      overflow: visible;
+    }
+    .ficha-section-title {
+      background: var(--primary) !important;
+      color: white !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+
+  .con-loading {
+    text-align: center;
+    padding: 40px;
+    color: #64748b;
+  }
+  .con-empty {
+    text-align: center;
+    padding: 40px;
+    color: #94a3b8;
+    font-size: 1rem;
+  }
 </style>
 
 <div class="card">
-  <h3>📝 Registro de Denuncias</h3>
+  <h3>📊 Consulta de Denuncias</h3>
   
-  <form id="form-reg-denuncias" class="registro-form" novalidate>
-    
-    <!-- Número de Denuncia -->
-    <fieldset>
-      <legend>🔖 Identificación de la Denuncia</legend>
-      <div class="form-grid">
-        <div class="form-group" style="grid-column: span 2;">
-          <label>Número de Denuncia</label>
-          <input type="text" id="d_numero_denuncia" readonly style="background: #f1f5f9; cursor: not-allowed; font-weight: bold; color: var(--primary); font-size: 1.1rem; letter-spacing: 1px;">
-        </div>
-      </div>
-    </fieldset>
+  <div class="con-search-box">
+    <div class="con-search-field">
+      <label> Buscar por Cédula</label>
+      <input type="text" id="con_buscar_cedula" placeholder="Ej: V-12345678">
+      <small>Deje vacío y presione "Mostrar últimas" para ver las 15 más recientes</small>
+    </div>
+    <div class="con-search-options">
+      <input type="checkbox" id="con_incluir_eliminadas">
+      <label for="con_incluir_eliminadas">Incluir denuncias eliminadas</label>
+    </div>
+    <button type="button" class="con-btn" id="con_btn_buscar">🔍 Buscar</button>
+    <button type="button" class="con-btn con-btn-secondary" id="con_btn_ultimas">📋 Últimas 15</button>
+  </div>
+  
+  <div id="con_msg" class="msg"></div>
 
-    <fieldset>
-      <legend>📅 Fecha y Estación</legend>
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Fecha y Hora</label>
-          <input type="text" id="d_fecha_hora" readonly style="background: #f1f5f9; cursor: not-allowed;">
-        </div>
-        <div class="form-group" style="grid-column: span 2;">
-          <label>Estación Policial <span style="color:#ef4444;">*</span></label>
-          <select id="d_estacion" required>
-            <option value="">Seleccione estación...</option>
-            <option value="EPM MARACAIBO">EPM MARACAIBO</option>
-            <option value="EPM SAN FRANCISCO">EPM SAN FRANCISCO</option>
-            <option value="EPM LA CAÑADA">EPM LA CAÑADA</option>
-            <option value="EPP CRISTO DE ARANZA">EPP CRISTO DE ARANZA</option>
-            <option value="EPP LUIS HURTADO">EPP LUIS HURTADO</option>
-            <option value="EPP DAGNINO">EPP DAGNINO</option>
-            <option value="EPP OLEGARIO VILLALOBOS">EPP OLEGARIO VILLALOBOS</option>
-            <option value="EPP CHIQUINQUIRA">EPP CHIQUINQUIRA</option>
-            <option value="EPP FRANCISCO EUGENIO">EPP FRANCISCO EUGENIO</option>
-            <option value="EPP CARACCIOLO">EPP CARACCIOLO</option>
-            <option value="EPP IDELFONSO">EPP IDELFONSO</option>
-            <option value="EPP VENANCIO PULGAR">EPP VENANCIO PULGAR</option>
-            <option value="EPP COQUIVACOA-ZAPARA">EPP COQUIVACOA-ZAPARA</option>
-            <option value="EPP RAUL LEONI">EPP RAUL LEONI</option>
-            <option value="EPP ANTONIO BORJAS ROMERO">EPP ANTONIO BORJAS ROMERO</option>
-            <option value="EPP JUANA DE AVILA">EPP JUANA DE AVILA</option>
-            <option value="EPP SAN ISIDRO">EPP SAN ISIDRO</option>
-            <option value="EPP CASIQUE MARA">EPP CASIQUE MARA</option>
-            <option value="EPP BOLIVAR">EPP BOLIVAR</option>
-            <option value="EPP EL BAJO">EPP EL BAJO</option>
-            <option value="EPP DOMITILA">EPP DOMITILA</option>
-            <option value="EPP CORTIJOS">EPP CORTIJOS</option>
-            <option value="EPP MARCIAL HERNANDEZ">EPP MARCIAL HERNANDEZ</option>
-            <option value="EPP POTRERITO">EPP POTRERITO</option>
-            <option value="EPP ANDRES BELLO">EPP ANDRES BELLO</option>
-            <option value="EPP SANTA LUCIA">EPP SANTA LUCIA</option>
-          </select>
-        </div>
-      </div>
-    </fieldset>
-
-    <fieldset>
-      <legend>👤 Datos del Denunciante</legend>
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Cédula de Identidad <span style="color:#ef4444;">*</span></label>
-          <input type="text" id="d_cedula" required placeholder="Ej: V-12345678" pattern="[VEve]-?[0-9]{6,9}" title="Formato: V-12345678 o E-12345678">
-        </div>
-        <div class="form-group">
-          <label>Primer Nombre <span style="color:#ef4444;">*</span></label>
-          <input type="text" id="d_nombre1" required>
-        </div>
-        <div class="form-group">
-          <label>Segundo Nombre</label>
-          <input type="text" id="d_nombre2">
-        </div>
-        <div class="form-group">
-          <label>Primer Apellido <span style="color:#ef4444;">*</span></label>
-          <input type="text" id="d_apellido1" required>
-        </div>
-        <div class="form-group">
-          <label>Segundo Apellido</label>
-          <input type="text" id="d_apellido2">
-        </div>
-      </div>
-      
-      <div class="form-grid" style="margin-top: 14px;">
-        <div class="form-group" style="grid-column: span 2;">
-          <label>Teléfono <span style="color:#64748b; font-weight:400;">(Opcional)</span></label>
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <div class="phone-dropdown-wrapper" style="width: 210px; flex-shrink: 0;">
-              <select id="d_tlf_pais" style="position: absolute; opacity: 0; pointer-events: none; width: 100%; height: 100%; z-index: 1;">
-                <option value="">--</option>
-                <option value="+93">Afganistán</option>
-                <option value="+355">Albania</option>
-                <option value="+49">Alemania</option>
-                <option value="+376">Andorra</option>
-                <option value="+244">Angola</option>
-                <option value="+1268">Antigua y Barbuda</option>
-                <option value="+966">Arabia Saudita</option>
-                <option value="+213">Argelia</option>
-                <option value="+54">Argentina</option>
-                <option value="+374">Armenia</option>
-                <option value="+297">Aruba</option>
-                <option value="+61">Australia</option>
-                <option value="+43">Austria</option>
-                <option value="+994">Azerbaiyán</option>
-                <option value="+1242">Bahamas</option>
-                <option value="+973">Baréin</option>
-                <option value="+880">Bangladés</option>
-                <option value="+1246">Barbados</option>
-                <option value="+32">Bélgica</option>
-                <option value="+501">Belice</option>
-                <option value="+229">Benín</option>
-                <option value="+1441">Bermudas</option>
-                <option value="+375">Bielorrusia</option>
-                <option value="+95">Birmania</option>
-                <option value="+591">Bolivia</option>
-                <option value="+387">Bosnia y Herzegovina</option>
-                <option value="+267">Botsuana</option>
-                <option value="+55">Brasil</option>
-                <option value="+673">Brunéi</option>
-                <option value="+359">Bulgaria</option>
-                <option value="+226">Burkina Faso</option>
-                <option value="+257">Burundi</option>
-                <option value="+975">Bután</option>
-                <option value="+238">Cabo Verde</option>
-                <option value="+855">Camboya</option>
-                <option value="+237">Camerún</option>
-                <option value="+1">Canadá</option>
-                <option value="+974">Catar</option>
-                <option value="+236">Rep. Centroafricana</option>
-                <option value="+235">Chad</option>
-                <option value="+56">Chile</option>
-                <option value="+86">China</option>
-                <option value="+357">Chipre</option>
-                <option value="+57">Colombia</option>
-                <option value="+269">Comoras</option>
-                <option value="+242">Congo</option>
-                <option value="+850">Corea del Norte</option>
-                <option value="+82">Corea del Sur</option>
-                <option value="+225">Costa de Marfil</option>
-                <option value="+506">Costa Rica</option>
-                <option value="+385">Croacia</option>
-                <option value="+53">Cuba</option>
-                <option value="+599">Curazao</option>
-                <option value="+45">Dinamarca</option>
-                <option value="+1767">Dominica</option>
-                <option value="+593">Ecuador</option>
-                <option value="+20">Egipto</option>
-                <option value="+503">El Salvador</option>
-                <option value="+971">Emiratos Árabes</option>
-                <option value="+291">Eritrea</option>
-                <option value="+421">Eslovaquia</option>
-                <option value="+386">Eslovenia</option>
-                <option value="+34">España</option>
-                <option value="+1">Estados Unidos</option>
-                <option value="+372">Estonia</option>
-                <option value="+251">Etiopía</option>
-                <option value="+63">Filipinas</option>
-                <option value="+358">Finlandia</option>
-                <option value="+679">Fiyi</option>
-                <option value="+33">Francia</option>
-                <option value="+241">Gabón</option>
-                <option value="+220">Gambia</option>
-                <option value="+995">Georgia</option>
-                <option value="+233">Ghana</option>
-                <option value="+350">Gibraltar</option>
-                <option value="+1473">Granada</option>
-                <option value="+30">Grecia</option>
-                <option value="+299">Groenlandia</option>
-                <option value="+590">Guadalupe</option>
-                <option value="+1671">Guam</option>
-                <option value="+502">Guatemala</option>
-                <option value="+594">Guayana Francesa</option>
-                <option value="+224">Guinea</option>
-                <option value="+240">Guinea Ecuatorial</option>
-                <option value="+245">Guinea-Bisáu</option>
-                <option value="+592">Guyana</option>
-                <option value="+509">Haití</option>
-                <option value="+504">Honduras</option>
-                <option value="+852">Hong Kong</option>
-                <option value="+36">Hungría</option>
-                <option value="+91">India</option>
-                <option value="+62">Indonesia</option>
-                <option value="+964">Irak</option>
-                <option value="+98">Irán</option>
-                <option value="+353">Irlanda</option>
-                <option value="+44">Isla de Man</option>
-                <option value="+298">Islas Feroe</option>
-                <option value="+677">Islas Salomón</option>
-                <option value="+972">Israel</option>
-                <option value="+39">Italia</option>
-                <option value="+1876">Jamaica</option>
-                <option value="+81">Japón</option>
-                <option value="+962">Jordania</option>
-                <option value="+7">Kazajistán</option>
-                <option value="+254">Kenia</option>
-                <option value="+996">Kirguistán</option>
-                <option value="+686">Kiribati</option>
-                <option value="+965">Kuwait</option>
-                <option value="+856">Laos</option>
-                <option value="+371">Letonia</option>
-                <option value="+961">Líbano</option>
-                <option value="+266">Lesoto</option>
-                <option value="+231">Liberia</option>
-                <option value="+218">Libia</option>
-                <option value="+423">Liechtenstein</option>
-                <option value="+370">Lituania</option>
-                <option value="+352">Luxemburgo</option>
-                <option value="+853">Macao</option>
-                <option value="+389">Macedonia del Norte</option>
-                <option value="+261">Madagascar</option>
-                <option value="+60">Malasia</option>
-                <option value="+265">Malaui</option>
-                <option value="+960">Maldivas</option>
-                <option value="+223">Malí</option>
-                <option value="+356">Malta</option>
-                <option value="+212">Marruecos</option>
-                <option value="+596">Martinica</option>
-                <option value="+230">Mauricio</option>
-                <option value="+222">Mauritania</option>
-                <option value="+262">Mayotte</option>
-                <option value="+52">México</option>
-                <option value="+691">Micronesia</option>
-                <option value="+373">Moldavia</option>
-                <option value="+377">Mónaco</option>
-                <option value="+976">Mongolia</option>
-                <option value="+382">Montenegro</option>
-                <option value="+1664">Montserrat</option>
-                <option value="+258">Mozambique</option>
-                <option value="+264">Namibia</option>
-                <option value="+674">Nauru</option>
-                <option value="+977">Nepal</option>
-                <option value="+505">Nicaragua</option>
-                <option value="+227">Níger</option>
-                <option value="+234">Nigeria</option>
-                <option value="+683">Niue</option>
-                <option value="+47">Noruega</option>
-                <option value="+687">Nueva Caledonia</option>
-                <option value="+64">Nueva Zelanda</option>
-                <option value="+968">Omán</option>
-                <option value="+31">Países Bajos</option>
-                <option value="+92">Pakistán</option>
-                <option value="+680">Palaos</option>
-                <option value="+970">Palestina</option>
-                <option value="+507">Panamá</option>
-                <option value="+675">Papúa Nueva Guinea</option>
-                <option value="+595">Paraguay</option>
-                <option value="+51">Perú</option>
-                <option value="+689">Polinesia Francesa</option>
-                <option value="+48">Polonia</option>
-                <option value="+351">Portugal</option>
-                <option value="+1">Puerto Rico</option>
-                <option value="+420">Rep. Checa</option>
-                <option value="+262">Reunión</option>
-                <option value="+250">Ruanda</option>
-                <option value="+40">Rumania</option>
-                <option value="+7">Rusia</option>
-                <option value="+685">Samoa</option>
-                <option value="+378">San Marino</option>
-                <option value="+1758">Santa Lucía</option>
-                <option value="+239">Santo Tomé y Príncipe</option>
-                <option value="+1784">San Vicente y las Granadinas</option>
-                <option value="+221">Senegal</option>
-                <option value="+381">Serbia</option>
-                <option value="+248">Seychelles</option>
-                <option value="+232">Sierra Leona</option>
-                <option value="+65">Singapur</option>
-                <option value="+963">Siria</option>
-                <option value="+252">Somalia</option>
-                <option value="+27">Sudáfrica</option>
-                <option value="+249">Sudán</option>
-                <option value="+211">Sudán del Sur</option>
-                <option value="+46">Suecia</option>
-                <option value="+41">Suiza</option>
-                <option value="+597">Surinam</option>
-                <option value="+268">Esuatini</option>
-                <option value="+992">Tayikistán</option>
-                <option value="+255">Tanzania</option>
-                <option value="+66">Tailandia</option>
-                <option value="+670">Timor Oriental</option>
-                <option value="+228">Togo</option>
-                <option value="+676">Tonga</option>
-                <option value="+1868">Trinidad y Tobago</option>
-                <option value="+216">Túnez</option>
-                <option value="+90">Turquía</option>
-                <option value="+993">Turkmenistán</option>
-                <option value="+688">Tuvalu</option>
-                <option value="+380">Ucrania</option>
-                <option value="+256">Uganda</option>
-                <option value="+598">Uruguay</option>
-                <option value="+998">Uzbekistán</option>
-                <option value="+678">Vanuatu</option>
-                <option value="+379">Vaticano</option>
-                <option value="+58">Venezuela</option>
-                <option value="+84">Vietnam</option>
-                <option value="+681">Wallis y Futuna</option>
-                <option value="+967">Yemen</option>
-                <option value="+253">Yibuti</option>
-                <option value="+260">Zambia</option>
-                <option value="+263">Zimbabue</option>
-              </select>
-              <div class="phone-display">
-                <img id="d-tlf-flag-img" src="https://flagcdn.com/w20/xx.png" style="width: 18px; height: 13px; object-fit: contain; border-radius: 2px;">
-                <span id="d-tlf-code-text" style="font-weight: 600; min-width: 30px;">+XX</span>
-                <span style="color: #cbd5e1;">|</span>
-                <span id="d-tlf-country-text" style="color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.8rem;">País</span>
-                <span style="margin-left: auto; font-size: 0.5rem; color: #94a3b8;">▼</span>
-              </div>
-              <div class="phone-options" style="display: none;"></div>
-            </div>
-            <input type="text" id="d_tlf_num" placeholder="Ej: 4141234567" style="flex: 1; min-width: 120px;">
-          </div>
-        </div>
-        <div class="form-group" style="grid-column: span 2;">
-          <label>Dirección</label>
-          <input type="text" id="d_direccion" placeholder="Dirección completa">
-        </div>
-      </div>
-    </fieldset>
-
-    <!-- Motivo de la Denuncia -->
-    <fieldset>
-      <legend>📌 Motivo de la Denuncia</legend>
-      <div class="form-group">
-        <label>Motivo <span style="color:#ef4444;">*</span></label>
-        <textarea id="d_motivo" rows="3" required placeholder="Describa brevemente el motivo principal de la denuncia..."></textarea>
-      </div>
-    </fieldset>
-
-    <fieldset>
-      <legend>📄 Documentos Únicos (PDF)</legend>
-      <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Seleccione "Sí" para habilitar la carga.</p>
-      <div id="docs-unicos-container"></div>
-    </fieldset>
-
-    <fieldset>
-      <legend>📁 Documentos Múltiples (PDF)</legend>
-      <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Seleccione "Sí" para habilitar la carga (Máximo 10 archivos).</p>
-      <div id="docs-multiples-container"></div>
-    </fieldset>
-
-    <fieldset>
-      <legend>📝 Observaciones</legend>
-      <textarea id="d_observaciones" rows="4" placeholder="Detalles adicionales de la denuncia..."></textarea>
-    </fieldset>
-
-    <button type="submit" class="btn-submit">✅ Registrar Denuncia</button>
-    <div id="msg-reg-denuncias" class="msg"></div>
-  </form>
+  <div class="con-table-container">
+    <div class="con-table-header">
+      <span id="con_table_title">📋 Últimas Denuncias Registradas</span>
+      <span id="con_table_count" style="font-size: 0.85rem; font-weight: 400;"></span>
+    </div>
+    <div id="con_table_content">
+      <div class="con-empty">Cargando denuncias...</div>
+    </div>
+    <div class="con-pagination" id="con_pagination" style="display: none;"></div>
+  </div>
 </div>
 
-<div id="loading-overlay" class="loading-overlay">
-  <div class="spinner"></div>
-  <div class="loading-text">⏳ Registrando denuncia...</div>
+<div class="con-modal-overlay" id="con_modal_overlay">
+  <div class="con-modal">
+    <div class="con-modal-header">
+      <h3 id="con_modal_title">📄 Ficha de Denuncia</h3>
+      <button class="con-modal-close" id="con_modal_close">&times;</button>
+    </div>
+    <div class="con-modal-body">
+      <div id="con_ficha_content" class="ficha-denuncia"></div>
+    </div>
+    <div class="con-modal-actions">
+      <button type="button" class="con-btn-print" id="con_btn_print">️ Imprimir</button>
+      <button type="button" class="con-btn-pdf" id="con_btn_pdf">📥 Exportar PDF</button>
+    </div>
+  </div>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
