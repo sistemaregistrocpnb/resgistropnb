@@ -7,12 +7,11 @@ window.initConTabla = function() {
     const ITEMS_PER_PAGE = 15;
     let currentPage = 1;
     let currentData = [];
-    let currentSearchMode = 'ultimas';
     
-    // 🔹 SISTEMA DE BLOQUEO ROBUSTO
+    // 🔹 SISTEMA DE BLOQUEO CON TIMEOUT DE SEGURIDAD
     let isSearching = false;
-    let abortController = null; // Para cancelar peticiones anteriores
-    let searchTimeout = null; // Timeout de seguridad
+    let searchTimeout = null;
+    const TIMEOUT_SEGURIDAD = 15000; // 15 segundos máximo
 
     const cedulaInput = document.getElementById('con_buscar_cedula');
     const btnBuscar = document.getElementById('con_btn_buscar');
@@ -36,18 +35,15 @@ window.initConTabla = function() {
         return new Promise((resolve, reject) => {
             const cdns = [
                 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
-                'https://unpkg.com/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js',
-                'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js'
+                'https://unpkg.com/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js'
             ];
 
             let intentos = 0;
-
             function intentarCargar() {
                 if (intentos >= cdns.length) {
                     reject(new Error('No se pudo cargar html2pdf.'));
                     return;
                 }
-
                 const script = document.createElement('script');
                 script.src = cdns[intentos];
                 script.onload = () => {
@@ -57,41 +53,13 @@ window.initConTabla = function() {
                 script.onerror = () => { intentos++; intentarCargar(); };
                 document.head.appendChild(script);
             }
-
             intentarCargar();
         });
     }
 
-    // 🔹 FUNCIÓN DE BLOQUEO CON TIMEOUT DE SEGURIDAD
-    function bloquearBusqueda(activar) {
-        isSearching = activar;
-        
-        if (btnBuscar) btnBuscar.disabled = activar;
-        if (btnUltimas) btnUltimas.disabled = activar;
-        if (cedulaInput) cedulaInput.disabled = activar;
-        if (checkIncluirEliminadas) checkIncluirEliminadas.disabled = activar;
-        
-        if (activar) {
-            if (btnBuscar) btnBuscar.textContent = '⏳ Buscando...';
-            if (btnUltimas) btnUltimas.textContent = ' Cargando...';
-            
-            //  TIMEOUT DE SEGURIDAD: Libera el bloqueo después de 30 segundos
-            if (searchTimeout) clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                console.warn("⚠️ Timeout de seguridad: liberando bloqueo...");
-                desbloquearBusqueda();
-            }, 30000);
-        } else {
-            if (searchTimeout) {
-                clearTimeout(searchTimeout);
-                searchTimeout = null;
-            }
-            if (btnBuscar) btnBuscar.textContent = '🔍 Buscar';
-            if (btnUltimas) btnUltimas.textContent = '📋 Últimas 15';
-        }
-    }
-
-    function desbloquearBusqueda() {
+    // 🔹 FUNCIÓN CRÍTICA: Siempre libera el bloqueo
+    function liberarBloqueo() {
+        console.log("🔓 Liberando bloqueo...");
         isSearching = false;
         if (searchTimeout) {
             clearTimeout(searchTimeout);
@@ -99,7 +67,7 @@ window.initConTabla = function() {
         }
         if (btnBuscar) {
             btnBuscar.disabled = false;
-            btnBuscar.textContent = ' Buscar';
+            btnBuscar.textContent = '🔍 Buscar';
         }
         if (btnUltimas) {
             btnUltimas.disabled = false;
@@ -109,13 +77,32 @@ window.initConTabla = function() {
         if (checkIncluirEliminadas) checkIncluirEliminadas.disabled = false;
     }
 
-    // 🔹 CANCELAR PETICIÓN ANTERIOR SI EXISTE
-    function cancelarPeticionAnterior() {
-        if (abortController) {
-            abortController.abort();
-            console.log("🛑 Petición anterior cancelada");
+    function activarBloqueo() {
+        console.log(" Activando bloqueo...");
+        isSearching = true;
+        if (btnBuscar) {
+            btnBuscar.disabled = true;
+            btnBuscar.textContent = '⏳ Buscando...';
         }
-        abortController = new AbortController();
+        if (btnUltimas) {
+            btnUltimas.disabled = true;
+            btnUltimas.textContent = '⏳ Cargando...';
+        }
+        if (cedulaInput) cedulaInput.disabled = true;
+        if (checkIncluirEliminadas) checkIncluirEliminadas.disabled = true;
+
+        // Timeout de seguridad: fuerza el desbloqueo después de 15 segundos
+        if (searchTimeout) clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            console.warn("⚠️ TIMEOUT DE SEGURIDAD: Forzando desbloqueo...");
+            liberarBloqueo();
+            if (msg) {
+                msg.textContent = '⚠️ La búsqueda tardó demasiado. Intente nuevamente.';
+                msg.className = 'msg error';
+                msg.style.display = 'block';
+                setTimeout(() => msg.style.display = 'none', 5000);
+            }
+        }, TIMEOUT_SEGURIDAD);
     }
 
     if (cedulaInput) {
@@ -129,7 +116,7 @@ window.initConTabla = function() {
 
     btnBuscar?.addEventListener('click', () => {
         if (isSearching) {
-            console.log("⚠️ Búsqueda en progreso, ignorando clic...");
+            console.log("⚠️ Búsqueda en progreso, ignorando...");
             return;
         }
         buscarPorCedula();
@@ -137,36 +124,35 @@ window.initConTabla = function() {
     
     btnUltimas?.addEventListener('click', () => {
         if (isSearching) {
-            console.log("⚠️ Búsqueda en progreso, ignorando clic...");
+            console.log("⚠️ Búsqueda en progreso, ignorando...");
             return;
         }
         cargarUltimas();
     });
     
     modalClose?.addEventListener('click', () => cerrarModal());
-    
     modalOverlay?.addEventListener('click', (e) => {
         if (e.target === modalOverlay) cerrarModal();
     });
-    
     btnPrint?.addEventListener('click', () => window.print());
-    
     btnPdf?.addEventListener('click', () => exportarPDF());
 
     async function cargarUltimas() {
-        if (isSearching) return;
-
+        console.log("📋 Cargando últimas denuncias...");
+        activarBloqueo();
+        
         try {
-            bloquearBusqueda(true);
-            cancelarPeticionAnterior();
-            
-            currentSearchMode = 'ultimas';
-            currentPage = 1;
             currentData = [];
+            currentPage = 1;
             
-            if (msg) { msg.textContent = '⏳ Cargando últimas denuncias...'; msg.className = 'msg info'; msg.style.display = 'block'; }
+            if (msg) {
+                msg.textContent = '⏳ Cargando últimas denuncias...';
+                msg.className = 'msg info';
+                msg.style.display = 'block';
+            }
+            
             tableContent.innerHTML = '<div class="con-loading">⏳ Cargando...</div>';
-            tableTitle.textContent = '📋 Últimas Denuncias Registradas';
+            tableTitle.textContent = ' Últimas Denuncias Registradas';
             pagination.style.display = 'none';
 
             const { data, error, count } = await window.supabaseClient
@@ -175,93 +161,98 @@ window.initConTabla = function() {
                 .order('created_at', { ascending: false })
                 .range(0, ITEMS_PER_PAGE - 1);
 
-            if (error) {
-                if (error.name === 'AbortError') {
-                    console.log(" Petición cancelada");
-                    return;
-                }
-                throw error;
-            }
+            if (error) throw error;
 
             currentData = data || [];
             tableCount.textContent = `Total: ${count || 0} denuncia(s)`;
             
             if (currentData.length === 0) {
                 tableContent.innerHTML = '<div class="con-empty">📭 No hay denuncias registradas aún.</div>';
-                return;
-            }
-
-            renderTabla(currentData);
-            
-            if (count > ITEMS_PER_PAGE) {
-                renderPaginacion(count);
+                if (msg) msg.style.display = 'none';
             } else {
-                pagination.style.display = 'none';
-            }
-
-            if (msg) {
-                msg.textContent = `✅ Mostrando las últimas ${currentData.length} denuncia(s).`;
-                msg.className = 'msg success';
-                msg.style.display = 'block';
-                setTimeout(() => msg.style.display = 'none', 3000);
+                renderTabla(currentData);
+                if (count > ITEMS_PER_PAGE) {
+                    renderPaginacion(count);
+                } else {
+                    pagination.style.display = 'none';
+                }
+                if (msg) {
+                    msg.textContent = `✅ Mostrando ${currentData.length} denuncia(s).`;
+                    msg.className = 'msg success';
+                    msg.style.display = 'block';
+                    setTimeout(() => msg.style.display = 'none', 3000);
+                }
             }
 
         } catch (err) {
-            if (err.name === 'AbortError') return;
-            console.error('Error:', err);
-            tableContent.innerHTML = `<div class="con-empty">❌ Error al cargar: ${err.message}</div>`;
-            if (msg) { msg.textContent = '❌ ' + err.message; msg.className = 'msg error'; msg.style.display = 'block'; }
+            console.error('❌ Error:', err);
+            tableContent.innerHTML = `<div class="con-empty">❌ Error: ${err.message}</div>`;
+            if (msg) {
+                msg.textContent = '❌ ' + err.message;
+                msg.className = 'msg error';
+                msg.style.display = 'block';
+            }
         } finally {
-            desbloquearBusqueda();
+            //  SIEMPRE LIBERAR EL BLOQUEO
+            liberarBloqueo();
         }
     }
 
     async function buscarPorCedula() {
-        if (isSearching) return;
-
         const cedulaRaw = cedulaInput?.value.trim().toUpperCase().replace(/\s/g, '') || '';
         const incluirEliminadas = checkIncluirEliminadas?.checked || false;
         const cedulaRegex = /^[VE]-\d{6,9}$/;
 
         if (!cedulaRaw) {
-            if (msg) { msg.textContent = '️ Ingrese una cédula para buscar o presione "Mostrar últimas".'; msg.className = 'msg error'; msg.style.display = 'block'; }
+            if (msg) {
+                msg.textContent = '⚠️ Ingrese una cédula para buscar.';
+                msg.className = 'msg error';
+                msg.style.display = 'block';
+            }
             return;
         }
 
         if (!cedulaRegex.test(cedulaRaw)) {
-            if (msg) { msg.textContent = '⚠️ Formato incorrecto. Debe ser V- o E- seguido del número (Ej: V-12345678).'; msg.className = 'msg error'; msg.style.display = 'block'; }
+            if (msg) {
+                msg.textContent = '️ Formato incorrecto. Use V- o E- seguido del número.';
+                msg.className = 'msg error';
+                msg.style.display = 'block';
+            }
             return;
         }
 
+        console.log("🔍 Buscando cédula:", cedulaRaw);
+        activarBloqueo();
+        
         try {
-            bloquearBusqueda(true);
-            cancelarPeticionAnterior();
-            
-            currentSearchMode = 'cedula';
-            currentPage = 1;
             currentData = [];
+            currentPage = 1;
 
-            if (msg) { msg.textContent = '⏳ Buscando denuncias...'; msg.className = 'msg info'; msg.style.display = 'block'; }
+            if (msg) {
+                msg.textContent = '⏳ Buscando denuncias...';
+                msg.className = 'msg info';
+                msg.style.display = 'block';
+            }
+            
             tableContent.innerHTML = '<div class="con-loading">⏳ Buscando...</div>';
-            tableTitle.textContent = `🔍 Resultados para cédula: ${cedulaRaw}`;
+            tableTitle.textContent = `🔍 Resultados para: ${cedulaRaw}`;
             pagination.style.display = 'none';
 
             let todasLasDenuncias = [];
 
+            // Buscar en denuncias activas
             const { data: activas, error: errorActivas } = await window.supabaseClient
                 .from('denuncias')
                 .select('*')
                 .eq('cedula', cedulaRaw)
                 .order('created_at', { ascending: false });
 
-            if (errorActivas) {
-                if (errorActivas.name === 'AbortError') return;
-                throw errorActivas;
-            }
+            if (errorActivas) throw errorActivas;
             if (activas) {
                 todasLasDenuncias = todasLasDenuncias.concat(activas.map(d => ({ ...d, estado: 'activa' })));
             }
 
+            // Buscar en denuncias eliminadas si está marcado
             if (incluirEliminadas) {
                 const { data: eliminadas, error: errorEliminadas } = await window.supabaseClient
                     .from('denuncias_eliminadas')
@@ -269,13 +260,14 @@ window.initConTabla = function() {
                     .eq('cedula', cedulaRaw)
                     .order('fecha_eliminacion', { ascending: false });
 
-                if (errorEliminadas && errorEliminadas.name !== 'AbortError') {
+                if (errorEliminadas) {
                     console.warn('No se pudieron cargar las eliminadas:', errorEliminadas);
                 } else if (eliminadas) {
                     todasLasDenuncias = todasLasDenuncias.concat(eliminadas.map(d => ({ ...d, estado: 'eliminada' })));
                 }
             }
 
+            // Ordenar por fecha
             todasLasDenuncias.sort((a, b) => {
                 const fechaA = new Date(a.created_at || a.fecha_hora_original);
                 const fechaB = new Date(b.created_at || b.fecha_hora_original);
@@ -286,41 +278,52 @@ window.initConTabla = function() {
             tableCount.textContent = `Total: ${currentData.length} denuncia(s)`;
 
             if (currentData.length === 0) {
-                tableContent.innerHTML = '<div class="con-empty">📭 No se encontraron denuncias con esa cédula.</div>';
-                if (msg) { msg.textContent = '⚠️ No se encontraron denuncias.'; msg.className = 'msg error'; msg.style.display = 'block'; }
-                return;
-            }
-
-            const inicio = 0;
-            const fin = Math.min(ITEMS_PER_PAGE, currentData.length);
-            renderTabla(currentData.slice(inicio, fin));
-
-            if (currentData.length > ITEMS_PER_PAGE) {
-                renderPaginacion(currentData.length);
+                tableContent.innerHTML = '<div class="con-empty">📭 No se encontraron denuncias.</div>';
+                if (msg) {
+                    msg.textContent = '⚠️ No se encontraron denuncias con esa cédula.';
+                    msg.className = 'msg error';
+                    msg.style.display = 'block';
+                }
             } else {
-                pagination.style.display = 'none';
-            }
+                const inicio = 0;
+                const fin = Math.min(ITEMS_PER_PAGE, currentData.length);
+                renderTabla(currentData.slice(inicio, fin));
 
-            const countEliminadas = todasLasDenuncias.filter(d => d.estado === 'eliminada').length;
-            let mensajeExito = `✅ Se encontraron ${currentData.length} denuncia(s).`;
-            if (countEliminadas > 0) {
-                mensajeExito += ` (${countEliminadas} eliminada${countEliminadas > 1 ? 's' : ''})`;
+                if (currentData.length > ITEMS_PER_PAGE) {
+                    renderPaginacion(currentData.length);
+                } else {
+                    pagination.style.display = 'none';
+                }
+
+                const countEliminadas = todasLasDenuncias.filter(d => d.estado === 'eliminada').length;
+                let mensajeExito = `✅ Se encontraron ${currentData.length} denuncia(s).`;
+                if (countEliminadas > 0) {
+                    mensajeExito += ` (${countEliminadas} eliminada${countEliminadas > 1 ? 's' : ''})`;
+                }
+                if (msg) {
+                    msg.textContent = mensajeExito;
+                    msg.className = 'msg success';
+                    msg.style.display = 'block';
+                }
             }
-            if (msg) { msg.textContent = mensajeExito; msg.className = 'msg success'; msg.style.display = 'block'; }
 
         } catch (err) {
-            if (err.name === 'AbortError') return;
-            console.error('Error:', err);
+            console.error('❌ Error:', err);
             tableContent.innerHTML = `<div class="con-empty">❌ Error: ${err.message}</div>`;
-            if (msg) { msg.textContent = ' ' + err.message; msg.className = 'msg error'; msg.style.display = 'block'; }
+            if (msg) {
+                msg.textContent = '❌ ' + err.message;
+                msg.className = 'msg error';
+                msg.style.display = 'block';
+            }
         } finally {
-            desbloquearBusqueda();
+            // 🔹 SIEMPRE LIBERAR EL BLOQUEO
+            liberarBloqueo();
         }
     }
 
     function renderTabla(datos) {
         if (!datos || datos.length === 0) {
-            tableContent.innerHTML = '<div class="con-empty">📭 Sin resultados.</div>';
+            tableContent.innerHTML = '<div class="con-empty"> Sin resultados.</div>';
             return;
         }
 
@@ -366,8 +369,8 @@ window.initConTabla = function() {
         html += '</tbody></table>';
         tableContent.innerHTML = html;
 
-        const botonesVer = tableContent.querySelectorAll('.con-btn-ver');
-        botonesVer.forEach(btn => {
+        // Re-adjuntar event listeners
+        tableContent.querySelectorAll('.con-btn-ver').forEach(btn => {
             btn.addEventListener('click', () => {
                 const index = parseInt(btn.dataset.index);
                 const offset = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -381,7 +384,7 @@ window.initConTabla = function() {
         const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
         let html = '';
 
-        html += `<button ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}">◀ Anterior</button>`;
+        html += `<button ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}"> Anterior</button>`;
 
         const maxButtons = 5;
         let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
@@ -410,8 +413,7 @@ window.initConTabla = function() {
         pagination.innerHTML = html;
         pagination.style.display = 'flex';
 
-        const botonesPagina = pagination.querySelectorAll('button[data-page]');
-        botonesPagina.forEach(btn => {
+        pagination.querySelectorAll('button[data-page]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const page = parseInt(btn.dataset.page);
                 if (page >= 1 && page <= totalPages && !isSearching) {
@@ -427,11 +429,7 @@ window.initConTabla = function() {
         const fin = Math.min(inicio + ITEMS_PER_PAGE, currentData.length);
         const datosPagina = currentData.slice(inicio, fin);
         renderTabla(datosPagina);
-
-        const totalItems = currentData.length;
-        const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-        renderPaginacion(totalItems);
-
+        renderPaginacion(currentData.length);
         tableContent.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
@@ -464,8 +462,8 @@ window.initConTabla = function() {
         const docsMultiples = [
             { id: 'acta_entrevista', label: '🎤 Acta de Entrevista' },
             { id: 'datos_filiatorios', label: '👤 Datos Filiatorios' },
-            { id: 'evidencias', label: ' Evidencias' },
-            { id: 'solicitud_senamecf', label: ' Solicitud SENAMECF' }
+            { id: 'evidencias', label: '🔍 Evidencias' },
+            { id: 'solicitud_senamecf', label: '🏥 Solicitud SENAMECF' }
         ];
 
         let docsUnicosHtml = '<ul class="ficha-docs-list">';
@@ -474,10 +472,10 @@ window.initConTabla = function() {
             const url = denuncia[doc.id];
             if (url) {
                 hayDocsUnicos = true;
-                docsUnicosHtml += `<li>✅ ${doc.label}: <a href="${url}" target="_blank">Ver/Descargar PDF</a></li>`;
+                docsUnicosHtml += `<li>✅ ${doc.label}: <a href="${url}" target="_blank">Ver PDF</a></li>`;
             }
         });
-        if (!hayDocsUnicos) docsUnicosHtml += '<li style="color: #94a3b8;">Sin documentos cargados</li>';
+        if (!hayDocsUnicos) docsUnicosHtml += '<li style="color: #94a3b8;">Sin documentos</li>';
         docsUnicosHtml += '</ul>';
 
         let docsMultiplesHtml = '<ul class="ficha-docs-list">';
@@ -487,99 +485,58 @@ window.initConTabla = function() {
             if (Array.isArray(urls) && urls.length > 0) {
                 hayDocsMultiples = true;
                 urls.forEach((url, i) => {
-                    docsMultiplesHtml += `<li>✅ ${doc.label} (${i + 1}): <a href="${url}" target="_blank">Ver/Descargar PDF</a></li>`;
+                    docsMultiplesHtml += `<li>✅ ${doc.label} (${i + 1}): <a href="${url}" target="_blank">Ver PDF</a></li>`;
                 });
             }
         });
-        if (!hayDocsMultiples) docsMultiplesHtml += '<li style="color: #94a3b8;">Sin documentos cargados</li>';
+        if (!hayDocsMultiples) docsMultiplesHtml += '<li style="color: #94a3b8;">Sin documentos</li>';
         docsMultiplesHtml += '</ul>';
 
         const logoUrl = './img/logo-cpnb.png';
 
         fichaContent.innerHTML = `
             ${avisoEliminada}
-            
             <div class="ficha-header">
                 <div style="display: flex; justify-content: center; margin-bottom: 15px;">
                     <img src="${logoUrl}" alt="Logo CPNB" style="max-width: 120px; max-height: 120px; object-fit: contain;" 
-                         onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iIzAwMmI1YyIvPjx0ZXh0IHg9IjYwIiB5PSI2NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Q1BOQjwvdGV4dD48L3N2Zz4='; this.style.maxWidth='80px'; this.style.maxHeight='80px';">
+                         onerror="this.style.display='none'">
                 </div>
                 <h1>CUERPO DE POLICÍA NACIONAL BOLIVARIANA</h1>
                 <h2>FICHA DE DENUNCIA</h2>
                 <div class="numero-grande">${numero}</div>
             </div>
-
             <div class="ficha-section">
-                <div class="ficha-section-title"> Información General</div>
+                <div class="ficha-section-title">📅 Información General</div>
                 <div class="ficha-grid">
-                    <div class="ficha-field">
-                        <div class="ficha-label">Fecha y Hora</div>
-                        <div class="ficha-value">${fecha}</div>
-                    </div>
-                    <div class="ficha-field">
-                        <div class="ficha-label">Estación Policial</div>
-                        <div class="ficha-value">${denuncia.estacion_policial || 'N/A'}</div>
-                    </div>
-                    <div class="ficha-field full">
-                        <div class="ficha-label">Registrado por</div>
-                        <div class="ficha-value">${denuncia.email_registrante || 'N/A'}</div>
-                    </div>
+                    <div class="ficha-field"><div class="ficha-label">Fecha y Hora</div><div class="ficha-value">${fecha}</div></div>
+                    <div class="ficha-field"><div class="ficha-label">Estación Policial</div><div class="ficha-value">${denuncia.estacion_policial || 'N/A'}</div></div>
+                    <div class="ficha-field full"><div class="ficha-label">Registrado por</div><div class="ficha-value">${denuncia.email_registrante || 'N/A'}</div></div>
                 </div>
             </div>
-
             <div class="ficha-section">
-                <div class="ficha-section-title">👤 Datos del Denunciante</div>
+                <div class="ficha-section-title"> Datos del Denunciante</div>
                 <div class="ficha-grid">
-                    <div class="ficha-field">
-                        <div class="ficha-label">Cédula de Identidad</div>
-                        <div class="ficha-value">${denuncia.cedula || 'N/A'}</div>
-                    </div>
-                    <div class="ficha-field">
-                        <div class="ficha-label">Teléfono</div>
-                        <div class="ficha-value">${denuncia.tlf_pais || ''} ${denuncia.tlf_numero || 'N/A'}</div>
-                    </div>
-                    <div class="ficha-field">
-                        <div class="ficha-label">Primer Nombre</div>
-                        <div class="ficha-value">${denuncia.primer_nombre || 'N/A'}</div>
-                    </div>
-                    <div class="ficha-field">
-                        <div class="ficha-label">Segundo Nombre</div>
-                        <div class="ficha-value">${denuncia.segundo_nombre || 'N/A'}</div>
-                    </div>
-                    <div class="ficha-field">
-                        <div class="ficha-label">Primer Apellido</div>
-                        <div class="ficha-value">${denuncia.primer_apellido || 'N/A'}</div>
-                    </div>
-                    <div class="ficha-field">
-                        <div class="ficha-label">Segundo Apellido</div>
-                        <div class="ficha-value">${denuncia.segundo_apellido || 'N/A'}</div>
-                    </div>
-                    <div class="ficha-field full">
-                        <div class="ficha-label">Dirección</div>
-                        <div class="ficha-value">${denuncia.direccion || 'N/A'}</div>
-                    </div>
+                    <div class="ficha-field"><div class="ficha-label">Cédula</div><div class="ficha-value">${denuncia.cedula || 'N/A'}</div></div>
+                    <div class="ficha-field"><div class="ficha-label">Teléfono</div><div class="ficha-value">${denuncia.tlf_pais || ''} ${denuncia.tlf_numero || 'N/A'}</div></div>
+                    <div class="ficha-field"><div class="ficha-label">Primer Nombre</div><div class="ficha-value">${denuncia.primer_nombre || 'N/A'}</div></div>
+                    <div class="ficha-field"><div class="ficha-label">Segundo Nombre</div><div class="ficha-value">${denuncia.segundo_nombre || 'N/A'}</div></div>
+                    <div class="ficha-field"><div class="ficha-label">Primer Apellido</div><div class="ficha-value">${denuncia.primer_apellido || 'N/A'}</div></div>
+                    <div class="ficha-field"><div class="ficha-label">Segundo Apellido</div><div class="ficha-value">${denuncia.segundo_apellido || 'N/A'}</div></div>
+                    <div class="ficha-field full"><div class="ficha-label">Dirección</div><div class="ficha-value">${denuncia.direccion || 'N/A'}</div></div>
                 </div>
             </div>
-
             <div class="ficha-section">
-                <div class="ficha-section-title">📌 Motivo de la Denuncia</div>
-                <div class="ficha-field full">
-                    <div class="ficha-value" style="white-space: pre-wrap;">${denuncia.motivo_denuncia || 'No especificado'}</div>
-                </div>
+                <div class="ficha-section-title">📌 Motivo</div>
+                <div class="ficha-field full"><div class="ficha-value" style="white-space: pre-wrap;">${denuncia.motivo_denuncia || 'No especificado'}</div></div>
             </div>
-
             <div class="ficha-section">
-                <div class="ficha-section-title"> Observaciones</div>
-                <div class="ficha-field full">
-                    <div class="ficha-value" style="white-space: pre-wrap;">${denuncia.observaciones || 'Sin observaciones'}</div>
-                </div>
+                <div class="ficha-section-title">📝 Observaciones</div>
+                <div class="ficha-field full"><div class="ficha-value" style="white-space: pre-wrap;">${denuncia.observaciones || 'Sin observaciones'}</div></div>
             </div>
-
             <div class="ficha-section">
                 <div class="ficha-section-title"> Documentos Únicos</div>
                 ${docsUnicosHtml}
             </div>
-
             <div class="ficha-section">
                 <div class="ficha-section-title">📁 Documentos Múltiples</div>
                 ${docsMultiplesHtml}
@@ -595,39 +552,30 @@ window.initConTabla = function() {
 
     async function exportarPDF() {
         const numero = modalTitle.textContent.replace(' Ficha: ', '').trim();
-        const element = fichaContent;
-        
         btnPdf.disabled = true;
-        btnPdf.textContent = '⏳ Cargando librería...';
+        btnPdf.textContent = ' Generando...';
 
         try {
             await cargarHtml2Pdf();
-            btnPdf.textContent = '⏳ Generando PDF...';
-
             const opt = {
                 margin: [10, 10, 10, 10],
                 filename: `Denuncia_${numero}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, logging: false },
-                jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
-                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
             };
-
-            await window.html2pdf().set(opt).from(element).save();
-            
-            btnPdf.disabled = false;
-            btnPdf.textContent = '📥 Exportar PDF';
-
+            await window.html2pdf().set(opt).from(fichaContent).save();
         } catch (err) {
-            console.error('Error al generar PDF:', err);
-            alert('❌ Error al generar el PDF: ' + err.message);
+            alert('❌ Error: ' + err.message);
+        } finally {
             btnPdf.disabled = false;
-            btnPdf.textContent = '📥 Exportar PDF';
+            btnPdf.textContent = ' Exportar PDF';
         }
     }
 
+    // Cargar al iniciar
     cargarUltimas();
-    console.log("✅ Módulo con-tabla.js inicializado correctamente");
+    console.log("✅ Módulo inicializado");
 };
 
 if (document.readyState === 'loading') {
