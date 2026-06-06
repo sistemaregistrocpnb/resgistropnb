@@ -185,25 +185,42 @@ window.initModDenuncias = function() {
         countDiv.textContent = `${contador} de ${max} archivos`;
     };
 
-    // ==========================================
+      // ==========================================
     // LÓGICA DE BÚSQUEDA Y CARGA
     // ==========================================
     document.getElementById('mod_btn_buscar')?.addEventListener('click', async () => {
-        const cedulaInput = document.getElementById('mod_buscar_cedula').value.trim().toUpperCase().replace(/\s/g, '');
+        const cedulaInput = document.getElementById('mod_buscar_cedula')?.value.trim().toUpperCase().replace(/\s/g, '') || '';
         const msgBusqueda = document.getElementById('mod_msg_busqueda');
         const formContainer = document.getElementById('mod_form_container');
 
+        // 1. Validación estricta de formato: Debe ser V- o E- seguido de 6 a 9 dígitos
+        const cedulaRegex = /^[VE]-\d{6,9}$/;
+
         if (!cedulaInput) {
-            msgBusqueda.textContent = '⚠️ Ingrese una cédula para buscar.';
-            msgBusqueda.className = 'msg error';
-            msgBusqueda.style.display = 'block';
+            if (msgBusqueda) {
+                msgBusqueda.textContent = '⚠️ El campo de cédula no puede estar vacío.';
+                msgBusqueda.className = 'msg error';
+                msgBusqueda.style.display = 'block';
+            }
             return;
         }
 
-        msgBusqueda.textContent = '⏳ Buscando...';
-        msgBusqueda.className = 'msg';
-        msgBusqueda.style.display = 'block';
-        formContainer.style.display = 'none';
+        if (!cedulaRegex.test(cedulaInput)) {
+            if (msgBusqueda) {
+                msgBusqueda.textContent = '⚠️ Formato incorrecto. Debe colocar V- o E- seguido del número (Ej: V-12345678).';
+                msgBusqueda.className = 'msg error';
+                msgBusqueda.style.display = 'block';
+            }
+            return;
+        }
+
+        // 2. Estado de búsqueda
+        if (msgBusqueda) {
+            msgBusqueda.textContent = '⏳ Buscando...';
+            msgBusqueda.className = 'msg'; // Limpia clases de error/éxito previas
+            msgBusqueda.style.display = 'block';
+        }
+        if (formContainer) formContainer.style.display = 'none';
 
         try {
             const { data, error } = await window.supabaseClient
@@ -215,16 +232,21 @@ window.initModDenuncias = function() {
                 .maybeSingle();
 
             if (error) throw error;
+
+            // 3. Validación de existencia en la base de datos
             if (!data) {
-                msgBusqueda.textContent = '❌ No se encontró ninguna denuncia con esa cédula.';
-                msgBusqueda.className = 'msg error';
+                if (msgBusqueda) {
+                    msgBusqueda.textContent = '❌ No se encontró ninguna denuncia registrada con esa cédula.';
+                    msgBusqueda.className = 'msg error';
+                    msgBusqueda.style.display = 'block';
+                }
                 return;
             }
 
-            // Cargar datos en el formulario
+            // ✅ ÉXITO: Cargar datos en el formulario
             document.getElementById('mod_denuncia_id').value = data.id;
             document.getElementById('mod_numero_denuncia').value = data.numero_denuncia || 'N/A';
-            document.getElementById('mod_fecha_hora').value = data.fecha_hora || ''; // Ajustar si el nombre de columna es distinto
+            document.getElementById('mod_fecha_hora').value = data.fecha_hora || ''; 
             document.getElementById('mod_cedula').value = data.cedula;
             document.getElementById('mod_estacion').value = data.estacion_policial || '';
             document.getElementById('mod_nombre1').value = data.primer_nombre || '';
@@ -238,7 +260,7 @@ window.initModDenuncias = function() {
             document.getElementById('mod_observaciones').value = data.observaciones || '';
 
             // Cargar estado de documentos
-            inicializarContenedores(); // Resetear estado
+            inicializarContenedores(); 
 
             docsUnicos.forEach(doc => {
                 const url = data[doc.id];
@@ -253,7 +275,6 @@ window.initModDenuncias = function() {
                             <button type="button" class="btn-remove" onclick="window.mod_quitarDocUnico('${doc.id}')">❌ Quitar</button>
                         </div>
                     `;
-                    // Activar el radio "Sí"
                     const radioSi = document.querySelector(`input[name="mod_doc_${doc.id}"][value="si"]`);
                     if (radioSi) {
                         radioSi.checked = true;
@@ -275,17 +296,22 @@ window.initModDenuncias = function() {
                 }
             });
 
-            msgBusqueda.textContent = '✅ Denuncia encontrada. Puede editar los campos permitidos.';
-            msgBusqueda.className = 'msg success';
-            formContainer.style.display = 'block';
+            if (msgBusqueda) {
+                msgBusqueda.textContent = '✅ Denuncia encontrada. Puede editar los campos permitidos.';
+                msgBusqueda.className = 'msg success';
+                msgBusqueda.style.display = 'block';
+            }
+            if (formContainer) formContainer.style.display = 'block';
 
         } catch (err) {
             console.error('Error en búsqueda:', err);
-            msgBusqueda.textContent = '❌ Error al buscar: ' + err.message;
-            msgBusqueda.className = 'msg error';
+            if (msgBusqueda) {
+                msgBusqueda.textContent = '❌ Error al buscar: ' + err.message;
+                msgBusqueda.className = 'msg error';
+                msgBusqueda.style.display = 'block';
+            }
         }
     });
-
     // ==========================================
     // ENVÍO DEL FORMULARIO DE EDICIÓN
     // ==========================================
