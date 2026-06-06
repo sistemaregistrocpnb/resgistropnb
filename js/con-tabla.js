@@ -7,7 +7,7 @@ window.initConTabla = function() {
     const ITEMS_PER_PAGE = 15;
     let currentPage = 1;
     let currentData = [];
-    let currentSearchMode = 'ultimas'; // 'ultimas' o 'cedula'
+    let currentSearchMode = 'ultimas';
 
     // Elementos del DOM
     const cedulaInput = document.getElementById('con_buscar_cedula');
@@ -25,6 +25,56 @@ window.initConTabla = function() {
     const modalTitle = document.getElementById('con_modal_title');
     const btnPrint = document.getElementById('con_btn_print');
     const btnPdf = document.getElementById('con_btn_pdf');
+
+    // ==========================================
+    // 🔹 CARGA DINÁMICA DE HTML2PDF (SOLUCIÓN AL ERROR)
+    // ==========================================
+    async function cargarHtml2Pdf() {
+        if (window.html2pdf) {
+            console.log("✅ html2pdf ya está cargado");
+            return true;
+        }
+
+        console.log("⏳ Cargando librería html2pdf dinámicamente...");
+        
+        return new Promise((resolve, reject) => {
+            // Intentar con múltiples CDNs por si uno falla
+            const cdns = [
+                'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
+                'https://unpkg.com/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js',
+                'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js'
+            ];
+
+            let intentos = 0;
+
+            function intentarCargar() {
+                if (intentos >= cdns.length) {
+                    reject(new Error('No se pudo cargar html2pdf desde ningún CDN. Verifica tu conexión a internet.'));
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = cdns[intentos];
+                script.onload = () => {
+                    if (window.html2pdf) {
+                        console.log(`✅ html2pdf cargado desde: ${cdns[intentos]}`);
+                        resolve(true);
+                    } else {
+                        intentos++;
+                        intentarCargar();
+                    }
+                };
+                script.onerror = () => {
+                    console.warn(`⚠️ CDN ${cdns[intentos]} falló. Intentando siguiente...`);
+                    intentos++;
+                    intentarCargar();
+                };
+                document.head.appendChild(script);
+            }
+
+            intentarCargar();
+        });
+    }
 
     // ==========================================
     // EVENT LISTENERS
@@ -129,7 +179,6 @@ window.initConTabla = function() {
         try {
             let todasLasDenuncias = [];
 
-            // 1. Buscar en denuncias activas
             const { data: activas, error: errorActivas } = await window.supabaseClient
                 .from('denuncias')
                 .select('*')
@@ -141,7 +190,6 @@ window.initConTabla = function() {
                 todasLasDenuncias = todasLasDenuncias.concat(activas.map(d => ({ ...d, estado: 'activa' })));
             }
 
-            // 2. Si está marcado, buscar en denuncias eliminadas
             if (incluirEliminadas) {
                 const { data: eliminadas, error: errorEliminadas } = await window.supabaseClient
                     .from('denuncias_eliminadas')
@@ -156,7 +204,6 @@ window.initConTabla = function() {
                 }
             }
 
-            // Ordenar por fecha (más reciente primero)
             todasLasDenuncias.sort((a, b) => {
                 const fechaA = new Date(a.created_at || a.fecha_hora_original);
                 const fechaB = new Date(b.created_at || b.fecha_hora_original);
@@ -173,7 +220,6 @@ window.initConTabla = function() {
                 return;
             }
 
-            // Mostrar primera página
             const inicio = 0;
             const fin = Math.min(ITEMS_PER_PAGE, currentData.length);
             renderTabla(currentData.slice(inicio, fin));
@@ -249,7 +295,6 @@ window.initConTabla = function() {
         html += '</tbody></table>';
         tableContent.innerHTML = html;
 
-        // Agregar listeners a los botones de ver
         tableContent.querySelectorAll('.con-btn-ver').forEach(btn => {
             btn.addEventListener('click', () => {
                 const index = parseInt(btn.dataset.index);
@@ -317,12 +362,11 @@ window.initConTabla = function() {
         const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
         renderPaginacion(totalItems);
 
-        // Scroll al inicio de la tabla
         tableContent.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     // ==========================================
-    // MOSTRAR FICHA DE DENUNCIA
+    // MOSTRAR FICHA DE DENUNCIA (CON LOGO)
     // ==========================================
     function mostrarFicha(denuncia) {
         const esEliminada = denuncia.estado === 'eliminada';
@@ -345,7 +389,6 @@ window.initConTabla = function() {
             `;
         }
 
-        // Documentos únicos
         const docsUnicos = [
             { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
             { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
@@ -384,10 +427,17 @@ window.initConTabla = function() {
         if (!hayDocsMultiples) docsMultiplesHtml += '<li style="color: #94a3b8;">Sin documentos cargados</li>';
         docsMultiplesHtml += '</ul>';
 
+        // 🔹 LOGO DEL CUERPO DE POLICÍA NACIONAL BOLIVARIANA
+        // IMPORTANTE: Reemplaza esta URL con la URL real de tu logo
+        const logoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Logo_de_la_Polic%C3%ADa_Nacional_Bolivariana.svg/1200px-Logo_de_la_Polic%C3%ADa_Nacional_Bolivariana.svg.png';
+
         fichaContent.innerHTML = `
             ${avisoEliminada}
             
             <div class="ficha-header">
+                <div style="display: flex; justify-content: center; margin-bottom: 15px;">
+                    <img src="${logoUrl}" alt="Logo CPNB" style="max-width: 120px; max-height: 120px; object-fit: contain;" onerror="this.style.display='none'">
+                </div>
                 <h1>CUERPO DE POLICÍA NACIONAL BOLIVARIANA</h1>
                 <h2>FICHA DE DENUNCIA</h2>
                 <div class="numero-grande">${numero}</div>
@@ -478,33 +528,41 @@ window.initConTabla = function() {
     }
 
     // ==========================================
-    // EXPORTAR PDF
+    // EXPORTAR PDF (CON CARGA DINÁMICA)
     // ==========================================
-    function exportarPDF() {
+    async function exportarPDF() {
         const numero = modalTitle.textContent.replace('📄 Ficha: ', '').trim();
         const element = fichaContent;
         
-        const opt = {
-            margin: [10, 10, 10, 10],
-            filename: `Denuncia_${numero}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, logging: false },
-            jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-        };
-
         btnPdf.disabled = true;
-        btnPdf.textContent = '⏳ Generando PDF...';
+        btnPdf.textContent = '⏳ Cargando librería...';
 
-        html2pdf().set(opt).from(element).save().then(() => {
+        try {
+            // Cargar html2pdf dinámicamente si no está disponible
+            await cargarHtml2Pdf();
+
+            btnPdf.textContent = '⏳ Generando PDF...';
+
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: `Denuncia_${numero}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+
+            await window.html2pdf().set(opt).from(element).save();
+            
             btnPdf.disabled = false;
             btnPdf.textContent = '📥 Exportar PDF';
-        }).catch(err => {
+
+        } catch (err) {
             console.error('Error al generar PDF:', err);
             alert('❌ Error al generar el PDF: ' + err.message);
             btnPdf.disabled = false;
             btnPdf.textContent = '📥 Exportar PDF';
-        });
+        }
     }
 
     // ==========================================
