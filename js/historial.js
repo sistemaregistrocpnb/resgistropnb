@@ -34,7 +34,7 @@ window.initHistorial = function() {
 
     // Mostrar/ocultar fechas personalizadas
     if (periodoSelect) {
-        periodoSelect.addEventListener('change', () => {
+        periodoSelect.onchange = () => {
             if (periodoSelect.value === 'custom') {
                 fechasCustom.style.display = 'flex';
                 fechasCustomHasta.style.display = 'flex';
@@ -42,10 +42,9 @@ window.initHistorial = function() {
                 fechasCustom.style.display = 'none';
                 fechasCustomHasta.style.display = 'none';
             }
-        });
+        };
     }
 
-    // Event listeners
     if (btnFiltrar) btnFiltrar.onclick = () => cargarEstadisticas();
     if (btnReset) btnReset.onclick = () => {
         if (periodoSelect) periodoSelect.value = 'todo';
@@ -56,19 +55,18 @@ window.initHistorial = function() {
         cargarEstadisticas();
     };
 
-    // Función para obtener rango de fechas según período
+    // Obtener rango de fechas según período
     function obtenerRangoFechas() {
         const periodo = periodoSelect?.value || 'todo';
         const hoy = new Date();
-        let desde = null;
-        let hasta = null;
+        let desde = null, hasta = null;
 
         if (periodo === 'dia') {
             desde = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
             hasta = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59);
         } else if (periodo === 'semana') {
-            const diaSemana = hoy.getDay();
-            const diff = hoy.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
+            const dia = hoy.getDay();
+            const diff = hoy.getDate() - dia + (dia === 0 ? -6 : 1);
             desde = new Date(hoy.setDate(diff));
             desde.setHours(0, 0, 0, 0);
             hasta = new Date(hoy);
@@ -84,19 +82,76 @@ window.initHistorial = function() {
             if (fechaDesde?.value) desde = new Date(fechaDesde.value);
             if (fechaHasta?.value) hasta = new Date(fechaHasta.value + 'T23:59:59');
         }
-
         return { desde, hasta };
     }
 
-    // Función para construir filtro de fecha para Supabase
-    function construirFiltroFecha(query, campoFecha = 'created_at') {
-        const { desde, hasta } = obtenerRangoFechas();
-        if (desde) query = query.gte(campoFecha, desde.toISOString());
-        if (hasta) query = query.lte(campoFecha, hasta.toISOString());
-        return query;
+    // Función segura para contar registros (tolerante a errores)
+    async function contarSeguro(tabla, filtros = {}) {
+        try {
+            let query = window.supabaseClient.from(tabla).select('*', { count: 'exact', head: true });
+            
+            // Aplicar filtros
+            Object.keys(filtros).forEach(key => {
+                if (filtros[key] !== undefined && filtros[key] !== null) {
+                    query = query.eq(key, filtros[key]);
+                }
+            });
+
+            // Aplicar rango de fechas
+            const { desde, hasta } = obtenerRangoFechas();
+            const campoFecha = detectaCampoFecha(tabla);
+            if (campoFecha) {
+                if (desde) query = query.gte(campoFecha, desde.toISOString());
+                if (hasta) query = query.lte(campoFecha, hasta.toISOString());
+            }
+
+            const { count, error } = await query;
+            
+            if (error) {
+                // Si es 404 (tabla no existe) o 400 (campo no existe), retornar 0 silenciosamente
+                if (error.code === 'PGRST116' || error.code === '42P01' || error.status === 404 || error.status === 400) {
+                    return 0;
+                }
+                console.warn(`⚠️ Error consultando ${tabla}:`, error.message);
+                return 0;
+            }
+            
+            return count || 0;
+        } catch (err) {
+            console.warn(`⚠️ Error en contarSeguro(${tabla}):`, err.message);
+            return 0;
+        }
     }
 
-    // Cargar todas las estadísticas
+    // Detectar qué campo de fecha existe en cada tabla
+    function detectaCampoFecha(tabla) {
+        const campos = {
+            'registro_personas': 'created_at',
+            'registro_procesados': 'created_at',
+            'registro_vehiculos': 'created_at',
+            'registro_vinculados': 'created_at',
+            'denuncias': 'created_at',
+            'denuncias_eliminadas': 'fecha_eliminacion'
+        };
+        return campos[tabla] || 'created_at';
+    }
+
+    // Verificar si una tabla tiene un campo específico
+    async function verificarCampo(tabla, campo) {
+        try {
+            const { error } = await window.supabaseClient
+                .from(tabla)
+                .select(campo)
+                .limit(1);
+            return !error;
+        } catch {
+            return false;
+        }
+    }
+
+    // ==========================================
+    // CARGAR ESTADÍSTICAS GENERALES
+    // ==========================================
     async function cargarEstadisticas() {
         console.log("📊 Cargando estadísticas...");
         
@@ -108,53 +163,52 @@ window.initHistorial = function() {
 
         try {
             // 1. Personas registradas
-            let queryPersonas = window.supabaseClient.from('registro_personas').select('*', { count: 'exact', head: true });
-            queryPersonas = construirFiltroFecha(queryPersonas, 'created_at');
-            const { count: countPersonas, error: errPersonas } = await queryPersonas;
-            if (errPersonas) throw errPersonas;
-            if (statPersonas) statPersonas.textContent = countPersonas || 0;
+            const countPersonas = await contarSeguro('registro_personas');
+            if (statPersonas) statPersonas.textContent = countPersonas;
 
-            // 2. Vehículos totales
-            let queryVehiculos = window.supabaseClient.from('registro_vehiculos').select('*', { count: 'exact', head: true });
-            queryVehiculos = construirFiltroFecha(queryVehiculos, 'created_at');
-            const { count: countVehiculos, error: errVehiculos } = await queryVehiculos;
-            if (errVehiculos) throw errVehiculos;
-            if (statVehiculos) statVehiculos.textContent = countVehiculos || 0;
+            // 2. Vehículos totales (si existe la tabla)
+            const countVehiculos = await contarSeguro('registro_vehiculos');
+            if (statVehiculos) statVehiculos.textContent = countVehiculos;
 
-            // 3. Automóviles
-            let queryAutos = window.supabaseClient.from('registro_vehiculos').select('*', { count: 'exact', head: true }).eq('tipo_vehiculo', 'Automóvil');
-            queryAutos = construirFiltroFecha(queryAutos, 'created_at');
-            const { count: countAutos, error: errAutos } = await queryAutos;
-            if (errAutos) throw errAutos;
-            if (statAutomoviles) statAutomoviles.textContent = countAutos || 0;
+            // 3. Automóviles (si existe la tabla y el campo tipo)
+            let countAutos = 0;
+            try {
+                const { data: cols } = await window.supabaseClient.rpc('get_columns', { table_name: 'registro_vehiculos' });
+                // Intentar con diferentes nombres de campo
+                for (const campo of ['tipo_vehiculo', 'tipo', 'categoria']) {
+                    const c = await contarSeguro('registro_vehiculos', { [campo]: 'Automóvil' });
+                    if (c > 0 || countVehiculos > 0) {
+                        countAutos = c;
+                        break;
+                    }
+                }
+            } catch {
+                countAutos = await contarSeguro('registro_vehiculos', { tipo_vehiculo: 'Automóvil' });
+            }
+            if (statAutomoviles) statAutomoviles.textContent = countAutos;
 
             // 4. Motos
-            let queryMotos = window.supabaseClient.from('registro_vehiculos').select('*', { count: 'exact', head: true }).eq('tipo_vehiculo', 'Moto');
-            queryMotos = construirFiltroFecha(queryMotos, 'created_at');
-            const { count: countMotos, error: errMotos } = await queryMotos;
-            if (errMotos) throw errMotos;
-            if (statMotos) statMotos.textContent = countMotos || 0;
+            let countMotos = 0;
+            for (const campo of ['tipo_vehiculo', 'tipo', 'categoria']) {
+                const c = await contarSeguro('registro_vehiculos', { [campo]: 'Moto' });
+                if (c > 0 || countVehiculos > 0) {
+                    countMotos = c;
+                    break;
+                }
+            }
+            if (statMotos) statMotos.textContent = countMotos;
 
-            // 5. Personas con vehículos (vinculados)
-            let queryVinculados = window.supabaseClient.from('registro_vinculados').select('*', { count: 'exact', head: true });
-            queryVinculados = construirFiltroFecha(queryVinculados, 'created_at');
-            const { count: countVinculados, error: errVinculados } = await queryVinculados;
-            if (errVinculados) throw errVinculados;
-            if (statVinculados) statVinculados.textContent = countVinculados || 0;
+            // 5. Personas con vehículos
+            const countVinculados = await contarSeguro('registro_vinculados');
+            if (statVinculados) statVinculados.textContent = countVinculados;
 
             // 6. Denuncias
-            let queryDenuncias = window.supabaseClient.from('denuncias').select('*', { count: 'exact', head: true });
-            queryDenuncias = construirFiltroFecha(queryDenuncias, 'created_at');
-            const { count: countDenuncias, error: errDenuncias } = await queryDenuncias;
-            if (errDenuncias) throw errDenuncias;
-            if (statDenuncias) statDenuncias.textContent = countDenuncias || 0;
+            const countDenuncias = await contarSeguro('denuncias');
+            if (statDenuncias) statDenuncias.textContent = countDenuncias;
 
             // 7. Procesados
-            let queryProcesados = window.supabaseClient.from('registro_procesados').select('*', { count: 'exact', head: true });
-            queryProcesados = construirFiltroFecha(queryProcesados, 'created_at');
-            const { count: countProcesados, error: errProcesados } = await queryProcesados;
-            if (errProcesados) throw errProcesados;
-            if (statProcesados) statProcesados.textContent = countProcesados || 0;
+            const countProcesados = await contarSeguro('registro_procesados');
+            if (statProcesados) statProcesados.textContent = countProcesados;
 
             // Cargar estadísticas por estación
             await cargarEstadisticasPorEstacion();
@@ -176,7 +230,9 @@ window.initHistorial = function() {
         }
     }
 
-    // Cargar estadísticas por estación
+    // ==========================================
+    // CARGAR ESTADÍSTICAS POR ESTACIÓN
+    // ==========================================
     async function cargarEstadisticasPorEstacion() {
         console.log("🏛️ Cargando estadísticas por estación...");
         
@@ -197,6 +253,17 @@ window.initHistorial = function() {
                 'EPP POTRERITO', 'EPP ANDRES BELLO', 'EPP SANTA LUCIA'
             ];
 
+            // Verificar qué tablas tienen el campo estacion_policial
+            const tablasConEstacion = {
+                personas: await verificarCampo('registro_personas', 'estacion_policial'),
+                vehiculos: await verificarCampo('registro_vehiculos', 'estacion_policial'),
+                vinculados: await verificarCampo('registro_vinculados', 'estacion_policial'),
+                denuncias: await verificarCampo('denuncias', 'estacion_policial'),
+                procesados: await verificarCampo('registro_procesados', 'estacion_policial')
+            };
+
+            console.log("📋 Tablas con campo estacion_policial:", tablasConEstacion);
+
             estacionesData = [];
 
             for (const estacion of estaciones) {
@@ -210,35 +277,22 @@ window.initHistorial = function() {
                     total: 0
                 };
 
-                // Personas
-                let qP = window.supabaseClient.from('registro_personas').select('*', { count: 'exact', head: true }).eq('estacion_policial', estacion);
-                qP = construirFiltroFecha(qP, 'created_at');
-                const { count: cP } = await qP;
-                stats.personas = cP || 0;
-
-                // Vehículos
-                let qV = window.supabaseClient.from('registro_vehiculos').select('*', { count: 'exact', head: true }).eq('estacion_policial', estacion);
-                qV = construirFiltroFecha(qV, 'created_at');
-                const { count: cV } = await qV;
-                stats.vehiculos = cV || 0;
-
-                // Vinculados
-                let qVi = window.supabaseClient.from('registro_vinculados').select('*', { count: 'exact', head: true }).eq('estacion_policial', estacion);
-                qVi = construirFiltroFecha(qVi, 'created_at');
-                const { count: cVi } = await qVi;
-                stats.vinculados = cVi || 0;
-
-                // Denuncias
-                let qD = window.supabaseClient.from('denuncias').select('*', { count: 'exact', head: true }).eq('estacion_policial', estacion);
-                qD = construirFiltroFecha(qD, 'created_at');
-                const { count: cD } = await qD;
-                stats.denuncias = cD || 0;
-
-                // Procesados
-                let qPr = window.supabaseClient.from('registro_procesados').select('*', { count: 'exact', head: true }).eq('estacion_policial', estacion);
-                qPr = construirFiltroFecha(qPr, 'created_at');
-                const { count: cPr } = await qPr;
-                stats.procesados = cPr || 0;
+                // Solo consultar si la tabla tiene el campo
+                if (tablasConEstacion.personas) {
+                    stats.personas = await contarSeguro('registro_personas', { estacion_policial: estacion });
+                }
+                if (tablasConEstacion.vehiculos) {
+                    stats.vehiculos = await contarSeguro('registro_vehiculos', { estacion_policial: estacion });
+                }
+                if (tablasConEstacion.vinculados) {
+                    stats.vinculados = await contarSeguro('registro_vinculados', { estacion_policial: estacion });
+                }
+                if (tablasConEstacion.denuncias) {
+                    stats.denuncias = await contarSeguro('denuncias', { estacion_policial: estacion });
+                }
+                if (tablasConEstacion.procesados) {
+                    stats.procesados = await contarSeguro('registro_procesados', { estacion_policial: estacion });
+                }
 
                 stats.total = stats.personas + stats.vehiculos + stats.vinculados + stats.denuncias + stats.procesados;
                 estacionesData.push(stats);
@@ -258,7 +312,9 @@ window.initHistorial = function() {
         }
     }
 
-    // Renderizar tabla de estaciones
+    // ==========================================
+    // RENDERIZAR TABLA
+    // ==========================================
     function renderTablaEstaciones() {
         if (!tableContainer) return;
 
@@ -304,9 +360,7 @@ window.initHistorial = function() {
         });
 
         // Fila de totales
-        const totales = {
-            personas: 0, vehiculos: 0, vinculados: 0, denuncias: 0, procesados: 0, total: 0
-        };
+        const totales = { personas: 0, vehiculos: 0, vinculados: 0, denuncias: 0, procesados: 0, total: 0 };
         estacionesData.forEach(s => {
             totales.personas += s.personas;
             totales.vehiculos += s.vehiculos;
@@ -335,7 +389,6 @@ window.initHistorial = function() {
             estacionTotal.textContent = `Mostrando ${inicio + 1}-${fin} de ${estacionesData.length} estaciones`;
         }
 
-        // Paginación
         if (totalPages > 1 && pagination) {
             renderPaginacion(totalPages);
             pagination.style.display = 'flex';
@@ -344,7 +397,9 @@ window.initHistorial = function() {
         }
     }
 
-    // Renderizar paginación
+    // ==========================================
+    // RENDERIZAR PAGINACIÓN
+    // ==========================================
     function renderPaginacion(totalPages) {
         if (!pagination) return;
 
@@ -388,7 +443,7 @@ window.initHistorial = function() {
         });
     }
 
-    // Cargar estadísticas al iniciar
+    // Inicializar
     console.log("🚀 Cargando estadísticas iniciales...");
     cargarEstadisticas();
     console.log("✅ Módulo historial.js inicializado");
