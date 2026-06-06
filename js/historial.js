@@ -83,17 +83,18 @@ window.initHistorial = function() {
         return { desde, hasta };
     }
 
-    // Verificar qué tablas existen (solo una vez)
+    // ✅ VERIFICAR QUÉ TABLAS EXISTEN (con nombres CORRECTOS)
     async function verificarTablasDisponibles() {
         console.log("🔍 Verificando qué tablas existen...");
         
+        // Lista de tablas con nombres REALES
         const tablas = [
             'registro_personas',
             'registro_automoviles',
             'registro_motos',
-            'registro_vinculados',
+            'registro_vinculado',  // ✅ SIN "s" al final
             'registro_procesados',
-            'registro_denuncias'
+            'denuncias'  // ✅ SIN "registro_" al inicio
         ];
 
         for (const tabla of tablas) {
@@ -119,6 +120,7 @@ window.initHistorial = function() {
                     .select('estacion_policial')
                     .limit(1);
                 tablasDisponibles['registro_procesados_estacion'] = !error;
+                console.log(`  registro_procesados.estacion_policial: ${!error ? '✅' : '❌'}`);
             } catch {
                 tablasDisponibles['registro_procesados_estacion'] = false;
             }
@@ -191,12 +193,12 @@ window.initHistorial = function() {
             const countVehiculos = countAutos + countMotos;
             if (statVehiculos) statVehiculos.textContent = countVehiculos;
 
-            // 5. Personas con vehículos (vinculados)
-            const countVinculados = await contarSeguro('registro_vinculados');
+            // 5. Personas con vehículos (vinculados) - ✅ SIN "s"
+            const countVinculados = await contarSeguro('registro_vinculado');
             if (statVinculados) statVinculados.textContent = countVinculados;
 
-            // 6. Denuncias
-            const countDenuncias = await contarSeguro('registro_denuncias');
+            // 6. Denuncias - ✅ SIN "registro_"
+            const countDenuncias = await contarSeguro('denuncias');
             if (statDenuncias) statDenuncias.textContent = countDenuncias;
 
             // 7. Procesados
@@ -273,12 +275,14 @@ window.initHistorial = function() {
                     stats.vehiculos += await contarSeguro('registro_motos', { estacion_policial: estacion });
                 }
                 
-                if (tablasDisponibles['registro_vinculados']) {
-                    stats.vinculados = await contarSeguro('registro_vinculados', { estacion_policial: estacion });
+                // ✅ SIN "s" al final
+                if (tablasDisponibles['registro_vinculado']) {
+                    stats.vinculados = await contarSeguro('registro_vinculado', { estacion_policial: estacion });
                 }
                 
-                if (tablasDisponibles['registro_denuncias']) {
-                    stats.denuncias = await contarSeguro('registro_denuncias', { estacion_policial: estacion });
+                // ✅ SIN "registro_" al inicio
+                if (tablasDisponibles['denuncias']) {
+                    stats.denuncias = await contarSeguro('denuncias', { estacion_policial: estacion });
                 }
                 
                 if (tablasDisponibles['registro_procesados_estacion']) {
