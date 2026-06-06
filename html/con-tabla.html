@@ -9,13 +9,15 @@
     margin-bottom: 15px;
     display: flex;
     gap: 15px;
-    align-items: flex-end; /* ✅ Alinea todo por la parte inferior */
+    align-items: flex-end; /* ✅ Alinea todo por abajo */
     flex-wrap: wrap;
 }
-  .con-search-field {
+
+.con-search-field {
     flex: 1;
     min-width: 200px;
 }
+
   .con-search-field label {
     font-weight: 600;
     color: var(--primary);
@@ -23,14 +25,15 @@
     margin-bottom: 6px;
     font-size: 0.9rem;
   }
-  .con-search-field input {
+/* ✅ Ajustar el input para que ocupe todo el espacio */
+.con-search-field input {
     width: 100%;
     padding: 10px;
     border: 1.5px solid var(--beige-border);
     border-radius: 5px;
     font-size: 1rem;
     box-sizing: border-box;
-  }
+}
   .con-search-field small {
     color: #64748b;
     font-size: 0.75rem;
@@ -42,9 +45,9 @@
     align-items: center;
     gap: 8px;
     padding: 0;
-    margin-bottom: 0;
+    margin-bottom: 0; /* ✅ Sin margen */
     align-self: flex-end; /* ✅ Alinear al final */
-    height: 42px; /* Misma altura que los botones */
+    height: 42px; /* ✅ Misma altura que los botones */
 }
   .con-search-options input[type="checkbox"] {
     width: 18px;
@@ -57,7 +60,6 @@
     color: #475569;
     user-select: none;
   }
-/* ✅ Ajustar los botones para que queden alineados con el input */
 .con-btn {
     padding: 10px 20px;
     background: var(--primary);
@@ -66,12 +68,13 @@
     border-radius: 5px;
     cursor: pointer;
     font-weight: 600;
-    height: 42px; /* Altura fija */
-    margin-bottom: 0; /* Sin margen inferior */
+    height: 42px;
+    margin-bottom: 0; /* ✅ Sin margen inferior */
     white-space: nowrap;
     transition: background 0.2s;
-    align-self: flex-end; /* ✅ Forzar alineación al final */
+    align-self: flex-end; /* ✅ Alinear al final */
 }
+
   .con-btn:hover:not(:disabled) { background: var(--secondary); }
   .con-btn:disabled {
     background: #9ca3af;
