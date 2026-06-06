@@ -40,28 +40,34 @@ window.initRegDenuncias = function() {
         };
         actualizarFecha();
 
-        // ✅ NUEVO: Generar Número de Denuncia Secuencial
-        async function generarNumeroDenuncia() {
-            const numInput = document.getElementById('d_numero_denuncia');
-            if (!numInput) return;
-            try {
-                // Intentamos obtener el conteo exacto de denuncias existentes
-                const { count, error } = await window.supabaseClient
-                    .from('denuncias')
-                    .select('*', { count: 'exact', head: true });
-                
-                if (error) throw error;
-                
-                const nextNumber = (count || 0) + 1;
-                const formattedNumber = `CPNB-${String(nextNumber).padStart(8, '0')}`;
-                numInput.value = formattedNumber;
-            } catch (err) {
-                console.warn("⚠️ No se pudo generar el número automáticamente (posible bloqueo RLS o sin conexión). Usando fallback.", err);
-                // Fallback: generar uno basado en timestamp si falla la consulta
-                numInput.value = `CPNB-${Date.now().toString().slice(-8)}`;
-            }
-        }
+     // Generar Número de Denuncia (sin reutilizar números eliminados)
+async function generarNumeroDenuncia() {
+    const numInput = document.getElementById('d_numero_denuncia');
+    if (!numInput) return;
+    try {
+        // Contar denuncias activas
+        const { count: countActivas, error: errorActivas } = await window.supabaseClient
+            .from('denuncias')
+            .select('*', { count: 'exact', head: true });
         
+        if (errorActivas) throw errorActivas;
+
+        // Contar denuncias eliminadas
+        const { count: countEliminadas, error: errorEliminadas } = await window.supabaseClient
+            .from('denuncias_eliminadas')
+            .select('*', { count: 'exact', head: true });
+        
+        if (errorEliminadas) throw errorEliminadas;
+
+        // El siguiente número es la suma de ambas + 1
+        const totalDenuncias = (countActivas || 0) + (countEliminadas || 0);
+        const nextNumber = totalDenuncias + 1;
+        numInput.value = `CPNB-${String(nextNumber).padStart(8, '0')}`;
+    } catch (err) {
+        console.warn("⚠️ Fallback de número de denuncia activado.", err);
+        numInput.value = `CPNB-${Date.now().toString().slice(-8)}`;
+    }
+}
         // Llamar a la generación del número
         generarNumeroDenuncia();
 
