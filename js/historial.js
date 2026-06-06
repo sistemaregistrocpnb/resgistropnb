@@ -1,16 +1,17 @@
 window.initHistorial = function() {
     console.log("⚙️ Iniciando módulo historial.js...");
 
-    // 🧹 LIMPIEZA: Cancelar operaciones anteriores
-    if (window._historialAbort) {
-        try { window._historialAbort.abort(); } catch(e) {}
+    // ✅ RESTAURAR FLAG DE INICIALIZACIÓN
+    if (window._historialInitialized) {
+        console.log("⚠️ Módulo ya inicializado, omitiendo...");
+        return;
     }
+    window._historialInitialized = true;
 
     const ITEMS_PER_PAGE = 10;
     let currentPage = 1;
     let estacionesData = [];
     let tablasDisponibles = {};
-    let camposDisponibles = {};
 
     const el = (id) => document.getElementById(id);
     const statPersonas = el('stat-personas');
@@ -32,7 +33,6 @@ window.initHistorial = function() {
     const pagination = el('estacion-pagination');
     const estacionTotal = el('estacion-total');
 
-    // Verificar que los elementos existan
     if (!tableContainer || !btnFiltrar) {
         console.warn("⚠️ Elementos del historial no encontrados");
         return;
@@ -89,8 +89,10 @@ window.initHistorial = function() {
         return { desde, hasta };
     }
 
-    // ✅ VERIFICACIÓN SILENCIOSA DE TABLAS Y CAMPOS
-    async function verificarEstructura() {
+    // ✅ VERIFICACIÓN OPTIMIZADA: Solo verifica tablas, NO campos problemáticos
+    async function verificarTablasDisponibles() {
+        console.log("🔍 Verificando qué tablas existen...");
+        
         const tablas = [
             'registro_personas',
             'registro_automoviles',
@@ -100,7 +102,6 @@ window.initHistorial = function() {
             'denuncias'
         ];
 
-        // Verificar tablas existentes
         for (const tabla of tablas) {
             try {
                 const { error } = await window.supabaseClient
@@ -108,42 +109,17 @@ window.initHistorial = function() {
                     .select('*')
                     .limit(1);
                 tablasDisponibles[tabla] = !error;
+                console.log(`  ${tabla}: ${!error ? '✅' : '❌'}`);
             } catch {
                 tablasDisponibles[tabla] = false;
+                console.log(`  ${tabla}: ❌`);
             }
         }
 
-        // ✅ Verificar campos específicos de forma SILENCIOSA
-        const verificacionesCampos = [
-            { tabla: 'registro_personas', campo: 'estacion_policial' },
-            { tabla: 'registro_automoviles', campo: 'estacion_policial' },
-            { tabla: 'registro_motos', campo: 'estacion_policial' },
-            { tabla: 'registro_vinculado', campo: 'estacion_policial' },
-            { tabla: 'registro_procesados', campo: 'estacion_policial' },
-            { tabla: 'denuncias', campo: 'estacion_policial' }
-        ];
+        // ✅ NO VERIFICAR registro_procesados.estacion_policial (ya sabemos que no existe)
+        // Esto evita el error 400 en la consola
 
-        for (const v of verificacionesCampos) {
-            if (!tablasDisponibles[v.tabla]) {
-                camposDisponibles[`${v.tabla}.${v.campo}`] = false;
-                continue;
-            }
-
-            try {
-                // Usar .select() con el campo específico - si falla, el campo no existe
-                const { error } = await window.supabaseClient
-                    .from(v.tabla)
-                    .select(v.campo)
-                    .limit(1);
-                
-                // ✅ Guardar resultado SIN mostrar error en consola
-                camposDisponibles[`${v.tabla}.${v.campo}`] = !error;
-            } catch {
-                camposDisponibles[`${v.tabla}.${v.campo}`] = false;
-            }
-        }
-
-        console.log("✅ Estructura verificada:", { tablas: tablasDisponibles, campos: camposDisponibles });
+        console.log("✅ Estructura verificada");
     }
 
     // Función segura para contar registros
@@ -153,13 +129,14 @@ window.initHistorial = function() {
         try {
             let query = window.supabaseClient.from(tabla).select('*', { count: 'exact', head: true });
             
-            // Aplicar filtros solo si el campo existe
+            // Aplicar filtros
             for (const [key, value] of Object.entries(filtros)) {
                 if (value !== undefined && value !== null) {
-                    const campoExiste = camposDisponibles[`${tabla}.${key}`];
-                    if (campoExiste) {
-                        query = query.eq(key, value);
+                    // ✅ NO aplicar filtro estacion_policial a registro_procesados
+                    if (tabla === 'registro_procesados' && key === 'estacion_policial') {
+                        continue;
                     }
+                    query = query.eq(key, value);
                 }
             }
 
@@ -184,35 +161,27 @@ window.initHistorial = function() {
         }
 
         try {
-            // Verificar estructura la primera vez
             if (Object.keys(tablasDisponibles).length === 0) {
-                await verificarEstructura();
+                await verificarTablasDisponibles();
             }
 
-            // 1. Personas registradas
             const countPersonas = await contarSeguro('registro_personas');
             if (statPersonas) statPersonas.textContent = countPersonas;
 
-            // 2. Automóviles
             const countAutos = await contarSeguro('registro_automoviles');
             if (statAutomoviles) statAutomoviles.textContent = countAutos;
 
-            // 3. Motos
             const countMotos = await contarSeguro('registro_motos');
             if (statMotos) statMotos.textContent = countMotos;
 
-            // 4. Vehículos totales
             if (statVehiculos) statVehiculos.textContent = countAutos + countMotos;
 
-            // 5. Personas con vehículos (vinculados)
             const countVinculados = await contarSeguro('registro_vinculado');
             if (statVinculados) statVinculados.textContent = countVinculados;
 
-            // 6. Denuncias
             const countDenuncias = await contarSeguro('denuncias');
             if (statDenuncias) statDenuncias.textContent = countDenuncias;
 
-            // 7. Procesados
             const countProcesados = await contarSeguro('registro_procesados');
             if (statProcesados) statProcesados.textContent = countProcesados;
 
@@ -267,29 +236,28 @@ window.initHistorial = function() {
                     total: 0
                 };
 
-                // Solo consultar si la tabla Y el campo existen
-                if (camposDisponibles['registro_personas.estacion_policial']) {
+                if (tablasDisponibles['registro_personas']) {
                     stats.personas = await contarSeguro('registro_personas', { estacion_policial: estacion });
                 }
                 
-                if (camposDisponibles['registro_automoviles.estacion_policial']) {
+                if (tablasDisponibles['registro_automoviles']) {
                     stats.vehiculos += await contarSeguro('registro_automoviles', { estacion_policial: estacion });
                 }
                 
-                if (camposDisponibles['registro_motos.estacion_policial']) {
+                if (tablasDisponibles['registro_motos']) {
                     stats.vehiculos += await contarSeguro('registro_motos', { estacion_policial: estacion });
                 }
                 
-                if (camposDisponibles['registro_vinculado.estacion_policial']) {
+                if (tablasDisponibles['registro_vinculado']) {
                     stats.vinculados = await contarSeguro('registro_vinculado', { estacion_policial: estacion });
                 }
                 
-                if (camposDisponibles['denuncias.estacion_policial']) {
+                if (tablasDisponibles['denuncias']) {
                     stats.denuncias = await contarSeguro('denuncias', { estacion_policial: estacion });
                 }
                 
-                // ✅ registro_procesados NO tiene estacion_policial, se deja en 0
-                // No se hace la consulta, evitando el error 400
+                // ✅ registro_procesados NO tiene estacion_policial, dejar en 0
+                stats.procesados = 0;
 
                 stats.total = stats.personas + stats.vehiculos + stats.vinculados + stats.denuncias + stats.procesados;
                 estacionesData.push(stats);
