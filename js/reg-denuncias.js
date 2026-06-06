@@ -1,11 +1,4 @@
 window.initRegDenuncias = function() {
-    // 🛡️ 1. PREVENIR EJECUCIÓN DUPLICADA (Evita que se reinicie y borre todo)
-    if (window._regDenunciasInitialized) {
-        console.log("⚠️ Módulo ya inicializado. Omitiendo ejecución duplicada...");
-        return;
-    }
-    window._regDenunciasInitialized = true;
-
     console.log("⚙️ Iniciando módulo reg-denuncias.js...");
 
     function iniciarModulo(intentos = 0) {
@@ -13,19 +6,32 @@ window.initRegDenuncias = function() {
         const btn = form?.querySelector('.btn-submit');
         const msg = document.getElementById('msg-reg-denuncias');
         const loadingOverlay = document.getElementById('loading-overlay');
+        
+        // 🔍 Verificar también los contenedores de documentos
+        const contenedorUnicos = document.getElementById('docs-unicos-container');
+        const contenedorMultiples = document.getElementById('docs-multiples-container');
 
-        if (!form || !btn) {
-            if (intentos < 10) {
-                console.warn(`⚠️ Formulario no encontrado aún. Reintentando en 100ms... (intento ${intentos + 1}/10)`);
+        // 🛡️ 1. GUARDIA INTELIGENTE: Evita doble ejecución en el MISMO formulario
+        if (form && form.dataset.regDenunciasInitialized === 'true') {
+            console.log("✅ Módulo ya inicializado en este formulario. Omitiendo ejecución duplicada.");
+            return;
+        }
+
+        // 🛡️ 2. VALIDACIÓN ESTRICTA: No continuar hasta que TODOS los elementos existan
+        if (!form || !btn || !contenedorUnicos || !contenedorMultiples) {
+            if (intentos < 15) {
+                console.warn(`⚠️ Elementos del formulario no encontrados aún. Reintentando en 100ms... (intento ${intentos + 1}/15)`);
                 setTimeout(() => iniciarModulo(intentos + 1), 100);
                 return;
             } else {
-                console.error("❌ ERROR CRÍTICO: No se encontró el formulario después de 10 intentos.");
+                console.error("❌ ERROR CRÍTICO: No se encontraron todos los elementos (form, btn, contenedores de docs) después de 15 intentos.");
                 return;
             }
         }
 
-        console.log("✅ Formulario encontrado. Configurando módulo...");
+        // Marcar como inicializado para evitar futuras ejecuciones en este mismo DOM
+        form.dataset.regDenunciasInitialized = 'true';
+        console.log("✅ Todos los elementos encontrados. Configurando módulo...");
 
         // Configurar fecha y hora actual
         const fechaInput = document.getElementById('d_fecha_hora');
@@ -37,14 +43,12 @@ window.initRegDenuncias = function() {
             });
         }
 
-        // Documentos únicos
         const docsUnicos = [
             { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
             { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
             { id: 'medida_proteccion', label: '🛡️ Medida de Protección' }
         ];
 
-        // Documentos múltiples
         const docsMultiples = [
             { id: 'acta_entrevista', label: '🎤 Acta de Entrevista', max: 10 },
             { id: 'datos_filiatorios', label: '👤 Datos Filiatorios', max: 10 },
@@ -57,60 +61,52 @@ window.initRegDenuncias = function() {
         docsUnicos.forEach(d => archivosUnicos[d.id] = null);
         docsMultiples.forEach(d => archivosMultiples[d.id] = []);
 
-        // Limpiar contenedores
-        const contenedorUnicos = document.getElementById('docs-unicos-container');
-        const contenedorMultiples = document.getElementById('docs-multiples-container');
-        if (contenedorUnicos) contenedorUnicos.innerHTML = '';
-        if (contenedorMultiples) contenedorMultiples.innerHTML = '';
+        // Limpiar y generar documentos únicos
+        contenedorUnicos.innerHTML = '';
+        docsUnicos.forEach(doc => {
+            const div = document.createElement('div');
+            div.className = 'doc-item';
+            div.innerHTML = `
+                <div class="doc-header">
+                    <label>${doc.label}</label>
+                    <div class="doc-si-no">
+                        <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="window.toggleDocField('${doc.id}', false)"><span>No</span></label>
+                        <label><input type="radio" name="doc_${doc.id}" value="si" onchange="window.toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                    </div>
+                </div>
+                <div class="doc-upload-area" id="upload-${doc.id}">
+                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="window.cargarDocUnico('${doc.id}', this)">
+                    <div id="status-${doc.id}"></div>
+                </div>
+            `;
+            contenedorUnicos.appendChild(div);
+        });
 
-        // Generar documentos únicos
-        if (contenedorUnicos) {
-            docsUnicos.forEach(doc => {
-                const div = document.createElement('div');
-                div.className = 'doc-item';
-                div.innerHTML = `
-                    <div class="doc-header">
-                        <label>${doc.label}</label>
-                        <div class="doc-si-no">
-                            <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="window.toggleDocField('${doc.id}', false)"><span>No</span></label>
-                            <label><input type="radio" name="doc_${doc.id}" value="si" onchange="window.toggleDocField('${doc.id}', true)"><span>Sí</span></label>
-                        </div>
+        // Limpiar y generar documentos múltiples
+        contenedorMultiples.innerHTML = '';
+        docsMultiples.forEach(doc => {
+            const div = document.createElement('div');
+            div.className = 'doc-item';
+            div.innerHTML = `
+                <div class="doc-header">
+                    <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Máximo ${doc.max})</span></label>
+                    <div class="doc-si-no">
+                        <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="window.toggleDocField('${doc.id}', false)"><span>No</span></label>
+                        <label><input type="radio" name="doc_${doc.id}" value="si" onchange="window.toggleDocField('${doc.id}', true)"><span>Sí</span></label>
                     </div>
-                    <div class="doc-upload-area" id="upload-${doc.id}">
-                        <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="window.cargarDocUnico('${doc.id}', this)">
-                        <div id="status-${doc.id}"></div>
-                    </div>
-                `;
-                contenedorUnicos.appendChild(div);
-            });
-        }
-
-        // Generar documentos múltiples
-        if (contenedorMultiples) {
-            docsMultiples.forEach(doc => {
-                const div = document.createElement('div');
-                div.className = 'doc-item';
-                div.innerHTML = `
-                    <div class="doc-header">
-                        <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Máximo ${doc.max})</span></label>
-                        <div class="doc-si-no">
-                            <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="window.toggleDocField('${doc.id}', false)"><span>No</span></label>
-                            <label><input type="radio" name="doc_${doc.id}" value="si" onchange="window.toggleDocField('${doc.id}', true)"><span>Sí</span></label>
-                        </div>
-                    </div>
-                    <div class="doc-upload-area" id="upload-${doc.id}">
-                        <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
-                        <button type="button" class="btn-add-file" onclick="window.agregarMultiples('${doc.id}', ${doc.max})">➕ Agregar archivos</button>
-                        <div class="file-count" id="count-${doc.id}">0 archivos cargados</div>
-                        <div id="list-${doc.id}" style="margin-top: 8px;"></div>
-                    </div>
-                `;
-                contenedorMultiples.appendChild(div);
-            });
-        }
+                </div>
+                <div class="doc-upload-area" id="upload-${doc.id}">
+                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
+                    <button type="button" class="btn-add-file" onclick="window.agregarMultiples('${doc.id}', ${doc.max})">➕ Agregar archivos</button>
+                    <div class="file-count" id="count-${doc.id}">0 archivos cargados</div>
+                    <div id="list-${doc.id}" style="margin-top: 8px;"></div>
+                </div>
+            `;
+            contenedorMultiples.appendChild(div);
+        });
 
         // ==========================================
-        // FUNCIONES GLOBALES DE UI
+        // FUNCIONES GLOBALES DE UI (Explícitamente en window)
         // ==========================================
         window.toggleDocField = function(campo, mostrar) {
             const area = document.getElementById(`upload-${campo}`);
@@ -119,7 +115,7 @@ window.initRegDenuncias = function() {
                     area.classList.add('active');
                 } else {
                     area.classList.remove('active');
-                    // 🔄 Limpiar estado interno si se oculta
+                    // Limpiar estado interno al ocultar
                     if (archivosUnicos[campo] !== undefined) {
                         archivosUnicos[campo] = null;
                         const status = document.getElementById(`status-${campo}`);
@@ -133,6 +129,8 @@ window.initRegDenuncias = function() {
                         window.actualizarListaMultiples(campo, docMax);
                     }
                 }
+            } else {
+                console.error(`❌ No se encontró el área de carga: upload-${campo}`);
             }
         };
 
@@ -179,7 +177,7 @@ window.initRegDenuncias = function() {
                 }
             }
             window.actualizarListaMultiples(docId, max);
-            input.value = ''; // Limpiar input para permitir seleccionar el mismo archivo de nuevo si se borró
+            input.value = '';
         };
 
         window.actualizarListaMultiples = function(docId, max) {
@@ -268,11 +266,7 @@ window.initRegDenuncias = function() {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                 if (radio && radio.value === 'si') {
                     if (!archivosUnicos[doc.id]) {
-                        if (msg) {
-                            msg.textContent = `⚠️ Debe subir un PDF para: ${doc.label}`;
-                            msg.className = 'msg error';
-                            msg.style.display = 'block';
-                        }
+                        if (msg) { msg.textContent = `⚠️ Debe subir un PDF para: ${doc.label}`; msg.className = 'msg error'; msg.style.display = 'block'; }
                         return;
                     }
                 }
@@ -283,11 +277,7 @@ window.initRegDenuncias = function() {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                 if (radio && radio.value === 'si') {
                     if (!archivosMultiples[doc.id] || archivosMultiples[doc.id].length === 0) {
-                        if (msg) {
-                            msg.textContent = `⚠️ Debe subir al menos un PDF para: ${doc.label}`;
-                            msg.className = 'msg error';
-                            msg.style.display = 'block';
-                        }
+                        if (msg) { msg.textContent = `⚠️ Debe subir al menos un PDF para: ${doc.label}`; msg.className = 'msg error'; msg.style.display = 'block'; }
                         return;
                     }
                 }
@@ -315,9 +305,7 @@ window.initRegDenuncias = function() {
                         const { error } = await bucket.upload(path, archivosUnicos[doc.id], { contentType: 'application/pdf' });
                         if (error) throw new Error(`Error subiendo ${doc.label}: ${error.message}`);
                         docsUnicosUrls[doc.id] = bucket.getPublicUrl(path).data.publicUrl;
-                    } else {
-                        docsUnicosUrls[doc.id] = null;
-                    }
+                    } else { docsUnicosUrls[doc.id] = null; }
                 }
 
                 // Subir documentos múltiples
@@ -333,12 +321,9 @@ window.initRegDenuncias = function() {
                             urls.push(bucket.getPublicUrl(path).data.publicUrl);
                         }
                         docsMultiplesUrls[doc.id] = urls;
-                    } else {
-                        docsMultiplesUrls[doc.id] = null;
-                    }
+                    } else { docsMultiplesUrls[doc.id] = null; }
                 }
 
-                // Preparar datos
                 const tlfPais = document.getElementById('d_tlf_pais')?.value;
                 const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '');
                 
@@ -373,10 +358,9 @@ window.initRegDenuncias = function() {
                     setTimeout(() => msg.style.display = 'none', 4000);
                 }
 
-                // 🔄 RESET SINCRONIZADO DEL FORMULARIO
+                // 🔄 3. RESET SINCRONIZADO DEL FORMULARIO
                 form.reset();
                 
-                // Actualizar fecha nuevamente
                 if (fechaInput) {
                     const ahora = new Date();
                     fechaInput.value = ahora.toLocaleString('es-VE', {
@@ -385,15 +369,9 @@ window.initRegDenuncias = function() {
                     });
                 }
 
-                // Forzar la sincronización visual de los documentos después del reset
-                // (form.reset() no dispara los eventos onchange, hay que hacerlo manualmente)
-                docsUnicos.forEach(d => {
-                    window.toggleDocField(d.id, false);
-                });
-                
-                docsMultiples.forEach(d => {
-                    window.toggleDocField(d.id, false);
-                });
+                // Forzar la sincronización visual después del reset (form.reset() no dispara onchange)
+                docsUnicos.forEach(d => window.toggleDocField(d.id, false));
+                docsMultiples.forEach(d => window.toggleDocField(d.id, false));
 
                 // Resetear teléfono
                 if (nativeSelect) nativeSelect.value = '';
@@ -418,7 +396,6 @@ window.initRegDenuncias = function() {
         console.log("✅ Módulo reg-denuncias.js inicializado correctamente");
     }
 
-    // 🔹 INICIAR EL MÓDULO
     iniciarModulo();
 };
 
