@@ -9,8 +9,10 @@ window.initConTabla = function() {
     let currentData = [];
     let currentSearchMode = 'ultimas';
     
-    // 🔹 FLAG DE BLOQUEO: Previene ejecuciones múltiples simultáneas
+    // 🔹 SISTEMA DE BLOQUEO ROBUSTO
     let isSearching = false;
+    let abortController = null; // Para cancelar peticiones anteriores
+    let searchTimeout = null; // Timeout de seguridad
 
     const cedulaInput = document.getElementById('con_buscar_cedula');
     const btnBuscar = document.getElementById('con_btn_buscar');
@@ -29,13 +31,8 @@ window.initConTabla = function() {
     const btnPdf = document.getElementById('con_btn_pdf');
 
     async function cargarHtml2Pdf() {
-        if (window.html2pdf) {
-            console.log("✅ html2pdf ya está cargado");
-            return true;
-        }
+        if (window.html2pdf) return true;
 
-        console.log("⏳ Cargando librería html2pdf dinámicamente...");
-        
         return new Promise((resolve, reject) => {
             const cdns = [
                 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
@@ -47,26 +44,17 @@ window.initConTabla = function() {
 
             function intentarCargar() {
                 if (intentos >= cdns.length) {
-                    reject(new Error('No se pudo cargar html2pdf desde ningún CDN.'));
+                    reject(new Error('No se pudo cargar html2pdf.'));
                     return;
                 }
 
                 const script = document.createElement('script');
                 script.src = cdns[intentos];
                 script.onload = () => {
-                    if (window.html2pdf) {
-                        console.log(`✅ html2pdf cargado desde: ${cdns[intentos]}`);
-                        resolve(true);
-                    } else {
-                        intentos++;
-                        intentarCargar();
-                    }
+                    if (window.html2pdf) resolve(true);
+                    else { intentos++; intentarCargar(); }
                 };
-                script.onerror = () => {
-                    console.warn(`⚠️ CDN ${cdns[intentos]} falló.`);
-                    intentos++;
-                    intentarCargar();
-                };
+                script.onerror = () => { intentos++; intentarCargar(); };
                 document.head.appendChild(script);
             }
 
@@ -74,9 +62,10 @@ window.initConTabla = function() {
         });
     }
 
-    // 🔹 FUNCIÓN DE BLOQUEO: Deshabilita botones durante la búsqueda
+    // 🔹 FUNCIÓN DE BLOQUEO CON TIMEOUT DE SEGURIDAD
     function bloquearBusqueda(activar) {
         isSearching = activar;
+        
         if (btnBuscar) btnBuscar.disabled = activar;
         if (btnUltimas) btnUltimas.disabled = activar;
         if (cedulaInput) cedulaInput.disabled = activar;
@@ -85,10 +74,48 @@ window.initConTabla = function() {
         if (activar) {
             if (btnBuscar) btnBuscar.textContent = '⏳ Buscando...';
             if (btnUltimas) btnUltimas.textContent = ' Cargando...';
+            
+            //  TIMEOUT DE SEGURIDAD: Libera el bloqueo después de 30 segundos
+            if (searchTimeout) clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                console.warn("⚠️ Timeout de seguridad: liberando bloqueo...");
+                desbloquearBusqueda();
+            }, 30000);
         } else {
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+                searchTimeout = null;
+            }
             if (btnBuscar) btnBuscar.textContent = '🔍 Buscar';
             if (btnUltimas) btnUltimas.textContent = '📋 Últimas 15';
         }
+    }
+
+    function desbloquearBusqueda() {
+        isSearching = false;
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+            searchTimeout = null;
+        }
+        if (btnBuscar) {
+            btnBuscar.disabled = false;
+            btnBuscar.textContent = ' Buscar';
+        }
+        if (btnUltimas) {
+            btnUltimas.disabled = false;
+            btnUltimas.textContent = '📋 Últimas 15';
+        }
+        if (cedulaInput) cedulaInput.disabled = false;
+        if (checkIncluirEliminadas) checkIncluirEliminadas.disabled = false;
+    }
+
+    // 🔹 CANCELAR PETICIÓN ANTERIOR SI EXISTE
+    function cancelarPeticionAnterior() {
+        if (abortController) {
+            abortController.abort();
+            console.log("🛑 Petición anterior cancelada");
+        }
+        abortController = new AbortController();
     }
 
     if (cedulaInput) {
@@ -101,11 +128,19 @@ window.initConTabla = function() {
     }
 
     btnBuscar?.addEventListener('click', () => {
-        if (!isSearching) buscarPorCedula();
+        if (isSearching) {
+            console.log("⚠️ Búsqueda en progreso, ignorando clic...");
+            return;
+        }
+        buscarPorCedula();
     });
     
     btnUltimas?.addEventListener('click', () => {
-        if (!isSearching) cargarUltimas();
+        if (isSearching) {
+            console.log("⚠️ Búsqueda en progreso, ignorando clic...");
+            return;
+        }
+        cargarUltimas();
     });
     
     modalClose?.addEventListener('click', () => cerrarModal());
@@ -119,22 +154,17 @@ window.initConTabla = function() {
     btnPdf?.addEventListener('click', () => exportarPDF());
 
     async function cargarUltimas() {
-        // 🔹 BLOQUEO: Si ya está buscando, no hacer nada
-        if (isSearching) {
-            console.log("️ Búsqueda en progreso, ignorando clic...");
-            return;
-        }
+        if (isSearching) return;
 
         try {
             bloquearBusqueda(true);
+            cancelarPeticionAnterior();
             
             currentSearchMode = 'ultimas';
             currentPage = 1;
             currentData = [];
             
             if (msg) { msg.textContent = '⏳ Cargando últimas denuncias...'; msg.className = 'msg info'; msg.style.display = 'block'; }
-            
-            // 🔹 LIMPIAR CONTENIDO ANTES DE CARGAR
             tableContent.innerHTML = '<div class="con-loading">⏳ Cargando...</div>';
             tableTitle.textContent = '📋 Últimas Denuncias Registradas';
             pagination.style.display = 'none';
@@ -145,19 +175,22 @@ window.initConTabla = function() {
                 .order('created_at', { ascending: false })
                 .range(0, ITEMS_PER_PAGE - 1);
 
-            if (error) throw error;
+            if (error) {
+                if (error.name === 'AbortError') {
+                    console.log(" Petición cancelada");
+                    return;
+                }
+                throw error;
+            }
 
             currentData = data || [];
             tableCount.textContent = `Total: ${count || 0} denuncia(s)`;
             
             if (currentData.length === 0) {
                 tableContent.innerHTML = '<div class="con-empty">📭 No hay denuncias registradas aún.</div>';
-                pagination.style.display = 'none';
-                if (msg) msg.style.display = 'none';
                 return;
             }
 
-            // 🔹 RENDERIZAR TABLA Y RE-ADJUNTAR EVENT LISTENERS
             renderTabla(currentData);
             
             if (count > ITEMS_PER_PAGE) {
@@ -174,21 +207,17 @@ window.initConTabla = function() {
             }
 
         } catch (err) {
+            if (err.name === 'AbortError') return;
             console.error('Error:', err);
             tableContent.innerHTML = `<div class="con-empty">❌ Error al cargar: ${err.message}</div>`;
             if (msg) { msg.textContent = '❌ ' + err.message; msg.className = 'msg error'; msg.style.display = 'block'; }
         } finally {
-            // 🔹 SIEMPRE DESBLOQUEAR, incluso si hay error
-            bloquearBusqueda(false);
+            desbloquearBusqueda();
         }
     }
 
     async function buscarPorCedula() {
-        // 🔹 BLOQUEO: Si ya está buscando, no hacer nada
-        if (isSearching) {
-            console.log("⚠️ Búsqueda en progreso, ignorando clic...");
-            return;
-        }
+        if (isSearching) return;
 
         const cedulaRaw = cedulaInput?.value.trim().toUpperCase().replace(/\s/g, '') || '';
         const incluirEliminadas = checkIncluirEliminadas?.checked || false;
@@ -206,14 +235,13 @@ window.initConTabla = function() {
 
         try {
             bloquearBusqueda(true);
+            cancelarPeticionAnterior();
             
             currentSearchMode = 'cedula';
             currentPage = 1;
             currentData = [];
 
             if (msg) { msg.textContent = '⏳ Buscando denuncias...'; msg.className = 'msg info'; msg.style.display = 'block'; }
-            
-            //  LIMPIAR CONTENIDO ANTES DE CARGAR
             tableContent.innerHTML = '<div class="con-loading">⏳ Buscando...</div>';
             tableTitle.textContent = `🔍 Resultados para cédula: ${cedulaRaw}`;
             pagination.style.display = 'none';
@@ -226,7 +254,10 @@ window.initConTabla = function() {
                 .eq('cedula', cedulaRaw)
                 .order('created_at', { ascending: false });
 
-            if (errorActivas) throw errorActivas;
+            if (errorActivas) {
+                if (errorActivas.name === 'AbortError') return;
+                throw errorActivas;
+            }
             if (activas) {
                 todasLasDenuncias = todasLasDenuncias.concat(activas.map(d => ({ ...d, estado: 'activa' })));
             }
@@ -238,7 +269,7 @@ window.initConTabla = function() {
                     .eq('cedula', cedulaRaw)
                     .order('fecha_eliminacion', { ascending: false });
 
-                if (errorEliminadas) {
+                if (errorEliminadas && errorEliminadas.name !== 'AbortError') {
                     console.warn('No se pudieron cargar las eliminadas:', errorEliminadas);
                 } else if (eliminadas) {
                     todasLasDenuncias = todasLasDenuncias.concat(eliminadas.map(d => ({ ...d, estado: 'eliminada' })));
@@ -256,15 +287,12 @@ window.initConTabla = function() {
 
             if (currentData.length === 0) {
                 tableContent.innerHTML = '<div class="con-empty">📭 No se encontraron denuncias con esa cédula.</div>';
-                pagination.style.display = 'none';
                 if (msg) { msg.textContent = '⚠️ No se encontraron denuncias.'; msg.className = 'msg error'; msg.style.display = 'block'; }
                 return;
             }
 
             const inicio = 0;
             const fin = Math.min(ITEMS_PER_PAGE, currentData.length);
-            
-            // 🔹 RENDERIZAR TABLA Y RE-ADJUNTAR EVENT LISTENERS
             renderTabla(currentData.slice(inicio, fin));
 
             if (currentData.length > ITEMS_PER_PAGE) {
@@ -281,12 +309,12 @@ window.initConTabla = function() {
             if (msg) { msg.textContent = mensajeExito; msg.className = 'msg success'; msg.style.display = 'block'; }
 
         } catch (err) {
+            if (err.name === 'AbortError') return;
             console.error('Error:', err);
-            tableContent.innerHTML = `<div class="con-empty"> Error: ${err.message}</div>`;
-            if (msg) { msg.textContent = '❌ ' + err.message; msg.className = 'msg error'; msg.style.display = 'block'; }
+            tableContent.innerHTML = `<div class="con-empty">❌ Error: ${err.message}</div>`;
+            if (msg) { msg.textContent = ' ' + err.message; msg.className = 'msg error'; msg.style.display = 'block'; }
         } finally {
-            // 🔹 SIEMPRE DESBLOQUEAR, incluso si hay error
-            bloquearBusqueda(false);
+            desbloquearBusqueda();
         }
     }
 
@@ -336,12 +364,8 @@ window.initConTabla = function() {
         });
 
         html += '</tbody></table>';
-        
-        // 🔹 INSERTAR HTML
         tableContent.innerHTML = html;
 
-        // 🔹 RE-ADJUNTAR EVENT LISTENERS A LOS BOTONES DE VER FICHA
-        // Esto es crucial: después de actualizar el innerHTML, los botones pierden sus listeners
         const botonesVer = tableContent.querySelectorAll('.con-btn-ver');
         botonesVer.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -386,7 +410,6 @@ window.initConTabla = function() {
         pagination.innerHTML = html;
         pagination.style.display = 'flex';
 
-        // 🔹 RE-ADJUNTAR EVENT LISTENERS A LOS BOTONES DE PAGINACIÓN
         const botonesPagina = pagination.querySelectorAll('button[data-page]');
         botonesPagina.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -403,8 +426,6 @@ window.initConTabla = function() {
         const inicio = (currentPage - 1) * ITEMS_PER_PAGE;
         const fin = Math.min(inicio + ITEMS_PER_PAGE, currentData.length);
         const datosPagina = currentData.slice(inicio, fin);
-        
-        // 🔹 RENDERIZAR Y RE-ADJUNTAR EVENT LISTENERS
         renderTabla(datosPagina);
 
         const totalItems = currentData.length;
@@ -443,8 +464,8 @@ window.initConTabla = function() {
         const docsMultiples = [
             { id: 'acta_entrevista', label: '🎤 Acta de Entrevista' },
             { id: 'datos_filiatorios', label: '👤 Datos Filiatorios' },
-            { id: 'evidencias', label: '🔍 Evidencias' },
-            { id: 'solicitud_senamecf', label: '🏥 Solicitud SENAMECF' }
+            { id: 'evidencias', label: ' Evidencias' },
+            { id: 'solicitud_senamecf', label: ' Solicitud SENAMECF' }
         ];
 
         let docsUnicosHtml = '<ul class="ficha-docs-list">';
@@ -489,7 +510,7 @@ window.initConTabla = function() {
             </div>
 
             <div class="ficha-section">
-                <div class="ficha-section-title">📅 Información General</div>
+                <div class="ficha-section-title"> Información General</div>
                 <div class="ficha-grid">
                     <div class="ficha-field">
                         <div class="ficha-label">Fecha y Hora</div>
@@ -507,7 +528,7 @@ window.initConTabla = function() {
             </div>
 
             <div class="ficha-section">
-                <div class="ficha-section-title"> Datos del Denunciante</div>
+                <div class="ficha-section-title">👤 Datos del Denunciante</div>
                 <div class="ficha-grid">
                     <div class="ficha-field">
                         <div class="ficha-label">Cédula de Identidad</div>
@@ -548,19 +569,19 @@ window.initConTabla = function() {
             </div>
 
             <div class="ficha-section">
-                <div class="ficha-section-title">📝 Observaciones</div>
+                <div class="ficha-section-title"> Observaciones</div>
                 <div class="ficha-field full">
                     <div class="ficha-value" style="white-space: pre-wrap;">${denuncia.observaciones || 'Sin observaciones'}</div>
                 </div>
             </div>
 
             <div class="ficha-section">
-                <div class="ficha-section-title">📄 Documentos Únicos</div>
+                <div class="ficha-section-title"> Documentos Únicos</div>
                 ${docsUnicosHtml}
             </div>
 
             <div class="ficha-section">
-                <div class="ficha-section-title"> Documentos Múltiples</div>
+                <div class="ficha-section-title">📁 Documentos Múltiples</div>
                 ${docsMultiplesHtml}
             </div>
         `;
@@ -573,7 +594,7 @@ window.initConTabla = function() {
     }
 
     async function exportarPDF() {
-        const numero = modalTitle.textContent.replace('📄 Ficha: ', '').trim();
+        const numero = modalTitle.textContent.replace(' Ficha: ', '').trim();
         const element = fichaContent;
         
         btnPdf.disabled = true;
@@ -581,7 +602,6 @@ window.initConTabla = function() {
 
         try {
             await cargarHtml2Pdf();
-
             btnPdf.textContent = '⏳ Generando PDF...';
 
             const opt = {
