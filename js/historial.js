@@ -1,5 +1,5 @@
 window.initHistorial = function() {
-    console.log("⚙️ Iniciando módulo historial.js...");
+    console.log("️ Iniciando módulo historial.js...");
 
     if (window._historialInitialized) {
         console.log("⚠️ Módulo ya inicializado, omitiendo...");
@@ -32,7 +32,7 @@ window.initHistorial = function() {
     const pagination = el('estacion-pagination');
     const estacionTotal = el('estacion-total');
 
-    // ✅ BARRA DE PROGRESO
+    // BARRA DE PROGRESO
     const progressContainer = el('hist-progress-container');
     const progressLabel = el('hist-progress-label');
     const progressPercent = el('hist-progress-percent');
@@ -132,7 +132,6 @@ window.initHistorial = function() {
                 console.log(`  ${tabla}: ${!error ? '✅' : '❌'}`);
             } catch {
                 tablasDisponibles[tabla] = false;
-                console.log(`  ${tabla}: ❌`);
             }
             
             const progreso = ((i + 1) / tablas.length) * 15;
@@ -140,10 +139,9 @@ window.initHistorial = function() {
         }
     }
 
-    // ✅ FUNCIÓN DE CONTEO MEJORADA CON DIAGNÓSTICO
+    // ✅ FUNCIÓN DE CONTEO MEJORADA
     async function contarSeguro(tabla, filtros = {}) {
         if (!tablasDisponibles[tabla]) {
-            console.log(`⚠️ Tabla ${tabla} no disponible, retornando 0`);
             return 0;
         }
 
@@ -153,10 +151,6 @@ window.initHistorial = function() {
             // Aplicar filtros
             for (const [key, value] of Object.entries(filtros)) {
                 if (value !== undefined && value !== null) {
-                    // ✅ NO aplicar filtro estacion_policial a registro_procesados
-                    if (tabla === 'registro_procesados' && key === 'estacion_policial') {
-                        continue;
-                    }
                     query = query.eq(key, value);
                 }
             }
@@ -166,18 +160,11 @@ window.initHistorial = function() {
             if (desde) query = query.gte('created_at', desde.toISOString());
             if (hasta) query = query.lte('created_at', hasta.toISOString());
 
-            const { count, error, data } = await query;
+            const { count, error } = await query;
             
             if (error) {
-                console.warn(`⚠️ Error en ${tabla}:`, error.message, error.code);
+                console.warn(`⚠️ Error en ${tabla}:`, error.message);
                 return 0;
-            }
-            
-            // ✅ LOG DETALLADO PARA PROCESADOS
-            if (tabla === 'registro_procesados') {
-                console.log(`📊 PROCESADOS - Conteo:`, count);
-                console.log(`📊 PROCESADOS - Filtros aplicados:`, filtros);
-                console.log(`📊 PROCESADOS - Rango fechas:`, { desde, hasta });
             }
             
             return count || 0;
@@ -190,26 +177,25 @@ window.initHistorial = function() {
     // ✅ CARGAR ESTADÍSTICAS GENERALES
     async function cargarEstadisticasGenerales() {
         const estadisticas = [
-            { tabla: 'registro_personas', stat: statPersonas, label: 'Personas' },
-            { tabla: 'registro_automoviles', stat: statAutomoviles, label: 'Automóviles' },
-            { tabla: 'registro_motos', stat: statMotos, label: 'Motos' },
-            { tabla: 'registro_vinculado', stat: statVinculados, label: 'Vinculados' },
-            { tabla: 'denuncias', stat: statDenuncias, label: 'Denuncias' },
-            { tabla: 'registro_procesados', stat: statProcesados, label: 'Procesados' }
+            { tabla: 'registro_personas', stat: statPersonas, label: 'Personas', filtros: {} },
+            { tabla: 'registro_automoviles', stat: statAutomoviles, label: 'Automóviles', filtros: {} },
+            { tabla: 'registro_motos', stat: statMotos, label: 'Motos', filtros: {} },
+            { tabla: 'registro_vinculado', stat: statVinculados, label: 'Vinculados', filtros: {} },
+            { tabla: 'denuncias', stat: statDenuncias, label: 'Denuncias', filtros: {} },
+            // ✅ NUEVO: Procesados viene de registro_personas con estatus='Procesado'
+            { tabla: 'registro_personas', stat: statProcesados, label: 'Procesados', filtros: { estatus: 'Procesado' } }
         ];
 
         let countAutos = 0, countMotos = 0;
 
         for (let i = 0; i < estadisticas.length; i++) {
-            const { tabla, stat, label } = estadisticas[i];
+            const { tabla, stat, label, filtros } = estadisticas[i];
             
-            // ✅ LOG ANTES DE CONSULTAR
-            console.log(`🔎 Consultando ${tabla}...`);
+            console.log(`🔎 Consultando ${tabla}...`, filtros);
             
-            const count = await contarSeguro(tabla);
+            const count = await contarSeguro(tabla, filtros);
             
-            // ✅ LOG DESPUÉS DE CONSULTAR
-            console.log(`✅ ${tabla}: ${count} registros`);
+            console.log(`✅ ${label}: ${count} registros`);
             
             if (stat) stat.textContent = count;
             
@@ -267,28 +253,38 @@ window.initHistorial = function() {
                 `${i + 1}/${totalEstaciones}: ${estacion}`
             );
 
+            // ✅ Personas totales de la estación
             if (tablasDisponibles['registro_personas']) {
                 stats.personas = await contarSeguro('registro_personas', { estacion_policial: estacion });
             }
             
+            // ✅ Automóviles de la estación
             if (tablasDisponibles['registro_automoviles']) {
                 stats.vehiculos += await contarSeguro('registro_automoviles', { estacion_policial: estacion });
             }
             
+            // ✅ Motos de la estación
             if (tablasDisponibles['registro_motos']) {
                 stats.vehiculos += await contarSeguro('registro_motos', { estacion_policial: estacion });
             }
             
+            // ✅ Vinculados de la estación
             if (tablasDisponibles['registro_vinculado']) {
                 stats.vinculados = await contarSeguro('registro_vinculado', { estacion_policial: estacion });
             }
             
+            // ✅ Denuncias de la estación
             if (tablasDisponibles['denuncias']) {
                 stats.denuncias = await contarSeguro('denuncias', { estacion_policial: estacion });
             }
             
-            // ✅ registro_procesados NO tiene estacion_policial, dejar en 0
-            stats.procesados = 0;
+            // ✅ PROCESADOS: Ahora viene de registro_personas con estacion + estatus='Procesado'
+            if (tablasDisponibles['registro_personas']) {
+                stats.procesados = await contarSeguro('registro_personas', { 
+                    estacion_policial: estacion,
+                    estatus: 'Procesado'
+                });
+            }
 
             stats.total = stats.personas + stats.vehiculos + stats.vinculados + stats.denuncias + stats.procesados;
             estacionesData.push(stats);
@@ -326,7 +322,7 @@ window.initHistorial = function() {
             }, 1500);
 
         } catch (err) {
-            console.error('❌ Error cargando estadísticas:', err);
+            console.error(' Error cargando estadísticas:', err);
             ocultarProgreso();
             if (msg) {
                 msg.textContent = '❌ Error: ' + err.message;
@@ -421,7 +417,7 @@ window.initHistorial = function() {
         if (!pagination) return;
 
         let html = '';
-        html += `<button ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}">◀ Anterior</button>`;
+        html += `<button ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}"> Anterior</button>`;
 
         const maxButtons = 5;
         let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
@@ -460,7 +456,7 @@ window.initHistorial = function() {
         });
     }
 
-    console.log("🚀 Cargando estadísticas iniciales...");
+    console.log(" Cargando estadísticas iniciales...");
     cargarEstadisticas();
     console.log("✅ Módulo historial.js inicializado");
 };
