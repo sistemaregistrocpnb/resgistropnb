@@ -1,7 +1,6 @@
 <style>
   :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; --danger: #dc2626; }
   
-  /* Barra de búsqueda */
   .con-search-box {
     background: #f8fafc;
     padding: 20px;
@@ -67,13 +66,17 @@
     white-space: nowrap;
     transition: background 0.2s;
   }
-  .con-btn:hover { background: var(--secondary); }
+  .con-btn:hover:not(:disabled) { background: var(--secondary); }
+  .con-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
   .con-btn-secondary {
     background: #64748b;
   }
-  .con-btn-secondary:hover { background: #475569; }
+  .con-btn-secondary:hover:not(:disabled) { background: #475569; }
 
-  /* Tabla */
   .con-table-container {
     background: white;
     border: 1px solid var(--beige-border);
@@ -148,7 +151,6 @@
   }
   .con-btn-ver:hover { background: var(--secondary); }
 
-  /* Paginación */
   .con-pagination {
     display: flex;
     justify-content: center;
@@ -186,13 +188,11 @@
     margin: 0 10px;
   }
 
-  /* Mensajes */
   .msg { padding: 10px; margin-top: 12px; border-radius: 5px; text-align: center; display: none; }
   .msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
   .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
   .msg.info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
 
-  /* Modal de ficha */
   .con-modal-overlay {
     position: fixed;
     top: 0;
@@ -266,7 +266,11 @@
     cursor: pointer;
     font-weight: 600;
   }
-  .con-btn-pdf:hover { background: #b91c1c; }
+  .con-btn-pdf:hover:not(:disabled) { background: #b91c1c; }
+  .con-btn-pdf:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+  }
   .con-btn-print {
     background: var(--primary);
     color: white;
@@ -278,7 +282,6 @@
   }
   .con-btn-print:hover { background: var(--secondary); }
 
-  /* Ficha de denuncia (contenido del PDF) */
   .ficha-denuncia {
     font-family: Arial, sans-serif;
     color: #1e293b;
@@ -383,7 +386,6 @@
     color: var(--danger);
   }
 
-  /* Estilos de impresión */
   @media print {
     body * { visibility: hidden; }
     .ficha-denuncia, .ficha-denuncia * { visibility: visible; }
@@ -413,7 +415,6 @@
     }
   }
 
-  /* Loading */
   .con-loading {
     text-align: center;
     padding: 40px;
@@ -430,10 +431,9 @@
 <div class="card">
   <h3>📊 Consulta de Denuncias</h3>
   
-  <!-- Barra de búsqueda -->
   <div class="con-search-box">
     <div class="con-search-field">
-      <label>🔍 Buscar por Cédula</label>
+      <label> Buscar por Cédula</label>
       <input type="text" id="con_buscar_cedula" placeholder="Ej: V-12345678">
       <small>Deje vacío y presione "Mostrar últimas" para ver las 15 más recientes</small>
     </div>
@@ -447,7 +447,6 @@
   
   <div id="con_msg" class="msg"></div>
 
-  <!-- Tabla de resultados -->
   <div class="con-table-container">
     <div class="con-table-header">
       <span id="con_table_title">📋 Últimas Denuncias Registradas</span>
@@ -460,7 +459,6 @@
   </div>
 </div>
 
-<!-- Modal de Ficha -->
 <div class="con-modal-overlay" id="con_modal_overlay">
   <div class="con-modal">
     <div class="con-modal-header">
@@ -471,11 +469,10 @@
       <div id="con_ficha_content" class="ficha-denuncia"></div>
     </div>
     <div class="con-modal-actions">
-      <button type="button" class="con-btn-print" id="con_btn_print">🖨️ Imprimir</button>
+      <button type="button" class="con-btn-print" id="con_btn_print">️ Imprimir</button>
       <button type="button" class="con-btn-pdf" id="con_btn_pdf">📥 Exportar PDF</button>
     </div>
   </div>
 </div>
 
-<!-- Librería para exportar PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
