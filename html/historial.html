@@ -1,20 +1,301 @@
 <style>
-  .historial-container { background: #f8fafc; border: 1px solid var(--beige-border); border-radius: 8px; padding: 20px; }
-  .historial-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0; }
-  .historial-header h3 { margin: 0; color: var(--primary); }
-  .badge-count { background: #dbeafe; color: #1d4ed8; padding: 4px 12px; border-radius: 12px; font-weight: 600; font-size: 0.85rem; }
-  .historial-empty { text-align: center; padding: 40px; color: #64748b; background: #fff; border-radius: 6px; border: 2px dashed #cbd5e1; }
+  :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; --success: #15803d; --danger: #dc2626; --info: #1e40af; }
+  
+  /* Tarjetas de estadísticas */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+  }
+  .stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-left: 4px solid var(--primary);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .stat-card.personas { border-left-color: #3b82f6; }
+  .stat-card.vehiculos { border-left-color: #10b981; }
+  .stat-card.automoviles { border-left-color: #8b5cf6; }
+  .stat-card.motos { border-left-color: #f59e0b; }
+  .stat-card.vinculados { border-left-color: #ec4899; }
+  .stat-card.denuncias { border-left-color: #ef4444; }
+  .stat-card.procesados { border-left-color: #6366f1; }
+  
+  .stat-icon {
+    font-size: 2rem;
+    margin-bottom: 10px;
+  }
+  .stat-number {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+    margin-bottom: 5px;
+  }
+  .stat-label {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  /* Filtros */
+  .history-filters {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--beige-border);
+    margin-bottom: 20px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .filter-group label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--primary);
+  }
+  .filter-group select,
+  .filter-group input {
+    padding: 8px 12px;
+    border: 1.5px solid var(--beige-border);
+    border-radius: 5px;
+    font-size: 0.9rem;
+    background: white;
+    min-width: 150px;
+  }
+  .btn-filter {
+    padding: 10px 20px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    height: 42px;
+    transition: background 0.2s;
+    align-self: flex-end;
+  }
+  .btn-filter:hover { background: var(--secondary); }
+  .btn-reset {
+    padding: 10px 20px;
+    background: #64748b;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    height: 42px;
+    transition: background 0.2s;
+    align-self: flex-end;
+  }
+  .btn-reset:hover { background: #475569; }
+  
+  /* Sección de estación */
+  .estacion-section {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    overflow: hidden;
+    margin-top: 25px;
+  }
+  .estacion-header {
+    background: var(--primary);
+    color: white;
+    padding: 15px 20px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .estacion-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .estacion-table th {
+    background: #f1f5f9;
+    padding: 12px 15px;
+    text-align: left;
+    font-size: 0.85rem;
+    color: var(--primary);
+    font-weight: 700;
+    border-bottom: 2px solid var(--beige-border);
+    text-transform: uppercase;
+  }
+  .estacion-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.9rem;
+    color: #334155;
+  }
+  .estacion-table tr:hover {
+    background: #f8fafc;
+  }
+  .estacion-table .count-cell {
+    font-weight: 700;
+    color: var(--primary);
+    text-align: center;
+  }
+  .estacion-table .total-row {
+    background: #f0f9ff;
+    font-weight: 700;
+  }
+  .estacion-table .total-row td {
+    color: var(--primary);
+    border-top: 2px solid var(--primary);
+  }
+  
+  /* Paginación */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 15px;
+    background: #f8fafc;
+    border-top: 1px solid var(--beige-border);
+  }
+  .pagination button {
+    padding: 6px 12px;
+    background: white;
+    border: 1px solid var(--beige-border);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--primary);
+    font-weight: 600;
+  }
+  .pagination button:hover:not(:disabled) {
+    background: var(--primary);
+    color: white;
+  }
+  .pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .pagination button.active {
+    background: var(--primary);
+    color: white;
+  }
+  .pagination-info {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0 10px;
+  }
+  
+  /* Mensajes */
+  .msg { padding: 10px; margin-top: 12px; border-radius: 5px; text-align: center; display: none; }
+  .msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+  .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+  .msg.info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+  
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: #64748b;
+    font-size: 1rem;
+  }
+  
+  @media (max-width: 768px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .history-filters { flex-direction: column; align-items: stretch; }
+    .filter-group select, .filter-group input { min-width: auto; }
+  }
 </style>
 
 <div class="card">
-    <h3>📜 Historial de Registros</h3>
-    <div class="historial-container">
-        <div class="historial-header">
-            <h4>Registros Archivados / Eliminados</h4>
-            <span class="badge-count" id="hist-count">Cargando...</span>
-        </div>
-        <div id="hist-content">
-            <div class="historial-empty">🔍 Busca por cédula o filtra por fecha para ver el historial de cambios.</div>
-        </div>
+  <h3>📊 Historial y Estadísticas del Sistema</h3>
+  
+  <!-- Tarjetas de Estadísticas -->
+  <div class="stats-grid">
+    <div class="stat-card personas">
+      <div class="stat-icon">👤</div>
+      <div class="stat-number" id="stat-personas">0</div>
+      <div class="stat-label">Personas Registradas</div>
     </div>
+    <div class="stat-card vehiculos">
+      <div class="stat-icon">🚗</div>
+      <div class="stat-number" id="stat-vehiculos">0</div>
+      <div class="stat-label">Vehículos Totales</div>
+    </div>
+    <div class="stat-card automoviles">
+      <div class="stat-icon">🚙</div>
+      <div class="stat-number" id="stat-automoviles">0</div>
+      <div class="stat-label">Automóviles</div>
+    </div>
+    <div class="stat-card motos">
+      <div class="stat-icon">🏍️</div>
+      <div class="stat-number" id="stat-motos">0</div>
+      <div class="stat-label">Motos</div>
+    </div>
+    <div class="stat-card vinculados">
+      <div class="stat-icon">🔗</div>
+      <div class="stat-number" id="stat-vinculados">0</div>
+      <div class="stat-label">Personas con Vehículos</div>
+    </div>
+    <div class="stat-card denuncias">
+      <div class="stat-icon">📝</div>
+      <div class="stat-number" id="stat-denuncias">0</div>
+      <div class="stat-label">Denuncias</div>
+    </div>
+    <div class="stat-card procesados">
+      <div class="stat-icon">⚖️</div>
+      <div class="stat-number" id="stat-procesados">0</div>
+      <div class="stat-label">Procesados</div>
+    </div>
+  </div>
+  
+  <!-- Filtros -->
+  <div class="history-filters">
+    <div class="filter-group">
+      <label>Período</label>
+      <select id="hist-periodo">
+        <option value="todo">Todo el historial</option>
+        <option value="dia">Hoy</option>
+        <option value="semana">Esta semana</option>
+        <option value="mes">Este mes</option>
+        <option value="anio">Este año</option>
+        <option value="custom">Personalizado</option>
+      </select>
+    </div>
+    <div class="filter-group" id="hist-fechas-custom" style="display: none;">
+      <label>Desde</label>
+      <input type="date" id="hist-fecha-desde">
+    </div>
+    <div class="filter-group" id="hist-fechas-custom-hasta" style="display: none;">
+      <label>Hasta</label>
+      <input type="date" id="hist-fecha-hasta">
+    </div>
+    <button type="button" class="btn-filter" id="hist-btn-filtrar">🔍 Filtrar</button>
+    <button type="button" class="btn-reset" id="hist-btn-reset">🔄 Resetear</button>
+  </div>
+  
+  <div id="hist-msg" class="msg"></div>
+  
+  <!-- Tabla de Estaciones -->
+  <div class="estacion-section">
+    <div class="estacion-header">
+      <span>🏛️ Estadísticas por Estación Policial</span>
+      <span id="estacion-total" style="font-size: 0.9rem; font-weight: 400;"></span>
+    </div>
+    <div id="estacion-table-container">
+      <div class="loading">Cargando estadísticas...</div>
+    </div>
+    <div class="pagination" id="estacion-pagination" style="display: none;"></div>
+  </div>
 </div>
