@@ -1,7 +1,6 @@
 window.initHistorial = function() {
     console.log("⚙️ Iniciando módulo historial.js...");
 
-    // ✅ RESTAURAR FLAG DE INICIALIZACIÓN
     if (window._historialInitialized) {
         console.log("⚠️ Módulo ya inicializado, omitiendo...");
         return;
@@ -33,9 +32,29 @@ window.initHistorial = function() {
     const pagination = el('estacion-pagination');
     const estacionTotal = el('estacion-total');
 
+    // ✅ BARRA DE PROGRESO
+    const progressContainer = el('hist-progress-container');
+    const progressLabel = el('hist-progress-label');
+    const progressPercent = el('hist-progress-percent');
+    const progressFill = el('hist-progress-fill');
+    const progressDetail = el('hist-progress-detail');
+
     if (!tableContainer || !btnFiltrar) {
         console.warn("⚠️ Elementos del historial no encontrados");
         return;
+    }
+
+    function actualizarProgreso(porcentaje, label, detalle) {
+        if (!progressContainer) return;
+        progressContainer.style.display = 'block';
+        progressFill.style.width = `${porcentaje}%`;
+        progressPercent.textContent = `${Math.round(porcentaje)}%`;
+        if (label) progressLabel.textContent = label;
+        if (detalle) progressDetail.textContent = detalle;
+    }
+
+    function ocultarProgreso() {
+        if (progressContainer) progressContainer.style.display = 'none';
     }
 
     if (periodoSelect) {
@@ -89,7 +108,7 @@ window.initHistorial = function() {
         return { desde, hasta };
     }
 
-    // ✅ VERIFICACIÓN OPTIMIZADA: Solo verifica tablas, NO campos problemáticos
+    // Verificar tablas
     async function verificarTablasDisponibles() {
         console.log("🔍 Verificando qué tablas existen...");
         
@@ -102,7 +121,8 @@ window.initHistorial = function() {
             'denuncias'
         ];
 
-        for (const tabla of tablas) {
+        for (let i = 0; i < tablas.length; i++) {
+            const tabla = tablas[i];
             try {
                 const { error } = await window.supabaseClient
                     .from(tabla)
@@ -114,17 +134,18 @@ window.initHistorial = function() {
                 tablasDisponibles[tabla] = false;
                 console.log(`  ${tabla}: ❌`);
             }
+            
+            const progreso = ((i + 1) / tablas.length) * 15;
+            actualizarProgreso(progreso, '🔍 Verificando estructura...', `Comprobando: ${tabla}`);
         }
-
-        // ✅ NO VERIFICAR registro_procesados.estacion_policial (ya sabemos que no existe)
-        // Esto evita el error 400 en la consola
-
-        console.log("✅ Estructura verificada");
     }
 
-    // Función segura para contar registros
+    // ✅ FUNCIÓN DE CONTEO MEJORADA CON DIAGNÓSTICO
     async function contarSeguro(tabla, filtros = {}) {
-        if (!tablasDisponibles[tabla]) return 0;
+        if (!tablasDisponibles[tabla]) {
+            console.log(`⚠️ Tabla ${tabla} no disponible, retornando 0`);
+            return 0;
+        }
 
         try {
             let query = window.supabaseClient.from(tabla).select('*', { count: 'exact', head: true });
@@ -145,132 +166,172 @@ window.initHistorial = function() {
             if (desde) query = query.gte('created_at', desde.toISOString());
             if (hasta) query = query.lte('created_at', hasta.toISOString());
 
-            const { count, error } = await query;
-            return error ? 0 : (count || 0);
-        } catch {
+            const { count, error, data } = await query;
+            
+            if (error) {
+                console.warn(`⚠️ Error en ${tabla}:`, error.message, error.code);
+                return 0;
+            }
+            
+            // ✅ LOG DETALLADO PARA PROCESADOS
+            if (tabla === 'registro_procesados') {
+                console.log(`📊 PROCESADOS - Conteo:`, count);
+                console.log(`📊 PROCESADOS - Filtros aplicados:`, filtros);
+                console.log(`📊 PROCESADOS - Rango fechas:`, { desde, hasta });
+            }
+            
+            return count || 0;
+        } catch (err) {
+            console.warn(`⚠️ Excepción en contarSeguro(${tabla}):`, err.message);
             return 0;
         }
     }
 
-    // Cargar estadísticas generales
-    async function cargarEstadisticas() {
-        if (msg) {
-            msg.textContent = '⏳ Cargando estadísticas...';
-            msg.className = 'msg info';
-            msg.style.display = 'block';
+    // ✅ CARGAR ESTADÍSTICAS GENERALES
+    async function cargarEstadisticasGenerales() {
+        const estadisticas = [
+            { tabla: 'registro_personas', stat: statPersonas, label: 'Personas' },
+            { tabla: 'registro_automoviles', stat: statAutomoviles, label: 'Automóviles' },
+            { tabla: 'registro_motos', stat: statMotos, label: 'Motos' },
+            { tabla: 'registro_vinculado', stat: statVinculados, label: 'Vinculados' },
+            { tabla: 'denuncias', stat: statDenuncias, label: 'Denuncias' },
+            { tabla: 'registro_procesados', stat: statProcesados, label: 'Procesados' }
+        ];
+
+        let countAutos = 0, countMotos = 0;
+
+        for (let i = 0; i < estadisticas.length; i++) {
+            const { tabla, stat, label } = estadisticas[i];
+            
+            // ✅ LOG ANTES DE CONSULTAR
+            console.log(`🔎 Consultando ${tabla}...`);
+            
+            const count = await contarSeguro(tabla);
+            
+            // ✅ LOG DESPUÉS DE CONSULTAR
+            console.log(`✅ ${tabla}: ${count} registros`);
+            
+            if (stat) stat.textContent = count;
+            
+            if (tabla === 'registro_automoviles') countAutos = count;
+            if (tabla === 'registro_motos') countMotos = count;
+
+            const progreso = 15 + ((i + 1) / estadisticas.length) * 15;
+            actualizarProgreso(
+                progreso,
+                '📊 Cargando estadísticas generales...',
+                `${label}: ${count} registros`
+            );
         }
+
+        if (statVehiculos) statVehiculos.textContent = countAutos + countMotos;
+    }
+
+    // ✅ CARGAR ESTADÍSTICAS POR ESTACIÓN
+    async function cargarEstadisticasPorEstacion() {
+        if (tableContainer) {
+            tableContainer.innerHTML = '<div class="loading">Cargando estadísticas por estación...</div>';
+        }
+
+        const estaciones = [
+            'EPM MARACAIBO', 'EPM SAN FRANCISCO', 'EPM LA CAÑADA',
+            'EPM ESTACION POLICIAL JESUS E. LOSADA', 'EPP CRISTO DE ARANZA',
+            'EPP LUIS HURTADO', 'EPP DAGNINO', 'EPP OLEGARIO VILLALOBOS',
+            'EPP CHIQUINQUIRA', 'EPP FRANCISCO EUGENIO', 'EPP CARACCIOLO',
+            'EPP IDELFONSO', 'EPP VENANCIO PULGAR', 'EPP COQUIVACOA-ZAPARA',
+            'EPP RAUL LEONI', 'EPP ANTONIO BORJAS ROMERO', 'EPP JUANA DE AVILA',
+            'EPP SAN ISIDRO', 'EPP CASIQUE MARA', 'EPP BOLIVAR', 'EPP EL BAJO',
+            'EPP DOMITILA', 'EPP CORTIJOS', 'EPP MARCIAL HERNANDEZ',
+            'EPP POTRERITO', 'EPP ANDRES BELLO', 'EPP SANTA LUCIA'
+        ];
+
+        estacionesData = [];
+        const totalEstaciones = estaciones.length;
+
+        for (let i = 0; i < totalEstaciones; i++) {
+            const estacion = estaciones[i];
+            const stats = {
+                estacion: estacion,
+                personas: 0,
+                vehiculos: 0,
+                vinculados: 0,
+                denuncias: 0,
+                procesados: 0,
+                total: 0
+            };
+
+            const progresoBase = 30 + ((i / totalEstaciones) * 65);
+            actualizarProgreso(
+                progresoBase,
+                '🏛️ Analizando estaciones...',
+                `${i + 1}/${totalEstaciones}: ${estacion}`
+            );
+
+            if (tablasDisponibles['registro_personas']) {
+                stats.personas = await contarSeguro('registro_personas', { estacion_policial: estacion });
+            }
+            
+            if (tablasDisponibles['registro_automoviles']) {
+                stats.vehiculos += await contarSeguro('registro_automoviles', { estacion_policial: estacion });
+            }
+            
+            if (tablasDisponibles['registro_motos']) {
+                stats.vehiculos += await contarSeguro('registro_motos', { estacion_policial: estacion });
+            }
+            
+            if (tablasDisponibles['registro_vinculado']) {
+                stats.vinculados = await contarSeguro('registro_vinculado', { estacion_policial: estacion });
+            }
+            
+            if (tablasDisponibles['denuncias']) {
+                stats.denuncias = await contarSeguro('denuncias', { estacion_policial: estacion });
+            }
+            
+            // ✅ registro_procesados NO tiene estacion_policial, dejar en 0
+            stats.procesados = 0;
+
+            stats.total = stats.personas + stats.vehiculos + stats.vinculados + stats.denuncias + stats.procesados;
+            estacionesData.push(stats);
+        }
+
+        estacionesData.sort((a, b) => b.total - a.total);
+        currentPage = 1;
+        renderTablaEstaciones();
+    }
+
+    // ✅ FUNCIÓN PRINCIPAL
+    async function cargarEstadisticas() {
+        if (msg) msg.style.display = 'none';
+        
+        actualizarProgreso(0, '⏳ Iniciando carga...', 'Preparando consultas...');
 
         try {
             if (Object.keys(tablasDisponibles).length === 0) {
                 await verificarTablasDisponibles();
             }
 
-            const countPersonas = await contarSeguro('registro_personas');
-            if (statPersonas) statPersonas.textContent = countPersonas;
-
-            const countAutos = await contarSeguro('registro_automoviles');
-            if (statAutomoviles) statAutomoviles.textContent = countAutos;
-
-            const countMotos = await contarSeguro('registro_motos');
-            if (statMotos) statMotos.textContent = countMotos;
-
-            if (statVehiculos) statVehiculos.textContent = countAutos + countMotos;
-
-            const countVinculados = await contarSeguro('registro_vinculado');
-            if (statVinculados) statVinculados.textContent = countVinculados;
-
-            const countDenuncias = await contarSeguro('denuncias');
-            if (statDenuncias) statDenuncias.textContent = countDenuncias;
-
-            const countProcesados = await contarSeguro('registro_procesados');
-            if (statProcesados) statProcesados.textContent = countProcesados;
-
+            await cargarEstadisticasGenerales();
             await cargarEstadisticasPorEstacion();
 
-            if (msg) {
-                msg.textContent = '✅ Estadísticas actualizadas correctamente';
-                msg.className = 'msg success';
-                msg.style.display = 'block';
-                setTimeout(() => { if (msg) msg.style.display = 'none'; }, 3000);
-            }
+            actualizarProgreso(100, '✅ ¡Carga completada!', 'Todas las estadísticas están listas');
+
+            setTimeout(() => {
+                ocultarProgreso();
+                if (msg) {
+                    msg.textContent = '✅ Estadísticas actualizadas correctamente';
+                    msg.className = 'msg success';
+                    msg.style.display = 'block';
+                    setTimeout(() => { if (msg) msg.style.display = 'none'; }, 3000);
+                }
+            }, 1500);
 
         } catch (err) {
             console.error('❌ Error cargando estadísticas:', err);
+            ocultarProgreso();
             if (msg) {
                 msg.textContent = '❌ Error: ' + err.message;
                 msg.className = 'msg error';
                 msg.style.display = 'block';
-            }
-        }
-    }
-
-    // Cargar estadísticas por estación
-    async function cargarEstadisticasPorEstacion() {
-        if (tableContainer) {
-            tableContainer.innerHTML = '<div class="loading">Cargando estadísticas por estación...</div>';
-        }
-
-        try {
-            const estaciones = [
-                'EPM MARACAIBO', 'EPM SAN FRANCISCO', 'EPM LA CAÑADA',
-                'EPM ESTACION POLICIAL JESUS E. LOSADA', 'EPP CRISTO DE ARANZA',
-                'EPP LUIS HURTADO', 'EPP DAGNINO', 'EPP OLEGARIO VILLALOBOS',
-                'EPP CHIQUINQUIRA', 'EPP FRANCISCO EUGENIO', 'EPP CARACCIOLO',
-                'EPP IDELFONSO', 'EPP VENANCIO PULGAR', 'EPP COQUIVACOA-ZAPARA',
-                'EPP RAUL LEONI', 'EPP ANTONIO BORJAS ROMERO', 'EPP JUANA DE AVILA',
-                'EPP SAN ISIDRO', 'EPP CASIQUE MARA', 'EPP BOLIVAR', 'EPP EL BAJO',
-                'EPP DOMITILA', 'EPP CORTIJOS', 'EPP MARCIAL HERNANDEZ',
-                'EPP POTRERITO', 'EPP ANDRES BELLO', 'EPP SANTA LUCIA'
-            ];
-
-            estacionesData = [];
-
-            for (const estacion of estaciones) {
-                const stats = {
-                    estacion: estacion,
-                    personas: 0,
-                    vehiculos: 0,
-                    vinculados: 0,
-                    denuncias: 0,
-                    procesados: 0,
-                    total: 0
-                };
-
-                if (tablasDisponibles['registro_personas']) {
-                    stats.personas = await contarSeguro('registro_personas', { estacion_policial: estacion });
-                }
-                
-                if (tablasDisponibles['registro_automoviles']) {
-                    stats.vehiculos += await contarSeguro('registro_automoviles', { estacion_policial: estacion });
-                }
-                
-                if (tablasDisponibles['registro_motos']) {
-                    stats.vehiculos += await contarSeguro('registro_motos', { estacion_policial: estacion });
-                }
-                
-                if (tablasDisponibles['registro_vinculado']) {
-                    stats.vinculados = await contarSeguro('registro_vinculado', { estacion_policial: estacion });
-                }
-                
-                if (tablasDisponibles['denuncias']) {
-                    stats.denuncias = await contarSeguro('denuncias', { estacion_policial: estacion });
-                }
-                
-                // ✅ registro_procesados NO tiene estacion_policial, dejar en 0
-                stats.procesados = 0;
-
-                stats.total = stats.personas + stats.vehiculos + stats.vinculados + stats.denuncias + stats.procesados;
-                estacionesData.push(stats);
-            }
-
-            estacionesData.sort((a, b) => b.total - a.total);
-            currentPage = 1;
-            renderTablaEstaciones();
-
-        } catch (err) {
-            console.error('❌ Error cargando estadísticas por estación:', err);
-            if (tableContainer) {
-                tableContainer.innerHTML = `<div class="loading">❌ Error: ${err.message}</div>`;
             }
         }
     }
