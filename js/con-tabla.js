@@ -1,33 +1,49 @@
 window.initConTabla = function() {
     console.log("⚙️ Iniciando módulo con-tabla.js...");
 
-    if (window._conTablaInitialized) {
-        console.log("⚠️ Módulo ya inicializado, omitiendo...");
-        return;
+    // 🧹 LIMPIEZA: Cancelar cualquier operación anterior
+    if (window._conTablaAbort) {
+        try { window._conTablaAbort.abort(); } catch(e) {}
     }
-    window._conTablaInitialized = true;
+    if (window._conTablaTimer) {
+        clearTimeout(window._conTablaTimer);
+    }
 
-    const ITEMS_PER_PAGE = 15;
+    // 📦 ESTADO FRESCO (se reinicia cada vez que se llama)
     let currentPage = 1;
     let currentData = [];
     let currentVersion = 0;
+    const ITEMS_PER_PAGE = 15;
+    const abortController = new AbortController();
+    window._conTablaAbort = abortController;
 
-    const cedulaInput = document.getElementById('con_buscar_cedula');
-    const btnBuscar = document.getElementById('con_btn_buscar');
-    const btnUltimas = document.getElementById('con_btn_ultimas');
-    const checkIncluirEliminadas = document.getElementById('con_incluir_eliminadas');
-    const msg = document.getElementById('con_msg');
-    const tableContent = document.getElementById('con_table_content');
-    const tableTitle = document.getElementById('con_table_title');
-    const tableCount = document.getElementById('con_table_count');
-    const pagination = document.getElementById('con_pagination');
-    const modalOverlay = document.getElementById('con_modal_overlay');
-    const modalClose = document.getElementById('con_modal_close');
-    const fichaContent = document.getElementById('con_ficha_content');
-    const modalTitle = document.getElementById('con_modal_title');
-    const btnPrint = document.getElementById('con_btn_print');
-    const btnPdf = document.getElementById('con_btn_pdf');
+    // 🔍 REFERENCIAS DOM (siempre frescas)
+    const el = (id) => document.getElementById(id);
+    const cedulaInput = el('con_buscar_cedula');
+    const btnBuscar = el('con_btn_buscar');
+    const btnUltimas = el('con_btn_ultimas');
+    const checkIncluirEliminadas = el('con_incluir_eliminadas');
+    const msg = el('con_msg');
+    const tableContent = el('con_table_content');
+    const tableTitle = el('con_table_title');
+    const tableCount = el('con_table_count');
+    const pagination = el('con_pagination');
+    const modalOverlay = el('con_modal_overlay');
+    const modalClose = el('con_modal_close');
+    const fichaContent = el('con_ficha_content');
+    const modalTitle = el('con_modal_title');
+    const btnPrint = el('con_btn_print');
+    const btnPdf = el('con_btn_pdf');
 
+    // 🛡️ VERIFICACIÓN: Si no existen los elementos, esperar
+    if (!tableContent || !btnBuscar || !btnUltimas) {
+        console.warn("⚠️ Elementos DOM no encontrados. El dashboard debe cargar el HTML primero.");
+        return;
+    }
+
+    console.log("✅ Elementos DOM encontrados. Inicializando...");
+
+    // 📄 CARGAR HTML2PDF
     async function cargarHtml2Pdf() {
         if (window.html2pdf) return true;
         return new Promise((resolve, reject) => {
@@ -37,16 +53,10 @@ window.initConTabla = function() {
             ];
             let intentos = 0;
             function intentarCargar() {
-                if (intentos >= cdns.length) {
-                    reject(new Error('No se pudo cargar html2pdf.'));
-                    return;
-                }
+                if (intentos >= cdns.length) { reject(new Error('No se pudo cargar html2pdf.')); return; }
                 const script = document.createElement('script');
                 script.src = cdns[intentos];
-                script.onload = () => {
-                    if (window.html2pdf) resolve(true);
-                    else { intentos++; intentarCargar(); }
-                };
+                script.onload = () => { if (window.html2pdf) resolve(true); else { intentos++; intentarCargar(); } };
                 script.onerror = () => { intentos++; intentarCargar(); };
                 document.head.appendChild(script);
             }
@@ -55,102 +65,82 @@ window.initConTabla = function() {
     }
 
     function mostrarMensaje(texto, tipo) {
-        if (msg) {
-            msg.textContent = texto;
-            msg.className = `msg ${tipo}`;
-            msg.style.display = 'block';
-            if (tipo === 'success') {
-                setTimeout(() => {
-                    if (msg.style.display === 'block') msg.style.display = 'none';
-                }, 3000);
-            }
-        }
-    }
-
-    function mostrarCargando(texto) {
-        if (tableContent) {
-            tableContent.innerHTML = `<div class="con-loading">${texto}</div>`;
+        if (!msg) return;
+        msg.textContent = texto;
+        msg.className = `msg ${tipo}`;
+        msg.style.display = 'block';
+        if (tipo === 'success') {
+            window._conTablaTimer = setTimeout(() => { if (msg) msg.style.display = 'none'; }, 3000);
         }
     }
 
     function mostrarErrorConReintento(errorMsg) {
-        if (tableContent) {
-            tableContent.innerHTML = `
-                <div class="con-empty">
-                    ❌ ${errorMsg}<br>
-                    <button id="btn-reintentar" style="margin-top: 15px; padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">🔄 Reintentar</button>
-                </div>
-            `;
-            setTimeout(() => {
-                const btnReintentar = document.getElementById('btn-reintentar');
-                if (btnReintentar) {
-                    btnReintentar.addEventListener('click', () => {
-                        console.log("🔄 Botón reintentar clickeado");
-                        cargarUltimas();
-                    });
-                }
-            }, 100);
-        }
+        if (!tableContent) return;
+        tableContent.innerHTML = `
+            <div class="con-empty">
+                ❌ ${errorMsg}<br>
+                <button id="btn-reintentar" style="margin-top: 15px; padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">🔄 Reintentar</button>
+            </div>
+        `;
+        setTimeout(() => {
+            const btnReintentar = document.getElementById('btn-reintentar');
+            if (btnReintentar) {
+                btnReintentar.onclick = () => cargarUltimas();
+            }
+        }, 100);
     }
 
+    // 🎧 EVENT LISTENERS (siempre se re-adjuntan)
     if (cedulaInput) {
-        cedulaInput.addEventListener('keypress', (e) => {
+        cedulaInput.onkeypress = (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 btnBuscar?.click();
             }
-        });
+        };
     }
 
     if (btnBuscar) {
-        btnBuscar.addEventListener('click', () => {
+        btnBuscar.onclick = () => {
             console.log("🔍 Clic en buscar, versión:", currentVersion + 1);
             buscarPorCedula();
-        });
+        };
     }
     
     if (btnUltimas) {
-        btnUltimas.addEventListener('click', () => {
+        btnUltimas.onclick = () => {
             console.log("📋 Clic en últimas, versión:", currentVersion + 1);
             cargarUltimas();
-        });
+        };
     }
     
-    if (modalClose) {
-        modalClose.addEventListener('click', () => cerrarModal());
-    }
-    
-    if (modalOverlay) {
-        modalOverlay.addEventListener('click', (e) => {
-            if (e.target === modalOverlay) cerrarModal();
-        });
-    }
-    
-    if (btnPrint) {
-        btnPrint.addEventListener('click', () => window.print());
-    }
-    
-    if (btnPdf) {
-        btnPdf.addEventListener('click', () => exportarPDF());
-    }
+    if (modalClose) modalClose.onclick = () => cerrarModal();
+    if (modalOverlay) modalOverlay.onclick = (e) => { if (e.target === modalOverlay) cerrarModal(); };
+    if (btnPrint) btnPrint.onclick = () => window.print();
+    if (btnPdf) btnPdf.onclick = () => exportarPDF();
 
+    // 📋 CARGAR ÚLTIMAS
     async function cargarUltimas() {
         currentVersion++;
         const miVersion = currentVersion;
         console.log(`📋 Iniciando carga de últimas (versión ${miVersion})`);
         
-        // 🔍 Verificar autenticación
-        const { data: { user }, error: authError } = await window.supabaseClient.auth.getUser();
-        if (authError || !user) {
-            console.error('❌ Error de autenticación:', authError);
-            mostrarMensaje('❌ No estás autenticado. Inicia sesión nuevamente.', 'error');
-            mostrarErrorConReintento('Error de autenticación');
-            return;
+        // Verificar autenticación
+        try {
+            const { data: { user }, error: authError } = await window.supabaseClient.auth.getUser();
+            if (authError || !user) {
+                console.error('❌ Error de autenticación:', authError);
+                mostrarMensaje('❌ No estás autenticado.', 'error');
+                mostrarErrorConReintento('Error de autenticación');
+                return;
+            }
+            console.log('✅ Usuario autenticado:', user.email);
+        } catch (e) {
+            console.error('❌ Error verificando auth:', e);
         }
-        console.log('✅ Usuario autenticado:', user.email);
 
         mostrarMensaje('⏳ Cargando últimas denuncias...', 'info');
-        mostrarCargando('⏳ Cargando...');
+        if (tableContent) tableContent.innerHTML = '<div class="con-loading">⏳ Cargando...</div>';
         if (tableTitle) tableTitle.textContent = '📋 Últimas Denuncias Registradas';
         if (pagination) pagination.style.display = 'none';
 
@@ -168,7 +158,7 @@ window.initConTabla = function() {
             const result = await Promise.race([consultaPromise, timeoutPromise]);
 
             if (miVersion !== currentVersion) {
-                console.log(`⚠️ Versión ${miVersion} obsoleta, ignorando resultado`);
+                console.log(`⚠️ Versión ${miVersion} obsoleta, ignorando`);
                 return;
             }
 
@@ -210,6 +200,7 @@ window.initConTabla = function() {
         }
     }
 
+    // 🔍 BUSCAR POR CÉDULA
     async function buscarPorCedula() {
         const cedulaRaw = cedulaInput?.value.trim().toUpperCase().replace(/\s/g, '') || '';
         const incluirEliminadas = checkIncluirEliminadas?.checked || false;
@@ -230,7 +221,7 @@ window.initConTabla = function() {
         console.log(`🔍 Iniciando búsqueda de cédula ${cedulaRaw} (versión ${miVersion})`);
 
         mostrarMensaje('⏳ Buscando denuncias...', 'info');
-        mostrarCargando(' Buscando...');
+        if (tableContent) tableContent.innerHTML = '<div class="con-loading">⏳ Buscando...</div>';
         if (tableTitle) tableTitle.textContent = `🔍 Resultados para: ${cedulaRaw}`;
         if (pagination) pagination.style.display = 'none';
 
@@ -250,8 +241,6 @@ window.initConTabla = function() {
             const resultActivas = await Promise.race([consultaActivas, timeoutPromise]);
 
             if (miVersion !== currentVersion) return;
-
-            console.log(' Resultado denuncias activas:', resultActivas);
 
             if (resultActivas.error) throw resultActivas.error;
             if (resultActivas.data) {
@@ -318,9 +307,11 @@ window.initConTabla = function() {
         }
     }
 
+    // 📊 RENDERIZAR TABLA
     function renderTabla(datos) {
+        if (!tableContent) return;
         if (!datos || datos.length === 0) {
-            if (tableContent) tableContent.innerHTML = '<div class="con-empty">📭 Sin resultados.</div>';
+            tableContent.innerHTML = '<div class="con-empty">📭 Sin resultados.</div>';
             return;
         }
 
@@ -364,25 +355,26 @@ window.initConTabla = function() {
         });
 
         html += '</tbody></table>';
-        if (tableContent) tableContent.innerHTML = html;
+        tableContent.innerHTML = html;
 
-        if (tableContent) {
-            tableContent.querySelectorAll('.con-btn-ver').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const index = parseInt(btn.dataset.index);
-                    const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-                    const denuncia = currentData[offset + index];
-                    if (denuncia) mostrarFicha(denuncia);
-                });
-            });
-        }
+        // Re-adjuntar listeners
+        tableContent.querySelectorAll('.con-btn-ver').forEach(btn => {
+            btn.onclick = () => {
+                const index = parseInt(btn.dataset.index);
+                const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+                const denuncia = currentData[offset + index];
+                if (denuncia) mostrarFicha(denuncia);
+            };
+        });
     }
 
+    // 📄 PAGINACIÓN
     function renderPaginacion(totalItems) {
+        if (!pagination) return;
         const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
         let html = '';
 
-        html += `<button ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}"> Anterior</button>`;
+        html += `<button ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}">◀ Anterior</button>`;
 
         const maxButtons = 5;
         let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
@@ -408,20 +400,18 @@ window.initConTabla = function() {
         html += `<button ${currentPage === totalPages ? 'disabled' : ''} data-page="${currentPage + 1}">Siguiente ▶</button>`;
         html += `<span class="con-pagination-info">Página ${currentPage} de ${totalPages}</span>`;
 
-        if (pagination) {
-            pagination.innerHTML = html;
-            pagination.style.display = 'flex';
+        pagination.innerHTML = html;
+        pagination.style.display = 'flex';
 
-            pagination.querySelectorAll('button[data-page]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const page = parseInt(btn.dataset.page);
-                    if (page >= 1 && page <= totalPages) {
-                        currentPage = page;
-                        cambiarPagina();
-                    }
-                });
-            });
-        }
+        pagination.querySelectorAll('button[data-page]').forEach(btn => {
+            btn.onclick = () => {
+                const page = parseInt(btn.dataset.page);
+                if (page >= 1 && page <= totalPages) {
+                    currentPage = page;
+                    cambiarPagina();
+                }
+            };
+        });
     }
 
     function cambiarPagina() {
@@ -435,6 +425,7 @@ window.initConTabla = function() {
         if (tableContent) tableContent.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
+    // 🖼️ MOSTRAR FICHA
     function mostrarFicha(denuncia) {
         const esEliminada = denuncia.estado === 'eliminada';
         const numero = denuncia.numero_denuncia || 'N/A';
@@ -464,8 +455,8 @@ window.initConTabla = function() {
         const docsMultiples = [
             { id: 'acta_entrevista', label: '🎤 Acta de Entrevista' },
             { id: 'datos_filiatorios', label: '👤 Datos Filiatorios' },
-            { id: 'evidencias', label: ' Evidencias' },
-            { id: 'solicitud_senamecf', label: ' Solicitud SENAMECF' }
+            { id: 'evidencias', label: '🔍 Evidencias' },
+            { id: 'solicitud_senamecf', label: '🏥 Solicitud SENAMECF' }
         ];
 
         let docsUnicosHtml = '<ul class="ficha-docs-list">';
@@ -508,7 +499,7 @@ window.initConTabla = function() {
                     <div class="numero-grande">${numero}</div>
                 </div>
                 <div class="ficha-section">
-                    <div class="ficha-section-title"> Información General</div>
+                    <div class="ficha-section-title">📅 Información General</div>
                     <div class="ficha-grid">
                         <div class="ficha-field"><div class="ficha-label">Fecha y Hora</div><div class="ficha-value">${fecha}</div></div>
                         <div class="ficha-field"><div class="ficha-label">Estación Policial</div><div class="ficha-value">${denuncia.estacion_policial || 'N/A'}</div></div>
@@ -516,7 +507,7 @@ window.initConTabla = function() {
                     </div>
                 </div>
                 <div class="ficha-section">
-                    <div class="ficha-section-title"> Datos del Denunciante</div>
+                    <div class="ficha-section-title">👤 Datos del Denunciante</div>
                     <div class="ficha-grid">
                         <div class="ficha-field"><div class="ficha-label">Cédula</div><div class="ficha-value">${denuncia.cedula || 'N/A'}</div></div>
                         <div class="ficha-field"><div class="ficha-label">Teléfono</div><div class="ficha-value">${denuncia.tlf_pais || ''} ${denuncia.tlf_numero || 'N/A'}</div></div>
@@ -553,8 +544,9 @@ window.initConTabla = function() {
         if (modalOverlay) modalOverlay.classList.remove('active');
     }
 
+    // 📥 EXPORTAR PDF
     async function exportarPDF() {
-        const numero = modalTitle?.textContent.replace(' Ficha: ', '').trim() || 'denuncia';
+        const numero = modalTitle?.textContent.replace('📄 Ficha: ', '').trim() || 'denuncia';
         if (btnPdf) {
             btnPdf.disabled = true;
             btnPdf.textContent = '⏳ Generando...';
@@ -579,11 +571,13 @@ window.initConTabla = function() {
         }
     }
 
-    console.log("🚀 Llamando a cargarUltimas() por primera vez...");
+    // 🚀 INICIAR
+    console.log("🚀 Cargando últimas denuncias...");
     cargarUltimas();
-    console.log("✅ Módulo con-tabla.js inicializado");
+    console.log("✅ Módulo con-tabla.js inicializado correctamente");
 };
 
+// Auto-inicialización (por si se carga directamente)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.initConTabla);
 } else {
