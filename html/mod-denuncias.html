@@ -49,19 +49,23 @@
 <div class="card">
   <h3>🔍 Buscar y Modificar Denuncia</h3>
   
-   <!-- SECCIÓN DE BÚSQUEDA -->
-  <div class="mod-search-box">
+  <!-- SECCIÓN DE BÚSQUEDA -->
+  <div class="mod-search-box" style="display: flex; gap: 15px; align-items: flex-end; background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid var(--beige-border); margin-bottom: 10px;">
     <div style="flex: 1;">
       <label style="font-weight: 600; color: var(--primary); display: block; margin-bottom: 6px;">Cédula del Denunciante</label>
       <input type="text" id="mod_buscar_cedula" placeholder="Ej: V-12345678" style="width: 100%; padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 1rem; box-sizing: border-box;">
-      <!-- ✅ NUEVO: Mensaje de ayuda -->
       <small style="color: #64748b; font-size: 0.8rem; display: block; margin-top: 6px; line-height: 1.3;">
         💡 Debe colocar <strong>V-</strong> o <strong>E-</strong> seguido del número de cédula para poder buscar la denuncia.
       </small>
     </div>
-    <button type="button" id="mod_btn_buscar">🔍 Buscar</button>
+    <!-- Botón alineado con height: 42px y margin-bottom para compensar el label -->
+    <button type="button" id="mod_btn_buscar" style="padding: 10px 24px; background: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; height: 42px; margin-bottom: 2px; white-space: nowrap; transition: background 0.2s;">
+      🔍 Buscar
+    </button>
   </div>
-
+  
+  <!-- Mensaje de búsqueda (Asegúrate de que este div exista) -->
+  <div id="mod_msg_busqueda" class="msg" style="margin-bottom: 15px;"></div>
   <!-- FORMULARIO DE EDICIÓN (Oculto inicialmente) -->
   <div id="mod_form_container" style="display: none;">
     <form id="form-mod-denuncias" class="registro-form" novalidate>
