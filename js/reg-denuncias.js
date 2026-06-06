@@ -6,42 +6,64 @@ window.initRegDenuncias = function() {
         const btn = form?.querySelector('.btn-submit');
         const msg = document.getElementById('msg-reg-denuncias');
         const loadingOverlay = document.getElementById('loading-overlay');
-        
-        // 🔍 Verificar también los contenedores de documentos
         const contenedorUnicos = document.getElementById('docs-unicos-container');
         const contenedorMultiples = document.getElementById('docs-multiples-container');
 
-        // 🛡️ 1. GUARDIA INTELIGENTE: Evita doble ejecución en el MISMO formulario
         if (form && form.dataset.regDenunciasInitialized === 'true') {
-            console.log("✅ Módulo ya inicializado en este formulario. Omitiendo ejecución duplicada.");
+            console.log("✅ Módulo ya inicializado. Omitiendo ejecución duplicada.");
             return;
         }
 
-        // 🛡️ 2. VALIDACIÓN ESTRICTA: No continuar hasta que TODOS los elementos existan
         if (!form || !btn || !contenedorUnicos || !contenedorMultiples) {
             if (intentos < 15) {
-                console.warn(`⚠️ Elementos del formulario no encontrados aún. Reintentando en 100ms... (intento ${intentos + 1}/15)`);
                 setTimeout(() => iniciarModulo(intentos + 1), 100);
                 return;
             } else {
-                console.error("❌ ERROR CRÍTICO: No se encontraron todos los elementos (form, btn, contenedores de docs) después de 15 intentos.");
+                console.error("❌ ERROR CRÍTICO: No se encontraron todos los elementos del formulario.");
                 return;
             }
         }
 
-        // Marcar como inicializado para evitar futuras ejecuciones en este mismo DOM
         form.dataset.regDenunciasInitialized = 'true';
         console.log("✅ Todos los elementos encontrados. Configurando módulo...");
 
         // Configurar fecha y hora actual
         const fechaInput = document.getElementById('d_fecha_hora');
-        if (fechaInput) {
-            const ahora = new Date();
-            fechaInput.value = ahora.toLocaleString('es-VE', {
-                year: 'numeric', month: '2-digit', day: '2-digit',
-                hour: '2-digit', minute: '2-digit', second: '2-digit'
-            });
+        const actualizarFecha = () => {
+            if (fechaInput) {
+                const ahora = new Date();
+                fechaInput.value = ahora.toLocaleString('es-VE', {
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
+            }
+        };
+        actualizarFecha();
+
+        // ✅ NUEVO: Generar Número de Denuncia Secuencial
+        async function generarNumeroDenuncia() {
+            const numInput = document.getElementById('d_numero_denuncia');
+            if (!numInput) return;
+            try {
+                // Intentamos obtener el conteo exacto de denuncias existentes
+                const { count, error } = await window.supabaseClient
+                    .from('denuncias')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (error) throw error;
+                
+                const nextNumber = (count || 0) + 1;
+                const formattedNumber = `CPNB-${String(nextNumber).padStart(8, '0')}`;
+                numInput.value = formattedNumber;
+            } catch (err) {
+                console.warn("⚠️ No se pudo generar el número automáticamente (posible bloqueo RLS o sin conexión). Usando fallback.", err);
+                // Fallback: generar uno basado en timestamp si falla la consulta
+                numInput.value = `CPNB-${Date.now().toString().slice(-8)}`;
+            }
         }
+        
+        // Llamar a la generación del número
+        generarNumeroDenuncia();
 
         const docsUnicos = [
             { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
@@ -61,7 +83,6 @@ window.initRegDenuncias = function() {
         docsUnicos.forEach(d => archivosUnicos[d.id] = null);
         docsMultiples.forEach(d => archivosMultiples[d.id] = []);
 
-        // Limpiar y generar documentos únicos
         contenedorUnicos.innerHTML = '';
         docsUnicos.forEach(doc => {
             const div = document.createElement('div');
@@ -82,7 +103,6 @@ window.initRegDenuncias = function() {
             contenedorUnicos.appendChild(div);
         });
 
-        // Limpiar y generar documentos múltiples
         contenedorMultiples.innerHTML = '';
         docsMultiples.forEach(doc => {
             const div = document.createElement('div');
@@ -106,7 +126,7 @@ window.initRegDenuncias = function() {
         });
 
         // ==========================================
-        // FUNCIONES GLOBALES DE UI (Explícitamente en window)
+        // FUNCIONES GLOBALES DE UI
         // ==========================================
         window.toggleDocField = function(campo, mostrar) {
             const area = document.getElementById(`upload-${campo}`);
@@ -115,7 +135,6 @@ window.initRegDenuncias = function() {
                     area.classList.add('active');
                 } else {
                     area.classList.remove('active');
-                    // Limpiar estado interno al ocultar
                     if (archivosUnicos[campo] !== undefined) {
                         archivosUnicos[campo] = null;
                         const status = document.getElementById(`status-${campo}`);
@@ -129,8 +148,6 @@ window.initRegDenuncias = function() {
                         window.actualizarListaMultiples(campo, docMax);
                     }
                 }
-            } else {
-                console.error(`❌ No se encontró el área de carga: upload-${campo}`);
             }
         };
 
@@ -216,7 +233,8 @@ window.initRegDenuncias = function() {
         const countryText = document.getElementById('d-tlf-country-text');
 
         const isoMap = {
-            "Afganistán":"af","Albania":"al","Alemania":"de","Andorra":"ad","Angola":"ao","Antigua y Barbuda":"ag","Arabia Saudita":"sa","Argelia":"dz","Argentina":"ar","Armenia":"am","Australia":"au","Austria":"at","Azerbaiyán":"az","Bahamas":"bs","Baréin":"bh","Bangladés":"bd","Barbados":"bb","Bélgica":"be","Belice":"bz","Benín":"bj","Bielorrusia":"by","Birmania":"mm","Bolivia":"bo","Bosnia y Herzegovina":"ba","Botsuana":"bw","Brasil":"br","Brunéi":"bn","Bulgaria":"bg","Burkina Faso":"bf","Burundi":"bi","Bután":"bt","Cabo Verde":"cv","Camboya":"kh","Camerún":"cm","Canadá":"ca","Catar":"qa","Rep. Centroafricana":"cf","Chad":"td","Rep. Checa":"cz","Chile":"cl","China":"cn","Chipre":"cy","Colombia":"co","Comoras":"km","Corea del Norte":"kp","Corea del Sur":"kr","Costa de Marfil":"ci","Costa Rica":"cr","Croacia":"hr","Cuba":"cu","Dinamarca":"dk","Dominica":"dm","Ecuador":"ec","Egipto":"eg","El Salvador":"sv","Emiratos Árabes":"ae","Eritrea":"er","Eslovaquia":"sk","Eslovenia":"si","España":"es","Estados Unidos":"us","Estonia":"ee","Etiopía":"et","Filipinas":"ph","Finlandia":"fi","Fiyi":"fj","Francia":"fr","Gabón":"ga","Gambia":"gm","Georgia":"ge","Ghana":"gh","Granada":"gd","Grecia":"gr","Guatemala":"gt","Guinea":"gn","Guinea Ecuatorial":"gq","Guinea-Bisáu":"gw","Guyana":"gy","Haití":"ht","Honduras":"hn","Hungría":"hu","India":"in","Indonesia":"id","Irak":"iq","Irán":"ir","Irlanda":"ie","Islandia":"is","Israel":"il","Italia":"it","Jamaica":"jm","Japón":"jp","Jordania":"jo","Kazajistán":"kz","Kenia":"ke","Kirguistán":"kg","Kiribati":"ki","Kuwait":"kw","Laos":"la","Lesoto":"ls","Letonia":"lv","Líbano":"lb","Liberia":"lr","Libia":"ly","Liechtenstein":"li","Lituania":"lt","Luxemburgo":"lu","Macedonia del Norte":"mk","Madagascar":"mg","Malasia":"my","Malaui":"mw","Maldivas":"mv","Malí":"ml","Malta":"mt","Marruecos":"ma","Mauricio":"mu","Mauritania":"mr","México":"mx","Micronesia":"fm","Moldavia":"md","Mónaco":"mc","Mongolia":"mn","Montenegro":"me","Mozambique":"mz","Namibia":"na","Nauru":"nr","Nepal":"np","Nicaragua":"ni","Níger":"ne","Nigeria":"ng","Nueva Zelanda":"nz","Noruega":"no","Omán":"om","Países Bajos":"nl","Pakistán":"pk","Palaos":"pw","Palestina":"ps","Panamá":"pa","Papúa Nueva Guinea":"pg","Paraguay":"py","Perú":"pe","Polonia":"pl","Portugal":"pt","Reino Unido":"gb","Puerto Rico":"pr","Ruanda":"rw","Rumania":"ro","Rusia":"ru","Samoa":"ws","San Marino":"sm","Santa Lucía":"lc","Santo Tomé y Príncipe":"st","San Vicente y las Granadinas":"vc","Senegal":"sn","Serbia":"rs","Seychelles":"sc","Sierra Leona":"sl","Singapur":"sg","Siria":"sy","Somalia":"so","Sudáfrica":"za","Sudán":"sd","Sudán del Sur":"ss","Suecia":"se","Suiza":"ch","Surinam":"sr","Esuatini":"sz","Tayikistán":"tj","Tanzania":"tz","Tailandia":"th","Timor Oriental":"tl","Togo":"tg","Tonga":"to","Trinidad y Tobago":"tt","Túnez":"tn","Turquía":"tr","Turkmenistán":"tm","Tuvalu":"tv","Ucrania":"ua","Uganda":"ug","Uruguay":"uy","Uzbekistán":"uz","Vanuatu":"vu","Vaticano":"va","Venezuela":"ve","Vietnam":"vn","Yemen":"ye","Yibuti":"dj","Zambia":"zm","Zimbabue":"zw"
+            "Venezuela":"ve","Colombia":"co","Estados Unidos":"us","España":"es","Argentina":"ar","Chile":"cl","Perú":"pe","México":"mx",
+            "Afganistán":"af","Albania":"al","Alemania":"de","Andorra":"ad","Angola":"ao","Antigua y Barbuda":"ag","Arabia Saudita":"sa","Argelia":"dz","Armenia":"am","Australia":"au","Austria":"at","Azerbaiyán":"az","Bahamas":"bs","Baréin":"bh","Bangladés":"bd","Barbados":"bb","Bélgica":"be","Belice":"bz","Benín":"bj","Bielorrusia":"by","Birmania":"mm","Bolivia":"bo","Bosnia y Herzegovina":"ba","Botsuana":"bw","Brasil":"br","Brunéi":"bn","Bulgaria":"bg","Burkina Faso":"bf","Burundi":"bi","Bután":"bt","Cabo Verde":"cv","Camboya":"kh","Camerún":"cm","Canadá":"ca","Catar":"qa","Rep. Centroafricana":"cf","Chad":"td","Rep. Checa":"cz","China":"cn","Chipre":"cy","Comoras":"km","Corea del Norte":"kp","Corea del Sur":"kr","Costa de Marfil":"ci","Costa Rica":"cr","Croacia":"hr","Cuba":"cu","Dinamarca":"dk","Dominica":"dm","Ecuador":"ec","Egipto":"eg","El Salvador":"sv","Emiratos Árabes":"ae","Eritrea":"er","Eslovaquia":"sk","Eslovenia":"si","Estonia":"ee","Etiopía":"et","Filipinas":"ph","Finlandia":"fi","Fiyi":"fj","Francia":"fr","Gabón":"ga","Gambia":"gm","Georgia":"ge","Ghana":"gh","Granada":"gd","Grecia":"gr","Guatemala":"gt","Guinea":"gn","Guinea Ecuatorial":"gq","Guinea-Bisáu":"gw","Guyana":"gy","Haití":"ht","Honduras":"hn","Hungría":"hu","India":"in","Indonesia":"id","Irak":"iq","Irán":"ir","Irlanda":"ie","Islandia":"is","Israel":"il","Italia":"it","Jamaica":"jm","Japón":"jp","Jordania":"jo","Kazajistán":"kz","Kenia":"ke","Kirguistán":"kg","Kiribati":"ki","Kuwait":"kw","Laos":"la","Lesoto":"ls","Letonia":"lv","Líbano":"lb","Liberia":"lr","Libia":"ly","Liechtenstein":"li","Lituania":"lt","Luxemburgo":"lu","Macedonia del Norte":"mk","Madagascar":"mg","Malasia":"my","Malaui":"mw","Maldivas":"mv","Malí":"ml","Malta":"mt","Marruecos":"ma","Mauricio":"mu","Mauritania":"mr","Micronesia":"fm","Moldavia":"md","Mónaco":"mc","Mongolia":"mn","Montenegro":"me","Mozambique":"mz","Namibia":"na","Nauru":"nr","Nepal":"np","Nicaragua":"ni","Níger":"ne","Nigeria":"ng","Nueva Zelanda":"nz","Noruega":"no","Omán":"om","Países Bajos":"nl","Pakistán":"pk","Palaos":"pw","Palestina":"ps","Panamá":"pa","Papúa Nueva Guinea":"pg","Paraguay":"py","Polonia":"pl","Portugal":"pt","Reino Unido":"gb","Puerto Rico":"pr","Ruanda":"rw","Rumania":"ro","Rusia":"ru","Samoa":"ws","San Marino":"sm","Santa Lucía":"lc","Santo Tomé y Príncipe":"st","San Vicente y las Granadinas":"vc","Senegal":"sn","Serbia":"rs","Seychelles":"sc","Sierra Leona":"sl","Singapur":"sg","Siria":"sy","Somalia":"so","Sudáfrica":"za","Sudán":"sd","Sudán del Sur":"ss","Suecia":"se","Suiza":"ch","Surinam":"sr","Esuatini":"sz","Tayikistán":"tj","Tanzania":"tz","Tailandia":"th","Timor Oriental":"tl","Togo":"tg","Tonga":"to","Trinidad y Tobago":"tt","Túnez":"tn","Turquía":"tr","Turkmenistán":"tm","Tuvalu":"tv","Ucrania":"ua","Uganda":"ug","Uruguay":"uy","Uzbekistán":"uz","Vanuatu":"vu","Vaticano":"va","Vietnam":"vn","Yemen":"ye","Yibuti":"dj","Zambia":"zm","Zimbabue":"zw"
         };
 
         if (nativeSelect && displayBox && optionsBox) {
@@ -261,25 +279,19 @@ window.initRegDenuncias = function() {
                 return;
             }
 
-            // Validar documentos únicos marcados como Sí
             for (const doc of docsUnicos) {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-                if (radio && radio.value === 'si') {
-                    if (!archivosUnicos[doc.id]) {
-                        if (msg) { msg.textContent = `⚠️ Debe subir un PDF para: ${doc.label}`; msg.className = 'msg error'; msg.style.display = 'block'; }
-                        return;
-                    }
+                if (radio && radio.value === 'si' && !archivosUnicos[doc.id]) {
+                    if (msg) { msg.textContent = `⚠️ Debe subir un PDF para: ${doc.label}`; msg.className = 'msg error'; msg.style.display = 'block'; }
+                    return;
                 }
             }
 
-            // Validar documentos múltiples marcados como Sí
             for (const doc of docsMultiples) {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-                if (radio && radio.value === 'si') {
-                    if (!archivosMultiples[doc.id] || archivosMultiples[doc.id].length === 0) {
-                        if (msg) { msg.textContent = `⚠️ Debe subir al menos un PDF para: ${doc.label}`; msg.className = 'msg error'; msg.style.display = 'block'; }
-                        return;
-                    }
+                if (radio && radio.value === 'si' && (!archivosMultiples[doc.id] || archivosMultiples[doc.id].length === 0)) {
+                    if (msg) { msg.textContent = `⚠️ Debe subir al menos un PDF para: ${doc.label}`; msg.className = 'msg error'; msg.style.display = 'block'; }
+                    return;
                 }
             }
 
@@ -296,7 +308,6 @@ window.initRegDenuncias = function() {
                 const uid = user.id;
                 const ts = Date.now();
 
-                // Subir documentos únicos
                 const docsUnicosUrls = {};
                 for (const doc of docsUnicos) {
                     const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
@@ -308,7 +319,6 @@ window.initRegDenuncias = function() {
                     } else { docsUnicosUrls[doc.id] = null; }
                 }
 
-                // Subir documentos múltiples
                 const docsMultiplesUrls = {};
                 for (const doc of docsMultiples) {
                     const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
@@ -327,7 +337,14 @@ window.initRegDenuncias = function() {
                 const tlfPais = document.getElementById('d_tlf_pais')?.value;
                 const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '');
                 
+                // ✅ NUEVO: Capturar los nuevos campos
+                const cedulaRaw = document.getElementById('d_cedula')?.value.trim() || '';
+                const cedulaLimpia = cedulaRaw.toUpperCase().replace(/\s/g, ''); // Elimina espacios y normaliza
+
                 const data = {
+                    numero_denuncia: document.getElementById('d_numero_denuncia')?.value || null, // ✅ NUEVO
+                    cedula: cedulaLimpia, // ✅ NUEVO
+                    motivo_denuncia: document.getElementById('d_motivo')?.value.trim() || null, // ✅ NUEVO
                     estacion_policial: document.getElementById('d_estacion')?.value,
                     primer_nombre: document.getElementById('d_nombre1')?.value.trim(),
                     segundo_nombre: document.getElementById('d_nombre2')?.value.trim() || null,
@@ -358,22 +375,16 @@ window.initRegDenuncias = function() {
                     setTimeout(() => msg.style.display = 'none', 4000);
                 }
 
-                // 🔄 3. RESET SINCRONIZADO DEL FORMULARIO
+                // 🔄 RESET SINCRONIZADO
                 form.reset();
+                actualizarFecha();
                 
-                if (fechaInput) {
-                    const ahora = new Date();
-                    fechaInput.value = ahora.toLocaleString('es-VE', {
-                        year: 'numeric', month: '2-digit', day: '2-digit',
-                        hour: '2-digit', minute: '2-digit', second: '2-digit'
-                    });
-                }
+                // ✅ NUEVO: Volver a generar el número de denuncia para el siguiente registro
+                generarNumeroDenuncia();
 
-                // Forzar la sincronización visual después del reset (form.reset() no dispara onchange)
                 docsUnicos.forEach(d => window.toggleDocField(d.id, false));
                 docsMultiples.forEach(d => window.toggleDocField(d.id, false));
 
-                // Resetear teléfono
                 if (nativeSelect) nativeSelect.value = '';
                 if (flagImg) flagImg.src = 'https://flagcdn.com/w20/xx.png';
                 if (codeText) codeText.textContent = '+XX';
@@ -393,13 +404,12 @@ window.initRegDenuncias = function() {
             }
         });
 
-        console.log("✅ Módulo reg-denuncias.js inicializado correctamente");
+        console.log("✅ Módulo reg-denuncias.js inicializado correctamente con nuevos campos");
     }
 
     iniciarModulo();
 };
 
-// Auto-inicialización de respaldo segura
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.initRegDenuncias);
 } else {
