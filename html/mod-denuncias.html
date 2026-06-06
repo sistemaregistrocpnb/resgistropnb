@@ -49,15 +49,18 @@
 <div class="card">
   <h3>🔍 Buscar y Modificar Denuncia</h3>
   
-  <!-- SECCIÓN DE BÚSQUEDA -->
+   <!-- SECCIÓN DE BÚSQUEDA -->
   <div class="mod-search-box">
     <div style="flex: 1;">
       <label style="font-weight: 600; color: var(--primary); display: block; margin-bottom: 6px;">Cédula del Denunciante</label>
-      <input type="text" id="mod_buscar_cedula" placeholder="Ej: V-12345678">
+      <input type="text" id="mod_buscar_cedula" placeholder="Ej: V-12345678" style="width: 100%; padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 1rem; box-sizing: border-box;">
+      <!-- ✅ NUEVO: Mensaje de ayuda -->
+      <small style="color: #64748b; font-size: 0.8rem; display: block; margin-top: 6px; line-height: 1.3;">
+        💡 Debe colocar <strong>V-</strong> o <strong>E-</strong> seguido del número de cédula para poder buscar la denuncia.
+      </small>
     </div>
     <button type="button" id="mod_btn_buscar">🔍 Buscar</button>
   </div>
-  <div id="mod_msg_busqueda" class="msg"></div>
 
   <!-- FORMULARIO DE EDICIÓN (Oculto inicialmente) -->
   <div id="mod_form_container" style="display: none;">
