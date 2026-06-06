@@ -365,71 +365,170 @@ window.initConTabla = function() {
         tableContent.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // ==========================================
-    // MOSTRAR FICHA DE DENUNCIA (CON LOGO)
-    // ==========================================
-    function mostrarFicha(denuncia) {
-        const esEliminada = denuncia.estado === 'eliminada';
-        const numero = denuncia.numero_denuncia || 'N/A';
-        const fechaOriginal = denuncia.fecha_hora_original || denuncia.created_at;
-        const fecha = fechaOriginal ? new Date(fechaOriginal).toLocaleString('es-VE') : 'N/A';
+  function mostrarFicha(denuncia) {
+    const esEliminada = denuncia.estado === 'eliminada';
+    const numero = denuncia.numero_denuncia || 'N/A';
+    const fechaOriginal = denuncia.fecha_hora_original || denuncia.created_at;
+    const fecha = fechaOriginal ? new Date(fechaOriginal).toLocaleString('es-VE') : 'N/A';
 
-        modalTitle.textContent = `📄 Ficha: ${numero}`;
+    modalTitle.textContent = `📄 Ficha: ${numero}`;
 
-        let avisoEliminada = '';
-        if (esEliminada) {
-            const fechaElim = denuncia.fecha_eliminacion ? new Date(denuncia.fecha_eliminacion).toLocaleString('es-VE') : 'N/A';
-            avisoEliminada = `
-                <div class="ficha-eliminado-aviso">
-                    <strong>⚠️ DENUNCIA ELIMINADA</strong><br>
-                    Eliminada el: ${fechaElim}<br>
-                    Por: ${denuncia.email_eliminador || 'N/A'}<br>
-                    Motivo: ${denuncia.motivo_eliminacion || 'No especificado'}
-                </div>
-            `;
+    let avisoEliminada = '';
+    if (esEliminada) {
+        const fechaElim = denuncia.fecha_eliminacion ? new Date(denuncia.fecha_eliminacion).toLocaleString('es-VE') : 'N/A';
+        avisoEliminada = `
+            <div class="ficha-eliminado-aviso">
+                <strong>⚠️ DENUNCIA ELIMINADA</strong><br>
+                Eliminada el: ${fechaElim}<br>
+                Por: ${denuncia.email_eliminador || 'N/A'}<br>
+                Motivo: ${denuncia.motivo_eliminacion || 'No especificado'}
+            </div>
+        `;
+    }
+
+    const docsUnicos = [
+        { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
+        { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
+        { id: 'medida_proteccion', label: '🛡️ Medida de Protección' }
+    ];
+    const docsMultiples = [
+        { id: 'acta_entrevista', label: '🎤 Acta de Entrevista' },
+        { id: 'datos_filiatorios', label: '👤 Datos Filiatorios' },
+        { id: 'evidencias', label: '🔍 Evidencias' },
+        { id: 'solicitud_senamecf', label: '🏥 Solicitud SENAMECF' }
+    ];
+
+    let docsUnicosHtml = '<ul class="ficha-docs-list">';
+    let hayDocsUnicos = false;
+    docsUnicos.forEach(doc => {
+        const url = denuncia[doc.id];
+        if (url) {
+            hayDocsUnicos = true;
+            docsUnicosHtml += `<li>✅ ${doc.label}: <a href="${url}" target="_blank">Ver/Descargar PDF</a></li>`;
         }
+    });
+    if (!hayDocsUnicos) docsUnicosHtml += '<li style="color: #94a3b8;">Sin documentos cargados</li>';
+    docsUnicosHtml += '</ul>';
 
-        const docsUnicos = [
-            { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
-            { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
-            { id: 'medida_proteccion', label: '🛡️ Medida de Protección' }
-        ];
-        const docsMultiples = [
-            { id: 'acta_entrevista', label: '🎤 Acta de Entrevista' },
-            { id: 'datos_filiatorios', label: '👤 Datos Filiatorios' },
-            { id: 'evidencias', label: '🔍 Evidencias' },
-            { id: 'solicitud_senamecf', label: '🏥 Solicitud SENAMECF' }
-        ];
+    let docsMultiplesHtml = '<ul class="ficha-docs-list">';
+    let hayDocsMultiples = false;
+    docsMultiples.forEach(doc => {
+        const urls = denuncia[doc.id];
+        if (Array.isArray(urls) && urls.length > 0) {
+            hayDocsMultiples = true;
+            urls.forEach((url, i) => {
+                docsMultiplesHtml += `<li>✅ ${doc.label} (${i + 1}): <a href="${url}" target="_blank">Ver/Descargar PDF</a></li>`;
+            });
+        }
+    });
+    if (!hayDocsMultiples) docsMultiplesHtml += '<li style="color: #94a3b8;">Sin documentos cargados</li>';
+    docsMultiplesHtml += '</ul>';
 
-        let docsUnicosHtml = '<ul class="ficha-docs-list">';
-        let hayDocsUnicos = false;
-        docsUnicos.forEach(doc => {
-            const url = denuncia[doc.id];
-            if (url) {
-                hayDocsUnicos = true;
-                docsUnicosHtml += `<li>✅ ${doc.label}: <a href="${url}" target="_blank">Ver/Descargar PDF</a></li>`;
-            }
-        });
-        if (!hayDocsUnicos) docsUnicosHtml += '<li style="color: #94a3b8;">Sin documentos cargados</li>';
-        docsUnicosHtml += '</ul>';
+    // 🔹 LOGO DEL CPNB - AJUSTA ESTA RUTA
+    // Opciones comunes (elige la que funcione para ti):
+    const logoUrl = './img/logo-cpnb.png'; // ← CAMBIA ESTO por la ruta real de tu logo
+    
+    // Si tu logo está en GitHub/GitLab, usa la URL completa:
+    // const logoUrl = 'https://raw.githubusercontent.com/tu-usuario/tu-repo/main/img/logo-cpnb.png';
+    
+    // O si está en tu servidor:
+    // const logoUrl = 'https://tudominio.com/img/logo-cpnb.png';
 
-        let docsMultiplesHtml = '<ul class="ficha-docs-list">';
-        let hayDocsMultiples = false;
-        docsMultiples.forEach(doc => {
-            const urls = denuncia[doc.id];
-            if (Array.isArray(urls) && urls.length > 0) {
-                hayDocsMultiples = true;
-                urls.forEach((url, i) => {
-                    docsMultiplesHtml += `<li>✅ ${doc.label} (${i + 1}): <a href="${url}" target="_blank">Ver/Descargar PDF</a></li>`;
-                });
-            }
-        });
-        if (!hayDocsMultiples) docsMultiplesHtml += '<li style="color: #94a3b8;">Sin documentos cargados</li>';
-        docsMultiplesHtml += '</ul>';
+    fichaContent.innerHTML = `
+        ${avisoEliminada}
+        
+        <div class="ficha-header">
+            <div style="display: flex; justify-content: center; margin-bottom: 15px;">
+                <img src="${logoUrl}" alt="Logo CPNB" style="max-width: 120px; max-height: 120px; object-fit: contain;" 
+                     onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iIzAwMmI1YyIvPjx0ZXh0IHg9IjYwIiB5PSI2NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Q1BOQjwvdGV4dD48L3N2Zz4='; this.style.maxWidth='80px'; this.style.maxHeight='80px';">
+            </div>
+            <h1>CUERPO DE POLICÍA NACIONAL BOLIVARIANA</h1>
+            <h2>FICHA DE DENUNCIA</h2>
+            <div class="numero-grande">${numero}</div>
+        </div>
 
+        <div class="ficha-section">
+            <div class="ficha-section-title">📅 Información General</div>
+            <div class="ficha-grid">
+                <div class="ficha-field">
+                    <div class="ficha-label">Fecha y Hora</div>
+                    <div class="ficha-value">${fecha}</div>
+                </div>
+                <div class="ficha-field">
+                    <div class="ficha-label">Estación Policial</div>
+                    <div class="ficha-value">${denuncia.estacion_policial || 'N/A'}</div>
+                </div>
+                <div class="ficha-field full">
+                    <div class="ficha-label">Registrado por</div>
+                    <div class="ficha-value">${denuncia.email_registrante || 'N/A'}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ficha-section">
+            <div class="ficha-section-title">👤 Datos del Denunciante</div>
+            <div class="ficha-grid">
+                <div class="ficha-field">
+                    <div class="ficha-label">Cédula de Identidad</div>
+                    <div class="ficha-value">${denuncia.cedula || 'N/A'}</div>
+                </div>
+                <div class="ficha-field">
+                    <div class="ficha-label">Teléfono</div>
+                    <div class="ficha-value">${denuncia.tlf_pais || ''} ${denuncia.tlf_numero || 'N/A'}</div>
+                </div>
+                <div class="ficha-field">
+                    <div class="ficha-label">Primer Nombre</div>
+                    <div class="ficha-value">${denuncia.primer_nombre || 'N/A'}</div>
+                </div>
+                <div class="ficha-field">
+                    <div class="ficha-label">Segundo Nombre</div>
+                    <div class="ficha-value">${denuncia.segundo_nombre || 'N/A'}</div>
+                </div>
+                <div class="ficha-field">
+                    <div class="ficha-label">Primer Apellido</div>
+                    <div class="ficha-value">${denuncia.primer_apellido || 'N/A'}</div>
+                </div>
+                <div class="ficha-field">
+                    <div class="ficha-label">Segundo Apellido</div>
+                    <div class="ficha-value">${denuncia.segundo_apellido || 'N/A'}</div>
+                </div>
+                <div class="ficha-field full">
+                    <div class="ficha-label">Dirección</div>
+                    <div class="ficha-value">${denuncia.direccion || 'N/A'}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ficha-section">
+            <div class="ficha-section-title">📌 Motivo de la Denuncia</div>
+            <div class="ficha-field full">
+                <div class="ficha-value" style="white-space: pre-wrap;">${denuncia.motivo_denuncia || 'No especificado'}</div>
+            </div>
+        </div>
+
+        <div class="ficha-section">
+            <div class="ficha-section-title">📝 Observaciones</div>
+            <div class="ficha-field full">
+                <div class="ficha-value" style="white-space: pre-wrap;">${denuncia.observaciones || 'Sin observaciones'}</div>
+            </div>
+        </div>
+
+        <div class="ficha-section">
+            <div class="ficha-section-title">📄 Documentos Únicos</div>
+            ${docsUnicosHtml}
+        </div>
+
+        <div class="ficha-section">
+            <div class="ficha-section-title">📁 Documentos Múltiples</div>
+            ${docsMultiplesHtml}
+        </div>
+    `;
+
+    modalOverlay.classList.add('active');
+}
         // 🔹 LOGO DEL CUERPO DE POLICÍA NACIONAL BOLIVARIANA
         // IMPORTANTE: Reemplaza esta URL con la URL real de tu logo
-        const logoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Logo_de_la_Polic%C3%ADa_Nacional_Bolivariana.svg/1200px-Logo_de_la_Polic%C3%ADa_Nacional_Bolivariana.svg.png';
+       const logoUrl = './img/logo-cpnb.png';
 
         fichaContent.innerHTML = `
             ${avisoEliminada}
