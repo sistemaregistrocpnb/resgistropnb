@@ -1,7 +1,7 @@
 <style>
   :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; --danger: #dc2626; }
   
-.con-search-box {
+  .con-search-box {
     background: #f8fafc;
     padding: 20px;
     border-radius: 8px;
@@ -9,15 +9,15 @@
     margin-bottom: 15px;
     display: flex;
     gap: 15px;
-    align-items: flex-end; /* ✅ Alinea todo por abajo */
+    align-items: flex-end;
     flex-wrap: wrap;
-}
-
-.con-search-field {
+  }
+  
+  .con-search-field {
     flex: 1;
     min-width: 200px;
-}
-
+  }
+  
   .con-search-field label {
     font-weight: 600;
     color: var(--primary);
@@ -25,42 +25,54 @@
     margin-bottom: 6px;
     font-size: 0.9rem;
   }
-/* ✅ Ajustar el input para que ocupe todo el espacio */
-.con-search-field input {
+  
+  .con-search-field input {
     width: 100%;
     padding: 10px;
     border: 1.5px solid var(--beige-border);
     border-radius: 5px;
     font-size: 1rem;
     box-sizing: border-box;
-}
+  }
+  
   .con-search-field small {
     color: #64748b;
     font-size: 0.75rem;
     display: block;
     margin-top: 4px;
   }
-.con-search-options {
+  
+  /* ✅ NUEVO: Wrapper para alinear checkbox y botones */
+  .con-search-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 0;
+    align-self: flex-end;
+    padding-bottom: 0;
+  }
+  
+  .con-search-options {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 0;
-    margin-bottom: 0; /* ✅ Sin margen */
-    align-self: flex-end; /* ✅ Alinear al final */
-    height: 42px; /* ✅ Misma altura que los botones */
-}
+    white-space: nowrap;
+  }
+  
   .con-search-options input[type="checkbox"] {
     width: 18px;
     height: 18px;
     cursor: pointer;
   }
+  
   .con-search-options label {
     cursor: pointer;
     font-size: 0.85rem;
     color: #475569;
     user-select: none;
   }
-.con-btn {
+  
+  .con-btn {
     padding: 10px 20px;
     background: var(--primary);
     color: white;
@@ -69,12 +81,10 @@
     cursor: pointer;
     font-weight: 600;
     height: 42px;
-    margin-bottom: 0; /* ✅ Sin margen inferior */
     white-space: nowrap;
     transition: background 0.2s;
-    align-self: flex-end; /* ✅ Alinear al final */
-}
-
+  }
+  
   .con-btn:hover:not(:disabled) { background: var(--secondary); }
   .con-btn:disabled {
     background: #9ca3af;
@@ -442,16 +452,18 @@
   
   <div class="con-search-box">
     <div class="con-search-field">
-      <label> Buscar por Cédula</label>
+      <label>Buscar por Cédula</label>
       <input type="text" id="con_buscar_cedula" placeholder="Ej: V-12345678">
       <small>Deje vacío y presione "Mostrar últimas" para ver las 15 más recientes</small>
     </div>
-    <div class="con-search-options">
-      <input type="checkbox" id="con_incluir_eliminadas">
-      <label for="con_incluir_eliminadas">Incluir denuncias eliminadas</label>
+    <div class="con-search-actions">
+      <div class="con-search-options">
+        <input type="checkbox" id="con_incluir_eliminadas">
+        <label for="con_incluir_eliminadas">Incluir denuncias eliminadas</label>
+      </div>
+      <button type="button" class="con-btn" id="con_btn_buscar">🔍 Buscar</button>
+      <button type="button" class="con-btn con-btn-secondary" id="con_btn_ultimas">📋 Últimas 15</button>
     </div>
-    <button type="button" class="con-btn" id="con_btn_buscar">🔍 Buscar</button>
-    <button type="button" class="con-btn con-btn-secondary" id="con_btn_ultimas">📋 Últimas 15</button>
   </div>
   
   <div id="con_msg" class="msg"></div>
@@ -478,7 +490,7 @@
       <div id="con_ficha_content" class="ficha-denuncia"></div>
     </div>
     <div class="con-modal-actions">
-      <button type="button" class="con-btn-print" id="con_btn_print">️ Imprimir</button>
+      <button type="button" class="con-btn-print" id="con_btn_print">🖨️ Imprimir</button>
       <button type="button" class="con-btn-pdf" id="con_btn_pdf">📥 Exportar PDF</button>
     </div>
   </div>
