@@ -1,7 +1,7 @@
 <style>
   :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; --danger: #dc2626; }
   
-  .con-search-box {
+.con-search-box {
     background: #f8fafc;
     padding: 20px;
     border-radius: 8px;
@@ -9,13 +9,13 @@
     margin-bottom: 15px;
     display: flex;
     gap: 15px;
-    align-items: flex-end;
+    align-items: flex-end; /* ✅ Alinea todo por la parte inferior */
     flex-wrap: wrap;
-  }
+}
   .con-search-field {
     flex: 1;
     min-width: 200px;
-  }
+}
   .con-search-field label {
     font-weight: 600;
     color: var(--primary);
@@ -37,12 +37,15 @@
     display: block;
     margin-top: 4px;
   }
-  .con-search-options {
+.con-search-options {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 0;
-  }
+    padding: 0;
+    margin-bottom: 0;
+    align-self: flex-end; /* ✅ Alinear al final */
+    height: 42px; /* Misma altura que los botones */
+}
   .con-search-options input[type="checkbox"] {
     width: 18px;
     height: 18px;
@@ -54,7 +57,8 @@
     color: #475569;
     user-select: none;
   }
-  .con-btn {
+/* ✅ Ajustar los botones para que queden alineados con el input */
+.con-btn {
     padding: 10px 20px;
     background: var(--primary);
     color: white;
@@ -62,10 +66,12 @@
     border-radius: 5px;
     cursor: pointer;
     font-weight: 600;
-    height: 42px;
+    height: 42px; /* Altura fija */
+    margin-bottom: 0; /* Sin margen inferior */
     white-space: nowrap;
     transition: background 0.2s;
-  }
+    align-self: flex-end; /* ✅ Forzar alineación al final */
+}
   .con-btn:hover:not(:disabled) { background: var(--secondary); }
   .con-btn:disabled {
     background: #9ca3af;
