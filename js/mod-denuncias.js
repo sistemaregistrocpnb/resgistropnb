@@ -1,465 +1,398 @@
-window.initModDenuncias = function() {
-    console.log("⚙️ Iniciando módulo mod-denuncias.js...");
+window.initRegDenuncias = function() {
+    console.log("⚙️ Iniciando módulo reg-denuncias.js...");
 
-    if (window._modDenunciasInitialized) return;
-    window._modDenunciasInitialized = true;
+    function iniciarModulo(intentos = 0) {
+        const form = document.getElementById('form-reg-denuncias');
+        const btn = form?.querySelector('.btn-submit');
+        const msg = document.getElementById('msg-reg-denuncias');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const contenedorUnicos = document.getElementById('docs-unicos-container');
+        const contenedorMultiples = document.getElementById('docs-multiples-container');
 
-    const docsUnicos = [
-        { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
-        { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
-        { id: 'medida_proteccion', label: '🛡️ Medida de Protección' }
-    ];
+        if (form && form.dataset.regDenunciasInitialized === 'true') {
+            console.log("✅ Módulo ya inicializado. Omitiendo ejecución duplicada.");
+            return;
+        }
 
-    const docsMultiples = [
-        { id: 'acta_entrevista', label: '🎤 Acta de Entrevista', max: 10 },
-        { id: 'datos_filiatorios', label: '👤 Datos Filiatorios', max: 10 },
-        { id: 'evidencias', label: '🔍 Evidencias', max: 10 },
-        { id: 'solicitud_senamecf', label: '🏥 Solicitud SENAMECF', max: 10 }
-    ];
+        if (!form || !btn || !contenedorUnicos || !contenedorMultiples) {
+            if (intentos < 15) {
+                setTimeout(() => iniciarModulo(intentos + 1), 100);
+                return;
+            } else {
+                console.error("❌ ERROR CRÍTICO: No se encontraron todos los elementos del formulario.");
+                return;
+            }
+        }
 
-    // Estado de los documentos durante la edición
-    const modEstadoDocs = {
-        unicos: {},
-        multiples: {}
-    };
+        form.dataset.regDenunciasInitialized = 'true';
+        console.log("✅ Todos los elementos encontrados. Configurando módulo...");
 
-    function inicializarContenedores() {
-        const contUnicos = document.getElementById('mod_docs_unicos_container');
-        const contMultiples = document.getElementById('mod_docs_multiples_container');
-        if (contUnicos) contUnicos.innerHTML = '';
-        if (contMultiples) contMultiples.innerHTML = '';
+        const fechaInput = document.getElementById('d_fecha_hora');
+        const actualizarFecha = () => {
+            if (fechaInput) {
+                const ahora = new Date();
+                fechaInput.value = ahora.toLocaleString('es-VE', {
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
+            }
+        };
+        actualizarFecha();
 
+        // Generar Número de Denuncia
+        async function generarNumeroDenuncia() {
+            const numInput = document.getElementById('d_numero_denuncia');
+            if (!numInput) return;
+            try {
+                const { count, error } = await window.supabaseClient
+                    .from('denuncias')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (error) throw error;
+                const nextNumber = (count || 0) + 1;
+                numInput.value = `CPNB-${String(nextNumber).padStart(8, '0')}`;
+            } catch (err) {
+                console.warn("⚠️ Fallback de número de denuncia activado.", err);
+                numInput.value = `CPNB-${Date.now().toString().slice(-8)}`;
+            }
+        }
+        generarNumeroDenuncia();
+
+        const docsUnicos = [
+            { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
+            { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
+            { id: 'medida_proteccion', label: '🛡️ Medida de Protección' }
+        ];
+
+        const docsMultiples = [
+            { id: 'acta_entrevista', label: '🎤 Acta de Entrevista', max: 10 },
+            { id: 'datos_filiatorios', label: '👤 Datos Filiatorios', max: 10 },
+            { id: 'evidencias', label: '🔍 Evidencias', max: 10 },
+            { id: 'solicitud_senamecf', label: '🏥 Solicitud SENAMECF', max: 10 }
+        ];
+
+        const archivosUnicos = {};
+        const archivosMultiples = {};
+        docsUnicos.forEach(d => archivosUnicos[d.id] = null);
+        docsMultiples.forEach(d => archivosMultiples[d.id] = []);
+
+        contenedorUnicos.innerHTML = '';
         docsUnicos.forEach(doc => {
-            modEstadoDocs.unicos[doc.id] = { urlOriginal: null, toDelete: false, newFile: null };
             const div = document.createElement('div');
             div.className = 'doc-item';
             div.innerHTML = `
                 <div class="doc-header">
                     <label>${doc.label}</label>
                     <div class="doc-si-no">
-                        <label><input type="radio" name="mod_doc_${doc.id}" value="no" checked onchange="window.mod_toggleDocField('${doc.id}', false)"><span>No</span></label>
-                        <label><input type="radio" name="mod_doc_${doc.id}" value="si" onchange="window.mod_toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                        <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="window.toggleDocField('${doc.id}', false)"><span>No</span></label>
+                        <label><input type="radio" name="doc_${doc.id}" value="si" onchange="window.toggleDocField('${doc.id}', true)"><span>Sí</span></label>
                     </div>
                 </div>
-                <div class="doc-upload-area" id="mod_upload_${doc.id}">
-                    <div id="mod_status_${doc.id}"></div>
-                    <input type="file" id="mod_file_${doc.id}" accept=".pdf,application/pdf" onchange="window.mod_cargarDocUnico('${doc.id}', this)" style="margin-top: 8px;">
+                <div class="doc-upload-area" id="upload-${doc.id}">
+                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="window.cargarDocUnico('${doc.id}', this)">
+                    <div id="status-${doc.id}"></div>
                 </div>
             `;
-            if (contUnicos) contUnicos.appendChild(div);
+            contenedorUnicos.appendChild(div);
         });
 
+        contenedorMultiples.innerHTML = '';
         docsMultiples.forEach(doc => {
-            modEstadoDocs.multiples[doc.id] = { urlsOriginales: [], indicesToDelete: [], newFiles: [] };
             const div = document.createElement('div');
             div.className = 'doc-item';
             div.innerHTML = `
                 <div class="doc-header">
                     <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Máximo ${doc.max})</span></label>
                     <div class="doc-si-no">
-                        <label><input type="radio" name="mod_doc_${doc.id}" value="no" checked onchange="window.mod_toggleDocField('${doc.id}', false)"><span>No</span></label>
-                        <label><input type="radio" name="mod_doc_${doc.id}" value="si" onchange="window.mod_toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                        <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="window.toggleDocField('${doc.id}', false)"><span>No</span></label>
+                        <label><input type="radio" name="doc_${doc.id}" value="si" onchange="window.toggleDocField('${doc.id}', true)"><span>Sí</span></label>
                     </div>
                 </div>
-                <div class="doc-upload-area" id="mod_upload_${doc.id}">
-                    <div id="mod_list_${doc.id}" style="margin-bottom: 8px;"></div>
-                    <input type="file" id="mod_file_${doc.id}" accept=".pdf,application/pdf" multiple style="margin-bottom: 8px;">
-                    <button type="button" class="btn-add-file" onclick="window.mod_agregarMultiples('${doc.id}', ${doc.max})">➕ Agregar archivos</button>
-                    <div class="file-count" id="mod_count_${doc.id}">0 archivos</div>
+                <div class="doc-upload-area" id="upload-${doc.id}">
+                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
+                    <button type="button" class="btn-add-file" onclick="window.agregarMultiples('${doc.id}', ${doc.max})">➕ Agregar archivos</button>
+                    <div class="file-count" id="count-${doc.id}">0 archivos cargados</div>
+                    <div id="list-${doc.id}" style="margin-top: 8px;"></div>
                 </div>
             `;
-            if (contMultiples) contMultiples.appendChild(div);
+            contenedorMultiples.appendChild(div);
         });
-    }
 
-    // ==========================================
-    // FUNCIONES GLOBALES DE UI (Prefijo mod_)
-    // ==========================================
-    window.mod_toggleDocField = function(campo, mostrar) {
-        const area = document.getElementById(`mod_upload_${campo}`);
-        if (area) {
-            area.style.display = mostrar ? 'block' : 'none';
-        }
-    };
-
-    window.mod_cargarDocUnico = function(docId, input) {
-        if (input.files && input.files[0]) {
-            modEstadoDocs.unicos[docId].newFile = input.files[0];
-            modEstadoDocs.unicos[docId].toDelete = false; // Si sube uno nuevo, ya no se borra el viejo, se reemplaza
-            const statusDiv = document.getElementById(`mod_status_${docId}`);
-            statusDiv.innerHTML = `
-                <div class="file-loaded" style="background: #dcfce7; border-color: #86efac; color: #15803d;">
-                    <span>🔄 Nuevo:</span>
-                    <span class="file-name">${input.files[0].name}</span>
-                </div>
-            `;
-        }
-    };
-
-    window.mod_quitarDocUnico = function(docId) {
-        modEstadoDocs.unicos[docId].toDelete = true;
-        modEstadoDocs.unicos[docId].newFile = null;
-        const statusDiv = document.getElementById(`mod_status_${docId}`);
-        statusDiv.innerHTML = `
-            <div class="file-loaded" style="background: #fde2e2; border-color: #fca5a5; color: #b91c1c;">
-                <span>❌ Marcado para eliminar</span>
-            </div>
-        `;
-        const fileInput = document.getElementById(`mod_file_${docId}`);
-        if (fileInput) fileInput.value = '';
-    };
-
-    window.mod_agregarMultiples = function(docId, max) {
-        const input = document.getElementById(`mod_file_${docId}`);
-        if (!input || !input.files || input.files.length === 0) return;
-        
-        const estado = modEstadoDocs.multiples[docId];
-        const totalActual = estado.urlsOriginales.length - estado.indicesToDelete.length + estado.newFiles.length;
-        const disponibles = max - totalActual;
-        
-        if (disponibles <= 0) {
-            alert(`Máximo ${max} archivos permitidos`);
-            return;
-        }
-        
-        let agregados = 0;
-        for (const file of input.files) {
-            if (agregados >= disponibles) break;
-            if (file.type === 'application/pdf') {
-                estado.newFiles.push(file);
-                agregados++;
+        // ==========================================
+        // FUNCIONES GLOBALES DE UI
+        // ==========================================
+        window.toggleDocField = function(campo, mostrar) {
+            const area = document.getElementById(`upload-${campo}`);
+            if (area) {
+                if (mostrar) area.classList.add('active');
+                else {
+                    area.classList.remove('active');
+                    if (archivosUnicos[campo] !== undefined) {
+                        archivosUnicos[campo] = null;
+                        const status = document.getElementById(`status-${campo}`);
+                        if (status) status.innerHTML = '';
+                        const fileInput = document.getElementById(`file_${campo}`);
+                        if (fileInput) fileInput.value = '';
+                    }
+                    if (archivosMultiples[campo] !== undefined) {
+                        archivosMultiples[campo] = [];
+                        const docMax = docsMultiples.find(d => d.id === campo)?.max || 10;
+                        window.actualizarListaMultiples(campo, docMax);
+                    }
+                }
             }
-        }
-        window.mod_actualizarListaMultiples(docId, max);
-        input.value = '';
-    };
+        };
 
-    window.mod_quitarMultipleExistente = function(docId, indexOriginal) {
-        modEstadoDocs.multiples[docId].indicesToDelete.push(indexOriginal);
-        window.mod_actualizarListaMultiples(docId, docsMultiples.find(d => d.id === docId).max);
-    };
+        window.cargarDocUnico = function(docId, input) {
+            const statusDiv = document.getElementById(`status-${docId}`);
+            if (input.files && input.files[0]) {
+                archivosUnicos[docId] = input.files[0];
+                statusDiv.innerHTML = `
+                    <div class="file-loaded">
+                        <span>✅</span>
+                        <span class="file-name">${input.files[0].name}</span>
+                        <button type="button" class="btn-remove" onclick="window.quitarDocUnico('${docId}')">❌ Quitar</button>
+                    </div>
+                `;
+            }
+        };
 
-    window.mod_quitarMultipleNuevo = function(docId, indexNuevo) {
-        modEstadoDocs.multiples[docId].newFiles.splice(indexNuevo, 1);
-        window.mod_actualizarListaMultiples(docId, docsMultiples.find(d => d.id === docId).max);
-    };
+        window.quitarDocUnico = function(docId) {
+            archivosUnicos[docId] = null;
+            const statusDiv = document.getElementById(`status-${docId}`);
+            if (statusDiv) statusDiv.innerHTML = '';
+            const fileInput = document.getElementById(`file_${docId}`);
+            if (fileInput) fileInput.value = '';
+        };
 
-    window.mod_actualizarListaMultiples = function(docId, max) {
-        const listDiv = document.getElementById(`mod_list_${docId}`);
-        const countDiv = document.getElementById(`mod_count_${docId}`);
-        if (!listDiv || !countDiv) return;
-        
-        const estado = modEstadoDocs.multiples[docId];
-        listDiv.innerHTML = '';
-        let contador = 0;
+        window.agregarMultiples = function(docId, max) {
+            const input = document.getElementById(`file_${docId}`);
+            if (!input || !input.files || input.files.length === 0) return;
+            const actuales = archivosMultiples[docId].length;
+            const disponibles = max - actuales;
+            if (disponibles <= 0) { alert(`Máximo ${max} archivos permitidos`); return; }
+            let agregados = 0;
+            for (const file of input.files) {
+                if (agregados >= disponibles) break;
+                if (file.type === 'application/pdf') { archivosMultiples[docId].push(file); agregados++; }
+            }
+            window.actualizarListaMultiples(docId, max);
+            input.value = '';
+        };
 
-        // Mostrar archivos originales no eliminados
-        estado.urlsOriginales.forEach((url, idx) => {
-            if (!estado.indicesToDelete.includes(idx)) {
-                contador++;
-                const nombre = url.split('/').pop() || 'Archivo';
+        window.actualizarListaMultiples = function(docId, max) {
+            const listDiv = document.getElementById(`list-${docId}`);
+            const countDiv = document.getElementById(`count-${docId}`);
+            if (!listDiv || !countDiv) return;
+            listDiv.innerHTML = '';
+            archivosMultiples[docId].forEach((file, index) => {
                 const item = document.createElement('div');
                 item.className = 'file-item-multiple';
                 item.innerHTML = `
-                    <span>📄 ${nombre} (Actual)</span>
-                    <button type="button" onclick="window.mod_quitarMultipleExistente('${docId}', ${idx})">❌ Quitar</button>
+                    <span>📄 ${file.name}</span>
+                    <div class="file-actions">
+                        <button type="button" onclick="window.quitarMultiple('${docId}', ${index}, ${max})">❌</button>
+                    </div>
                 `;
                 listDiv.appendChild(item);
-            }
-        });
-
-        // Mostrar archivos nuevos
-        estado.newFiles.forEach((file, idx) => {
-            contador++;
-            const item = document.createElement('div');
-            item.className = 'file-item-multiple';
-            item.style.background = '#dcfce7';
-            item.style.borderColor = '#86efac';
-            item.innerHTML = `
-                <span>🆕 ${file.name} (Nuevo)</span>
-                <button type="button" onclick="window.mod_quitarMultipleNuevo('${docId}', ${idx})">❌ Quitar</button>
-            `;
-            listDiv.appendChild(item);
-        });
-
-        countDiv.textContent = `${contador} de ${max} archivos`;
-    };
-
-      // ==========================================
-    // LÓGICA DE BÚSQUEDA Y CARGA
-    // ==========================================
-    document.getElementById('mod_btn_buscar')?.addEventListener('click', async () => {
-        const cedulaInput = document.getElementById('mod_buscar_cedula')?.value.trim().toUpperCase().replace(/\s/g, '') || '';
-        const msgBusqueda = document.getElementById('mod_msg_busqueda');
-        const formContainer = document.getElementById('mod_form_container');
-
-        // 1. Validación estricta de formato: Debe ser V- o E- seguido de 6 a 9 dígitos
-        const cedulaRegex = /^[VE]-\d{6,9}$/;
-
-        if (!cedulaInput) {
-            if (msgBusqueda) {
-                msgBusqueda.textContent = '⚠️ El campo de cédula no puede estar vacío.';
-                msgBusqueda.className = 'msg error';
-                msgBusqueda.style.display = 'block';
-            }
-            return;
-        }
-
-        if (!cedulaRegex.test(cedulaInput)) {
-            if (msgBusqueda) {
-                msgBusqueda.textContent = '⚠️ Formato incorrecto. Debe colocar V- o E- seguido del número (Ej: V-12345678).';
-                msgBusqueda.className = 'msg error';
-                msgBusqueda.style.display = 'block';
-            }
-            return;
-        }
-
-        // 2. Estado de búsqueda
-        if (msgBusqueda) {
-            msgBusqueda.textContent = '⏳ Buscando...';
-            msgBusqueda.className = 'msg'; // Limpia clases de error/éxito previas
-            msgBusqueda.style.display = 'block';
-        }
-        if (formContainer) formContainer.style.display = 'none';
-
-        try {
-            const { data, error } = await window.supabaseClient
-                .from('denuncias')
-                .select('*')
-                .eq('cedula', cedulaInput)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-            if (error) throw error;
-
-            // 3. Validación de existencia en la base de datos
-            if (!data) {
-                if (msgBusqueda) {
-                    msgBusqueda.textContent = '❌ No se encontró ninguna denuncia registrada con esa cédula.';
-                    msgBusqueda.className = 'msg error';
-                    msgBusqueda.style.display = 'block';
-                }
-                return;
-            }
-
-            // ✅ ÉXITO: Cargar datos en el formulario
-            document.getElementById('mod_denuncia_id').value = data.id;
-            document.getElementById('mod_numero_denuncia').value = data.numero_denuncia || 'N/A';
-            document.getElementById('mod_fecha_hora').value = data.fecha_hora || ''; 
-            document.getElementById('mod_cedula').value = data.cedula;
-            document.getElementById('mod_estacion').value = data.estacion_policial || '';
-            document.getElementById('mod_nombre1').value = data.primer_nombre || '';
-            document.getElementById('mod_nombre2').value = data.segundo_nombre || '';
-            document.getElementById('mod_apellido1').value = data.primer_apellido || '';
-            document.getElementById('mod_apellido2').value = data.segundo_apellido || '';
-            document.getElementById('mod_tlf_pais').value = data.tlf_pais || '+58';
-            document.getElementById('mod_tlf_num').value = data.tlf_numero || '';
-            document.getElementById('mod_direccion').value = data.direccion || '';
-            document.getElementById('mod_motivo').value = data.motivo_denuncia || '';
-            document.getElementById('mod_observaciones').value = data.observaciones || '';
-
-            // Cargar estado de documentos
-            inicializarContenedores(); 
-
-            docsUnicos.forEach(doc => {
-                const url = data[doc.id];
-                if (url) {
-                    modEstadoDocs.unicos[doc.id].urlOriginal = url;
-                    const statusDiv = document.getElementById(`mod_status_${doc.id}`);
-                    const nombre = url.split('/').pop() || 'Archivo';
-                    statusDiv.innerHTML = `
-                        <div class="file-loaded">
-                            <span>📄 Actual:</span>
-                            <span class="file-name">${nombre}</span>
-                            <button type="button" class="btn-remove" onclick="window.mod_quitarDocUnico('${doc.id}')">❌ Quitar</button>
-                        </div>
-                    `;
-                    const radioSi = document.querySelector(`input[name="mod_doc_${doc.id}"][value="si"]`);
-                    if (radioSi) {
-                        radioSi.checked = true;
-                        window.mod_toggleDocField(doc.id, true);
-                    }
-                }
             });
+            countDiv.textContent = `${archivosMultiples[docId].length} de ${max} archivos`;
+        };
 
-            docsMultiples.forEach(doc => {
-                const urls = data[doc.id];
-                if (Array.isArray(urls) && urls.length > 0) {
-                    modEstadoDocs.multiples[doc.id].urlsOriginales = urls;
-                    const radioSi = document.querySelector(`input[name="mod_doc_${doc.id}"][value="si"]`);
-                    if (radioSi) {
-                        radioSi.checked = true;
-                        window.mod_toggleDocField(doc.id, true);
-                    }
-                    window.mod_actualizarListaMultiples(doc.id, doc.max);
-                }
-            });
+        window.quitarMultiple = function(docId, index, max) {
+            archivosMultiples[docId].splice(index, 1);
+            window.actualizarListaMultiples(docId, max);
+        };
 
-            if (msgBusqueda) {
-                msgBusqueda.textContent = '✅ Denuncia encontrada. Puede editar los campos permitidos.';
-                msgBusqueda.className = 'msg success';
-                msgBusqueda.style.display = 'block';
-            }
-            if (formContainer) formContainer.style.display = 'block';
+        // ==========================================
+        // 🔹 DROPDOWN DE BANDERAS CON BÚSQUEDA
+        // ==========================================
+        const nativeSelect = document.getElementById('d_tlf_pais');
+        const displayBox = document.querySelector('.phone-display');
+        const optionsBox = document.querySelector('.phone-options');
+        const flagImg = document.getElementById('d-tlf-flag-img');
+        const codeText = document.getElementById('d-tlf-code-text');
+        const countryText = document.getElementById('d-tlf-country-text');
 
-        } catch (err) {
-            console.error('Error en búsqueda:', err);
-            if (msgBusqueda) {
-                msgBusqueda.textContent = '❌ Error al buscar: ' + err.message;
-                msgBusqueda.className = 'msg error';
-                msgBusqueda.style.display = 'block';
-            }
-        }
-    });
-    // ==========================================
-    // ENVÍO DEL FORMULARIO DE EDICIÓN
-    // ==========================================
-    document.getElementById('form-mod-denuncias')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const form = e.target;
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
-        }
+        const isoMap = {
+            "Venezuela":"ve","Colombia":"co","Estados Unidos":"us","España":"es","Argentina":"ar","Chile":"cl","Perú":"pe","México":"mx",
+            "Afganistán":"af","Albania":"al","Alemania":"de","Andorra":"ad","Angola":"ao","Antigua y Barbuda":"ag","Arabia Saudita":"sa","Argelia":"dz","Armenia":"am","Australia":"au","Austria":"at","Azerbaiyán":"az","Bahamas":"bs","Baréin":"bh","Bangladés":"bd","Barbados":"bb","Bélgica":"be","Belice":"bz","Benín":"bj","Bielorrusia":"by","Birmania":"mm","Bolivia":"bo","Bosnia y Herzegovina":"ba","Botsuana":"bw","Brasil":"br","Brunéi":"bn","Bulgaria":"bg","Burkina Faso":"bf","Burundi":"bi","Bután":"bt","Cabo Verde":"cv","Camboya":"kh","Camerún":"cm","Canadá":"ca","Catar":"qa","Rep. Centroafricana":"cf","Chad":"td","Rep. Checa":"cz","China":"cn","Chipre":"cy","Comoras":"km","Corea del Norte":"kp","Corea del Sur":"kr","Costa de Marfil":"ci","Costa Rica":"cr","Croacia":"hr","Cuba":"cu","Dinamarca":"dk","Dominica":"dm","Ecuador":"ec","Egipto":"eg","El Salvador":"sv","Emiratos Árabes":"ae","Eritrea":"er","Eslovaquia":"sk","Eslovenia":"si","Estonia":"ee","Etiopía":"et","Filipinas":"ph","Finlandia":"fi","Fiyi":"fj","Francia":"fr","Gabón":"ga","Gambia":"gm","Georgia":"ge","Ghana":"gh","Granada":"gd","Grecia":"gr","Guatemala":"gt","Guinea":"gn","Guinea Ecuatorial":"gq","Guinea-Bisáu":"gw","Guyana":"gy","Haití":"ht","Honduras":"hn","Hungría":"hu","India":"in","Indonesia":"id","Irak":"iq","Irán":"ir","Irlanda":"ie","Islandia":"is","Israel":"il","Italia":"it","Jamaica":"jm","Japón":"jp","Jordania":"jo","Kazajistán":"kz","Kenia":"ke","Kirguistán":"kg","Kiribati":"ki","Kuwait":"kw","Laos":"la","Lesoto":"ls","Letonia":"lv","Líbano":"lb","Liberia":"lr","Libia":"ly","Liechtenstein":"li","Lituania":"lt","Luxemburgo":"lu","Macedonia del Norte":"mk","Madagascar":"mg","Malasia":"my","Malaui":"mw","Maldivas":"mv","Malí":"ml","Malta":"mt","Marruecos":"ma","Mauricio":"mu","Mauritania":"mr","Micronesia":"fm","Moldavia":"md","Mónaco":"mc","Mongolia":"mn","Montenegro":"me","Mozambique":"mz","Namibia":"na","Nauru":"nr","Nepal":"np","Nicaragua":"ni","Níger":"ne","Nigeria":"ng","Nueva Zelanda":"nz","Noruega":"no","Omán":"om","Países Bajos":"nl","Pakistán":"pk","Palaos":"pw","Palestina":"ps","Panamá":"pa","Papúa Nueva Guinea":"pg","Paraguay":"py","Polonia":"pl","Portugal":"pt","Reino Unido":"gb","Puerto Rico":"pr","Ruanda":"rw","Rumania":"ro","Rusia":"ru","Samoa":"ws","San Marino":"sm","Santa Lucía":"lc","Santo Tomé y Príncipe":"st","San Vicente y las Granadinas":"vc","Senegal":"sn","Serbia":"rs","Seychelles":"sc","Sierra Leona":"sl","Singapur":"sg","Siria":"sy","Somalia":"so","Sudáfrica":"za","Sudán":"sd","Sudán del Sur":"ss","Suecia":"se","Suiza":"ch","Surinam":"sr","Esuatini":"sz","Tayikistán":"tj","Tanzania":"tz","Tailandia":"th","Timor Oriental":"tl","Togo":"tg","Tonga":"to","Trinidad y Tobago":"tt","Túnez":"tn","Turquía":"tr","Turkmenistán":"tm","Tuvalu":"tv","Ucrania":"ua","Uganda":"ug","Uruguay":"uy","Uzbekistán":"uz","Vanuatu":"vu","Vaticano":"va","Vietnam":"vn","Yemen":"ye","Yibuti":"dj","Zambia":"zm","Zimbabue":"zw"
+        };
 
-        const btn = form.querySelector('.btn-submit');
-        const msg = document.getElementById('mod_msg_form');
-        const loading = document.getElementById('mod_loading_overlay');
-        const denunciaId = document.getElementById('mod_denuncia_id').value;
-
-        btn.disabled = true;
-        btn.textContent = '⏳ Guardando cambios...';
-        msg.style.display = 'none';
-        loading.classList.add('active');
-
-        try {
-            const bucket = window.supabaseClient.storage.from('denuncias_documentos');
-            const updateData = {};
-
-            // Procesar documentos únicos
-            for (const doc of docsUnicos) {
-                const radio = document.querySelector(`input[name="mod_doc_${doc.id}"]:checked`);
-                const estado = modEstadoDocs.unicos[doc.id];
-
-                if (radio && radio.value === 'si') {
-                    if (estado.newFile) {
-                        // Reemplazar: Subir nuevo archivo
-                        const ts = Date.now();
-                        const path = `mod_${ts}_${doc.id}.pdf`;
-                        const { error: uploadError } = await bucket.upload(path, estado.newFile, { contentType: 'application/pdf' });
-                        if (uploadError) throw new Error(`Error subiendo ${doc.label}: ${uploadError.message}`);
-                        
-                        updateData[doc.id] = bucket.getPublicUrl(path).data.publicUrl;
-
-                        // Opcional: Eliminar el archivo antiguo del storage si existe
-                        if (estado.urlOriginal) {
-                            const oldPath = estado.urlOriginal.split('/denuncias_documentos/')[1];
-                            if (oldPath) await bucket.remove([oldPath]).catch(() => {}); // Ignorar errores de borrado
-                        }
-                    } else if (estado.toDelete) {
-                        // Eliminar referencia
-                        updateData[doc.id] = null;
-                        if (estado.urlOriginal) {
-                            const oldPath = estado.urlOriginal.split('/denuncias_documentos/')[1];
-                            if (oldPath) await bucket.remove([oldPath]).catch(() => {});
-                        }
-                    } else {
-                        // Mantener original
-                        updateData[doc.id] = estado.urlOriginal;
-                    }
-                } else {
-                    updateData[doc.id] = null; // Marcado como "No"
-                }
-            }
-
-            // Procesar documentos múltiples
-            for (const doc of docsMultiples) {
-                const radio = document.querySelector(`input[name="mod_doc_${doc.id}"]:checked`);
-                const estado = modEstadoDocs.multiples[doc.id];
-
-                if (radio && radio.value === 'si') {
-                    const urlsFinales = [];
-                    
-                    // 1. Agregar archivos originales que NO fueron marcados para eliminar
-                    estado.urlsOriginales.forEach((url, idx) => {
-                        if (!estado.indicesToDelete.includes(idx)) {
-                            urlsFinales.push(url);
-                        } else {
-                            // Eliminar del storage los que se quitaron
-                            const oldPath = url.split('/denuncias_documentos/')[1];
-                            if (oldPath) bucket.remove([oldPath]).catch(() => {});
-                        }
-                    });
-
-                    // 2. Subir archivos nuevos
-                    for (const file of estado.newFiles) {
-                        const ts = Date.now() + Math.random();
-                        const path = `mod_${ts}_${doc.id}.pdf`;
-                        const { error: uploadError } = await bucket.upload(path, file, { contentType: 'application/pdf' });
-                        if (uploadError) throw new Error(`Error subiendo ${doc.label}: ${uploadError.message}`);
-                        urlsFinales.push(bucket.getPublicUrl(path).data.publicUrl);
-                    }
-
-                    updateData[doc.id] = urlsFinales.length > 0 ? urlsFinales : null;
-                } else {
-                    // Marcado como "No", eliminar todo
-                    updateData[doc.id] = null;
-                    estado.urlsOriginales.forEach(url => {
-                        const oldPath = url.split('/denuncias_documentos/')[1];
-                        if (oldPath) bucket.remove([oldPath]).catch(() => {});
-                    });
-                }
-            }
-
-            // Datos generales
-            updateData.estacion_policial = document.getElementById('mod_estacion').value;
-            updateData.primer_nombre = document.getElementById('mod_nombre1').value.trim();
-            updateData.segundo_nombre = document.getElementById('mod_nombre2').value.trim() || null;
-            updateData.primer_apellido = document.getElementById('mod_apellido1').value.trim();
-            updateData.segundo_apellido = document.getElementById('mod_apellido2').value.trim() || null;
-            updateData.tlf_pais = document.getElementById('mod_tlf_pais').value || null;
-            updateData.tlf_numero = document.getElementById('mod_tlf_num').value.trim().replace(/\D/g, '') || null;
-            updateData.direccion = document.getElementById('mod_direccion').value.trim() || null;
-            updateData.motivo_denuncia = document.getElementById('mod_motivo').value.trim() || null;
-            updateData.observaciones = document.getElementById('mod_observaciones').value.trim() || null;
-
-            // Actualizar en Supabase
-            const { error: dbError } = await window.supabaseClient
-                .from('denuncias')
-                .update(updateData)
-                .eq('id', denunciaId);
-
-            if (dbError) throw dbError;
-
-            msg.textContent = '✅ Denuncia actualizada exitosamente.';
-            msg.className = 'msg success';
-            msg.style.display = 'block';
+        if (nativeSelect && displayBox && optionsBox) {
+            optionsBox.innerHTML = '';
             
-            setTimeout(() => {
-                msg.style.display = 'none';
-                document.getElementById('mod_form_container').style.display = 'none';
-                document.getElementById('mod_buscar_cedula').value = '';
-            }, 3000);
+            // Input de búsqueda
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.className = 'phone-search-input';
+            searchInput.placeholder = '🔍 Buscar país o código...';
+            searchInput.addEventListener('click', (e) => e.stopPropagation());
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                optionsBox.querySelectorAll('.phone-option').forEach(opt => {
+                    const text = opt.textContent.toLowerCase();
+                    opt.style.display = text.includes(term) ? 'flex' : 'none';
+                });
+            });
+            optionsBox.appendChild(searchInput);
 
-        } catch (err) {
-            console.error('Error al actualizar:', err);
-            msg.textContent = '❌ ' + err.message;
-            msg.className = 'msg error';
-            msg.style.display = 'block';
-        } finally {
-            btn.disabled = false;
-            btn.textContent = '💾 Guardar Cambios';
-            loading.classList.remove('active');
+            Array.from(nativeSelect.options).forEach(opt => {
+                if (!opt.value) return;
+                const iso = isoMap[opt.text] || opt.value.replace('+','').toLowerCase();
+                const div = document.createElement('div');
+                div.className = 'phone-option';
+                div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.8rem;">${opt.text}</span>`;
+                div.addEventListener('click', () => {
+                    nativeSelect.value = opt.value;
+                    flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
+                    codeText.textContent = opt.value;
+                    countryText.textContent = opt.text;
+                    optionsBox.style.display = 'none';
+                    searchInput.value = ''; // Limpiar búsqueda
+                });
+                optionsBox.appendChild(div);
+            });
+
+            displayBox.addEventListener('click', (e) => {
+                e.stopPropagation();
+                optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block';
+                if (optionsBox.style.display === 'block') searchInput.focus();
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.phone-dropdown-wrapper')) optionsBox.style.display = 'none';
+            });
         }
-    });
 
-    inicializarContenedores();
-    console.log("✅ Módulo mod-denuncias.js inicializado correctamente");
+        // ==========================================
+        // ENVÍO DEL FORMULARIO
+        // ==========================================
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!form.checkValidity()) { form.reportValidity(); return; }
+
+            for (const doc of docsUnicos) {
+                const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+                if (radio && radio.value === 'si' && !archivosUnicos[doc.id]) {
+                    if (msg) { msg.textContent = `️ Debe subir un PDF para: ${doc.label}`; msg.className = 'msg error'; msg.style.display = 'block'; }
+                    return;
+                }
+            }
+            for (const doc of docsMultiples) {
+                const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+                if (radio && radio.value === 'si' && (!archivosMultiples[doc.id] || archivosMultiples[doc.id].length === 0)) {
+                    if (msg) { msg.textContent = `️ Debe subir al menos un PDF para: ${doc.label}`; msg.className = 'msg error'; msg.style.display = 'block'; }
+                    return;
+                }
+            }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Registrando...';
+            if (msg) msg.style.display = 'none';
+            if (loadingOverlay) loadingOverlay.classList.add('active');
+
+            try {
+                const bucket = window.supabaseClient.storage.from('denuncias_documentos');
+                const { data: { user } } = await window.supabaseClient.auth.getUser();
+                if (!user) throw new Error('Debe iniciar sesión.');
+                
+                const uid = user.id;
+                const ts = Date.now();
+
+                const docsUnicosUrls = {};
+                for (const doc of docsUnicos) {
+                    const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+                    if (radio && radio.value === 'si' && archivosUnicos[doc.id]) {
+                        const path = `${uid}/${ts}_${doc.id}.pdf`;
+                        const { error } = await bucket.upload(path, archivosUnicos[doc.id], { contentType: 'application/pdf' });
+                        if (error) throw new Error(`Error subiendo ${doc.label}: ${error.message}`);
+                        docsUnicosUrls[doc.id] = bucket.getPublicUrl(path).data.publicUrl;
+                    } else { docsUnicosUrls[doc.id] = null; }
+                }
+
+                const docsMultiplesUrls = {};
+                for (const doc of docsMultiples) {
+                    const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+                    if (radio && radio.value === 'si' && archivosMultiples[doc.id] && archivosMultiples[doc.id].length > 0) {
+                        const urls = [];
+                        for (let i = 0; i < archivosMultiples[doc.id].length; i++) {
+                            const path = `${uid}/${ts}_${doc.id}_${i}.pdf`;
+                            const { error } = await bucket.upload(path, archivosMultiples[doc.id][i], { contentType: 'application/pdf' });
+                            if (error) throw new Error(`Error subiendo ${doc.label}[${i}]: ${error.message}`);
+                            urls.push(bucket.getPublicUrl(path).data.publicUrl);
+                        }
+                        docsMultiplesUrls[doc.id] = urls;
+                    } else { docsMultiplesUrls[doc.id] = null; }
+                }
+
+                const tlfPais = document.getElementById('d_tlf_pais')?.value;
+                const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '');
+                const cedulaLimpia = (document.getElementById('d_cedula')?.value.trim() || '').toUpperCase().replace(/\s/g, '');
+
+                const data = {
+                    numero_denuncia: document.getElementById('d_numero_denuncia')?.value || null,
+                    cedula: cedulaLimpia,
+                    motivo_denuncia: document.getElementById('d_motivo')?.value.trim() || null,
+                    estacion_policial: document.getElementById('d_estacion')?.value,
+                    primer_nombre: document.getElementById('d_nombre1')?.value.trim(),
+                    segundo_nombre: document.getElementById('d_nombre2')?.value.trim() || null,
+                    primer_apellido: document.getElementById('d_apellido1')?.value.trim(),
+                    segundo_apellido: document.getElementById('d_apellido2')?.value.trim() || null,
+                    tlf_pais: tlfPais || null,
+                    tlf_numero: tlfNum || null,
+                    direccion: document.getElementById('d_direccion')?.value.trim() || null,
+                    oficio_remision: docsUnicosUrls.oficio_remision,
+                    acta_denuncia: docsUnicosUrls.acta_denuncia,
+                    medida_proteccion: docsUnicosUrls.medida_proteccion,
+                    acta_entrevista: docsMultiplesUrls.acta_entrevista,
+                    datos_filiatorios: docsMultiplesUrls.datos_filiatorios,
+                    evidencias: docsMultiplesUrls.evidencias,
+                    solicitud_senamecf: docsMultiplesUrls.solicitud_senamecf,
+                    observaciones: document.getElementById('d_observaciones')?.value.trim() || null,
+                    registrado_por: uid,
+                    email_registrante: user.email
+                };
+
+                const { error } = await window.supabaseClient.from('denuncias').insert([data]);
+                if (error) throw error;
+
+                if (msg) {
+                    msg.textContent = '✅ Denuncia registrada exitosamente.';
+                    msg.className = 'msg success';
+                    msg.style.display = 'block';
+                    setTimeout(() => msg.style.display = 'none', 4000);
+                }
+
+                form.reset();
+                actualizarFecha();
+                generarNumeroDenuncia();
+                docsUnicos.forEach(d => window.toggleDocField(d.id, false));
+                docsMultiples.forEach(d => window.toggleDocField(d.id, false));
+
+                if (nativeSelect) nativeSelect.value = '';
+                if (flagImg) flagImg.src = 'https://flagcdn.com/w20/xx.png';
+                if (codeText) codeText.textContent = '+XX';
+                if (countryText) countryText.textContent = 'País';
+
+            } catch (err) {
+                console.error('Error:', err);
+                if (msg) { msg.textContent = '❌ ' + err.message; msg.className = 'msg error'; msg.style.display = 'block'; }
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '✅ Registrar Denuncia';
+                if (loadingOverlay) loadingOverlay.classList.remove('active');
+            }
+        });
+
+        console.log("✅ Módulo reg-denuncias.js inicializado correctamente");
+    }
+
+    iniciarModulo();
 };
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', window.initModDenuncias);
+    document.addEventListener('DOMContentLoaded', window.initRegDenuncias);
 } else {
-    window.initModDenuncias();
+    window.initRegDenuncias();
 }
