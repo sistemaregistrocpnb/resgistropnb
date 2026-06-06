@@ -1,17 +1,19 @@
 window.initConTabla = function() {
     console.log("⚙️ Iniciando módulo con-tabla.js...");
 
-    if (window._conTablaInitialized) return;
+    if (window._conTablaInitialized) {
+        console.log("⚠️ Módulo ya inicializado, omitiendo...");
+        return;
+    }
     window._conTablaInitialized = true;
 
     const ITEMS_PER_PAGE = 15;
     let currentPage = 1;
     let currentData = [];
     
-    // 🔹 SISTEMA DE BLOQUEO CON TIMEOUT DE SEGURIDAD
+    // Sistema de bloqueo con timeout
     let isSearching = false;
-    let searchTimeout = null;
-    const TIMEOUT_SEGURIDAD = 15000; // 15 segundos máximo
+    let searchTimer = null;
 
     const cedulaInput = document.getElementById('con_buscar_cedula');
     const btnBuscar = document.getElementById('con_btn_buscar');
@@ -29,45 +31,17 @@ window.initConTabla = function() {
     const btnPrint = document.getElementById('con_btn_print');
     const btnPdf = document.getElementById('con_btn_pdf');
 
-    async function cargarHtml2Pdf() {
-        if (window.html2pdf) return true;
-
-        return new Promise((resolve, reject) => {
-            const cdns = [
-                'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
-                'https://unpkg.com/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js'
-            ];
-
-            let intentos = 0;
-            function intentarCargar() {
-                if (intentos >= cdns.length) {
-                    reject(new Error('No se pudo cargar html2pdf.'));
-                    return;
-                }
-                const script = document.createElement('script');
-                script.src = cdns[intentos];
-                script.onload = () => {
-                    if (window.html2pdf) resolve(true);
-                    else { intentos++; intentarCargar(); }
-                };
-                script.onerror = () => { intentos++; intentarCargar(); };
-                document.head.appendChild(script);
-            }
-            intentarCargar();
-        });
-    }
-
-    // 🔹 FUNCIÓN CRÍTICA: Siempre libera el bloqueo
+    // Función crítica: siempre libera el bloqueo
     function liberarBloqueo() {
-        console.log("🔓 Liberando bloqueo...");
+        console.log("🔓 Liberando bloqueo");
         isSearching = false;
-        if (searchTimeout) {
-            clearTimeout(searchTimeout);
-            searchTimeout = null;
+        if (searchTimer) {
+            clearTimeout(searchTimer);
+            searchTimer = null;
         }
         if (btnBuscar) {
             btnBuscar.disabled = false;
-            btnBuscar.textContent = '🔍 Buscar';
+            btnBuscar.textContent = ' Buscar';
         }
         if (btnUltimas) {
             btnUltimas.disabled = false;
@@ -78,7 +52,7 @@ window.initConTabla = function() {
     }
 
     function activarBloqueo() {
-        console.log(" Activando bloqueo...");
+        console.log("🔒 Activando bloqueo");
         isSearching = true;
         if (btnBuscar) {
             btnBuscar.disabled = true;
@@ -91,51 +65,74 @@ window.initConTabla = function() {
         if (cedulaInput) cedulaInput.disabled = true;
         if (checkIncluirEliminadas) checkIncluirEliminadas.disabled = true;
 
-        // Timeout de seguridad: fuerza el desbloqueo después de 15 segundos
-        if (searchTimeout) clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            console.warn("⚠️ TIMEOUT DE SEGURIDAD: Forzando desbloqueo...");
+        // Timeout de seguridad: 10 segundos
+        if (searchTimer) clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+            console.warn("⚠️ TIMEOUT: Forzando desbloqueo después de 10s");
             liberarBloqueo();
             if (msg) {
                 msg.textContent = '⚠️ La búsqueda tardó demasiado. Intente nuevamente.';
                 msg.className = 'msg error';
                 msg.style.display = 'block';
-                setTimeout(() => msg.style.display = 'none', 5000);
             }
-        }, TIMEOUT_SEGURIDAD);
+            if (tableContent) {
+                tableContent.innerHTML = `
+                    <div class="con-empty">
+                        ❌ Tiempo de espera agotado<br>
+                        <button onclick="window.initConTabla()" style="margin-top: 10px; padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer;">🔄 Reintentar</button>
+                    </div>
+                `;
+            }
+        }, 10000);
     }
 
+    // Event listeners
     if (cedulaInput) {
         cedulaInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                if (!isSearching) btnBuscar.click();
+                if (!isSearching) btnBuscar?.click();
             }
         });
     }
 
-    btnBuscar?.addEventListener('click', () => {
-        if (isSearching) {
-            console.log("⚠️ Búsqueda en progreso, ignorando...");
-            return;
-        }
-        buscarPorCedula();
-    });
+    if (btnBuscar) {
+        btnBuscar.addEventListener('click', () => {
+            if (isSearching) {
+                console.log("⚠️ Búsqueda en progreso, ignorando...");
+                return;
+            }
+            buscarPorCedula();
+        });
+    }
     
-    btnUltimas?.addEventListener('click', () => {
-        if (isSearching) {
-            console.log("⚠️ Búsqueda en progreso, ignorando...");
-            return;
-        }
-        cargarUltimas();
-    });
+    if (btnUltimas) {
+        btnUltimas.addEventListener('click', () => {
+            if (isSearching) {
+                console.log("️ Búsqueda en progreso, ignorando...");
+                return;
+            }
+            cargarUltimas();
+        });
+    }
     
-    modalClose?.addEventListener('click', () => cerrarModal());
-    modalOverlay?.addEventListener('click', (e) => {
-        if (e.target === modalOverlay) cerrarModal();
-    });
-    btnPrint?.addEventListener('click', () => window.print());
-    btnPdf?.addEventListener('click', () => exportarPDF());
+    if (modalClose) {
+        modalClose.addEventListener('click', () => cerrarModal());
+    }
+    
+    if (modalOverlay) {
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) cerrarModal();
+        });
+    }
+    
+    if (btnPrint) {
+        btnPrint.addEventListener('click', () => window.print());
+    }
+    
+    if (btnPdf) {
+        btnPdf.addEventListener('click', () => exportarPDF());
+    }
 
     async function cargarUltimas() {
         console.log("📋 Cargando últimas denuncias...");
@@ -152,17 +149,22 @@ window.initConTabla = function() {
             }
             
             tableContent.innerHTML = '<div class="con-loading">⏳ Cargando...</div>';
-            tableTitle.textContent = ' Últimas Denuncias Registradas';
+            tableTitle.textContent = '📋 Últimas Denuncias Registradas';
             pagination.style.display = 'none';
 
+            console.log("📡 Consultando Supabase...");
             const { data, error, count } = await window.supabaseClient
                 .from('denuncias')
                 .select('*', { count: 'exact' })
                 .order('created_at', { ascending: false })
                 .range(0, ITEMS_PER_PAGE - 1);
 
-            if (error) throw error;
+            if (error) {
+                console.error("❌ Error de Supabase:", error);
+                throw error;
+            }
 
+            console.log("✅ Datos recibidos:", data?.length || 0, "registros");
             currentData = data || [];
             tableCount.textContent = `Total: ${count || 0} denuncia(s)`;
             
@@ -185,15 +187,19 @@ window.initConTabla = function() {
             }
 
         } catch (err) {
-            console.error('❌ Error:', err);
-            tableContent.innerHTML = `<div class="con-empty">❌ Error: ${err.message}</div>`;
+            console.error('❌ Error en cargarUltimas:', err);
+            tableContent.innerHTML = `
+                <div class="con-empty">
+                    ❌ Error al cargar: ${err.message}<br>
+                    <button onclick="window.initConTabla()" style="margin-top: 10px; padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer;">🔄 Reintentar</button>
+                </div>
+            `;
             if (msg) {
                 msg.textContent = '❌ ' + err.message;
                 msg.className = 'msg error';
                 msg.style.display = 'block';
             }
         } finally {
-            //  SIEMPRE LIBERAR EL BLOQUEO
             liberarBloqueo();
         }
     }
@@ -214,7 +220,7 @@ window.initConTabla = function() {
 
         if (!cedulaRegex.test(cedulaRaw)) {
             if (msg) {
-                msg.textContent = '️ Formato incorrecto. Use V- o E- seguido del número.';
+                msg.textContent = '⚠️ Formato incorrecto. Use V- o E- seguido del número.';
                 msg.className = 'msg error';
                 msg.style.display = 'block';
             }
@@ -240,7 +246,7 @@ window.initConTabla = function() {
 
             let todasLasDenuncias = [];
 
-            // Buscar en denuncias activas
+            console.log("📡 Consultando denuncias activas...");
             const { data: activas, error: errorActivas } = await window.supabaseClient
                 .from('denuncias')
                 .select('*')
@@ -252,8 +258,8 @@ window.initConTabla = function() {
                 todasLasDenuncias = todasLasDenuncias.concat(activas.map(d => ({ ...d, estado: 'activa' })));
             }
 
-            // Buscar en denuncias eliminadas si está marcado
             if (incluirEliminadas) {
+                console.log("📡 Consultando denuncias eliminadas...");
                 const { data: eliminadas, error: errorEliminadas } = await window.supabaseClient
                     .from('denuncias_eliminadas')
                     .select('*')
@@ -267,7 +273,6 @@ window.initConTabla = function() {
                 }
             }
 
-            // Ordenar por fecha
             todasLasDenuncias.sort((a, b) => {
                 const fechaA = new Date(a.created_at || a.fecha_hora_original);
                 const fechaB = new Date(b.created_at || b.fecha_hora_original);
@@ -278,9 +283,13 @@ window.initConTabla = function() {
             tableCount.textContent = `Total: ${currentData.length} denuncia(s)`;
 
             if (currentData.length === 0) {
-                tableContent.innerHTML = '<div class="con-empty">📭 No se encontraron denuncias.</div>';
+                tableContent.innerHTML = `
+                    <div class="con-empty">
+                         No se encontraron denuncias con esa cédula.
+                    </div>
+                `;
                 if (msg) {
-                    msg.textContent = '⚠️ No se encontraron denuncias con esa cédula.';
+                    msg.textContent = '⚠️ No se encontraron denuncias.';
                     msg.className = 'msg error';
                     msg.style.display = 'block';
                 }
@@ -308,15 +317,19 @@ window.initConTabla = function() {
             }
 
         } catch (err) {
-            console.error('❌ Error:', err);
-            tableContent.innerHTML = `<div class="con-empty">❌ Error: ${err.message}</div>`;
+            console.error('❌ Error en buscarPorCedula:', err);
+            tableContent.innerHTML = `
+                <div class="con-empty">
+                    ❌ Error: ${err.message}<br>
+                    <button onclick="window.initConTabla()" style="margin-top: 10px; padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer;">🔄 Reintentar</button>
+                </div>
+            `;
             if (msg) {
                 msg.textContent = '❌ ' + err.message;
                 msg.className = 'msg error';
                 msg.style.display = 'block';
             }
         } finally {
-            // 🔹 SIEMPRE LIBERAR EL BLOQUEO
             liberarBloqueo();
         }
     }
@@ -369,7 +382,6 @@ window.initConTabla = function() {
         html += '</tbody></table>';
         tableContent.innerHTML = html;
 
-        // Re-adjuntar event listeners
         tableContent.querySelectorAll('.con-btn-ver').forEach(btn => {
             btn.addEventListener('click', () => {
                 const index = parseInt(btn.dataset.index);
@@ -498,8 +510,7 @@ window.initConTabla = function() {
             ${avisoEliminada}
             <div class="ficha-header">
                 <div style="display: flex; justify-content: center; margin-bottom: 15px;">
-                    <img src="${logoUrl}" alt="Logo CPNB" style="max-width: 120px; max-height: 120px; object-fit: contain;" 
-                         onerror="this.style.display='none'">
+                    <img src="${logoUrl}" alt="Logo CPNB" style="max-width: 120px; max-height: 120px; object-fit: contain;" onerror="this.style.display='none'">
                 </div>
                 <h1>CUERPO DE POLICÍA NACIONAL BOLIVARIANA</h1>
                 <h2>FICHA DE DENUNCIA</h2>
@@ -514,7 +525,7 @@ window.initConTabla = function() {
                 </div>
             </div>
             <div class="ficha-section">
-                <div class="ficha-section-title"> Datos del Denunciante</div>
+                <div class="ficha-section-title">👤 Datos del Denunciante</div>
                 <div class="ficha-grid">
                     <div class="ficha-field"><div class="ficha-label">Cédula</div><div class="ficha-value">${denuncia.cedula || 'N/A'}</div></div>
                     <div class="ficha-field"><div class="ficha-label">Teléfono</div><div class="ficha-value">${denuncia.tlf_pais || ''} ${denuncia.tlf_numero || 'N/A'}</div></div>
@@ -534,7 +545,7 @@ window.initConTabla = function() {
                 <div class="ficha-field full"><div class="ficha-value" style="white-space: pre-wrap;">${denuncia.observaciones || 'Sin observaciones'}</div></div>
             </div>
             <div class="ficha-section">
-                <div class="ficha-section-title"> Documentos Únicos</div>
+                <div class="ficha-section-title">📄 Documentos Únicos</div>
                 ${docsUnicosHtml}
             </div>
             <div class="ficha-section">
@@ -551,12 +562,18 @@ window.initConTabla = function() {
     }
 
     async function exportarPDF() {
-        const numero = modalTitle.textContent.replace(' Ficha: ', '').trim();
+        const numero = modalTitle.textContent.replace('📄 Ficha: ', '').trim();
         btnPdf.disabled = true;
-        btnPdf.textContent = ' Generando...';
+        btnPdf.textContent = '⏳ Generando...';
 
         try {
-            await cargarHtml2Pdf();
+            if (!window.html2pdf) {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+                document.head.appendChild(script);
+                await new Promise(resolve => script.onload = resolve);
+            }
+
             const opt = {
                 margin: [10, 10, 10, 10],
                 filename: `Denuncia_${numero}.pdf`,
@@ -569,13 +586,14 @@ window.initConTabla = function() {
             alert('❌ Error: ' + err.message);
         } finally {
             btnPdf.disabled = false;
-            btnPdf.textContent = ' Exportar PDF';
+            btnPdf.textContent = '📥 Exportar PDF';
         }
     }
 
-    // Cargar al iniciar
+    // Inicializar
+    console.log(" Llamando a cargarUltimas()...");
     cargarUltimas();
-    console.log("✅ Módulo inicializado");
+    console.log("✅ Módulo con-tabla.js inicializado");
 };
 
 if (document.readyState === 'loading') {
