@@ -1,16 +1,16 @@
 window.initHistorial = function() {
     console.log("⚙️ Iniciando módulo historial.js...");
 
-    if (window._historialInitialized) {
-        console.log("⚠️ Módulo ya inicializado, omitiendo...");
-        return;
+    // 🧹 LIMPIEZA: Cancelar operaciones anteriores
+    if (window._historialAbort) {
+        try { window._historialAbort.abort(); } catch(e) {}
     }
-    window._historialInitialized = true;
 
     const ITEMS_PER_PAGE = 10;
     let currentPage = 1;
     let estacionesData = [];
     let tablasDisponibles = {};
+    let camposDisponibles = {};
 
     const el = (id) => document.getElementById(id);
     const statPersonas = el('stat-personas');
@@ -31,6 +31,12 @@ window.initHistorial = function() {
     const tableContainer = el('estacion-table-container');
     const pagination = el('estacion-pagination');
     const estacionTotal = el('estacion-total');
+
+    // Verificar que los elementos existan
+    if (!tableContainer || !btnFiltrar) {
+        console.warn("⚠️ Elementos del historial no encontrados");
+        return;
+    }
 
     if (periodoSelect) {
         periodoSelect.onchange = () => {
@@ -83,89 +89,94 @@ window.initHistorial = function() {
         return { desde, hasta };
     }
 
-    // ✅ VERIFICAR QUÉ TABLAS EXISTEN (con nombres CORRECTOS)
-    async function verificarTablasDisponibles() {
-        console.log("🔍 Verificando qué tablas existen...");
-        
-        // Lista de tablas con nombres REALES
+    // ✅ VERIFICACIÓN SILENCIOSA DE TABLAS Y CAMPOS
+    async function verificarEstructura() {
         const tablas = [
             'registro_personas',
             'registro_automoviles',
             'registro_motos',
-            'registro_vinculado',  // ✅ SIN "s" al final
+            'registro_vinculado',
             'registro_procesados',
-            'denuncias'  // ✅ SIN "registro_" al inicio
+            'denuncias'
         ];
 
+        // Verificar tablas existentes
         for (const tabla of tablas) {
             try {
                 const { error } = await window.supabaseClient
                     .from(tabla)
-                    .select('id')
+                    .select('*')
+                    .limit(1);
+                tablasDisponibles[tabla] = !error;
+            } catch {
+                tablasDisponibles[tabla] = false;
+            }
+        }
+
+        // ✅ Verificar campos específicos de forma SILENCIOSA
+        const verificacionesCampos = [
+            { tabla: 'registro_personas', campo: 'estacion_policial' },
+            { tabla: 'registro_automoviles', campo: 'estacion_policial' },
+            { tabla: 'registro_motos', campo: 'estacion_policial' },
+            { tabla: 'registro_vinculado', campo: 'estacion_policial' },
+            { tabla: 'registro_procesados', campo: 'estacion_policial' },
+            { tabla: 'denuncias', campo: 'estacion_policial' }
+        ];
+
+        for (const v of verificacionesCampos) {
+            if (!tablasDisponibles[v.tabla]) {
+                camposDisponibles[`${v.tabla}.${v.campo}`] = false;
+                continue;
+            }
+
+            try {
+                // Usar .select() con el campo específico - si falla, el campo no existe
+                const { error } = await window.supabaseClient
+                    .from(v.tabla)
+                    .select(v.campo)
                     .limit(1);
                 
-                tablasDisponibles[tabla] = !error;
-                console.log(`  ${tabla}: ${!error ? '✅' : '❌'}`);
-            } catch (err) {
-                tablasDisponibles[tabla] = false;
-                console.log(`  ${tabla}: ❌`);
-            }
-        }
-
-        // Verificar si registro_procesados tiene estacion_policial
-        if (tablasDisponibles['registro_procesados']) {
-            try {
-                const { error } = await window.supabaseClient
-                    .from('registro_procesados')
-                    .select('estacion_policial')
-                    .limit(1);
-                tablasDisponibles['registro_procesados_estacion'] = !error;
-                console.log(`  registro_procesados.estacion_policial: ${!error ? '✅' : '❌'}`);
+                // ✅ Guardar resultado SIN mostrar error en consola
+                camposDisponibles[`${v.tabla}.${v.campo}`] = !error;
             } catch {
-                tablasDisponibles['registro_procesados_estacion'] = false;
+                camposDisponibles[`${v.tabla}.${v.campo}`] = false;
             }
         }
 
-        return tablasDisponibles;
+        console.log("✅ Estructura verificada:", { tablas: tablasDisponibles, campos: camposDisponibles });
     }
 
     // Función segura para contar registros
     async function contarSeguro(tabla, filtros = {}) {
-        if (!tablasDisponibles[tabla]) {
-            return 0;
-        }
+        if (!tablasDisponibles[tabla]) return 0;
 
         try {
             let query = window.supabaseClient.from(tabla).select('*', { count: 'exact', head: true });
             
-            Object.keys(filtros).forEach(key => {
-                if (filtros[key] !== undefined && filtros[key] !== null) {
-                    query = query.eq(key, filtros[key]);
+            // Aplicar filtros solo si el campo existe
+            for (const [key, value] of Object.entries(filtros)) {
+                if (value !== undefined && value !== null) {
+                    const campoExiste = camposDisponibles[`${tabla}.${key}`];
+                    if (campoExiste) {
+                        query = query.eq(key, value);
+                    }
                 }
-            });
+            }
 
+            // Aplicar rango de fechas
             const { desde, hasta } = obtenerRangoFechas();
             if (desde) query = query.gte('created_at', desde.toISOString());
             if (hasta) query = query.lte('created_at', hasta.toISOString());
 
             const { count, error } = await query;
-            
-            if (error) {
-                console.warn(`⚠️ Error en ${tabla}:`, error.message);
-                return 0;
-            }
-            
-            return count || 0;
-        } catch (err) {
-            console.warn(`⚠️ Error en contarSeguro(${tabla}):`, err.message);
+            return error ? 0 : (count || 0);
+        } catch {
             return 0;
         }
     }
 
     // Cargar estadísticas generales
     async function cargarEstadisticas() {
-        console.log("📊 Cargando estadísticas...");
-        
         if (msg) {
             msg.textContent = '⏳ Cargando estadísticas...';
             msg.className = 'msg info';
@@ -173,8 +184,9 @@ window.initHistorial = function() {
         }
 
         try {
+            // Verificar estructura la primera vez
             if (Object.keys(tablasDisponibles).length === 0) {
-                await verificarTablasDisponibles();
+                await verificarEstructura();
             }
 
             // 1. Personas registradas
@@ -189,15 +201,14 @@ window.initHistorial = function() {
             const countMotos = await contarSeguro('registro_motos');
             if (statMotos) statMotos.textContent = countMotos;
 
-            // 4. Vehículos totales (automóviles + motos)
-            const countVehiculos = countAutos + countMotos;
-            if (statVehiculos) statVehiculos.textContent = countVehiculos;
+            // 4. Vehículos totales
+            if (statVehiculos) statVehiculos.textContent = countAutos + countMotos;
 
-            // 5. Personas con vehículos (vinculados) - ✅ SIN "s"
+            // 5. Personas con vehículos (vinculados)
             const countVinculados = await contarSeguro('registro_vinculado');
             if (statVinculados) statVinculados.textContent = countVinculados;
 
-            // 6. Denuncias - ✅ SIN "registro_"
+            // 6. Denuncias
             const countDenuncias = await contarSeguro('denuncias');
             if (statDenuncias) statDenuncias.textContent = countDenuncias;
 
@@ -207,16 +218,11 @@ window.initHistorial = function() {
 
             await cargarEstadisticasPorEstacion();
 
-            const disponibles = Object.entries(tablasDisponibles)
-                .filter(([k, v]) => v && !k.includes('_estacion'))
-                .map(([k]) => k)
-                .join(', ');
-            
             if (msg) {
-                msg.textContent = `✅ Estadísticas cargadas. Tablas: ${disponibles}`;
+                msg.textContent = '✅ Estadísticas actualizadas correctamente';
                 msg.className = 'msg success';
                 msg.style.display = 'block';
-                setTimeout(() => { if (msg) msg.style.display = 'none'; }, 5000);
+                setTimeout(() => { if (msg) msg.style.display = 'none'; }, 3000);
             }
 
         } catch (err) {
@@ -231,8 +237,6 @@ window.initHistorial = function() {
 
     // Cargar estadísticas por estación
     async function cargarEstadisticasPorEstacion() {
-        console.log("🏛️ Cargando estadísticas por estación...");
-        
         if (tableContainer) {
             tableContainer.innerHTML = '<div class="loading">Cargando estadísticas por estación...</div>';
         }
@@ -263,38 +267,35 @@ window.initHistorial = function() {
                     total: 0
                 };
 
-                if (tablasDisponibles['registro_personas']) {
+                // Solo consultar si la tabla Y el campo existen
+                if (camposDisponibles['registro_personas.estacion_policial']) {
                     stats.personas = await contarSeguro('registro_personas', { estacion_policial: estacion });
                 }
                 
-                if (tablasDisponibles['registro_automoviles']) {
+                if (camposDisponibles['registro_automoviles.estacion_policial']) {
                     stats.vehiculos += await contarSeguro('registro_automoviles', { estacion_policial: estacion });
                 }
                 
-                if (tablasDisponibles['registro_motos']) {
+                if (camposDisponibles['registro_motos.estacion_policial']) {
                     stats.vehiculos += await contarSeguro('registro_motos', { estacion_policial: estacion });
                 }
                 
-                // ✅ SIN "s" al final
-                if (tablasDisponibles['registro_vinculado']) {
+                if (camposDisponibles['registro_vinculado.estacion_policial']) {
                     stats.vinculados = await contarSeguro('registro_vinculado', { estacion_policial: estacion });
                 }
                 
-                // ✅ SIN "registro_" al inicio
-                if (tablasDisponibles['denuncias']) {
+                if (camposDisponibles['denuncias.estacion_policial']) {
                     stats.denuncias = await contarSeguro('denuncias', { estacion_policial: estacion });
                 }
                 
-                if (tablasDisponibles['registro_procesados_estacion']) {
-                    stats.procesados = await contarSeguro('registro_procesados', { estacion_policial: estacion });
-                }
+                // ✅ registro_procesados NO tiene estacion_policial, se deja en 0
+                // No se hace la consulta, evitando el error 400
 
                 stats.total = stats.personas + stats.vehiculos + stats.vinculados + stats.denuncias + stats.procesados;
                 estacionesData.push(stats);
             }
 
             estacionesData.sort((a, b) => b.total - a.total);
-
             currentPage = 1;
             renderTablaEstaciones();
 
