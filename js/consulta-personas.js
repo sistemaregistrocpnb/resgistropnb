@@ -13,6 +13,13 @@ window.initConsultaPersonas = function() {
     let personaActual = null;
     let tipoRegistroActual = null;
     let datosProcesado = null;
+    
+    // ✅ Variables para paginación de incidencias
+    let incidenciasPaginaActual = 1;
+    const incidenciasPorPagina = 10;
+    let totalIncidencias = 0;
+    let cedulaActualIncidencias = null;
+    let tipoActualIncidencias = null;
 
     // Listeners
     if (btnBuscar) btnBuscar.onclick = () => buscarPersona();
@@ -60,12 +67,13 @@ window.initConsultaPersonas = function() {
             return;
         }
 
-        mostrarMensaje('🔍 Buscando...', 'info');
+        mostrarMensaje(' Buscando...', 'info');
         fichaBreve.style.display = 'none';
         incidenciasSection.style.display = 'none';
         personaActual = null;
         tipoRegistroActual = null;
         datosProcesado = null;
+        incidenciasPaginaActual = 1; // Resetear paginación
 
         try {
             const { data: persona, error: errPersona } = await window.supabaseClient
@@ -85,7 +93,7 @@ window.initConsultaPersonas = function() {
                     } catch (e) { /* Silencioso */ }
                 }
                 await renderFichaBreve(persona, 'persona');
-                await cargarIncidencias(cedula, 'persona');
+                await cargarIncidencias(cedula, 'persona', 1);
                 mostrarMensaje('✅ Persona encontrada', 'success');
                 return;
             }
@@ -107,11 +115,11 @@ window.initConsultaPersonas = function() {
                     } catch (e) { /* Silencioso */ }
                 }
                 await renderFichaBreve(vinculado, 'vinculado');
-                await cargarIncidencias(cedula, 'vinculado');
+                await cargarIncidencias(cedula, 'vinculado', 1);
                 mostrarMensaje('✅ Vehículo vinculado encontrado', 'success');
                 return;
             }
-            mostrarMensaje(' No se encontró ninguna persona con esa cédula', 'error');
+            mostrarMensaje('❌ No se encontró ninguna persona con esa cédula', 'error');
         } catch (err) {
             console.error('Error buscando:', err);
             mostrarMensaje('❌ Error: ' + err.message, 'error');
@@ -131,7 +139,7 @@ window.initConsultaPersonas = function() {
 
         let alertasHtml = '';
         if (estatusLower.includes('procesad') && datosProcesado?.tipo_delito) {
-            alertasHtml += `<div class="ficha-alert ficha-alert-delito">️ <strong>Procesado por:</strong> ${datosProcesado.tipo_delito}</div>`;
+            alertasHtml += `<div class="ficha-alert ficha-alert-delito">⚖️ <strong>Procesado por:</strong> ${datosProcesado.tipo_delito}</div>`;
         }
         const problemaJudicial = data.problema_judicial || '';
         if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLowerCase() !== 'no') {
@@ -140,7 +148,7 @@ window.initConsultaPersonas = function() {
 
         let htmlCampos = `
             <div class="ficha-breve-item"><div class="ficha-breve-label">Cédula</div><div class="ficha-breve-value">${data.cedula || 'N/A'}</div></div>
-            <div class="ficha-breve-item"><div class="ficha-breve-label">Tipo</div><div class="ficha-breve-value">${tipo === 'persona' ? ' Persona' : '🚗 Vinculado (Vehículo)'}</div></div>
+            <div class="ficha-breve-item"><div class="ficha-breve-label">Tipo</div><div class="ficha-breve-value">${tipo === 'persona' ? '👤 Persona' : ' Vinculado (Vehículo)'}</div></div>
             <div class="ficha-breve-item"><div class="ficha-breve-label">Estación de Detención</div><div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div></div>
             <div class="ficha-breve-item"><div class="ficha-breve-label">Fecha</div><div class="ficha-breve-value">${new Date(data.created_at || data.creado_en).toLocaleString('es-VE')}</div></div>
         `;
@@ -158,19 +166,19 @@ window.initConsultaPersonas = function() {
 
         const tienePermisos = await tienePermisosIncidencia();
         const btnIncidenciaHtml = tienePermisos
-            ? `<button type="button" class="btn-nueva-incidencia" id="cp_btn_nueva_incidencia">➕ Nueva Incidencia</button>`
+            ? `<button type="button" class="btn-nueva-incidencia" id="cp_btn_nueva_incidencia"> Nueva Incidencia</button>`
             : '';
 
         let html = `
             <div class="ficha-breve">
                 <div class="ficha-breve-header">
-                    <h3>${tipo === 'persona' ? '👤' : '🚗'} ${nombreCompleto}</h3>
+                    <h3>${tipo === 'persona' ? '👤' : ''} ${nombreCompleto}</h3>
                     <span class="estatus-badge ${estatusClass}">${estatus}</span>
                 </div>
                 ${alertasHtml}
                 <div class="ficha-breve-grid">${htmlCampos}</div>
                 <div class="ficha-breve-actions">
-                    <button type="button" class="btn-ver-detalles" id="cp_btn_ver_detalles">📋 Ver Detalles Completos</button>
+                    <button type="button" class="btn-ver-detalles" id="cp_btn_ver_detalles"> Ver Detalles Completos</button>
                     ${btnIncidenciaHtml}
                 </div>
             </div>
@@ -194,12 +202,11 @@ window.initConsultaPersonas = function() {
         }, 100);
     }
 
-    // ✅ FUNCIÓN OPTIMIZADA: Consultas en paralelo con Promise.all()
     async function mostrarDetallesCompletos(data, tipo) {
         if (!modalBody || !modalTitulo) return;
         modalTitulo.textContent = `📋 Detalles - ${tipo === 'persona' ? 'Persona' : 'Vehículo Vinculado'}`;
         
-        modalBody.innerHTML = '<div class="loading">⏳ Generando reporte...</div>';
+        modalBody.innerHTML = '<div class="loading">⏳ Generando número de reporte oficial...</div>';
         modalDetalles.classList.add('active');
 
         try {
@@ -209,9 +216,7 @@ window.initConsultaPersonas = function() {
             const fechaHoy = new Date();
             const fechaStr = fechaHoy.getFullYear().toString() + String(fechaHoy.getMonth() + 1).padStart(2, '0') + String(fechaHoy.getDate()).padStart(2, '0');
 
-            // ✅ EJECUTAR CONSULTAS EN PARALELO (reduce tiempo de 5s a ~1s)
             const [nuevoReporte, datosProcesadosCompletos] = await Promise.all([
-                // 1. Generar número de reporte
                 window.supabaseClient
                     .from('reportes_generados')
                     .insert([{
@@ -224,7 +229,6 @@ window.initConsultaPersonas = function() {
                     .select('consecutivo_global')
                     .single(),
                 
-                // 2. Consultar datos de procesados (solo si el estatus lo indica)
                 (data.estatus || '').toLowerCase().includes('procesad')
                     ? window.supabaseClient
                         .from('registro_procesados')
@@ -327,11 +331,11 @@ window.initConsultaPersonas = function() {
                 
                 let alertasHtmlVinc = '';
                 if (datosProcesados?.tipo_delito) {
-                    alertasHtmlVinc += `<div class="ficha-alert ficha-alert-delito" style="page-break-inside: avoid; margin: 15px 0;">️ <strong>Procesado por:</strong> ${datosProcesados.tipo_delito}</div>`;
+                    alertasHtmlVinc += `<div class="ficha-alert ficha-alert-delito" style="page-break-inside: avoid; margin: 15px 0;">⚖️ <strong>Procesado por:</strong> ${datosProcesados.tipo_delito}</div>`;
                 }
                 const problemaJudicialVinc = data.problema_judicial || '';
                 if (problemaJudicialVinc && problemaJudicialVinc.trim() !== '' && problemaJudicialVinc.toLowerCase() !== 'no') {
-                    alertasHtmlVinc += `<div class="ficha-alert ficha-alert-judicial" style="page-break-inside: avoid; margin: 15px 0;">️ <strong>Antecedentes:</strong> ${problemaJudicialVinc}</div>`;
+                    alertasHtmlVinc += `<div class="ficha-alert ficha-alert-judicial" style="page-break-inside: avoid; margin: 15px 0;">⚠️ <strong>Antecedentes:</strong> ${problemaJudicialVinc}</div>`;
                 }
                 
                 html += `<div class="seccion-titulo">👤 Datos de la Persona</div>`;
@@ -370,7 +374,7 @@ window.initConsultaPersonas = function() {
                 html += `</div>`;
 
                 if (data.foto_frontal_vehiculo || data.foto_trasera_vehiculo || data.foto_lado_der_vehiculo || data.foto_lado_izq_vehiculo) {
-                    html += `<div class="seccion-titulo">📸 Fotografías del Vehículo</div><div class="fotos-container">`;
+                    html += `<div class="seccion-titulo"> Fotografías del Vehículo</div><div class="fotos-container">`;
                     if (data.foto_frontal_vehiculo) html += `<div class="foto-item"><img src="${data.foto_frontal_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
                     if (data.foto_trasera_vehiculo) html += `<div class="foto-item"><img src="${data.foto_trasera_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Trasera</div></div>`;
                     if (data.foto_lado_der_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_der_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Der.</div></div>`;
@@ -416,7 +420,7 @@ window.initConsultaPersonas = function() {
                 html += `</div>`;
             }
 
-            // Incidencias (consulta separada, no crítica)
+            // ✅ INCIDENCIAS EN IMPRESIÓN: Mostrar todas sin paginación
             html += `<div class="seccion-titulo" style="margin-top: 30px;">📜 Historial de Incidencias</div>`;
             try {
                 const { data: incidencias } = await window.supabaseClient.from('registro_incidencias').select('*').eq('cedula', data.cedula).eq('tipo_registro', tipo).order('fecha_hora', { ascending: false });
@@ -453,14 +457,44 @@ window.initConsultaPersonas = function() {
         }
     }
 
-    async function cargarIncidencias(cedula, tipo) {
+    // ✅ FUNCIÓN DE PAGINACIÓN PARA INCIDENCIAS
+    async function cargarIncidencias(cedula, tipo, pagina = 1) {
         if (!incidenciasSection) return;
+        
+        cedulaActualIncidencias = cedula;
+        tipoActualIncidencias = tipo;
+        incidenciasPaginaActual = pagina;
+        
         try {
+            // Calcular el rango para paginación
+            const desde = (pagina - 1) * incidenciasPorPagina;
+            const hasta = desde + incidenciasPorPagina - 1;
+            
+            // Obtener todas las incidencias para calcular el total
+            const { data: todasIncidencias, error: errorCount } = await window.supabaseClient
+                .from('registro_incidencias')
+                .select('*', { count: 'exact', head: false })
+                .eq('cedula', cedula)
+                .eq('tipo_registro', tipo);
+            
+            if (errorCount) throw errorCount;
+            
+            totalIncidencias = todasIncidencias ? todasIncidencias.length : 0;
+            const totalPaginas = Math.ceil(totalIncidencias / incidenciasPorPagina);
+            
+            // Obtener solo las incidencias de la página actual
             const { data: incidencias, error } = await window.supabaseClient
-                .from('registro_incidencias').select('*').eq('cedula', cedula).eq('tipo_registro', tipo).order('fecha_hora', { ascending: false });
+                .from('registro_incidencias')
+                .select('*')
+                .eq('cedula', cedula)
+                .eq('tipo_registro', tipo)
+                .order('fecha_hora', { ascending: false })
+                .range(desde, hasta);
+            
             if (error) throw error;
 
             let html = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3>';
+            
             if (!incidencias || incidencias.length === 0) {
                 html += '<div class="sin-incidencias">No hay incidencias registradas</div>';
             } else {
@@ -473,14 +507,40 @@ window.initConsultaPersonas = function() {
                         <div class="incidencia-descripcion">${inc.descripcion}</div>
                     </div>`;
                 });
+                
+                // ✅ CONTROLES DE PAGINACIÓN
+                if (totalPaginas > 1) {
+                    html += `<div class="paginacion-incidencias" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--beige-border);">`;
+                    
+                    // Botón Anterior
+                    html += `<button type="button" class="btn-paginacion" ${pagina === 1 ? 'disabled' : ''} onclick="window.cambiarPaginaIncidencias(${pagina - 1})" style="padding: 8px 16px; background: ${pagina === 1 ? '#cbd5e1' : 'var(--primary)'}; color: white; border: none; border-radius: 5px; cursor: ${pagina === 1 ? 'not-allowed' : 'pointer'}; font-weight: 600;">️ Anterior</button>`;
+                    
+                    // Contador de página
+                    html += `<span style="font-size: 0.9rem; color: #64748b; font-weight: 600;">Página ${pagina} de ${totalPaginas} (${totalIncidencias} incidencias)</span>`;
+                    
+                    // Botón Siguiente
+                    html += `<button type="button" class="btn-paginacion" ${pagina === totalPaginas ? 'disabled' : ''} onclick="window.cambiarPaginaIncidencias(${pagina + 1})" style="padding: 8px 16px; background: ${pagina === totalPaginas ? '#cbd5e1' : 'var(--primary)'}; color: white; border: none; border-radius: 5px; cursor: ${pagina === totalPaginas ? 'not-allowed' : 'pointer'}; font-weight: 600;">Siguiente ➡️</button>`;
+                    
+                    html += `</div>`;
+                }
             }
+            
             html += '</div>';
             incidenciasSection.innerHTML = html;
             incidenciasSection.style.display = 'block';
         } catch (err) {
             console.error('Error cargando incidencias:', err);
+            incidenciasSection.innerHTML = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
+            incidenciasSection.style.display = 'block';
         }
     }
+
+    // ✅ FUNCIÓN GLOBAL PARA CAMBIAR DE PÁGINA
+    window.cambiarPaginaIncidencias = function(nuevaPagina) {
+        if (cedulaActualIncidencias && tipoActualIncidencias) {
+            cargarIncidencias(cedulaActualIncidencias, tipoActualIncidencias, nuevaPagina);
+        }
+    };
 
     async function guardarIncidencia() {
         const descripcion = el('cp_incidencia_descripcion')?.value.trim();
@@ -505,12 +565,12 @@ window.initConsultaPersonas = function() {
 
             modalIncidencia.classList.remove('active');
             mostrarMensaje('✅ Incidencia registrada', 'success');
-            await cargarIncidencias(personaActual.cedula, tipoRegistroActual);
+            await cargarIncidencias(personaActual.cedula, tipoRegistroActual, 1); // Volver a página 1
         } catch (err) {
             console.error('Error guardando incidencia:', err);
             alert('❌ Error: ' + err.message);
         } finally {
-            btnGuardar.disabled = false; btnGuardar.textContent = '💾 Guardar Incidencia';
+            btnGuardar.disabled = false; btnGuardar.textContent = ' Guardar Incidencia';
         }
     }
 };
@@ -533,6 +593,6 @@ async function registrarLog(accion, modulo, registroId = null, detalles = {}) {
             accion: accion, modulo: modulo, registro_id: registroId, detalles: detalles, user_agent: navigator.userAgent
         }]);
     } catch (err) {
-        console.warn('⚠️ Error registrando log:', err);
+        console.warn('️ Error registrando log:', err);
     }
 }
