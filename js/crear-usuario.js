@@ -1,10 +1,7 @@
 window.initCrearUsuario = function() {
-    console.log("️ Iniciando módulo crear-usuario.js...");
+    console.log("⚙️ Iniciando módulo crear-usuario.js...");
 
-    if (window._crearUsuarioInitialized) {
-        console.log("⚠️ Módulo ya inicializado, omitiendo...");
-        return;
-    }
+    if (window._crearUsuarioInitialized) return;
     window._crearUsuarioInitialized = true;
 
     const el = (id) => document.getElementById(id);
@@ -22,19 +19,6 @@ window.initCrearUsuario = function() {
     let fotoUrl = null;
     let emailValido = false;
 
-    // 🔍 DIAGNÓSTICO: Verificar que los elementos existen
-    console.log("🔍 Diagnóstico de elementos:");
-    console.log("  emailInput:", emailInput ? "✅ Existe" : "❌ NO EXISTE");
-    console.log("  emailStatus:", emailStatus ? "✅ Existe" : "❌ NO EXISTE");
-    console.log("  supabaseClient:", window.supabaseClient ? "✅ Existe" : "❌ NO EXISTE");
-
-    if (!emailInput || !emailStatus) {
-        console.error("❌ Faltan elementos del DOM. Verifica que el HTML tenga:");
-        console.error("  - <input id='cu_email'>");
-        console.error("  - <div id='cu_email_status'>");
-        return;
-    }
-
     // Verificar permisos (solo administrador)
     async function verificarPermisos() {
         try {
@@ -43,18 +27,15 @@ window.initCrearUsuario = function() {
                 mostrarMensaje('❌ Debe iniciar sesión', 'error');
                 return false;
             }
-
             const { data: perfil } = await window.supabaseClient
                 .from('perfiles_usuario')
                 .select('nivel')
                 .eq('user_id', user.id)
                 .maybeSingle();
-
             if (!perfil || perfil.nivel !== 'administrador') {
                 mostrarMensaje('❌ Solo los administradores pueden crear usuarios', 'error');
                 return false;
             }
-
             return true;
         } catch (err) {
             console.error('Error verificando permisos:', err);
@@ -72,19 +53,14 @@ window.initCrearUsuario = function() {
         }
     }
 
-    // ✅ VALIDACIÓN DE EMAIL EN TIEMPO REAL
     function validarFormatoEmail(email) {
         const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         return regex.test(email);
     }
 
+    // ✅ VERIFICACIÓN DOBLE: perfiles_usuario + auth.users
     async function verificarEmailExiste(email) {
-        console.log("🔍 [VERIFICAR EMAIL] Iniciando verificación para:", email);
-        
-        if (!emailStatus) {
-            console.error("❌ [VERIFICAR EMAIL] emailStatus es null");
-            return false;
-        }
+        if (!emailStatus) return false;
 
         emailStatus.className = 'email-status checking';
         emailStatus.textContent = '🔍 Verificando email...';
@@ -92,122 +68,127 @@ window.initCrearUsuario = function() {
         emailValido = false;
 
         try {
-            console.log("📡 [VERIFICAR EMAIL] Consultando Supabase...");
-            
+            // 1️⃣ Verificar en perfiles_usuario
             const { data: perfilExistente, error: errPerfil } = await window.supabaseClient
                 .from('perfiles_usuario')
                 .select('email, nombre, apellido, nivel')
                 .eq('email', email.toLowerCase())
                 .maybeSingle();
 
-            console.log("📊 [VERIFICAR EMAIL] Respuesta de Supabase:");
-            console.log("  data:", perfilExistente);
-            console.log("  error:", errPerfil);
-
-            if (errPerfil) {
-                console.error("❌ [VERIFICAR EMAIL] Error en la consulta:", errPerfil);
-                emailStatus.className = 'email-status error';
-                emailStatus.textContent = `⚠️ Error: ${errPerfil.message}`;
-                return false;
-            }
-
             if (perfilExistente) {
-                console.log("⚠️ [VERIFICAR EMAIL] Email YA registrado:", perfilExistente);
                 emailStatus.className = 'email-status error';
                 const nombreCompleto = `${perfilExistente.nombre || ''} ${perfilExistente.apellido || ''}`.trim();
                 emailStatus.textContent = `⚠️ Email ya registrado${nombreCompleto ? ` a: ${nombreCompleto} (${perfilExistente.nivel})` : ''}`;
                 emailInput.classList.add('email-duplicate');
-                return true;
+                return { existe: true, tipo: 'perfil', datos: perfilExistente };
             }
 
-            console.log("✅ [VERIFICAR EMAIL] Email DISPONIBLE");
+            // 2️⃣ Verificar en auth.users (intentando login con contraseña incorrecta)
+            try {
+                const { error: authError } = await window.supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: 'password_incorrecta_test_12345'
+                });
+
+                // Si el error es "Invalid login credentials", el email SÍ existe en auth
+                if (authError && authError.message.toLowerCase().includes('invalid login credentials')) {
+                    emailStatus.className = 'email-status error';
+                    emailStatus.textContent = '⚠️ Email existe en el sistema (usuario huérfano - contactar soporte)';
+                    emailInput.classList.add('email-duplicate');
+                    return { existe: true, tipo: 'huerfano', datos: null };
+                }
+            } catch (e) {
+                // Ignorar errores de red
+            }
+
+            // ✅ Email completamente disponible
             emailStatus.className = 'email-status success';
             emailStatus.textContent = '✅ Email disponible';
             emailInput.classList.remove('email-duplicate');
             emailValido = true;
-            return false;
+            return { existe: false, tipo: null, datos: null };
 
         } catch (e) {
-            console.error('❌ [VERIFICAR EMAIL] Excepción:', e);
+            console.error('Error verificando email:', e);
             emailStatus.className = 'email-status error';
             emailStatus.textContent = '⚠️ Error de conexión';
-            return false;
+            return { existe: false, tipo: null, datos: null };
         }
     }
 
-    // ✅ EVENT LISTENERS PARA EMAIL EN TIEMPO REAL
+    // Event listeners para email
     let emailCheckTimeout = null;
-    
-    emailInput.addEventListener('input', function() {
-        const val = this.value.trim().toLowerCase();
-        console.log("⌨️ [INPUT EMAIL] Valor actual:", val);
-        
-        if (val.length === 0) {
-            emailStatus.className = 'email-status';
-            emailStatus.textContent = '';
-            this.classList.remove('email-duplicate');
-            emailValido = false;
-            return;
-        }
+    if (emailInput && emailStatus) {
+        emailInput.addEventListener('input', function() {
+            const val = this.value.trim().toLowerCase();
+            if (val.length === 0) {
+                emailStatus.className = 'email-status';
+                emailStatus.textContent = '';
+                this.classList.remove('email-duplicate');
+                emailValido = false;
+                return;
+            }
+            if (!val.includes('@')) {
+                emailStatus.className = 'email-status error';
+                emailStatus.textContent = '⚠️ Falta el símbolo @';
+                this.classList.remove('email-duplicate');
+                emailValido = false;
+                return;
+            }
+            if (!validarFormatoEmail(val)) {
+                emailStatus.className = 'email-status checking';
+                emailStatus.textContent = '⏳ Complete el email...';
+                this.classList.remove('email-duplicate');
+                emailValido = false;
+                return;
+            }
+            if (emailCheckTimeout) clearTimeout(emailCheckTimeout);
+            emailCheckTimeout = setTimeout(() => verificarEmailExiste(val), 800);
+        });
 
-        if (!val.includes('@')) {
-            emailStatus.className = 'email-status error';
-            emailStatus.textContent = '⚠️ Falta el símbolo @';
-            this.classList.remove('email-duplicate');
-            emailValido = false;
-            return;
-        }
+        emailInput.addEventListener('blur', function() {
+            const val = this.value.trim().toLowerCase();
+            if (val.length > 0 && validarFormatoEmail(val)) {
+                verificarEmailExiste(val);
+            }
+        });
+    }
 
-        if (!validarFormatoEmail(val)) {
-            emailStatus.className = 'email-status checking';
-            emailStatus.textContent = '⏳ Complete el email...';
-            this.classList.remove('email-duplicate');
-            emailValido = false;
-            return;
-        }
+    // Validación de contraseña
+    if (passwordInput) {
+        passwordInput.addEventListener('input', (e) => {
+            const val = e.target.value;
+            let strength = '', className = '';
+            if (val.length === 0) strength = '';
+            else if (val.length < 6) { strength = '⚠️ Muy débil (mínimo 6 caracteres)'; className = 'weak'; }
+            else if (val.length < 8) { strength = '🟡 Débil'; className = 'medium'; }
+            else if (val.length < 12) { strength = '🟠 Media'; className = 'medium'; }
+            else { strength = '🟢 Fuerte'; className = 'strong'; }
+            if (passwordStrength) {
+                passwordStrength.textContent = strength;
+                passwordStrength.className = `password-strength ${className}`;
+            }
+        });
+    }
 
-        // Email válido, verificar con debounce
-        if (emailCheckTimeout) clearTimeout(emailCheckTimeout);
-        console.log("⏱️ [INPUT EMAIL] Programando verificación en 800ms...");
-        emailCheckTimeout = setTimeout(() => {
-            console.log("⏱️ [INPUT EMAIL] Ejecutando verificación...");
-            verificarEmailExiste(val);
-        }, 800);
-    });
-
-    emailInput.addEventListener('blur', function() {
-        const val = this.value.trim().toLowerCase();
-        console.log("🔵 [BLUR EMAIL] Valor:", val);
-        if (val.length > 0 && validarFormatoEmail(val)) {
-            verificarEmailExiste(val);
-        }
-    });
-
-    // ✅ FUNCIÓN LIMPIAR FOTO (global)
+    // Función limpiar foto (global)
     function limpiarFoto() {
         fotoUrl = null;
-        if (fotoPreview) {
-            fotoPreview.src = 'https://ui-avatars.com/api/?name=Usuario&background=002b5c&color=fff';
-        }
+        if (fotoPreview) fotoPreview.src = 'https://ui-avatars.com/api/?name=Usuario&background=002b5c&color=fff';
         if (fotoInput) fotoInput.value = '';
-        mostrarMensaje('🗑️ Foto eliminada', 'info');
     }
-
-    // Hacerla global para que funcione desde el HTML
     window.limpiarFoto = limpiarFoto;
 
-    // ✅ Listener para el botón "Quitar foto"
     if (el('cu_btn_quitar_foto')) {
         el('cu_btn_quitar_foto').onclick = () => limpiarFoto();
     }
 
-    // ✅ SUBIR FOTO CON VALIDACIÓN DE CAMPOS OBLIGATORIOS
+    // Subir foto con validación
     if (fotoInput) {
         fotoInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
-            // ✅ VALIDAR CAMPOS OBLIGATORIOS ANTES DE SUBIR
             const camposObligatorios = [
                 { id: 'cu_email', nombre: 'Email' },
                 { id: 'cu_nombre', nombre: 'Nombre' },
@@ -220,58 +201,42 @@ window.initCrearUsuario = function() {
             const camposFaltantes = [];
             camposObligatorios.forEach(campo => {
                 const elCampo = el(campo.id);
-                if (!elCampo || !elCampo.value.trim()) {
-                    camposFaltantes.push(campo.nombre);
-                }
+                if (!elCampo || !elCampo.value.trim()) camposFaltantes.push(campo.nombre);
             });
 
             if (camposFaltantes.length > 0) {
                 mostrarMensaje(`⚠️ Complete primero: ${camposFaltantes.join(', ')}`, 'error');
-                fotoInput.value = ''; // Resetear el input
+                fotoInput.value = '';
                 return;
             }
 
-            // Validar tipo de archivo
             if (!file.type.startsWith('image/')) {
                 mostrarMensaje('❌ Solo se permiten imágenes', 'error');
                 fotoInput.value = '';
                 return;
             }
 
-            // Validar tamaño (máximo 2MB)
             if (file.size > 2 * 1024 * 1024) {
                 mostrarMensaje('❌ La imagen no debe superar 2MB', 'error');
                 fotoInput.value = '';
                 return;
             }
 
-            // Mostrar preview
             const reader = new FileReader();
-            reader.onload = (e) => {
-                if (fotoPreview) fotoPreview.src = e.target.result;
-            };
+            reader.onload = (e) => { if (fotoPreview) fotoPreview.src = e.target.result; };
             reader.readAsDataURL(file);
 
-            // Subir a Supabase Storage
             try {
-                mostrarMensaje(' Subiendo foto...', 'info');
-                
+                mostrarMensaje('⏳ Subiendo foto...', 'info');
                 const { data: { user } } = await window.supabaseClient.auth.getUser();
                 const fileName = `fotos_perfiles/${user.id}/${Date.now()}_${file.name}`;
-                
-                const { data, error } = await window.supabaseClient.storage
+                const { error } = await window.supabaseClient.storage
                     .from('fotos_perfiles')
-                    .upload(fileName, file, {
-                        cacheControl: '3600',
-                        upsert: false
-                    });
-
+                    .upload(fileName, file, { cacheControl: '3600', upsert: false });
                 if (error) throw error;
-
                 const { data: { publicUrl } } = window.supabaseClient.storage
                     .from('fotos_perfiles')
                     .getPublicUrl(fileName);
-
                 fotoUrl = publicUrl;
                 mostrarMensaje('✅ Foto subida exitosamente', 'success');
             } catch (err) {
@@ -282,34 +247,48 @@ window.initCrearUsuario = function() {
         });
     }
 
-    // Validación de contraseña en tiempo real
-    if (passwordInput) {
-        passwordInput.addEventListener('input', (e) => {
-            const val = e.target.value;
-            let strength = '';
-            let className = '';
+    // ✅ FUNCIÓN PARA RECUPERAR USUARIO HUÉRFANO
+    async function recuperarUsuarioHuerfano(email, password, userData) {
+        try {
+            // Intentar hacer login con la contraseña que el admin está creando
+            const { data: loginData, error: loginError } = await window.supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
 
-            if (val.length === 0) {
-                strength = '';
-            } else if (val.length < 6) {
-                strength = '⚠️ Muy débil (mínimo 6 caracteres)';
-                className = 'weak';
-            } else if (val.length < 8) {
-                strength = '🟡 Débil';
-                className = 'medium';
-            } else if (val.length < 12) {
-                strength = '🟠 Media';
-                className = 'medium';
-            } else {
-                strength = '🟢 Fuerte';
-                className = 'strong';
+            if (loginError) {
+                // Si la contraseña es incorrecta, no podemos recuperar
+                return { success: false, error: 'El usuario existe pero con otra contraseña. Contacte al administrador del sistema.' };
             }
 
-            if (passwordStrength) {
-                passwordStrength.textContent = strength;
-                passwordStrength.className = `password-strength ${className}`;
+            // Si pudimos hacer login, el usuario existe y la contraseña es correcta
+            // Ahora insertamos el perfil
+            const { error: perfilError } = await window.supabaseClient
+                .from('perfiles_usuario')
+                .insert([{
+                    user_id: loginData.user.id,
+                    nivel: userData.nivel,
+                    creado_en: new Date().toISOString(),
+                    intentos_fallidos: 0,
+                    bloqueado: false,
+                    email: email,
+                    nombre: userData.nombre,
+                    apellido: userData.apellido,
+                    cedula: userData.cedula,
+                    foto_url: userData.foto_url,
+                    jerarquia: userData.jerarquia
+                }]);
+
+            if (perfilError) {
+                await window.supabaseClient.auth.signOut();
+                return { success: false, error: 'Error al crear perfil: ' + perfilError.message };
             }
-        });
+
+            await window.supabaseClient.auth.signOut();
+            return { success: true, message: 'Usuario huérfano recuperado exitosamente' };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
     }
 
     // Envío del formulario
@@ -329,7 +308,6 @@ window.initCrearUsuario = function() {
             const jerarquia = el('cu_jerarquia')?.value;
             const nivel = el('cu_nivel')?.value;
 
-            // ✅ VALIDACIÓN COMPLETA DE CAMPOS OBLIGATORIOS
             const camposRequeridos = [
                 { valor: email, nombre: 'Email', id: 'cu_email' },
                 { valor: password, nombre: 'Contraseña', id: 'cu_password' },
@@ -342,16 +320,10 @@ window.initCrearUsuario = function() {
             ];
 
             const camposFaltantes = camposRequeridos.filter(c => !c.valor).map(c => c.nombre);
-            
             if (camposFaltantes.length > 0) {
                 mostrarMensaje(`⚠️ Faltan campos: ${camposFaltantes.join(', ')}`, 'error');
-                
-                // Enfocar el primer campo faltante
                 const primerFaltante = camposRequeridos.find(c => !c.valor);
-                if (primerFaltante) {
-                    const input = el(primerFaltante.id);
-                    if (input) input.focus();
-                }
+                if (primerFaltante) el(primerFaltante.id)?.focus();
                 return;
             }
 
@@ -361,10 +333,14 @@ window.initCrearUsuario = function() {
                 return;
             }
 
-            // ✅ Verificación final antes de enviar
-            const emailExiste = await verificarEmailExiste(email);
-            if (emailExiste) {
-                mostrarMensaje('❌ No se puede crear el usuario: el email ya está registrado', 'error');
+            // ✅ Verificación final
+            const emailCheck = await verificarEmailExiste(email);
+            if (emailCheck.existe) {
+                if (emailCheck.tipo === 'huerfano') {
+                    mostrarMensaje('⚠️ Este email ya existe en el sistema pero sin perfil. Contacte al administrador para recuperarlo.', 'error');
+                } else {
+                    mostrarMensaje('❌ No se puede crear el usuario: el email ya está registrado', 'error');
+                }
                 emailInput.focus();
                 return;
             }
@@ -380,69 +356,59 @@ window.initCrearUsuario = function() {
             }
 
             btnSubmit.disabled = true;
-            btnSubmit.textContent = ' Creando usuario...';
+            btnSubmit.textContent = '⏳ Creando usuario...';
             mostrarMensaje('⏳ Creando usuario...', 'info');
 
             try {
                 const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
                     email: email,
                     password: password,
-                    options: {
-                        data: {
-                            nombre: nombre,
-                            apellido: apellido,
-                            cedula: cedula
-                        }
-                    }
+                    options: { data: { nombre, apellido, cedula } }
                 });
 
+                // ✅ Manejo específico del error "User already registered"
                 if (authError) {
-                    let errorMsg = authError.message;
-                    if (authError.message.includes('already been registered')) {
-                        errorMsg = 'Este email ya está registrado en el sistema';
-                    } else if (authError.message.includes('invalid')) {
-                        errorMsg = 'El formato del email no es válido';
+                    if (authError.message.toLowerCase().includes('already registered') || 
+                        authError.message.toLowerCase().includes('already been registered')) {
+                        
+                        // Intentar recuperar el usuario huérfano
+                        mostrarMensaje('⚠️ Email existe en auth. Intentando recuperar...', 'info');
+                        
+                        const recuperacion = await recuperarUsuarioHuerfano(email, password, {
+                            nivel, nombre, apellido, cedula, foto_url: fotoUrl, jerarquia
+                        });
+
+                        if (recuperacion.success) {
+                            mostrarMensaje(`✅ ${recuperacion.message}: ${email}`, 'success');
+                            form.reset();
+                            limpiarFoto();
+                            if (passwordStrength) passwordStrength.textContent = '';
+                            if (emailStatus) { emailStatus.className = 'email-status'; emailStatus.textContent = ''; }
+                            emailValido = false;
+                            return;
+                        } else {
+                            throw new Error(recuperacion.error);
+                        }
                     }
-                    throw new Error(errorMsg);
+                    throw new Error(authError.message);
                 }
 
                 if (!authData.user) {
                     throw new Error('No se pudo crear el usuario');
                 }
 
-                // ✅ Confirmar email automáticamente
-                const { error: confirmError } = await window.supabaseClient
-                    .from('auth.users')
-                    .update({ email_confirmed_at: new Date().toISOString() })
-                    .eq('id', authData.user.id);
-
-                if (confirmError) {
-                    console.warn('️ No se pudo confirmar el email automáticamente:', confirmError);
-                }
-
                 const { error: perfilError } = await window.supabaseClient
                     .from('perfiles_usuario')
                     .insert([{
                         user_id: authData.user.id,
-                        nivel: nivel,
-                        creado_en: new Date().toISOString(),
-                        intentos_fallidos: 0,
-                        bloqueado: false,
-                        email: email,
-                        nombre: nombre,
-                        apellido: apellido,
-                        cedula: cedula,
-                        foto_url: fotoUrl,
-                        jerarquia: jerarquia
+                        nivel, creado_en: new Date().toISOString(),
+                        intentos_fallidos: 0, bloqueado: false,
+                        email, nombre, apellido, cedula,
+                        foto_url: fotoUrl, jerarquia
                     }]);
 
                 if (perfilError) {
                     console.error('Error insertando perfil:', perfilError);
-                    try {
-                        await window.supabaseClient.auth.admin.deleteUser(authData.user.id);
-                    } catch (deleteErr) {
-                        console.error('Error eliminando usuario huérfano:', deleteErr);
-                    }
                     throw new Error('Usuario creado pero no se pudo guardar el perfil: ' + perfilError.message);
                 }
 
@@ -450,10 +416,7 @@ window.initCrearUsuario = function() {
                 form.reset();
                 limpiarFoto();
                 if (passwordStrength) passwordStrength.textContent = '';
-                if (emailStatus) {
-                    emailStatus.className = 'email-status';
-                    emailStatus.textContent = '';
-                }
+                if (emailStatus) { emailStatus.className = 'email-status'; emailStatus.textContent = ''; }
                 emailValido = false;
 
             } catch (err) {
