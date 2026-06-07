@@ -1,7 +1,6 @@
 <style>
   :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; --success: #15803d; --danger: #dc2626; --info: #1e40af; }
   
-  /* ✅ BÚSQUEDA ALINEADA */
   .con-search-box {
     background: #f8fafc;
     padding: 20px;
@@ -10,7 +9,7 @@
     margin-bottom: 20px;
     display: flex;
     gap: 15px;
-    align-items: flex-end; /* Alinea todo al fondo */
+    align-items: flex-end; 
     flex-wrap: wrap;
   }
   
@@ -34,7 +33,7 @@
     border-radius: 5px;
     font-size: 1rem;
     box-sizing: border-box;
-    height: 42px; /* Altura fija para alineación */
+    height: 42px; 
   }
   
   .con-search-field small {
@@ -52,10 +51,10 @@
     border-radius: 5px;
     cursor: pointer;
     font-weight: 600;
-    height: 42px; /* Misma altura que el input */
+    height: 42px; 
     white-space: nowrap;
     transition: background 0.2s;
-    margin-bottom: 20px; /* ✅ NUEVO: Compensa la altura del <small> para alinearse con el input */
+    margin-bottom: 20px; 
 }
   .con-btn:hover:not(:disabled) { background: var(--secondary); }
   .con-btn:disabled { background: #9ca3af; cursor: not-allowed; opacity: 0.6; }
@@ -65,7 +64,6 @@
   .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
   .msg.info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
   
-  /* Ficha breve */
   .ficha-breve {
     background: white;
     border-radius: 10px;
@@ -137,7 +135,7 @@
     word-break: break-word;
   }
   
-  /* Alertas */
+
   .ficha-alert {
     padding: 10px 14px;
     border-radius: 6px;
@@ -190,7 +188,6 @@
   .btn-nueva-incidencia:hover { background: #166534; }
   .btn-nueva-incidencia:disabled { background: #9ca3af; cursor: not-allowed; }
   
-  /* Modal */
   .modal-overlay {
     position: fixed;
     top: 0; left: 0;
@@ -266,7 +263,7 @@
   
   .btn-cancel:hover { background: #475569; }
   
-  /* Fotos */
+
   .fotos-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -292,7 +289,7 @@
     color: var(--primary);
   }
   
-  /* Historial */
+
   .incidencias-section {
     background: white;
     border-radius: 10px;
@@ -330,7 +327,7 @@
   .incidencia-descripcion { font-size: 0.9rem; color: #1e293b; line-height: 1.5; }
   .sin-incidencias { text-align: center; padding: 30px; color: #94a3b8; font-style: italic; }
   
-  /* Modal Incidencia */
+
   .form-group { margin-bottom: 15px; }
   .form-group label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 6px; font-size: 0.9rem; }
   .form-group textarea { width: 100%; padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; resize: vertical; min-height: 100px; box-sizing: border-box; }
@@ -380,7 +377,6 @@
   <div id="cp_incidencias_section" style="display: none;"></div>
 </div>
 
-<!-- Modal detalles -->
 <div class="modal-overlay" id="cp_modal_detalles">
   <div class="modal-content">
     <div class="modal-header">
@@ -394,7 +390,6 @@
   </div>
 </div>
 
-<!-- Modal incidencia -->
 <div class="modal-overlay" id="cp_modal_incidencia">
   <div class="modal-content" style="max-width: 600px;">
     <div class="modal-header">
