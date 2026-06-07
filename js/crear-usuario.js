@@ -58,7 +58,7 @@ window.initCrearUsuario = function() {
         return regex.test(email);
     }
 
-    // ✅ VERIFICACIÓN SOLO EN perfiles_usuario (sin signInWithPassword)
+    // Verificación de email en tiempo real
     async function verificarEmailExiste(email) {
         if (!emailStatus) return false;
 
@@ -75,7 +75,6 @@ window.initCrearUsuario = function() {
                 .maybeSingle();
 
             if (errPerfil) {
-                console.error('Error consultando perfiles:', errPerfil);
                 emailStatus.className = 'email-status error';
                 emailStatus.textContent = '⚠️ Error al verificar email';
                 return false;
@@ -89,7 +88,6 @@ window.initCrearUsuario = function() {
                 return true;
             }
 
-            // ✅ Email disponible
             emailStatus.className = 'email-status success';
             emailStatus.textContent = '✅ Email disponible';
             emailInput.classList.remove('email-duplicate');
@@ -235,6 +233,31 @@ window.initCrearUsuario = function() {
         });
     }
 
+    // ✅ FUNCIÓN CLAVE: Restaurar sesión del administrador
+    async function restaurarSesionAdmin(sessionGuardada) {
+        try {
+            // Cerrar sesión del nuevo usuario creado
+            await window.supabaseClient.auth.signOut();
+            
+            // Restaurar la sesión del administrador
+            const { error } = await window.supabaseClient.auth.setSession({
+                access_token: sessionGuardada.access_token,
+                refresh_token: sessionGuardada.refresh_token
+            });
+
+            if (error) {
+                console.error('❌ Error restaurando sesión:', error);
+                return false;
+            }
+
+            console.log('✅ Sesión del administrador restaurada correctamente');
+            return true;
+        } catch (err) {
+            console.error('❌ Error restaurando sesión:', err);
+            return false;
+        }
+    }
+
     // Envío del formulario
     if (form) {
         form.addEventListener('submit', async (e) => {
@@ -277,7 +300,6 @@ window.initCrearUsuario = function() {
                 return;
             }
 
-            // Verificación final
             const emailExiste = await verificarEmailExiste(email);
             if (emailExiste) {
                 mostrarMensaje('❌ No se puede crear el usuario: el email ya está registrado', 'error');
@@ -300,6 +322,16 @@ window.initCrearUsuario = function() {
             mostrarMensaje('⏳ Creando usuario...', 'info');
 
             try {
+                // ✅ PASO 1: Guardar la sesión actual del administrador
+                const { data: { session: sesionAdmin } } = await window.supabaseClient.auth.getSession();
+                
+                if (!sesionAdmin) {
+                    throw new Error('No se pudo obtener la sesión actual');
+                }
+
+                console.log('🔐 Sesión del administrador guardada');
+
+                // ✅ PASO 2: Crear el nuevo usuario
                 const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
                     email: email,
                     password: password,
@@ -318,6 +350,9 @@ window.initCrearUsuario = function() {
                     throw new Error('No se pudo crear el usuario');
                 }
 
+                console.log('✅ Usuario creado en auth:', authData.user.id);
+
+                // ✅ PASO 3: Insertar el perfil
                 const { error: perfilError } = await window.supabaseClient
                     .from('perfiles_usuario')
                     .insert([{
@@ -331,6 +366,14 @@ window.initCrearUsuario = function() {
                 if (perfilError) {
                     console.error('Error insertando perfil:', perfilError);
                     throw new Error('Usuario creado pero no se pudo guardar el perfil: ' + perfilError.message);
+                }
+
+                // ✅ PASO 4: Restaurar la sesión del administrador
+                const restaurado = await restaurarSesionAdmin(sesionAdmin);
+                
+                if (!restaurado) {
+                    mostrarMensaje(`⚠️ Usuario creado (${email}) pero hubo un problema al restaurar la sesión. Por favor, inicie sesión nuevamente.`, 'error');
+                    return;
                 }
 
                 mostrarMensaje(`✅ Usuario creado exitosamente: ${email}`, 'success');
