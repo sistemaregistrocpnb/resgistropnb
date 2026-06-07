@@ -76,46 +76,84 @@
 .seccion-titulo { color: var(--primary); font-size: 1.1rem; font-weight: 700; margin: 20px 0 12px 0; padding-bottom: 8px; border-bottom: 2px solid var(--beige-border); }
 .seccion-titulo:first-child { margin-top: 0; }
 
-/* ✅✅✅ IMPRESIÓN OPTIMIZADA: MENOS ESPACIO, FOTOS COMPACTAS, SIN CORTES FEOS ✅✅✅ */
+/* ✅✅✅ REGLAS DE IMPRESIÓN BLINDADAS (SIN ESPACIOS, SIN CORTES) ✅✅✅ */
 @media print {
     @page {
         size: letter portrait;
-        margin: 0.6cm 1.5cm; /* Margen superior e inferior muy reducido */
+        margin: 1cm; /* Margen seguro y uniforme para todas las hojas */
     }
-    body, body * { visibility: hidden; height: auto !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; }
     
-    #cp_modal_detalles, #cp_modal_detalles * { visibility: visible !important; }
+    /* Ocultar absolutamente todo el sitio web */
+    body, body * {
+        visibility: hidden;
+        height: auto !important;
+        overflow: visible !important;
+    }
+    
+    /* Hacer visible SOLO el modal de detalles */
+    #cp_modal_detalles, #cp_modal_detalles * {
+        visibility: visible !important;
+    }
+    
     #cp_modal_detalles {
-        position: absolute !important; top: 0 !important; left: 0 !important;
-        width: 100% !important; height: auto !important;
-        display: block !important; background: white !important;
-        margin: 0 !important; padding: 0 !important; z-index: 9999 !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        background: white !important;
+        display: block !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        z-index: 9999 !important;
     }
-    .modal-header, .modal-actions, .modal-close, #cp_btn_imprimir_reporte { display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; }
-    .modal-content { box-shadow: none !important; max-width: 100% !important; border: none !important; margin: 0 !important; padding: 0 !important; }
-    .modal-body { padding: 0 !important; margin: 0 !important; }
-    .reporte-header-print { margin-top: 0 !important; padding-top: 0 !important; padding-bottom: 10px !important; margin-bottom: 10px !important; }
     
-    /* Fotos más pequeñas y flexibles en papel */
-    .fotos-container { 
-        display: flex !important; 
-        gap: 8px !important; 
-        justify-content: center !important;
-        page-break-inside: auto !important; /* Permite que se repartan si es necesario */
-        margin-bottom: 10px !important;
+    /* Eliminar por completo los elementos de interfaz del modal */
+    .modal-header, .modal-actions, .modal-close, #cp_btn_imprimir_reporte {
+        display: none !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
-    .foto-item { width: 30% !important; margin: 0 !important; }
-    .foto-item img { max-height: 75px !important; width: auto !important; }
     
-    /* Evitar cortes dentro de ítems y títulos */
-    .seccion-titulo, .ficha-completa-item, .incidencia-item-print { 
-        page-break-inside: avoid !important; 
+    .modal-content {
+        box-shadow: none !important;
+        max-width: 100% !important;
+        max-height: none !important;
+        overflow: visible !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    .modal-body {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Forzar que el encabezado del reporte suba al máximo */
+    .reporte-header-print {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+        margin-bottom: 15px !important;
+    }
+
+    /* Evitar que los elementos se corten entre páginas */
+    .ficha-completa-item, .incidencia-item-print, .fotos-container, .seccion-titulo {
+        page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
-    .reporte-footer-print { margin-top: 15px !important; page-break-inside: avoid !important; }
     
-    /* Forzar impresión de colores */
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .seccion-titulo {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+    }
+    
+    /* Forzar la impresión de colores de fondo */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
 }
 
 @media (max-width: 768px) {
@@ -148,9 +186,7 @@
             <h3 id="cp_modal_titulo">📋 Detalles Completos</h3>
             <button class="modal-close" id="cp_modal_close">&times;</button>
         </div>
-        <div class="modal-body" id="cp_modal_body">
-            <!-- El contenido se inyecta dinámicamente aquí -->
-        </div>
+        <div class="modal-body" id="cp_modal_body"></div>
         <div class="modal-actions">
             <button type="button" class="btn-submit" id="cp_btn_imprimir_reporte" style="background: var(--primary); margin-right: auto;">🖨️ Imprimir Reporte</button>
             <button type="button" class="btn-cancel" id="cp_modal_cerrar">Cerrar</button>
