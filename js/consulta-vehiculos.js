@@ -112,23 +112,23 @@ window.initConsultaVehiculos = function() {
                 .eq(tipoBusqueda, valor);
             if (errVinc) throw errVinc;
             if (vinculados && vinculados.length > 0) {
-                vinculados.forEach(v => {
-                    resultados.push({ ...v, tipo_registro: 'vinculado' });
-                    const estatus = (v.estatus || '').toLowerCase();
-                    if (estatus.includes('procesad')) {
-                        try {
-                            const { data: procData } = await window.supabaseClient
-                                .from('registro_procesados')
-                                .select('tipo_delito')
-                                .eq('cedula', v.cedula)
-                                .order('created_at', { ascending: false })
-                                .limit(1)
-                                .maybeSingle();
-                            if (procData) datosProcesado = procData;
-                        } catch (e) { /* Silencioso */ }
-                    }
-                });
-            }
+               // ✅ CORRECTO - for...of permite usar await
+for (const v of vinculados) {
+    resultados.push({ ...v, tipo_registro: 'vinculado' });
+    const estatus = (v.estatus || '').toLowerCase();
+    if (estatus.includes('procesad')) {
+        try {
+            const { data: procData } = await window.supabaseClient
+                .from('registro_procesados')
+                .select('tipo_delito')
+                .eq('cedula', v.cedula)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            if (procData) datosProcesado = procData;
+        } catch (e) { /* Silencioso */ }
+    }
+}
             if (resultados.length === 0) {
                 mostrarMensaje('❌ No se encontró ningún vehículo con ese valor', 'error');
                 return;
