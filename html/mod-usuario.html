@@ -147,7 +147,17 @@
     font-style: italic;
   }
   
-  .msg { padding: 10px; margin-top: 12px; border-radius: 5px; text-align: center; display: none; }
+  /* ✅ MENSAJES CON Z-INDEX ALTO */
+  .msg {
+    padding: 10px;
+    margin-top: 12px;
+    border-radius: 5px;
+    text-align: center;
+    display: none;
+    position: relative;
+    z-index: 10000;
+  }
+  
   .msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
   .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
   .msg.info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
@@ -175,6 +185,7 @@
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    position: relative;
   }
   
   .modal-header {
@@ -285,6 +296,7 @@
     cursor: not-allowed !important;
   }
   
+  /* ✅ BOTONES DE FOTO SEPARADOS */
   .photo-upload {
     display: flex;
     align-items: center;
@@ -299,6 +311,12 @@
     border: 2px solid var(--beige-border);
   }
   
+  .photo-buttons {
+    display: flex;
+    gap: 10px;
+    flex-direction: column;
+  }
+  
   .photo-upload-btn {
     padding: 8px 16px;
     background: var(--primary);
@@ -307,6 +325,7 @@
     border-radius: 5px;
     cursor: pointer;
     font-size: 0.85rem;
+    white-space: nowrap;
   }
   
   .photo-upload-btn:hover { background: var(--secondary); }
@@ -321,16 +340,61 @@
     color: #92400e;
   }
   
+  /* ✅ SECCIÓN DE CONTRASEÑA */
+  .password-section {
+    background: #f8fafc;
+    border: 1px solid var(--beige-border);
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 15px;
+  }
+  
+  .password-section h4 {
+    color: var(--primary);
+    margin: 0 0 10px 0;
+    font-size: 0.95rem;
+  }
+  
+  .password-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .password-toggle input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+  
+  .password-toggle label {
+    font-size: 0.85rem;
+    color: #475569;
+    cursor: pointer;
+  }
+  
+  .password-fields {
+    display: none;
+    gap: 10px;
+  }
+  
+  .password-fields.show {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  
   @media (max-width: 768px) {
     .usuarios-table { font-size: 0.75rem; }
     .usuarios-table th, .usuarios-table td { padding: 8px 5px; }
     .action-btns { flex-direction: column; }
     .form-grid { grid-template-columns: 1fr; }
+    .password-fields.show { grid-template-columns: 1fr; }
   }
 </style>
 
 <div class="card">
-  <h3>✏️ Modificar y Desbloquear Usuarios</h3>
+  <h3>️ Modificar y Desbloquear Usuarios</h3>
   
   <div class="usuarios-container">
     <div class="usuarios-header">
@@ -341,6 +405,7 @@
       </div>
     </div>
     
+    <!-- ✅ MENSAJE FUERA DEL MODAL CON Z-INDEX ALTO -->
     <div id="mu_msg" class="msg"></div>
     
     <div id="mu_tabla_container">
@@ -388,7 +453,7 @@
             <label>Jerarquía</label>
             <select id="mu_edit_jerarquia" required>
               <option value="">Seleccione...</option>
-              <optgroup label="👔 Comisarios">
+              <optgroup label=" Comisarios">
                 <option value="Comisario Superior">Comisario Superior</option>
                 <option value="Comisario Mayor">Comisario Mayor</option>
                 <option value="Comisario General">Comisario General</option>
@@ -401,7 +466,7 @@
                 <option value="Primer Inspector">Primer Inspector</option>
                 <option value="Inspector">Inspector</option>
               </optgroup>
-              <optgroup label="👮‍♂️ Oficiales">
+              <optgroup label="‍♂️ Oficiales">
                 <option value="Oficial Jefe">Oficial Jefe</option>
                 <option value="Primer Oficial">Primer Oficial</option>
                 <option value="Oficial">Oficial</option>
@@ -425,11 +490,31 @@
             <label>Foto de Perfil</label>
             <div class="photo-upload">
               <img src="https://ui-avatars.com/api/?name=Usuario" alt="Preview" class="photo-preview" id="mu_edit_foto_preview">
-              <div>
+              <!-- ✅ BOTONES SEPARADOS -->
+              <div class="photo-buttons">
                 <input type="file" id="mu_edit_foto" accept="image/*" style="display: none;">
-                <button type="button" class="photo-upload-btn" onclick="document.getElementById('mu_edit_foto').click()">📷 Cambiar</button>
+                <button type="button" class="photo-upload-btn" id="mu_edit_foto_cambiar">📷 Cambiar</button>
                 <button type="button" class="photo-upload-btn" style="background: #64748b;" id="mu_edit_foto_quitar">🗑️ Quitar</button>
               </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- ✅ SECCIÓN DE CAMBIO DE CONTRASEÑA -->
+        <div class="password-section">
+          <h4>🔐 Cambiar Contraseña</h4>
+          <div class="password-toggle">
+            <input type="checkbox" id="mu_cambiar_password_check">
+            <label for="mu_cambiar_password_check">Marcar para cambiar la contraseña de este usuario</label>
+          </div>
+          <div class="password-fields" id="mu_password_fields">
+            <div class="form-group">
+              <label>Nueva Contraseña</label>
+              <input type="password" id="mu_nueva_password" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+            </div>
+            <div class="form-group">
+              <label>Confirmar Contraseña</label>
+              <input type="password" id="mu_confirmar_password" placeholder="Repita la contraseña" autocomplete="new-password">
             </div>
           </div>
         </div>
