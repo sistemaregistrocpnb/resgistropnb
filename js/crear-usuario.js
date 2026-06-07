@@ -58,7 +58,7 @@ window.initCrearUsuario = function() {
         return regex.test(email);
     }
 
-    // ✅ VERIFICACIÓN DOBLE: perfiles_usuario + auth.users
+    // ✅ VERIFICACIÓN SOLO EN perfiles_usuario (sin signInWithPassword)
     async function verificarEmailExiste(email) {
         if (!emailStatus) return false;
 
@@ -68,51 +68,39 @@ window.initCrearUsuario = function() {
         emailValido = false;
 
         try {
-            // 1️⃣ Verificar en perfiles_usuario
             const { data: perfilExistente, error: errPerfil } = await window.supabaseClient
                 .from('perfiles_usuario')
                 .select('email, nombre, apellido, nivel')
                 .eq('email', email.toLowerCase())
                 .maybeSingle();
 
+            if (errPerfil) {
+                console.error('Error consultando perfiles:', errPerfil);
+                emailStatus.className = 'email-status error';
+                emailStatus.textContent = '⚠️ Error al verificar email';
+                return false;
+            }
+
             if (perfilExistente) {
                 emailStatus.className = 'email-status error';
                 const nombreCompleto = `${perfilExistente.nombre || ''} ${perfilExistente.apellido || ''}`.trim();
                 emailStatus.textContent = `⚠️ Email ya registrado${nombreCompleto ? ` a: ${nombreCompleto} (${perfilExistente.nivel})` : ''}`;
                 emailInput.classList.add('email-duplicate');
-                return { existe: true, tipo: 'perfil', datos: perfilExistente };
+                return true;
             }
 
-            // 2️⃣ Verificar en auth.users (intentando login con contraseña incorrecta)
-            try {
-                const { error: authError } = await window.supabaseClient.auth.signInWithPassword({
-                    email: email,
-                    password: 'password_incorrecta_test_12345'
-                });
-
-                // Si el error es "Invalid login credentials", el email SÍ existe en auth
-                if (authError && authError.message.toLowerCase().includes('invalid login credentials')) {
-                    emailStatus.className = 'email-status error';
-                    emailStatus.textContent = '⚠️ Email existe en el sistema (usuario huérfano - contactar soporte)';
-                    emailInput.classList.add('email-duplicate');
-                    return { existe: true, tipo: 'huerfano', datos: null };
-                }
-            } catch (e) {
-                // Ignorar errores de red
-            }
-
-            // ✅ Email completamente disponible
+            // ✅ Email disponible
             emailStatus.className = 'email-status success';
             emailStatus.textContent = '✅ Email disponible';
             emailInput.classList.remove('email-duplicate');
             emailValido = true;
-            return { existe: false, tipo: null, datos: null };
+            return false;
 
         } catch (e) {
             console.error('Error verificando email:', e);
             emailStatus.className = 'email-status error';
             emailStatus.textContent = '⚠️ Error de conexión';
-            return { existe: false, tipo: null, datos: null };
+            return false;
         }
     }
 
@@ -171,7 +159,7 @@ window.initCrearUsuario = function() {
         });
     }
 
-    // Función limpiar foto (global)
+    // Función limpiar foto
     function limpiarFoto() {
         fotoUrl = null;
         if (fotoPreview) fotoPreview.src = 'https://ui-avatars.com/api/?name=Usuario&background=002b5c&color=fff';
@@ -247,50 +235,6 @@ window.initCrearUsuario = function() {
         });
     }
 
-    // ✅ FUNCIÓN PARA RECUPERAR USUARIO HUÉRFANO
-    async function recuperarUsuarioHuerfano(email, password, userData) {
-        try {
-            // Intentar hacer login con la contraseña que el admin está creando
-            const { data: loginData, error: loginError } = await window.supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: password
-            });
-
-            if (loginError) {
-                // Si la contraseña es incorrecta, no podemos recuperar
-                return { success: false, error: 'El usuario existe pero con otra contraseña. Contacte al administrador del sistema.' };
-            }
-
-            // Si pudimos hacer login, el usuario existe y la contraseña es correcta
-            // Ahora insertamos el perfil
-            const { error: perfilError } = await window.supabaseClient
-                .from('perfiles_usuario')
-                .insert([{
-                    user_id: loginData.user.id,
-                    nivel: userData.nivel,
-                    creado_en: new Date().toISOString(),
-                    intentos_fallidos: 0,
-                    bloqueado: false,
-                    email: email,
-                    nombre: userData.nombre,
-                    apellido: userData.apellido,
-                    cedula: userData.cedula,
-                    foto_url: userData.foto_url,
-                    jerarquia: userData.jerarquia
-                }]);
-
-            if (perfilError) {
-                await window.supabaseClient.auth.signOut();
-                return { success: false, error: 'Error al crear perfil: ' + perfilError.message };
-            }
-
-            await window.supabaseClient.auth.signOut();
-            return { success: true, message: 'Usuario huérfano recuperado exitosamente' };
-        } catch (err) {
-            return { success: false, error: err.message };
-        }
-    }
-
     // Envío del formulario
     if (form) {
         form.addEventListener('submit', async (e) => {
@@ -333,14 +277,10 @@ window.initCrearUsuario = function() {
                 return;
             }
 
-            // ✅ Verificación final
-            const emailCheck = await verificarEmailExiste(email);
-            if (emailCheck.existe) {
-                if (emailCheck.tipo === 'huerfano') {
-                    mostrarMensaje('⚠️ Este email ya existe en el sistema pero sin perfil. Contacte al administrador para recuperarlo.', 'error');
-                } else {
-                    mostrarMensaje('❌ No se puede crear el usuario: el email ya está registrado', 'error');
-                }
+            // Verificación final
+            const emailExiste = await verificarEmailExiste(email);
+            if (emailExiste) {
+                mostrarMensaje('❌ No se puede crear el usuario: el email ya está registrado', 'error');
                 emailInput.focus();
                 return;
             }
@@ -366,31 +306,12 @@ window.initCrearUsuario = function() {
                     options: { data: { nombre, apellido, cedula } }
                 });
 
-                // ✅ Manejo específico del error "User already registered"
                 if (authError) {
-                    if (authError.message.toLowerCase().includes('already registered') || 
-                        authError.message.toLowerCase().includes('already been registered')) {
-                        
-                        // Intentar recuperar el usuario huérfano
-                        mostrarMensaje('⚠️ Email existe en auth. Intentando recuperar...', 'info');
-                        
-                        const recuperacion = await recuperarUsuarioHuerfano(email, password, {
-                            nivel, nombre, apellido, cedula, foto_url: fotoUrl, jerarquia
-                        });
-
-                        if (recuperacion.success) {
-                            mostrarMensaje(`✅ ${recuperacion.message}: ${email}`, 'success');
-                            form.reset();
-                            limpiarFoto();
-                            if (passwordStrength) passwordStrength.textContent = '';
-                            if (emailStatus) { emailStatus.className = 'email-status'; emailStatus.textContent = ''; }
-                            emailValido = false;
-                            return;
-                        } else {
-                            throw new Error(recuperacion.error);
-                        }
+                    let errorMsg = authError.message;
+                    if (authError.message.toLowerCase().includes('already')) {
+                        errorMsg = 'Este email ya está registrado en el sistema';
                     }
-                    throw new Error(authError.message);
+                    throw new Error(errorMsg);
                 }
 
                 if (!authData.user) {
