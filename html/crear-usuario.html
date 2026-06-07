@@ -1,0 +1,259 @@
+<style>
+  :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; }
+  
+  .form-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .form-section {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  
+  .form-section h3 {
+    color: var(--primary);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--beige-border);
+  }
+  
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .form-group label {
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+  }
+  
+  .form-group label .required {
+    color: var(--danger);
+  }
+  
+  .form-group input,
+  .form-group select {
+    padding: 10px;
+    border: 1.5px solid var(--beige-border);
+    border-radius: 5px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(0,43,92,0.1);
+  }
+  
+  .form-group.full-width {
+    grid-column: 1 / -1;
+  }
+  
+  .photo-upload {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .photo-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid var(--beige-border);
+    background: #f8fafc;
+  }
+  
+  .photo-upload-btn {
+    padding: 8px 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  
+  .photo-upload-btn:hover {
+    background: var(--secondary);
+  }
+  
+  .btn-submit {
+    width: 100%;
+    padding: 14px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-top: 20px;
+    transition: background 0.2s;
+  }
+  
+  .btn-submit:hover:not(:disabled) {
+    background: var(--secondary);
+  }
+  
+  .btn-submit:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+  }
+  
+  .msg {
+    padding: 12px;
+    margin-top: 15px;
+    border-radius: 6px;
+    text-align: center;
+    display: none;
+    font-weight: 600;
+  }
+  
+  .msg.success {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+  }
+  
+  .msg.error {
+    background: #fde2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+  }
+  
+  .msg.info {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+  }
+  
+  .password-strength {
+    margin-top: 5px;
+    font-size: 0.8rem;
+    color: #64748b;
+  }
+  
+  .password-strength.weak { color: #dc2626; }
+  .password-strength.medium { color: #f59e0b; }
+  .password-strength.strong { color: #15803d; }
+  
+  @media (max-width: 600px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="card">
+  <h3>👤➕ Crear Usuario Nuevo</h3>
+  
+  <div class="form-container">
+    <form id="form-crear-usuario">
+      
+      <!-- Sección: Datos de Acceso -->
+      <div class="form-section">
+        <h3>🔐 Datos de Acceso</h3>
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label>Email <span class="required">*</span></label>
+            <input type="email" id="cu_email" required placeholder="ejemplo@correo.com">
+          </div>
+          <div class="form-group">
+            <label>Contraseña <span class="required">*</span></label>
+            <input type="password" id="cu_password" required minlength="6" placeholder="Mínimo 6 caracteres">
+            <div class="password-strength" id="cu_password_strength"></div>
+          </div>
+          <div class="form-group">
+            <label>Confirmar Contraseña <span class="required">*</span></label>
+            <input type="password" id="cu_password_confirm" required placeholder="Repita la contraseña">
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección: Datos Personales -->
+      <div class="form-section">
+        <h3>👤 Datos Personales</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nombre <span class="required">*</span></label>
+            <input type="text" id="cu_nombre" required placeholder="Primer nombre">
+          </div>
+          <div class="form-group">
+            <label>Apellido <span class="required">*</span></label>
+            <input type="text" id="cu_apellido" required placeholder="Primer apellido">
+          </div>
+          <div class="form-group">
+            <label>Cédula <span class="required">*</span></label>
+            <input type="text" id="cu_cedula" required placeholder="Ej: 12345678" maxlength="10">
+          </div>
+          <div class="form-group">
+            <label>Jerarquía <span class="required">*</span></label>
+            <select id="cu_jerarquia" required>
+              <option value="">Seleccione...</option>
+              <option value="Director">Director</option>
+              <option value="Comisario General">Comisario General</option>
+              <option value="Comisario Jefe">Comisario Jefe</option>
+              <option value="Comisario">Comisario</option>
+              <option value="Comisario Adjunto">Comisario Adjunto</option>
+              <option value="Inspector Jefe">Inspector Jefe</option>
+              <option value="Inspector">Inspector</option>
+              <option value="Inspector Adjunto">Inspector Adjunto</option>
+              <option value="Oficial Jefe">Oficial Jefe</option>
+              <option value="Oficial">Oficial</option>
+              <option value="Oficial Adjunto">Oficial Adjunto</option>
+              <option value="Distinguido Jefe">Distinguido Jefe</option>
+              <option value="Distinguido">Distinguido</option>
+              <option value="Agente">Agente</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección: Configuración -->
+      <div class="form-section">
+        <h3>⚙️ Configuración del Usuario</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nivel de Acceso <span class="required">*</span></label>
+            <select id="cu_nivel" required>
+              <option value="">Seleccione...</option>
+              <option value="administrador">Administrador (Acceso total)</option>
+              <option value="moderador">Moderador (Gestión limitada)</option>
+              <option value="consultor">Consultor (Solo consulta)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Foto de Perfil</label>
+            <div class="photo-upload">
+              <img src="https://ui-avatars.com/api/?name=Usuario&background=002b5c&color=fff" alt="Preview" class="photo-preview" id="cu_foto_preview">
+              <div>
+                <input type="file" id="cu_foto" accept="image/*" style="display: none;">
+                <button type="button" class="photo-upload-btn" onclick="document.getElementById('cu_foto').click()">📷 Subir Foto</button>
+                <button type="button" class="photo-upload-btn" style="background: #64748b;" onclick="limpiarFoto()">🗑️ Quitar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="cu_btn_submit">✅ Crear Usuario</button>
+      <div id="cu_msg" class="msg"></div>
+    </form>
+  </div>
+</div>
