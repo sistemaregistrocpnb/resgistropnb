@@ -1,0 +1,443 @@
+<style>
+  :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; --danger: #dc2626; --success: #15803d; }
+  
+  .usuarios-container { padding: 10px; }
+  
+  .usuarios-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .usuarios-header h3 {
+    color: var(--primary);
+    margin: 0;
+  }
+  
+  .search-box {
+    display: flex;
+    gap: 10px;
+    flex: 1;
+    max-width: 400px;
+  }
+  
+  .search-box input {
+    flex: 1;
+    padding: 10px;
+    border: 1.5px solid var(--beige-border);
+    border-radius: 5px;
+    font-size: 0.9rem;
+  }
+  
+  .search-box input:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+  
+  .btn-refresh {
+    padding: 10px 15px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  
+  .btn-refresh:hover { background: var(--secondary); }
+  
+  .usuarios-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  
+  .usuarios-table th {
+    background: var(--primary);
+    color: white;
+    padding: 12px 10px;
+    text-align: left;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  
+  .usuarios-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.85rem;
+    color: #334155;
+  }
+  
+  .usuarios-table tr:hover { background: #f8fafc; }
+  
+  .usuarios-table .user-foto {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 2px solid var(--beige-border);
+  }
+  
+  .nivel-badge {
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  
+  .nivel-administrador { background: #fee2e2; color: #991b1b; }
+  .nivel-moderador { background: #fef3c7; color: #92400e; }
+  .nivel-consultor { background: #dbeafe; color: #1e40af; }
+  
+  .bloqueado-badge {
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+  
+  .bloqueado-si { background: #fee2e2; color: #991b1b; }
+  .bloqueado-no { background: #dcfce7; color: #166534; }
+  
+  .action-btns {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+  
+  .btn-editar {
+    padding: 5px 10px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .btn-editar:hover { background: var(--secondary); }
+  
+  .btn-desbloquear {
+    padding: 5px 10px;
+    background: var(--success);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .btn-desbloquear:hover { background: #166534; }
+  .btn-desbloquear:disabled { background: #9ca3af; cursor: not-allowed; }
+  
+  .sin-usuarios {
+    text-align: center;
+    padding: 40px;
+    color: #64748b;
+    font-style: italic;
+  }
+  
+  .msg { padding: 10px; margin-top: 12px; border-radius: 5px; text-align: center; display: none; }
+  .msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+  .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+  .msg.info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+  
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9998;
+    padding: 20px;
+  }
+  
+  .modal-overlay.active { display: flex; }
+  
+  .modal-content {
+    background: white;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  
+  .modal-header {
+    background: var(--primary);
+    color: white;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 10px 10px 0 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .modal-header h3 { margin: 0; font-size: 1.1rem; }
+  
+  .modal-close {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    line-height: 1;
+  }
+  
+  .modal-body { padding: 25px; }
+  
+  .modal-actions {
+    padding: 15px 20px;
+    background: #f8fafc;
+    border-top: 1px solid var(--beige-border);
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    border-radius: 0 0 10px 10px;
+    position: sticky;
+    bottom: 0;
+  }
+  
+  .btn-submit {
+    padding: 12px 24px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  
+  .btn-submit:hover { background: var(--secondary); }
+  .btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+  
+  .btn-cancel {
+    padding: 12px 24px;
+    background: #64748b;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  
+  .btn-cancel:hover { background: #475569; }
+  
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .form-group label {
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+  }
+  
+  .form-group input,
+  .form-group select {
+    padding: 10px;
+    border: 1.5px solid var(--beige-border);
+    border-radius: 5px;
+    font-size: 0.9rem;
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+  
+  .form-group.full-width {
+    grid-column: 1 / -1;
+  }
+  
+  .email-disabled {
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+    cursor: not-allowed !important;
+  }
+  
+  .photo-upload {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .photo-preview {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid var(--beige-border);
+  }
+  
+  .photo-upload-btn {
+    padding: 8px 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  
+  .photo-upload-btn:hover { background: var(--secondary); }
+  
+  .info-bloqueo {
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    font-size: 0.85rem;
+    color: #92400e;
+  }
+  
+  @media (max-width: 768px) {
+    .usuarios-table { font-size: 0.75rem; }
+    .usuarios-table th, .usuarios-table td { padding: 8px 5px; }
+    .action-btns { flex-direction: column; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="card">
+  <h3>✏️ Modificar y Desbloquear Usuarios</h3>
+  
+  <div class="usuarios-container">
+    <div class="usuarios-header">
+      <h3>Lista de Usuarios</h3>
+      <div class="search-box">
+        <input type="text" id="mu_buscar" placeholder="Buscar por nombre, email o cédula...">
+        <button type="button" class="btn-refresh" id="mu_btn_refresh">🔄 Actualizar</button>
+      </div>
+    </div>
+    
+    <div id="mu_msg" class="msg"></div>
+    
+    <div id="mu_tabla_container">
+      <div class="sin-usuarios">Cargando usuarios...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de edición -->
+<div class="modal-overlay" id="mu_modal_editar">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>✏️ Editar Usuario</h3>
+      <button class="modal-close" id="mu_modal_close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="mu_info_bloqueo" class="info-bloqueo" style="display: none;"></div>
+      
+      <form id="mu_form_editar">
+        <input type="hidden" id="mu_edit_id">
+        <input type="hidden" id="mu_edit_user_id">
+        
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label>Email (no editable)</label>
+            <input type="email" id="mu_edit_email" class="email-disabled" disabled>
+          </div>
+          
+          <div class="form-group">
+            <label>Nombre</label>
+            <input type="text" id="mu_edit_nombre" required>
+          </div>
+          
+          <div class="form-group">
+            <label>Apellido</label>
+            <input type="text" id="mu_edit_apellido" required>
+          </div>
+          
+          <div class="form-group">
+            <label>Cédula</label>
+            <input type="text" id="mu_edit_cedula" required>
+          </div>
+          
+          <div class="form-group">
+            <label>Jerarquía</label>
+            <select id="mu_edit_jerarquia" required>
+              <option value="">Seleccione...</option>
+              <optgroup label="👔 Comisarios">
+                <option value="Comisario Superior">Comisario Superior</option>
+                <option value="Comisario Mayor">Comisario Mayor</option>
+                <option value="Comisario General">Comisario General</option>
+                <option value="Comisario Jefe">Comisario Jefe</option>
+                <option value="Primer Comisario">Primer Comisario</option>
+                <option value="Comisario">Comisario</option>
+              </optgroup>
+              <optgroup label="👮 Inspectores">
+                <option value="Inspector Jefe">Inspector Jefe</option>
+                <option value="Primer Inspector">Primer Inspector</option>
+                <option value="Inspector">Inspector</option>
+              </optgroup>
+              <optgroup label="👮‍♂️ Oficiales">
+                <option value="Oficial Jefe">Oficial Jefe</option>
+                <option value="Primer Oficial">Primer Oficial</option>
+                <option value="Oficial">Oficial</option>
+              </optgroup>
+              <optgroup label=" Otros">
+                <option value="Ciudadano">Ciudadano</option>
+              </optgroup>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Nivel de Acceso</label>
+            <select id="mu_edit_nivel" required>
+              <option value="administrador">Administrador</option>
+              <option value="moderador">Moderador</option>
+              <option value="consultor">Consultor</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Foto de Perfil</label>
+            <div class="photo-upload">
+              <img src="https://ui-avatars.com/api/?name=Usuario" alt="Preview" class="photo-preview" id="mu_edit_foto_preview">
+              <div>
+                <input type="file" id="mu_edit_foto" accept="image/*" style="display: none;">
+                <button type="button" class="photo-upload-btn" onclick="document.getElementById('mu_edit_foto').click()">📷 Cambiar</button>
+                <button type="button" class="photo-upload-btn" style="background: #64748b;" id="mu_edit_foto_quitar">🗑️ Quitar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-submit" id="mu_btn_guardar">💾 Guardar Cambios</button>
+      <button type="button" class="btn-cancel" id="mu_btn_cancelar">Cancelar</button>
+    </div>
+  </div>
+</div>
