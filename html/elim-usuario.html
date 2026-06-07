@@ -1,0 +1,196 @@
+<style>
+  :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; --danger: #dc2626; --success: #15803d; }
+  
+  .usuarios-container { padding: 10px; }
+  
+  .usuarios-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .usuarios-header h3 {
+    color: var(--primary);
+    margin: 0;
+  }
+  
+  .search-box {
+    display: flex;
+    gap: 10px;
+    flex: 1;
+    max-width: 400px;
+  }
+  
+  .search-box input {
+    flex: 1;
+    padding: 10px;
+    border: 1.5px solid var(--beige-border);
+    border-radius: 5px;
+    font-size: 0.9rem;
+  }
+  
+  .search-box input:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+  
+  .btn-refresh {
+    padding: 10px 15px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  
+  .btn-refresh:hover { background: var(--secondary); }
+  
+  .usuarios-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  
+  .usuarios-table th {
+    background: var(--primary);
+    color: white;
+    padding: 12px 10px;
+    text-align: left;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  
+  .usuarios-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.85rem;
+    color: #334155;
+  }
+  
+  .usuarios-table tr:hover { background: #f8fafc; }
+  
+  .usuarios-table .user-foto {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 2px solid var(--beige-border);
+  }
+  
+  .nivel-badge {
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  
+  .nivel-administrador { background: #fee2e2; color: #991b1b; }
+  .nivel-moderador { background: #fef3c7; color: #92400e; }
+  .nivel-consultor { background: #dbeafe; color: #1e40af; }
+  
+  .btn-eliminar {
+    padding: 6px 12px;
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+  
+  .btn-eliminar:hover { background: #b91c1c; }
+  .btn-eliminar:disabled { background: #9ca3af; cursor: not-allowed; }
+  
+  .sin-usuarios {
+    text-align: center;
+    padding: 40px;
+    color: #64748b;
+    font-style: italic;
+  }
+  
+  .msg {
+    padding: 10px;
+    margin-top: 12px;
+    border-radius: 5px;
+    text-align: center;
+    display: none;
+    position: relative;
+    z-index: 10000;
+  }
+  
+  .msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+  .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+  .msg.info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+  
+  .warning-box {
+    background: #fef3c7;
+    border: 2px solid #fbbf24;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .warning-box-icon {
+    font-size: 2rem;
+  }
+  
+  .warning-box-text {
+    color: #92400e;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  
+  .warning-box-text strong {
+    display: block;
+    font-size: 1rem;
+    margin-bottom: 5px;
+  }
+  
+  @media (max-width: 768px) {
+    .usuarios-table { font-size: 0.75rem; }
+    .usuarios-table th, .usuarios-table td { padding: 8px 5px; }
+  }
+</style>
+
+<div class="card">
+  <h3>🗑️ Eliminar Usuarios</h3>
+  
+  <div class="warning-box">
+    <div class="warning-box-icon">⚠️</div>
+    <div class="warning-box-text">
+      <strong>ADVERTENCIA: Acción Irreversible</strong>
+      Al eliminar un usuario, se borrará permanentemente de <strong>ambas tablas</strong> (perfiles_usuario y auth.users). 
+      Esta acción no se puede deshacer. Solo los administradores pueden eliminar usuarios.
+    </div>
+  </div>
+  
+  <div class="usuarios-container">
+    <div class="usuarios-header">
+      <h3>Lista de Usuarios</h3>
+      <div class="search-box">
+        <input type="text" id="eu_buscar" placeholder="Buscar por nombre, email o cédula...">
+        <button type="button" class="btn-refresh" id="eu_btn_refresh">🔄 Actualizar</button>
+      </div>
+    </div>
+    
+    <div id="eu_msg" class="msg"></div>
+    
+    <div id="eu_tabla_container">
+      <div class="sin-usuarios">Cargando usuarios...</div>
+    </div>
+  </div>
+</div>
