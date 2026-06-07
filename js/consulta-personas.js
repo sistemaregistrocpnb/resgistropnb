@@ -13,23 +13,19 @@ window.initConsultaPersonas = function() {
     let personaActual = null;
     let tipoRegistroActual = null;
     let datosProcesado = null;
-    
-    // ✅ Variables para paginación de incidencias
     let incidenciasPaginaActual = 1;
     const incidenciasPorPagina = 10;
     let totalIncidencias = 0;
     let cedulaActualIncidencias = null;
     let tipoActualIncidencias = null;
 
-    // Listeners
     if (btnBuscar) btnBuscar.onclick = () => buscarPersona();
     
     if (buscarInput) {
         buscarInput.oninput = (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8); };
         buscarInput.onkeypress = (e) => { if (e.key === 'Enter') { e.preventDefault(); btnBuscar?.click(); } };
     }
-
-    // Cerrar modales
+    
     if (el('cp_modal_close')) el('cp_modal_close').onclick = () => modalDetalles.classList.remove('active');
     if (el('cp_modal_cerrar')) el('cp_modal_cerrar').onclick = () => modalDetalles.classList.remove('active');
     if (el('cp_modal_inc_close')) el('cp_modal_inc_close').onclick = () => modalIncidencia.classList.remove('active');
@@ -73,7 +69,7 @@ window.initConsultaPersonas = function() {
         personaActual = null;
         tipoRegistroActual = null;
         datosProcesado = null;
-        incidenciasPaginaActual = 1; // Resetear paginación
+        incidenciasPaginaActual = 1; 
 
         try {
             const { data: persona, error: errPersona } = await window.supabaseClient
@@ -420,7 +416,6 @@ window.initConsultaPersonas = function() {
                 html += `</div>`;
             }
 
-            // ✅ INCIDENCIAS EN IMPRESIÓN: Mostrar todas sin paginación
             html += `<div class="seccion-titulo" style="margin-top: 30px;">📜 Historial de Incidencias</div>`;
             try {
                 const { data: incidencias } = await window.supabaseClient.from('registro_incidencias').select('*').eq('cedula', data.cedula).eq('tipo_registro', tipo).order('fecha_hora', { ascending: false });
@@ -457,7 +452,6 @@ window.initConsultaPersonas = function() {
         }
     }
 
-    // ✅ FUNCIÓN DE PAGINACIÓN PARA INCIDENCIAS
     async function cargarIncidencias(cedula, tipo, pagina = 1) {
         if (!incidenciasSection) return;
         
@@ -466,11 +460,10 @@ window.initConsultaPersonas = function() {
         incidenciasPaginaActual = pagina;
         
         try {
-            // Calcular el rango para paginación
+
             const desde = (pagina - 1) * incidenciasPorPagina;
             const hasta = desde + incidenciasPorPagina - 1;
             
-            // Obtener todas las incidencias para calcular el total
             const { data: todasIncidencias, error: errorCount } = await window.supabaseClient
                 .from('registro_incidencias')
                 .select('*', { count: 'exact', head: false })
@@ -481,8 +474,6 @@ window.initConsultaPersonas = function() {
             
             totalIncidencias = todasIncidencias ? todasIncidencias.length : 0;
             const totalPaginas = Math.ceil(totalIncidencias / incidenciasPorPagina);
-            
-            // Obtener solo las incidencias de la página actual
             const { data: incidencias, error } = await window.supabaseClient
                 .from('registro_incidencias')
                 .select('*')
@@ -507,18 +498,16 @@ window.initConsultaPersonas = function() {
                         <div class="incidencia-descripcion">${inc.descripcion}</div>
                     </div>`;
                 });
-                
-                // ✅ CONTROLES DE PAGINACIÓN
+    
                 if (totalPaginas > 1) {
                     html += `<div class="paginacion-incidencias" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--beige-border);">`;
-                    
-                    // Botón Anterior
+            
                     html += `<button type="button" class="btn-paginacion" ${pagina === 1 ? 'disabled' : ''} onclick="window.cambiarPaginaIncidencias(${pagina - 1})" style="padding: 8px 16px; background: ${pagina === 1 ? '#cbd5e1' : 'var(--primary)'}; color: white; border: none; border-radius: 5px; cursor: ${pagina === 1 ? 'not-allowed' : 'pointer'}; font-weight: 600;">️ Anterior</button>`;
                     
-                    // Contador de página
+       
                     html += `<span style="font-size: 0.9rem; color: #64748b; font-weight: 600;">Página ${pagina} de ${totalPaginas} (${totalIncidencias} incidencias)</span>`;
                     
-                    // Botón Siguiente
+        
                     html += `<button type="button" class="btn-paginacion" ${pagina === totalPaginas ? 'disabled' : ''} onclick="window.cambiarPaginaIncidencias(${pagina + 1})" style="padding: 8px 16px; background: ${pagina === totalPaginas ? '#cbd5e1' : 'var(--primary)'}; color: white; border: none; border-radius: 5px; cursor: ${pagina === totalPaginas ? 'not-allowed' : 'pointer'}; font-weight: 600;">Siguiente ➡️</button>`;
                     
                     html += `</div>`;
@@ -535,7 +524,7 @@ window.initConsultaPersonas = function() {
         }
     }
 
-    // ✅ FUNCIÓN GLOBAL PARA CAMBIAR DE PÁGINA
+
     window.cambiarPaginaIncidencias = function(nuevaPagina) {
         if (cedulaActualIncidencias && tipoActualIncidencias) {
             cargarIncidencias(cedulaActualIncidencias, tipoActualIncidencias, nuevaPagina);
@@ -565,7 +554,7 @@ window.initConsultaPersonas = function() {
 
             modalIncidencia.classList.remove('active');
             mostrarMensaje('✅ Incidencia registrada', 'success');
-            await cargarIncidencias(personaActual.cedula, tipoRegistroActual, 1); // Volver a página 1
+            await cargarIncidencias(personaActual.cedula, tipoRegistroActual, 1); 
         } catch (err) {
             console.error('Error guardando incidencia:', err);
             alert('❌ Error: ' + err.message);
