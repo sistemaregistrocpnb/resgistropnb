@@ -56,6 +56,53 @@ window.initCrearUsuario = function() {
         }
     }
 
+    // Validación de email más robusta
+    function validarEmail(email) {
+        const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        return regex.test(email);
+    }
+
+    // ✅ VERIFICAR SI EL EMAIL YA EXISTE
+    async function verificarEmailDuplicado(email) {
+        try {
+            // 1. Verificar en perfiles_usuario
+            const { data: perfilExistente, error: errPerfil } = await window.supabaseClient
+                .from('perfiles_usuario')
+                .select('email')
+                .eq('email', email.toLowerCase())
+                .maybeSingle();
+
+            if (errPerfil && errPerfil.code !== 'PGRST116') {
+                console.error('Error verificando email en perfiles:', errPerfil);
+            }
+
+            if (perfilExistente) {
+                return { existe: true, mensaje: 'Este email ya está registrado en el sistema' };
+            }
+
+            // 2. Verificar en auth.users (intentando hacer signIn sin contraseña)
+            // Si el usuario existe en auth pero no en perfiles, es un caso inconsistente
+            try {
+                const { data: authData, error: authError } = await window.supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: 'test_password_invalid_12345'
+                });
+
+                // Si no hay error de "invalid login credentials", el email existe
+                if (authError && !authError.message.includes('Invalid login credentials')) {
+                    return { existe: true, mensaje: 'Este email ya existe en el sistema de autenticación' };
+                }
+            } catch (e) {
+                // Ignorar errores de autenticación
+            }
+
+            return { existe: false };
+        } catch (err) {
+            console.error('Error verificando email duplicado:', err);
+            return { existe: false };
+        }
+    }
+
     // Validación de contraseña en tiempo real
     if (passwordInput) {
         passwordInput.addEventListener('input', (e) => {
@@ -156,7 +203,7 @@ window.initCrearUsuario = function() {
             if (!tienePermiso) return;
 
             // Validaciones
-            const email = el('cu_email')?.value.trim();
+            const email = el('cu_email')?.value.trim().toLowerCase();
             const password = passwordInput?.value;
             const passwordConf = passwordConfirm?.value;
             const nombre = el('cu_nombre')?.value.trim();
@@ -165,11 +212,30 @@ window.initCrearUsuario = function() {
             const jerarquia = el('cu_jerarquia')?.value;
             const nivel = el('cu_nivel')?.value;
 
+            // Validar campos obligatorios
             if (!email || !password || !nombre || !apellido || !cedula || !jerarquia || !nivel) {
                 mostrarMensaje('⚠️ Todos los campos obligatorios deben estar completos', 'error');
                 return;
             }
 
+            // ✅ Validar formato de email
+            if (!validarEmail(email)) {
+                mostrarMensaje('❌ El formato del email no es válido. Ejemplo: usuario@dominio.com', 'error');
+                el('cu_email')?.focus();
+                return;
+            }
+
+            // ✅ Verificar si el email ya existe
+            mostrarMensaje('🔍 Verificando email...', 'info');
+            const emailCheck = await verificarEmailDuplicado(email);
+            
+            if (emailCheck.existe) {
+                mostrarMensaje('❌ ' + emailCheck.mensaje, 'error');
+                el('cu_email')?.focus();
+                return;
+            }
+
+            // Validar contraseñas
             if (password !== passwordConf) {
                 mostrarMensaje('❌ Las contraseñas no coinciden', 'error');
                 return;
@@ -182,11 +248,11 @@ window.initCrearUsuario = function() {
 
             // Deshabilitar botón
             btnSubmit.disabled = true;
-            btnSubmit.textContent = ' Creando usuario...';
-            mostrarMensaje('⏳ Procesando...', 'info');
+            btnSubmit.textContent = '⏳ Creando usuario...';
+            mostrarMensaje('⏳ Creando usuario...', 'info');
 
             try {
-                // ✅ MÉTODO DIRECTO: Crear usuario con signUp
+                // ✅ Crear usuario con signUp
                 const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
                     email: email,
                     password: password,
@@ -199,7 +265,22 @@ window.initCrearUsuario = function() {
                     }
                 });
 
-                if (authError) throw authError;
+                if (authError) {
+                    console.error('Error de autenticación:', authError);
+                    
+                    // Manejar errores específicos de Supabase Auth
+                    let errorMsg = authError.message;
+                    
+                    if (authError.message.includes('already been registered')) {
+                        errorMsg = 'Este email ya está registrado en el sistema';
+                    } else if (authError.message.includes('invalid')) {
+                        errorMsg = 'El formato del email no es válido';
+                    } else if (authError.message.includes('password')) {
+                        errorMsg = 'La contraseña no cumple los requisitos mínimos';
+                    }
+                    
+                    throw new Error(errorMsg);
+                }
 
                 if (!authData.user) {
                     throw new Error('No se pudo crear el usuario');
@@ -224,8 +305,14 @@ window.initCrearUsuario = function() {
 
                 if (perfilError) {
                     console.error('Error insertando perfil:', perfilError);
+                    
                     // Si falla el perfil, intentar eliminar el usuario creado
-                    await window.supabaseClient.auth.admin.deleteUser(authData.user.id);
+                    try {
+                        await window.supabaseClient.auth.admin.deleteUser(authData.user.id);
+                    } catch (deleteErr) {
+                        console.error('Error eliminando usuario huérfano:', deleteErr);
+                    }
+                    
                     throw new Error('Usuario creado pero no se pudo guardar el perfil: ' + perfilError.message);
                 }
 
@@ -236,15 +323,7 @@ window.initCrearUsuario = function() {
 
             } catch (err) {
                 console.error('Error creando usuario:', err);
-                let errorMsg = err.message;
-                
-                if (errorMsg.includes('User already registered')) {
-                    errorMsg = 'Este email ya está registrado';
-                } else if (errorMsg.includes('password')) {
-                    errorMsg = 'La contraseña no cumple los requisitos';
-                }
-                
-                mostrarMensaje('❌ Error: ' + errorMsg, 'error');
+                mostrarMensaje('❌ Error: ' + err.message, 'error');
             } finally {
                 btnSubmit.disabled = false;
                 btnSubmit.textContent = '✅ Crear Usuario';
