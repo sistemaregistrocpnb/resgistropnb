@@ -13,7 +13,6 @@ window.initModUsuario = function() {
     const buscarInput = el('mu_buscar');
     const btnRefresh = el('mu_btn_refresh');
     const modalEditar = el('mu_modal_editar');
-    const formEditar = el('mu_form_editar');
     const infoBloqueo = el('mu_info_bloqueo');
 
     let usuariosData = [];
@@ -69,6 +68,7 @@ window.initModUsuario = function() {
 
             usuariosData = usuarios || [];
             console.log("📊 Usuarios cargados:", usuariosData.length);
+            console.log(" Primer usuario:", usuariosData[0]);
             renderTabla(usuariosData);
 
         } catch (err) {
@@ -80,7 +80,7 @@ window.initModUsuario = function() {
         }
     }
 
-    // ✅ RENDERIZAR TABLA CON EVENT DELEGATION
+    // Renderizar tabla
     function renderTabla(usuarios) {
         if (!tablaContainer) return;
 
@@ -113,6 +113,9 @@ window.initModUsuario = function() {
             const bloqueadoClass = u.bloqueado ? 'bloqueado-si' : 'bloqueado-no';
             const bloqueadoText = u.bloqueado ? 'Sí' : 'No';
 
+            // ✅ CORRECCIÓN: Usar String() para asegurar que el ID sea string
+            const userIdStr = String(u.id);
+
             html += `
                 <tr>
                     <td><img src="${fotoSrc}" alt="Foto" class="user-foto" onerror="this.src='https://ui-avatars.com/api/?name=Usuario'"></td>
@@ -124,8 +127,8 @@ window.initModUsuario = function() {
                     <td><span class="bloqueado-badge ${bloqueadoClass}">${bloqueadoText}</span></td>
                     <td>
                         <div class="action-btns">
-                            <button type="button" class="btn-editar" data-action="editar" data-id="${u.id}">✏️ Editar</button>
-                            ${esAdministrador && u.bloqueado ? `<button type="button" class="btn-desbloquear" data-action="desbloquear" data-id="${u.id}" data-email="${u.email}">🔓 Desbloquear</button>` : ''}
+                            <button type="button" class="btn-editar" data-action="editar" data-id="${userIdStr}">✏️ Editar</button>
+                            ${esAdministrador && u.bloqueado ? `<button type="button" class="btn-desbloquear" data-action="desbloquear" data-id="${userIdStr}" data-email="${u.email}">🔓 Desbloquear</button>` : ''}
                         </div>
                     </td>
                 </tr>
@@ -135,18 +138,18 @@ window.initModUsuario = function() {
         html += '</tbody></table>';
         tablaContainer.innerHTML = html;
 
-        // ✅ AGREGAR EVENT LISTENERS DESPUÉS DE RENDERIZAR
+        // Agregar event listeners después de renderizar
         agregarEventListenersTabla();
     }
 
-    // ✅ EVENT DELEGATION PARA LOS BOTONES
+    // Event delegation para los botones
     function agregarEventListenersTabla() {
         // Botones de editar
         const botonesEditar = tablaContainer.querySelectorAll('.btn-editar');
         botonesEditar.forEach(btn => {
             btn.onclick = function() {
                 const id = this.getAttribute('data-id');
-                console.log("✏️ Click en editar, ID:", id);
+                console.log("️ Click en editar, ID (string):", id, "Tipo:", typeof id);
                 abrirEditarUsuario(id);
             };
         });
@@ -163,13 +166,17 @@ window.initModUsuario = function() {
         });
     }
 
-    // ✅ FUNCIÓN PARA ABRIR MODAL DE EDICIÓN
+    // ✅ CORRECCIÓN PRINCIPAL: Comparación flexible de IDs
     function abrirEditarUsuario(id) {
-        console.log(" Buscando usuario con ID:", id);
+        console.log(" Buscando usuario con ID:", id, "Tipo:", typeof id);
+        console.log(" Usuarios disponibles:", usuariosData.map(u => ({ id: u.id, tipo: typeof u.id })));
         
-        const usuario = usuariosData.find(u => u.id === id);
+        // ✅ CORRECCIÓN: Convertir ambos a string para comparar
+        const usuario = usuariosData.find(u => String(u.id) === String(id));
+        
         if (!usuario) {
-            console.error("❌ Usuario no encontrado:", id);
+            console.error("❌ Usuario no encontrado. ID buscado:", id);
+            console.error("📋 IDs disponibles:", usuariosData.map(u => String(u.id)));
             mostrarMensaje('❌ Usuario no encontrado', 'error');
             return;
         }
@@ -197,7 +204,7 @@ window.initModUsuario = function() {
         if (usuario.bloqueado) {
             infoBloqueo.style.display = 'block';
             infoBloqueo.innerHTML = `
-                ️ <strong>Usuario bloqueado</strong><br>
+                ⚠️ <strong>Usuario bloqueado</strong><br>
                 Intentos fallidos: ${usuario.intentos_fallidos || 0}<br>
                 Fecha de bloqueo: ${usuario.fecha_bloqueo ? new Date(usuario.fecha_bloqueo).toLocaleString('es-VE') : 'N/A'}
             `;
@@ -209,11 +216,12 @@ window.initModUsuario = function() {
         console.log("✅ Modal abierto");
     }
 
-    // ✅ FUNCIÓN PARA DESBLOQUEAR
+    // Desbloquear usuario
     async function desbloquearUsuario(id, email) {
         if (!confirm(`¿Está seguro de desbloquear al usuario ${email}?`)) return;
 
         try {
+            // ✅ CORRECCIÓN: Convertir ID al tipo correcto
             const { error } = await window.supabaseClient
                 .from('perfiles_usuario')
                 .update({
@@ -258,7 +266,7 @@ window.initModUsuario = function() {
     if (btnRefresh) {
         btnRefresh.onclick = () => {
             cargarUsuarios();
-            mostrarMensaje('🔄 Lista actualizada', 'info');
+            mostrarMensaje(' Lista actualizada', 'info');
         };
     }
 
@@ -322,7 +330,7 @@ window.initModUsuario = function() {
                 mostrarMensaje('✅ Foto subida', 'success');
             } catch (err) {
                 console.error('Error subiendo foto:', err);
-                mostrarMensaje('❌ Error al subir: ' + err.message, 'error');
+                mostrarMensaje(' Error al subir: ' + err.message, 'error');
             }
         });
     }
@@ -331,7 +339,6 @@ window.initModUsuario = function() {
     if (el('mu_btn_guardar')) {
         el('mu_btn_guardar').onclick = async () => {
             const id = el('mu_edit_id').value;
-            const userId = el('mu_edit_user_id').value;
             const nombre = el('mu_edit_nombre').value.trim();
             const apellido = el('mu_edit_apellido').value.trim();
             const cedula = el('mu_edit_cedula').value.trim();
@@ -380,13 +387,13 @@ window.initModUsuario = function() {
     async function init() {
         const tienePermiso = await verificarPermisos();
         if (!tienePermiso) {
-            mostrarMensaje('❌ No tiene permisos para acceder a este módulo', 'error');
+            mostrarMensaje(' No tiene permisos para acceder a este módulo', 'error');
             return;
         }
         await cargarUsuarios();
     }
 
-    console.log("🚀 Inicializando módulo mod-usuario...");
+    console.log(" Inicializando módulo mod-usuario...");
     init();
     console.log("✅ Módulo mod-usuario.js inicializado");
 };
