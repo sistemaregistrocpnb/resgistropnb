@@ -58,14 +58,17 @@ window.initCrearUsuario = function() {
         }
     }
 
-    // ✅ VALIDACIÓN DE EMAIL EN TIEMPO REAL
+    // ✅ VALIDACIÓN DE EMAIL EN TIEMPO REAL (SIMPLIFICADA)
     function validarFormatoEmail(email) {
         const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         return regex.test(email);
     }
 
     async function verificarEmailExiste(email) {
-        if (!emailStatus || !window.supabaseClient) return false;
+        if (!emailStatus || !window.supabaseClient) {
+            console.log("⚠️ emailStatus o supabaseClient no disponible");
+            return false;
+        }
 
         emailStatus.className = 'email-status checking';
         emailStatus.textContent = '🔍 Verificando email...';
@@ -73,18 +76,26 @@ window.initCrearUsuario = function() {
         emailValido = false;
 
         try {
-            // 1. Verificar en perfiles_usuario
+            console.log("🔍 Verificando email en perfiles_usuario:", email);
+            
+            // ✅ VERIFICAR SOLO EN perfiles_usuario
             const { data: perfilExistente, error: errPerfil } = await window.supabaseClient
                 .from('perfiles_usuario')
                 .select('email, nombre, apellido, nivel')
                 .eq('email', email.toLowerCase())
                 .maybeSingle();
 
-            if (errPerfil && errPerfil.code !== 'PGRST116') {
-                console.warn('Error consultando perfiles:', errPerfil);
+            console.log("📊 Resultado de consulta:", { perfilExistente, error: errPerfil });
+
+            if (errPerfil) {
+                console.error("❌ Error en consulta:", errPerfil);
+                emailStatus.className = 'email-status';
+                emailStatus.textContent = '⚠️ Error al verificar email';
+                return false;
             }
 
             if (perfilExistente) {
+                console.log("⚠️ Email ya registrado:", perfilExistente);
                 emailStatus.className = 'email-status error';
                 const nombreCompleto = `${perfilExistente.nombre || ''} ${perfilExistente.apellido || ''}`.trim();
                 emailStatus.textContent = `⚠️ Email ya registrado${nombreCompleto ? ` a: ${nombreCompleto} (${perfilExistente.nivel})` : ''}`;
@@ -92,25 +103,8 @@ window.initCrearUsuario = function() {
                 return true;
             }
 
-            // 2. Verificar en auth.users con signIn
-            try {
-                const { error: authError } = await window.supabaseClient.auth.signInWithPassword({
-                    email: email,
-                    password: 'test_invalid_password_12345'
-                });
-
-                // Si el error NO es "Invalid login credentials", el email existe
-                if (authError && !authError.message.toLowerCase().includes('invalid login credentials')) {
-                    emailStatus.className = 'email-status error';
-                    emailStatus.textContent = '⚠️ Email ya existe en el sistema de autenticación';
-                    emailInput?.classList.add('email-duplicate');
-                    return true;
-                }
-            } catch (e) {
-                // Ignorar errores de auth
-            }
-
             // ✅ Email disponible
+            console.log("✅ Email disponible");
             emailStatus.className = 'email-status success';
             emailStatus.textContent = '✅ Email disponible';
             emailInput?.classList.remove('email-duplicate');
@@ -118,9 +112,9 @@ window.initCrearUsuario = function() {
             return false;
 
         } catch (e) {
-            console.warn('⚠️ Error verificando email:', e.message);
+            console.error('⚠️ Error verificando email:', e);
             emailStatus.className = 'email-status';
-            emailStatus.textContent = '';
+            emailStatus.textContent = '⚠️ Error de conexión';
             return false;
         }
     }
