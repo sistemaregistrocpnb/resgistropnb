@@ -76,96 +76,21 @@
 .seccion-titulo { color: var(--primary); font-size: 1.1rem; font-weight: 700; margin: 20px 0 12px 0; padding-bottom: 8px; border-bottom: 2px solid var(--beige-border); }
 .seccion-titulo:first-child { margin-top: 0; }
 
-/* ✅✅✅ REGLAS DE IMPRESIÓN ULTRA-BLINDADAS (SIN ESPACIOS EN BLANCO) ✅✅✅ */
+/* ✅✅✅ REGLAS DE IMPRESIÓN BLINDADAS ✅✅✅ */
 @media print {
-    @page {
-        size: letter portrait;
-        margin: 0.5cm; /* Margen mínimo para no cortar bordes */
-    }
-    
-    /* Ocultar absolutamente todo el sitio web */
-    body, body * {
-        visibility: hidden !important;
-        height: auto !important;
-        overflow: visible !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    
-    /* Hacer visible SOLO el modal de detalles */
-    #cp_modal_detalles, #cp_modal_detalles * {
-        visibility: visible !important;
-    }
-    
-    #cp_modal_detalles {
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 100% !important;
-        height: auto !important;
-        background: white !important;
-        display: block !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        z-index: 9999 !important;
-        transform: translateY(0) !important;
-    }
-    
-    /* Eliminar POR COMPLETO los elementos de interfaz del modal (sin dejar espacio) */
-    .modal-header, .modal-actions, .modal-close, #cp_btn_imprimir_reporte {
-        display: none !important;
-        height: 0 !important;
-        max-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-        visibility: hidden !important;
-    }
-    
-    .modal-content {
-        box-shadow: none !important;
-        max-width: 100% !important;
-        max-height: none !important;
-        overflow: visible !important;
-        border: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        border-radius: 0 !important;
-    }
-    
-    .modal-body {
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    /* Forzar que el encabezado del reporte suba al máximo absoluto */
-    .reporte-header-print {
-        margin-top: 0 !important;
-        margin-bottom: 10px !important;
-        padding-top: 0 !important;
-        padding-bottom: 10px !important;
-    }
-
-    /* Reducir espacio entre secciones para aprovechar la hoja */
-    .seccion-titulo {
-        margin-top: 12px !important;
-        margin-bottom: 8px !important;
-        padding-bottom: 5px !important;
-        page-break-after: avoid !important;
-    }
-
-    /* Evitar que los elementos se corten entre páginas */
-    .ficha-completa-item, .incidencia-item-print, .fotos-container {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-    }
-    
-    /* Forzar la impresión de colores de fondo */
-    * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
+    @page { size: letter portrait; margin: 0.5cm; }
+    body, body * { visibility: hidden !important; height: auto !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; }
+    #cp_modal_detalles, #cp_modal_detalles * { visibility: visible !important; }
+    #cp_modal_detalles { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; background: white !important; display: block !important; padding: 0 !important; margin: 0 !important; z-index: 9999 !important; }
+    .modal-header, .modal-actions, .modal-close, #cp_btn_imprimir_reporte { display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; }
+    .modal-content { box-shadow: none !important; max-width: 100% !important; max-height: none !important; overflow: visible !important; border: none !important; margin: 0 !important; padding: 0 !important; }
+    .modal-body { padding: 0 !important; margin: 0 !important; }
+    .reporte-header-print { margin-top: 0 !important; padding-top: 0 !important; margin-bottom: 10px !important; }
+    .seccion-titulo { margin-top: 12px !important; margin-bottom: 8px !important; page-break-after: avoid !important; }
+    .ficha-completa-item, .incidencia-item-print, .fotos-container { page-break-inside: avoid !important; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 }
+
 @media (max-width: 768px) {
     .con-search-box { flex-direction: column; align-items: stretch; }
     .ficha-breve-grid, .ficha-completa-grid, .fotos-container { grid-template-columns: 1fr; }
@@ -175,7 +100,7 @@
 </style>
 
 <div class="card">
-    <h3>🔍 Consulta de Personas y Vehículos</h3>
+    <h3> Consulta de Personas y Vehículos</h3>
     <div class="con-search-box">
         <div class="con-search-field">
             <label>Buscar por Cédula</label>
@@ -193,11 +118,12 @@
 <div class="modal-overlay" id="cp_modal_detalles">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 id="cp_modal_titulo">📋 Detalles Completos</h3>
+            <h3 id="cp_modal_titulo"> Detalles Completos</h3>
             <button class="modal-close" id="cp_modal_close">&times;</button>
         </div>
         <div class="modal-body" id="cp_modal_body"></div>
         <div class="modal-actions">
+            <!-- ✅ BOTÓN DE IMPRIMIR AGREGADO -->
             <button type="button" class="btn-submit" id="cp_btn_imprimir_reporte" style="background: var(--primary); margin-right: auto;">🖨️ Imprimir Reporte</button>
             <button type="button" class="btn-cancel" id="cp_modal_cerrar">Cerrar</button>
         </div>
