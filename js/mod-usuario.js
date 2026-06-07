@@ -14,10 +14,13 @@ window.initModUsuario = function() {
     const btnRefresh = el('mu_btn_refresh');
     const modalEditar = el('mu_modal_editar');
     const infoBloqueo = el('mu_info_bloqueo');
+    const cambiarPasswordCheck = el('mu_cambiar_password_check');
+    const passwordFields = el('mu_password_fields');
 
     let usuariosData = [];
     let esAdministrador = false;
     let fotoUrlActual = null;
+    let usuarioActualEditando = null;
 
     // Verificar permisos
     async function verificarPermisos() {
@@ -68,7 +71,6 @@ window.initModUsuario = function() {
 
             usuariosData = usuarios || [];
             console.log("📊 Usuarios cargados:", usuariosData.length);
-            console.log(" Primer usuario:", usuariosData[0]);
             renderTabla(usuariosData);
 
         } catch (err) {
@@ -113,7 +115,6 @@ window.initModUsuario = function() {
             const bloqueadoClass = u.bloqueado ? 'bloqueado-si' : 'bloqueado-no';
             const bloqueadoText = u.bloqueado ? 'Sí' : 'No';
 
-            // ✅ CORRECCIÓN: Usar String() para asegurar que el ID sea string
             const userIdStr = String(u.id);
 
             html += `
@@ -138,23 +139,20 @@ window.initModUsuario = function() {
         html += '</tbody></table>';
         tablaContainer.innerHTML = html;
 
-        // Agregar event listeners después de renderizar
         agregarEventListenersTabla();
     }
 
-    // Event delegation para los botones
+    // Event delegation
     function agregarEventListenersTabla() {
-        // Botones de editar
         const botonesEditar = tablaContainer.querySelectorAll('.btn-editar');
         botonesEditar.forEach(btn => {
             btn.onclick = function() {
                 const id = this.getAttribute('data-id');
-                console.log("️ Click en editar, ID (string):", id, "Tipo:", typeof id);
+                console.log("️ Click en editar, ID:", id);
                 abrirEditarUsuario(id);
             };
         });
 
-        // Botones de desbloquear
         const botonesDesbloquear = tablaContainer.querySelectorAll('.btn-desbloquear');
         botonesDesbloquear.forEach(btn => {
             btn.onclick = function() {
@@ -166,22 +164,21 @@ window.initModUsuario = function() {
         });
     }
 
-    // ✅ CORRECCIÓN PRINCIPAL: Comparación flexible de IDs
+    // Abrir modal de edición
     function abrirEditarUsuario(id) {
-        console.log(" Buscando usuario con ID:", id, "Tipo:", typeof id);
-        console.log(" Usuarios disponibles:", usuariosData.map(u => ({ id: u.id, tipo: typeof u.id })));
+        console.log("🔍 Buscando usuario con ID:", id);
         
-        // ✅ CORRECCIÓN: Convertir ambos a string para comparar
         const usuario = usuariosData.find(u => String(u.id) === String(id));
         
         if (!usuario) {
-            console.error("❌ Usuario no encontrado. ID buscado:", id);
+            console.error(" Usuario no encontrado. ID buscado:", id);
             console.error("📋 IDs disponibles:", usuariosData.map(u => String(u.id)));
             mostrarMensaje('❌ Usuario no encontrado', 'error');
             return;
         }
 
         console.log("✅ Usuario encontrado:", usuario);
+        usuarioActualEditando = usuario;
 
         // Llenar formulario
         el('mu_edit_id').value = usuario.id;
@@ -192,6 +189,12 @@ window.initModUsuario = function() {
         el('mu_edit_cedula').value = usuario.cedula || '';
         el('mu_edit_jerarquia').value = usuario.jerarquia || '';
         el('mu_edit_nivel').value = usuario.nivel || 'consultor';
+
+        // Resetear sección de contraseña
+        if (cambiarPasswordCheck) cambiarPasswordCheck.checked = false;
+        if (passwordFields) passwordFields.classList.remove('show');
+        if (el('mu_nueva_password')) el('mu_nueva_password').value = '';
+        if (el('mu_confirmar_password')) el('mu_confirmar_password').value = '';
 
         // Foto
         fotoUrlActual = usuario.foto_url || null;
@@ -216,58 +219,17 @@ window.initModUsuario = function() {
         console.log("✅ Modal abierto");
     }
 
-    // Desbloquear usuario
-    async function desbloquearUsuario(id, email) {
-        if (!confirm(`¿Está seguro de desbloquear al usuario ${email}?`)) return;
-
-        try {
-            // ✅ CORRECCIÓN: Convertir ID al tipo correcto
-            const { error } = await window.supabaseClient
-                .from('perfiles_usuario')
-                .update({
-                    bloqueado: false,
-                    intentos_fallidos: 0,
-                    fecha_bloqueo: null
-                })
-                .eq('id', id);
-
-            if (error) throw error;
-
-            mostrarMensaje(`✅ Usuario ${email} desbloqueado correctamente`, 'success');
-            await cargarUsuarios();
-
-        } catch (err) {
-            console.error('Error desbloqueando usuario:', err);
-            mostrarMensaje('❌ Error: ' + err.message, 'error');
-        }
-    }
-
-    // Buscar usuarios
-    if (buscarInput) {
-        buscarInput.addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase().trim();
-            if (!query) {
-                renderTabla(usuariosData);
-                return;
+    // Toggle de cambio de contraseña
+    if (cambiarPasswordCheck) {
+        cambiarPasswordCheck.addEventListener('change', function() {
+            if (this.checked) {
+                passwordFields.classList.add('show');
+            } else {
+                passwordFields.classList.remove('show');
+                if (el('mu_nueva_password')) el('mu_nueva_password').value = '';
+                if (el('mu_confirmar_password')) el('mu_confirmar_password').value = '';
             }
-
-            const filtrados = usuariosData.filter(u => {
-                const nombre = `${u.nombre || ''} ${u.apellido || ''}`.toLowerCase();
-                const email = (u.email || '').toLowerCase();
-                const cedula = (u.cedula || '').toLowerCase();
-                return nombre.includes(query) || email.includes(query) || cedula.includes(query);
-            });
-
-            renderTabla(filtrados);
         });
-    }
-
-    // Refrescar
-    if (btnRefresh) {
-        btnRefresh.onclick = () => {
-            cargarUsuarios();
-            mostrarMensaje(' Lista actualizada', 'info');
-        };
     }
 
     // Cerrar modal
@@ -285,6 +247,13 @@ window.initModUsuario = function() {
             const preview = el('mu_edit_foto_preview');
             if (preview) preview.src = 'https://ui-avatars.com/api/?name=Usuario&background=002b5c&color=fff';
             if (el('mu_edit_foto')) el('mu_edit_foto').value = '';
+        };
+    }
+
+    // Cambiar foto (botón separado)
+    if (el('mu_edit_foto_cambiar')) {
+        el('mu_edit_foto_cambiar').onclick = () => {
+            if (el('mu_edit_foto')) el('mu_edit_foto').click();
         };
     }
 
@@ -330,15 +299,41 @@ window.initModUsuario = function() {
                 mostrarMensaje('✅ Foto subida', 'success');
             } catch (err) {
                 console.error('Error subiendo foto:', err);
-                mostrarMensaje(' Error al subir: ' + err.message, 'error');
+                mostrarMensaje('❌ Error al subir: ' + err.message, 'error');
             }
         });
+    }
+
+    // Desbloquear usuario
+    async function desbloquearUsuario(id, email) {
+        if (!confirm(`¿Está seguro de desbloquear al usuario ${email}?`)) return;
+
+        try {
+            const { error } = await window.supabaseClient
+                .from('perfiles_usuario')
+                .update({
+                    bloqueado: false,
+                    intentos_fallidos: 0,
+                    fecha_bloqueo: null
+                })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            mostrarMensaje(`✅ Usuario ${email} desbloqueado correctamente`, 'success');
+            await cargarUsuarios();
+
+        } catch (err) {
+            console.error('Error desbloqueando usuario:', err);
+            mostrarMensaje('❌ Error: ' + err.message, 'error');
+        }
     }
 
     // Guardar cambios
     if (el('mu_btn_guardar')) {
         el('mu_btn_guardar').onclick = async () => {
             const id = el('mu_edit_id').value;
+            const userId = el('mu_edit_user_id').value;
             const nombre = el('mu_edit_nombre').value.trim();
             const apellido = el('mu_edit_apellido').value.trim();
             const cedula = el('mu_edit_cedula').value.trim();
@@ -346,8 +341,24 @@ window.initModUsuario = function() {
             const nivel = el('mu_edit_nivel').value;
 
             if (!nombre || !apellido || !cedula || !jerarquia || !nivel) {
-                mostrarMensaje('⚠️ Todos los campos son obligatorios', 'error');
+                mostrarMensaje('️ Todos los campos son obligatorios', 'error');
                 return;
+            }
+
+            // Validar contraseña si se marcó el checkbox
+            const cambiarPassword = cambiarPasswordCheck?.checked || false;
+            const nuevaPassword = el('mu_nueva_password')?.value || '';
+            const confirmarPassword = el('mu_confirmar_password')?.value || '';
+
+            if (cambiarPassword) {
+                if (!nuevaPassword || nuevaPassword.length < 6) {
+                    mostrarMensaje('❌ La nueva contraseña debe tener al menos 6 caracteres', 'error');
+                    return;
+                }
+                if (nuevaPassword !== confirmarPassword) {
+                    mostrarMensaje('❌ Las contraseñas no coinciden', 'error');
+                    return;
+                }
             }
 
             const btnGuardar = el('mu_btn_guardar');
@@ -355,6 +366,7 @@ window.initModUsuario = function() {
             btnGuardar.textContent = '⏳ Guardando...';
 
             try {
+                // 1. Actualizar perfil en perfiles_usuario
                 const { error } = await window.supabaseClient
                     .from('perfiles_usuario')
                     .update({
@@ -369,7 +381,30 @@ window.initModUsuario = function() {
 
                 if (error) throw error;
 
-                mostrarMensaje('✅ Usuario actualizado correctamente', 'success');
+                // 2. Si se marcó cambiar contraseña, llamar a la Edge Function
+                if (cambiarPassword) {
+                    mostrarMensaje('⏳ Actualizando contraseña...', 'info');
+                    
+                    const response = await fetch(`${window.supabaseUrl}/functions/v1/cambiar-password-usuario`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${window.supabaseKey}`
+                        },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            nueva_password: nuevaPassword
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (!result.success) {
+                        throw new Error(result.error || 'Error al cambiar contraseña');
+                    }
+                }
+
+                mostrarMensaje('✅ Usuario actualizado correctamente' + (cambiarPassword ? ' (contraseña cambiada)' : ''), 'success');
                 modalEditar.classList.remove('active');
                 await cargarUsuarios();
 
@@ -383,17 +418,45 @@ window.initModUsuario = function() {
         };
     }
 
+    // Buscar usuarios
+    if (buscarInput) {
+        buscarInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            if (!query) {
+                renderTabla(usuariosData);
+                return;
+            }
+
+            const filtrados = usuariosData.filter(u => {
+                const nombre = `${u.nombre || ''} ${u.apellido || ''}`.toLowerCase();
+                const email = (u.email || '').toLowerCase();
+                const cedula = (u.cedula || '').toLowerCase();
+                return nombre.includes(query) || email.includes(query) || cedula.includes(query);
+            });
+
+            renderTabla(filtrados);
+        });
+    }
+
+    // Refrescar
+    if (btnRefresh) {
+        btnRefresh.onclick = () => {
+            cargarUsuarios();
+            mostrarMensaje('🔄 Lista actualizada', 'info');
+        };
+    }
+
     // Inicializar
     async function init() {
         const tienePermiso = await verificarPermisos();
         if (!tienePermiso) {
-            mostrarMensaje(' No tiene permisos para acceder a este módulo', 'error');
+            mostrarMensaje('❌ No tiene permisos para acceder a este módulo', 'error');
             return;
         }
         await cargarUsuarios();
     }
 
-    console.log(" Inicializando módulo mod-usuario...");
+    console.log("🚀 Inicializando módulo mod-usuario...");
     init();
     console.log("✅ Módulo mod-usuario.js inicializado");
 };
