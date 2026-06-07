@@ -19,7 +19,7 @@ window.initCrearUsuario = function() {
 
     let fotoUrl = null;
 
-    // Verificar permisos
+    // Verificar permisos (solo administrador)
     async function verificarPermisos() {
         try {
             const { data: { user } } = await window.supabaseClient.auth.getUser();
@@ -75,7 +75,7 @@ window.initCrearUsuario = function() {
                 strength = '🟠 Media';
                 className = 'medium';
             } else {
-                strength = ' Fuerte';
+                strength = '🟢 Fuerte';
                 className = 'strong';
             }
 
@@ -114,7 +114,7 @@ window.initCrearUsuario = function() {
                 mostrarMensaje('⏳ Subiendo foto...', 'info');
                 
                 const { data: { user } } = await window.supabaseClient.auth.getUser();
-                const fileName = `${user.id}/${Date.now()}_${file.name}`;
+                const fileName = `fotos_perfiles/${user.id}/${Date.now()}_${file.name}`;
                 
                 const { data, error } = await window.supabaseClient.storage
                     .from('fotos_perfiles')
@@ -182,43 +182,69 @@ window.initCrearUsuario = function() {
 
             // Deshabilitar botón
             btnSubmit.disabled = true;
-            btnSubmit.textContent = '⏳ Creando usuario...';
+            btnSubmit.textContent = ' Creando usuario...';
             mostrarMensaje('⏳ Procesando...', 'info');
 
             try {
-                // Llamar a la Edge Function
-                const response = await fetch(`${window.supabaseUrl}/functions/v1/crear-usuario`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${window.supabaseKey}`
-                    },
-                    body: JSON.stringify({
-                        email,
-                        password,
-                        nombre,
-                        apellido,
-                        cedula,
-                        nivel,
-                        jerarquia,
-                        foto_url: fotoUrl
-                    })
+                // ✅ MÉTODO DIRECTO: Crear usuario con signUp
+                const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            nombre: nombre,
+                            apellido: apellido,
+                            cedula: cedula
+                        }
+                    }
                 });
 
-                const result = await response.json();
+                if (authError) throw authError;
 
-                if (result.success) {
-                    mostrarMensaje(`✅ Usuario creado exitosamente. Email: ${email}`, 'success');
-                    form.reset();
-                    limpiarFoto();
-                    if (passwordStrength) passwordStrength.textContent = '';
-                } else {
-                    mostrarMensaje(`❌ Error: ${result.error}`, 'error');
+                if (!authData.user) {
+                    throw new Error('No se pudo crear el usuario');
                 }
+
+                // ✅ Insertar en perfiles_usuario
+                const { error: perfilError } = await window.supabaseClient
+                    .from('perfiles_usuario')
+                    .insert([{
+                        user_id: authData.user.id,
+                        nivel: nivel,
+                        creado_en: new Date().toISOString(),
+                        intentos_fallidos: 0,
+                        bloqueado: false,
+                        email: email,
+                        nombre: nombre,
+                        apellido: apellido,
+                        cedula: cedula,
+                        foto_url: fotoUrl,
+                        jerarquia: jerarquia
+                    }]);
+
+                if (perfilError) {
+                    console.error('Error insertando perfil:', perfilError);
+                    // Si falla el perfil, intentar eliminar el usuario creado
+                    await window.supabaseClient.auth.admin.deleteUser(authData.user.id);
+                    throw new Error('Usuario creado pero no se pudo guardar el perfil: ' + perfilError.message);
+                }
+
+                mostrarMensaje(`✅ Usuario creado exitosamente: ${email}`, 'success');
+                form.reset();
+                limpiarFoto();
+                if (passwordStrength) passwordStrength.textContent = '';
 
             } catch (err) {
                 console.error('Error creando usuario:', err);
-                mostrarMensaje('❌ Error de conexión: ' + err.message, 'error');
+                let errorMsg = err.message;
+                
+                if (errorMsg.includes('User already registered')) {
+                    errorMsg = 'Este email ya está registrado';
+                } else if (errorMsg.includes('password')) {
+                    errorMsg = 'La contraseña no cumple los requisitos';
+                }
+                
+                mostrarMensaje('❌ Error: ' + errorMsg, 'error');
             } finally {
                 btnSubmit.disabled = false;
                 btnSubmit.textContent = '✅ Crear Usuario';
