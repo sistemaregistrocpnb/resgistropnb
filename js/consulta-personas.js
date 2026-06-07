@@ -1,8 +1,8 @@
 window.initConsultaPersonas = function() {
-    console.log("️ Iniciando módulo consulta-personas.js...");
+    console.log("⚙️ Iniciando módulo consulta-personas.js...");
 
     if (window._consultaPersonasInitialized) {
-        console.log("⚠️ Módulo ya inicializado, omitiendo...");
+        console.log("️ Módulo ya inicializado, omitiendo...");
         return;
     }
     window._consultaPersonasInitialized = true;
@@ -19,49 +19,40 @@ window.initConsultaPersonas = function() {
     const modalBody = el('cp_modal_body');
 
     let personaActual = null;
-    let tipoRegistroActual = null;
+    let tipoRegistroActual = null; // 'persona' o 'vinculado'
     let datosProcesado = null;
 
-    // Event listeners
+    // Listeners
     if (btnBuscar) btnBuscar.onclick = () => buscarPersona();
-
     if (buscarInput) {
         buscarInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                btnBuscar?.click();
-            }
+            if (e.key === 'Enter') { e.preventDefault(); btnBuscar?.click(); }
         });
     }
 
+    // Cerrar modales
     if (el('cp_modal_close')) el('cp_modal_close').onclick = () => modalDetalles.classList.remove('active');
     if (el('cp_modal_cerrar')) el('cp_modal_cerrar').onclick = () => modalDetalles.classList.remove('active');
     if (el('cp_modal_inc_close')) el('cp_modal_inc_close').onclick = () => modalIncidencia.classList.remove('active');
     if (el('cp_btn_cancelar_incidencia')) el('cp_btn_cancelar_incidencia').onclick = () => modalIncidencia.classList.remove('active');
     if (el('cp_btn_guardar_incidencia')) el('cp_btn_guardar_incidencia').onclick = () => guardarIncidencia();
 
-    // Función para mostrar mensaje
     function mostrarMensaje(texto, tipo) {
         if (!msg) return;
         msg.textContent = texto;
         msg.className = `msg ${tipo}`;
         msg.style.display = 'block';
-        if (tipo === 'success') {
-            setTimeout(() => { if (msg) msg.style.display = 'none'; }, 3000);
-        }
+        if (tipo === 'success') setTimeout(() => { if (msg) msg.style.display = 'none'; }, 3000);
     }
 
-    // Verificar permisos del usuario
     function tienePermisosIncidencia() {
         const rol = sessionStorage.getItem('pnb_user_role') || '';
         const rolLower = rol.toLowerCase();
         return rolLower === 'administrador' || rolLower === 'moderador';
     }
 
-    // Buscar persona
     async function buscarPersona() {
         const cedula = buscarInput?.value.trim().replace(/\D/g, '') || '';
-        
         if (!cedula || cedula.length < 7) {
             mostrarMensaje('⚠️ Ingrese una cédula válida (mínimo 7 dígitos)', 'error');
             return;
@@ -75,7 +66,7 @@ window.initConsultaPersonas = function() {
         datosProcesado = null;
 
         try {
-            // Buscar en registro_personas
+            // 1. Buscar en registro_personas
             const { data: persona, error: errPersona } = await window.supabaseClient
                 .from('registro_personas')
                 .select('*')
@@ -88,21 +79,19 @@ window.initConsultaPersonas = function() {
                 personaActual = persona;
                 tipoRegistroActual = 'persona';
                 
-                // Si está procesado, buscar el tipo de delito
+                // Verificar procesados
                 const estatus = (persona.estatus || '').toLowerCase();
                 if (estatus.includes('procesad')) {
                     try {
                         const { data: procData } = await window.supabaseClient
                             .from('registro_procesados')
-                            .select('tipo_delito, tipo_registro')
+                            .select('tipo_delito')
                             .eq('cedula', cedula)
                             .order('created_at', { ascending: false })
                             .limit(1)
                             .maybeSingle();
                         if (procData) datosProcesado = procData;
-                    } catch (e) {
-                        console.warn('No se pudo obtener datos de procesados:', e);
-                    }
+                    } catch (e) { console.warn('No se pudo obtener datos de procesados:', e); }
                 }
                 
                 renderFichaBreve(persona, 'persona');
@@ -111,7 +100,7 @@ window.initConsultaPersonas = function() {
                 return;
             }
 
-            // Buscar en registro_vinculados
+            // 2. Buscar en registro_vinculado
             const { data: vinculado, error: errVinculado } = await window.supabaseClient
                 .from('registro_vinculado')
                 .select('*')
@@ -123,21 +112,37 @@ window.initConsultaPersonas = function() {
             if (vinculado) {
                 personaActual = vinculado;
                 tipoRegistroActual = 'vinculado';
+                
+                // Verificar procesados (si la persona está en vinculados pero también fue procesada)
+                const estatus = (vinculado.estatus || '').toLowerCase();
+                if (estatus.includes('procesad')) {
+                    try {
+                        const { data: procData } = await window.supabaseClient
+                            .from('registro_procesados')
+                            .select('tipo_delito')
+                            .eq('cedula', cedula)
+                            .order('created_at', { ascending: false })
+                            .limit(1)
+                            .maybeSingle();
+                        if (procData) datosProcesado = procData;
+                    } catch (e) {}
+                }
+
                 renderFichaBreve(vinculado, 'vinculado');
                 await cargarIncidencias(cedula, 'vinculado');
-                mostrarMensaje('✅ Persona vinculada encontrada', 'success');
+                mostrarMensaje('✅ Vehículo vinculado encontrado', 'success');
                 return;
             }
 
             mostrarMensaje('❌ No se encontró ninguna persona con esa cédula', 'error');
 
         } catch (err) {
-            console.error('❌ Error buscando persona:', err);
-            mostrarMensaje(' Error: ' + err.message, 'error');
+            console.error('❌ Error buscando:', err);
+            mostrarMensaje('❌ Error: ' + err.message, 'error');
         }
     }
 
-    // Renderizar ficha breve
+    // ✅ RENDERIZAR FICHA BREVE (Actualizado para Vinculados)
     function renderFichaBreve(data, tipo) {
         if (!fichaBreve) return;
 
@@ -146,41 +151,64 @@ window.initConsultaPersonas = function() {
         const estatusClass = estatusLower.includes('verificaci') ? 'estatus-verificacion' : 
                             estatusLower.includes('procesad') ? 'estatus-procesado' : 'estatus-liberado';
 
-        // Nombre completo
         let nombreCompleto = '';
         if (tipo === 'persona') {
             nombreCompleto = `${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}`.trim() || 'N/A';
         } else {
-            nombreCompleto = data.propietario || data.cedula || 'N/A';
+            // Para vinculados mostramos el nombre si existe, o la placa
+            nombreCompleto = (data.primer_nombre && data.primer_apellido) 
+                ? `${data.primer_nombre} ${data.primer_apellido}` 
+                : (data.propietario || `Vehículo ${data.placa || ''}`);
         }
 
-        // Alertas (tipo de delito y antecedentes judiciales)
+        // Alertas
         let alertasHtml = '';
-        
-        // Tipo de delito (si está procesado)
         if (estatusLower.includes('procesad') && datosProcesado?.tipo_delito) {
-            alertasHtml += `
-                <div class="ficha-alert ficha-alert-delito">
-                    ⚖️ <strong>Procesado por:</strong> ${datosProcesado.tipo_delito}
-                </div>
-            `;
+            alertasHtml += `<div class="ficha-alert ficha-alert-delito">️ <strong>Procesado por:</strong> ${datosProcesado.tipo_delito}</div>`;
         }
-        
-        // Antecedentes judiciales
         const problemaJudicial = data.problema_judicial || '';
         if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLowerCase() !== 'no') {
-            alertasHtml += `
-                <div class="ficha-alert ficha-alert-judicial">
-                    ⚠️ <strong>Antecedentes Judiciales:</strong> ${problemaJudicial}
+            alertasHtml += `<div class="ficha-alert ficha-alert-judicial">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
+        }
+
+        // Campos específicos para ficha breve
+        let htmlCampos = `
+            <div class="ficha-breve-item">
+                <div class="ficha-breve-label">Cédula</div>
+                <div class="ficha-breve-value">${data.cedula || 'N/A'}</div>
+            </div>
+            <div class="ficha-breve-item">
+                <div class="ficha-breve-label">Tipo</div>
+                <div class="ficha-breve-value">${tipo === 'persona' ? '👤 Persona' : ' Vinculado (Vehículo)'}</div>
+            </div>
+            <div class="ficha-breve-item">
+                <div class="ficha-breve-label">Estación de Detención</div>
+                <div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div>
+            </div>
+            <div class="ficha-breve-item">
+                <div class="ficha-breve-label">Fecha</div>
+                <div class="ficha-breve-value">${new Date(data.created_at || data.creado_en).toLocaleString('es-VE')}</div>
+            </div>
+        `;
+
+        // Si es vinculado, agregamos datos del vehículo en la ficha breve
+        if (tipo === 'vinculado') {
+            htmlCampos += `
+                <div class="ficha-breve-item">
+                    <div class="ficha-breve-label">Vehículo</div>
+                    <div class="ficha-breve-value">${data.tipo_vehiculo || 'N/A'} ${data.marca_vehiculo || ''} ${data.modelo_vehiculo || ''}</div>
+                </div>
+                <div class="ficha-breve-item">
+                    <div class="ficha-breve-label">Placa</div>
+                    <div class="ficha-breve-value" style="font-weight:800; color:var(--primary); font-size:1.1rem;">${data.placa || 'N/A'}</div>
                 </div>
             `;
         }
 
         // Observaciones
         const observaciones = data.observaciones || '';
-        let observacionesHtml = '';
-        if (observaciones && observaciones.trim() !== '') {
-            observacionesHtml = `
+        if (observaciones) {
+            htmlCampos += `
                 <div class="ficha-breve-item full-width">
                     <div class="ficha-breve-label">📝 Observaciones</div>
                     <div class="ficha-breve-value">${observaciones}</div>
@@ -188,42 +216,19 @@ window.initConsultaPersonas = function() {
             `;
         }
 
-        // Botón de nueva incidencia (solo para admin/moderador)
         const tienePermisos = tienePermisosIncidencia();
-        let btnIncidenciaHtml = '';
-        if (tienePermisos) {
-            btnIncidenciaHtml = `<button type="button" class="btn-nueva-incidencia" id="cp_btn_nueva_incidencia"> Nueva Incidencia</button>`;
-        }
+        const btnIncidenciaHtml = tienePermisos ? `<button type="button" class="btn-nueva-incidencia" id="cp_btn_nueva_incidencia">➕ Nueva Incidencia</button>` : '';
 
         let html = `
             <div class="ficha-breve">
                 <div class="ficha-breve-header">
-                    <h3>👤 ${nombreCompleto}</h3>
+                    <h3>${tipo === 'persona' ? '' : '🚗'} ${nombreCompleto}</h3>
                     <span class="estatus-badge ${estatusClass}">${estatus}</span>
                 </div>
-                
                 ${alertasHtml}
-                
                 <div class="ficha-breve-grid">
-                    <div class="ficha-breve-item">
-                        <div class="ficha-breve-label">Cédula</div>
-                        <div class="ficha-breve-value">${data.cedula || 'N/A'}</div>
-                    </div>
-                    <div class="ficha-breve-item">
-                        <div class="ficha-breve-label">Tipo de Registro</div>
-                        <div class="ficha-breve-value">${tipo === 'persona' ? ' Persona' : '🔗 Vinculado'}</div>
-                    </div>
-                    <div class="ficha-breve-item">
-                        <div class="ficha-breve-label">Estación de Detención</div>
-                        <div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div>
-                    </div>
-                    <div class="ficha-breve-item">
-                        <div class="ficha-breve-label">Fecha de Registro</div>
-                        <div class="ficha-breve-value">${new Date(data.created_at || data.creado_en).toLocaleString('es-VE')}</div>
-                    </div>
-                    ${observacionesHtml}
+                    ${htmlCampos}
                 </div>
-                
                 <div class="ficha-breve-actions">
                     <button type="button" class="btn-ver-detalles" id="cp_btn_ver_detalles">📋 Ver Detalles Completos</button>
                     ${btnIncidenciaHtml}
@@ -234,12 +239,10 @@ window.initConsultaPersonas = function() {
         fichaBreve.innerHTML = html;
         fichaBreve.style.display = 'block';
 
-        // Event listeners
+        // Listeners dinámicos
         setTimeout(() => {
             const btnDetalles = el('cp_btn_ver_detalles');
-            if (btnDetalles) {
-                btnDetalles.onclick = () => mostrarDetallesCompletos(data, tipo);
-            }
+            if (btnDetalles) btnDetalles.onclick = () => mostrarDetallesCompletos(data, tipo);
             
             const btnIncidencia = el('cp_btn_nueva_incidencia');
             if (btnIncidencia) {
@@ -252,149 +255,132 @@ window.initConsultaPersonas = function() {
         }, 100);
     }
 
-    // Mostrar detalles completos
+    // ✅ DETALLES COMPLETOS (Actualizado para mostrar fotos y datos completos)
     function mostrarDetallesCompletos(data, tipo) {
         if (!modalBody || !modalTitulo) return;
-
-        modalTitulo.textContent = `📋 Detalles Completos - ${tipo === 'persona' ? 'Persona' : 'Vinculado'}`;
+        modalTitulo.textContent = ` Detalles - ${tipo === 'persona' ? 'Persona' : 'Vehículo Vinculado'}`;
 
         let html = '';
 
         if (tipo === 'persona') {
-            // Fotos
+            // --- FOTOS ---
             if (data.foto_frontal || data.foto_perfil_izq || data.foto_perfil_der) {
-                html += `<div class="seccion-titulo">📸 Fotografías</div>`;
-                html += `<div class="fotos-container">`;
-                
-                if (data.foto_frontal) {
-                    html += `
-                        <div class="foto-item">
-                            <img src="${data.foto_frontal}" alt="Frontal" onerror="this.style.display='none'">
-                            <div class="foto-item-label">Frontal</div>
-                        </div>
-                    `;
-                }
-                if (data.foto_perfil_izq) {
-                    html += `
-                        <div class="foto-item">
-                            <img src="${data.foto_perfil_izq}" alt="Perfil Izquierdo" onerror="this.style.display='none'">
-                            <div class="foto-item-label">Perfil Izquierdo</div>
-                        </div>
-                    `;
-                }
-                if (data.foto_perfil_der) {
-                    html += `
-                        <div class="foto-item">
-                            <img src="${data.foto_perfil_der}" alt="Perfil Derecho" onerror="this.style.display='none'">
-                            <div class="foto-item-label">Perfil Derecho</div>
-                        </div>
-                    `;
-                }
-                
+                html += `<div class="seccion-titulo">📸 Fotografías</div><div class="fotos-container">`;
+                if (data.foto_frontal) html += `<div class="foto-item"><img src="${data.foto_frontal}" alt="Frontal"><div class="foto-item-label">Frontal</div></div>`;
+                if (data.foto_perfil_izq) html += `<div class="foto-item"><img src="${data.foto_perfil_izq}" alt="Perfil Izq"><div class="foto-item-label">Perfil Izq.</div></div>`;
+                if (data.foto_perfil_der) html += `<div class="foto-item"><img src="${data.foto_perfil_der}" alt="Perfil Der"><div class="foto-item-label">Perfil Der.</div></div>`;
                 html += `</div>`;
             }
 
-            // Datos personales
-            html += `<div class="seccion-titulo"> Datos Personales</div>`;
-            html += `<div class="ficha-completa-grid">`;
+            html += `<div class="seccion-titulo">👤 Datos Personales</div><div class="ficha-completa-grid">`;
             
             const camposPersona = [
-                { label: 'Primer Nombre', value: data.primer_nombre },
-                { label: 'Segundo Nombre', value: data.segundo_nombre },
-                { label: 'Primer Apellido', value: data.primer_apellido },
-                { label: 'Segundo Apellido', value: data.segundo_apellido },
+                { label: 'Nombre', value: `${data.primer_nombre || ''} ${data.segundo_nombre || ''}` },
+                { label: 'Apellido', value: `${data.primer_apellido || ''} ${data.segundo_apellido || ''}` },
                 { label: 'Cédula', value: data.cedula },
-                { label: 'Fecha de Nacimiento', value: data.fecha_nacimiento },
+                { label: 'Fecha Nac.', value: data.fecha_nacimiento },
                 { label: 'Edad', value: data.edad ? `${data.edad} años` : null },
                 { label: 'Nacionalidad', value: data.nacionalidad },
                 { label: 'Sexo', value: data.sexo },
                 { label: 'Estatura', value: data.estatura_cm ? `${data.estatura_cm} cm` : null },
-                { label: 'Color de Piel', value: data.color_piel },
-                { label: 'Color de Ojos', value: data.color_ojos },
-                { label: 'Color de Cabello', value: data.color_cabello },
+                { label: 'Color Piel', value: data.color_piel },
+                { label: 'Color Ojos', value: data.color_ojos },
+                { label: 'Cabello', value: data.color_cabello },
                 { label: 'Complexión', value: data.complexion },
                 { label: 'Teléfono', value: `${data.tlf_pais || ''} ${data.tlf_numero || ''}`.trim() || null },
                 { label: 'Dirección', value: data.direccion },
                 { label: 'Apodo', value: data.apodo },
                 { label: 'Marca Corporal', value: data.marca_corporal },
-                { label: 'Usa Lentes', value: data.usa_lentes ? 'Sí' : 'No' },
+                { label: 'Lentes', value: data.usa_lentes ? 'Sí' : 'No' },
                 { label: 'Detalle Lentes', value: data.detalle_lentes },
                 { label: 'Perforaciones', value: data.perforaciones ? 'Sí' : 'No' },
-                { label: 'Detalle Perforaciones', value: data.detalle_perforaciones },
-                { label: 'Condición Médica', value: data.condicion_medica },
-                { label: 'Consume Medicamento', value: data.consume_medicamento },
-                { label: 'Problema Judicial', value: data.problema_judicial },
-                { label: 'Estación de Detención', value: data.estacion_policial },
-                { label: 'Dirección de Detención', value: data.direccion_detencion },
-                { label: 'Estatus', value: data.estatus },
-                { label: 'Fecha de Registro', value: new Date(data.created_at || data.creado_en).toLocaleString('es-VE') }
+                { label: 'Detalle Perfor.', value: data.detalle_perforaciones },
+                { label: 'Cond. Médica', value: data.condicion_medica },
+                { label: 'Medicamento', value: data.consume_medicamento },
+                { label: 'Prob. Judicial', value: data.problema_judicial },
+                { label: 'Estación', value: data.estacion_policial },
+                { label: 'Dir. Detención', value: data.direccion_detencion },
+                { label: 'Estatus', value: data.estatus }
             ];
 
-            camposPersona.forEach(campo => {
-                if (campo.value !== null && campo.value !== undefined && campo.value !== '') {
-                    const isFullWidth = ['direccion', 'direccion_detencion', 'problema_judicial', 'observaciones', 'marca_corporal'].includes(campo.label.toLowerCase().replace(/ /g, '_'));
-                    html += `
-                        <div class="ficha-completa-item ${isFullWidth ? 'full-width' : ''}">
-                            <div class="ficha-completa-label">${campo.label}</div>
-                            <div class="ficha-completa-value">${campo.value}</div>
-                        </div>
-                    `;
+            camposPersona.forEach(c => {
+                if (c.value !== null && c.value !== undefined && c.value !== '') {
+                    html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value">${c.value}</div></div>`;
                 }
             });
-
-            // Observaciones
+            
             if (data.observaciones) {
-                html += `
-                    <div class="ficha-completa-item full-width">
-                        <div class="ficha-completa-label"> Observaciones</div>
-                        <div class="ficha-completa-value">${data.observaciones}</div>
-                    </div>
-                `;
+                html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
             }
-
             html += `</div>`;
 
         } else {
-            // Vinculado - Vehículo
-            html += `<div class="seccion-titulo">🚗 Datos del Vehículo</div>`;
-            html += `<div class="ficha-completa-grid">`;
+            // --- VINCULADO (VEHÍCULO + PERSONA) ---
             
-            const camposVinculado = [
-                { label: 'Cédula', value: data.cedula },
-                { label: 'Placa', value: data.placa },
-                { label: 'Tipo de Vehículo', value: data.tipo_vehiculo },
-                { label: 'Marca', value: data.marca },
-                { label: 'Modelo', value: data.modelo },
-                { label: 'Color', value: data.color },
-                { label: 'Año', value: data.anio },
-                { label: 'Serial Motor', value: data.serial_motor },
-                { label: 'Serial Carrocería', value: data.serial_carroceria },
-                { label: 'Propietario', value: data.propietario },
-                { label: 'Estación de Detención', value: data.estacion_policial },
-                { label: 'Estatus', value: data.estatus },
-                { label: 'Fecha de Registro', value: new Date(data.created_at).toLocaleString('es-VE') }
-            ];
-
-            camposVinculado.forEach(campo => {
-                if (campo.value !== null && campo.value !== undefined && campo.value !== '') {
-                    html += `
-                        <div class="ficha-completa-item">
-                            <div class="ficha-completa-label">${campo.label}</div>
-                            <div class="ficha-completa-value">${campo.value}</div>
-                        </div>
-                    `;
-                }
-            });
-
-            if (data.observaciones) {
-                html += `
-                    <div class="ficha-completa-item full-width">
-                        <div class="ficha-completa-label"> Observaciones</div>
-                        <div class="ficha-completa-value">${data.observaciones}</div>
-                    </div>
-                `;
+            // 1. Fotos de la Persona
+            if (data.foto_frontal_persona || data.foto_perfil_izq_persona || data.foto_perfil_der_persona) {
+                html += `<div class="seccion-titulo">📸 Fotografías de la Persona</div><div class="fotos-container">`;
+                if (data.foto_frontal_persona) html += `<div class="foto-item"><img src="${data.foto_frontal_persona}"><div class="foto-item-label">Frontal</div></div>`;
+                if (data.foto_perfil_izq_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_izq_persona}"><div class="foto-item-label">Perfil Izq.</div></div>`;
+                if (data.foto_perfil_der_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_der_persona}"><div class="foto-item-label">Perfil Der.</div></div>`;
+                html += `</div>`;
             }
 
+            // 2. Datos de la Persona en el vehículo
+            html += `<div class="seccion-titulo">👤 Datos de la Persona</div><div class="ficha-completa-grid">`;
+            const camposPersonaVinc = [
+                { label: 'Nombre', value: `${data.primer_nombre || ''} ${data.segundo_nombre || ''}` },
+                { label: 'Apellido', value: `${data.primer_apellido || ''} ${data.segundo_apellido || ''}` },
+                { label: 'Cédula', value: data.cedula },
+                { label: 'Fecha Nac.', value: data.fecha_nacimiento },
+                { label: 'Edad', value: data.edad },
+                { label: 'Nacionalidad', value: data.nacionalidad },
+                { label: 'Sexo', value: data.sexo },
+                { label: 'Teléfono', value: `${data.tlf_pais || ''} ${data.tlf_numero || ''}`.trim() || null },
+                { label: 'Dirección', value: data.direccion },
+                { label: 'Problema Judicial', value: data.problema_judicial }
+            ];
+            camposPersonaVinc.forEach(c => {
+                if (c.value) html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value">${c.value}</div></div>`;
+            });
+            html += `</div>`;
+
+            // 3. Fotos del Vehículo
+            if (data.foto_frontal_vehiculo || data.foto_trasera_vehiculo || data.foto_lado_der_vehiculo || data.foto_lado_izq_vehiculo) {
+                html += `<div class="seccion-titulo">📸 Fotografías del Vehículo</div><div class="fotos-container">`;
+                if (data.foto_frontal_vehiculo) html += `<div class="foto-item"><img src="${data.foto_frontal_vehiculo}"><div class="foto-item-label">Frontal</div></div>`;
+                if (data.foto_trasera_vehiculo) html += `<div class="foto-item"><img src="${data.foto_trasera_vehiculo}"><div class="foto-item-label">Trasera</div></div>`;
+                if (data.foto_lado_der_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_der_vehiculo}"><div class="foto-item-label">Lado Der.</div></div>`;
+                if (data.foto_lado_izq_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_izq_vehiculo}"><div class="foto-item-label">Lado Izq.</div></div>`;
+                html += `</div>`;
+            }
+
+            // 4. Datos del Vehículo
+            html += `<div class="seccion-titulo">🚗 Datos del Vehículo</div><div class="ficha-completa-grid">`;
+            const camposVehiculo = [
+                { label: 'Placa', value: data.placa, highlight: true },
+                { label: 'Tipo', value: data.tipo_vehiculo },
+                { label: 'Marca', value: data.marca_vehiculo },
+                { label: 'Modelo', value: data.modelo_vehiculo },
+                { label: 'Color', value: data.color_vehiculo },
+                { label: 'Año', value: data.anio_vehiculo },
+                { label: 'Serial Motor', value: data.serial_motor },
+                { label: 'Serial Carroc.', value: data.serial_carroceria },
+                { label: 'Cilindraje', value: data.cilindraje },
+                { label: 'Marca Corporal', value: data.marca_corporal },
+                { label: 'Propietario', value: data.propietario },
+                { label: 'Estación', value: data.estacion_policial },
+                { label: 'Dir. Detención', value: data.direccion_detencion },
+                { label: 'Estatus', value: data.estatus },
+                { label: 'Observaciones', value: data.observaciones }
+            ];
+            
+            camposVehiculo.forEach(c => {
+                if (c.value !== null && c.value !== undefined && c.value !== '') {
+                    const style = c.highlight ? 'font-weight:800; color:var(--primary); font-size:1.1rem;' : '';
+                    html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value" style="${style}">${c.value}</div></div>`;
+                }
+            });
             html += `</div>`;
         }
 
@@ -402,10 +388,8 @@ window.initConsultaPersonas = function() {
         modalDetalles.classList.add('active');
     }
 
-    // Cargar incidencias
     async function cargarIncidencias(cedula, tipo) {
         if (!incidenciasSection) return;
-
         try {
             const { data: incidencias, error } = await window.supabaseClient
                 .from('registro_incidencias')
@@ -417,7 +401,6 @@ window.initConsultaPersonas = function() {
             if (error) throw error;
 
             let html = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3>';
-
             if (!incidencias || incidencias.length === 0) {
                 html += '<div class="sin-incidencias">No hay incidencias registradas</div>';
             } else {
@@ -433,30 +416,22 @@ window.initConsultaPersonas = function() {
                     `;
                 });
             }
-
             html += '</div>';
             incidenciasSection.innerHTML = html;
             incidenciasSection.style.display = 'block';
-
         } catch (err) {
-            console.error('❌ Error cargando incidencias:', err);
-            incidenciasSection.innerHTML = '<div class="incidencias-section"><h3> Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar incidencias</div></div>';
+            console.error('Error incidencias:', err);
+            incidenciasSection.innerHTML = '<div class="incidencias-section"><h3>Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
             incidenciasSection.style.display = 'block';
         }
     }
 
-    // Guardar nueva incidencia
     async function guardarIncidencia() {
         const descripcion = el('cp_incidencia_descripcion')?.value.trim();
-        
-        if (!descripcion) {
-            alert('️ Ingrese una descripción para la incidencia');
-            return;
-        }
+        if (!descripcion) { alert('⚠️ Ingrese una descripción'); return; }
 
         const btnGuardar = el('cp_btn_guardar_incidencia');
-        btnGuardar.disabled = true;
-        btnGuardar.textContent = '⏳ Guardando...';
+        btnGuardar.disabled = true; btnGuardar.textContent = '⏳ Guardando...';
 
         try {
             const { data: { user } } = await window.supabaseClient.auth.getUser();
@@ -471,24 +446,18 @@ window.initConsultaPersonas = function() {
                 email_registrante: user.email
             };
 
-            const { error } = await window.supabaseClient
-                .from('registro_incidencias')
-                .insert([incidencia]);
-
+            const { error } = await window.supabaseClient.from('registro_incidencias').insert([incidencia]);
             if (error) throw error;
 
             modalIncidencia.classList.remove('active');
-            mostrarMensaje('✅ Incidencia registrada exitosamente', 'success');
-            
-            // Recargar incidencias
+            mostrarMensaje('✅ Incidencia registrada', 'success');
             await cargarIncidencias(personaActual.cedula, tipoRegistroActual);
 
         } catch (err) {
-            console.error('❌ Error guardando incidencia:', err);
+            console.error('Error:', err);
             alert('❌ Error: ' + err.message);
         } finally {
-            btnGuardar.disabled = false;
-            btnGuardar.textContent = '💾 Guardar Incidencia';
+            btnGuardar.disabled = false; btnGuardar.textContent = ' Guardar Incidencia';
         }
     }
 
