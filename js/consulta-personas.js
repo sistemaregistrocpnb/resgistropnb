@@ -1,9 +1,7 @@
 window.initConsultaPersonas = function() {
-    if (window._consultaPersonasInitialized) {
-        return;
-    }
-    window._consultaPersonasInitialized = true;
-    
+    // ✅ ELIMINADO el bloqueo de inicialización para permitir que el módulo 
+    // se "despierte" correctamente cada vez que el usuario navega a esta sección.
+
     const el = (id) => document.getElementById(id);
     const buscarInput = el('cp_buscar_cedula');
     const btnBuscar = el('cp_btn_buscar');
@@ -20,20 +18,23 @@ window.initConsultaPersonas = function() {
     let datosProcesado = null;
     let userRoleCache = null;
 
-    // Listeners
-// Listeners
-if (btnBuscar) btnBuscar.onclick = () => buscarPersona();
-
-if (buscarInput) {
-    // ✅ NUEVO: Forzar solo números y máximo 8 dígitos en tiempo real
-    buscarInput.addEventListener('input', (e) => {
-        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
-    });
-
-    buscarInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); btnBuscar?.click(); }
-    });
-}
+    // ✅ USAMOS .onclick y .on... en lugar de addEventListener. 
+    // Esto evita que se acumulen eventos duplicados si el módulo se recarga.
+    if (btnBuscar) btnBuscar.onclick = () => buscarPersona();
+    
+    if (buscarInput) {
+        // Validación en tiempo real: solo números, máximo 8 dígitos
+        buscarInput.oninput = (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
+        };
+        
+        buscarInput.onkeypress = (e) => {
+            if (e.key === 'Enter') { 
+                e.preventDefault(); 
+                btnBuscar?.click(); 
+            }
+        };
+    }
 
     // Cerrar modales
     if (el('cp_modal_close')) el('cp_modal_close').onclick = () => modalDetalles.classList.remove('active');
@@ -74,18 +75,15 @@ if (buscarInput) {
         }
     }
 
-   async function buscarPersona() {
-    // Ya no necesitamos .replace(/\D/g, '') aquí porque el input ya lo limpia en tiempo real
-    const cedula = buscarInput?.value.trim() || '';
-    
-    // ✅ VALIDACIÓN ACTUALIZADA: Mínimo 7, máximo 8 dígitos
-    if (!cedula || cedula.length < 7 || cedula.length > 8) {
-        mostrarMensaje('⚠️ Ingrese una cédula válida (entre 7 y 8 dígitos)', 'error');
-        return;
-    }
+    async function buscarPersona() {
+        const cedula = buscarInput?.value.trim() || '';
+        
+        if (!cedula || cedula.length < 7 || cedula.length > 8) {
+            mostrarMensaje('⚠️ Ingrese una cédula válida (entre 7 y 8 dígitos)', 'error');
+            return;
+        }
 
-    mostrarMensaje('🔍 Buscando...', 'info');
-
+        mostrarMensaje('🔍 Buscando...', 'info');
         fichaBreve.style.display = 'none';
         incidenciasSection.style.display = 'none';
         personaActual = null;
@@ -184,7 +182,7 @@ if (buscarInput) {
         }
         const problemaJudicial = data.problema_judicial || '';
         if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLowerCase() !== 'no') {
-            alertasHtml += `<div class="ficha-alert ficha-alert-judicial">️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
+            alertasHtml += `<div class="ficha-alert ficha-alert-judicial">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
         }
 
         let htmlCampos = `
@@ -194,7 +192,7 @@ if (buscarInput) {
             </div>
             <div class="ficha-breve-item">
                 <div class="ficha-breve-label">Tipo</div>
-                <div class="ficha-breve-value">${tipo === 'persona' ? '👤 Persona' : ' Vinculado (Vehículo)'}</div>
+                <div class="ficha-breve-value">${tipo === 'persona' ? '👤 Persona' : '🚗 Vinculado (Vehículo)'}</div>
             </div>
             <div class="ficha-breve-item">
                 <div class="ficha-breve-label">Estación de Detención</div>
@@ -407,7 +405,7 @@ if (buscarInput) {
                     html += `
                         <div class="incidencia-item">
                             <div class="incidencia-item-header">
-                                <span class="incidencia-fecha"> ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+                                <span class="incidencia-fecha">🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
                                 <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
                             </div>
                             <div class="incidencia-descripcion">${inc.descripcion}</div>
@@ -427,7 +425,7 @@ if (buscarInput) {
 
     async function guardarIncidencia() {
         const descripcion = el('cp_incidencia_descripcion')?.value.trim();
-        if (!descripcion) { alert('Ingrese una descripción'); return; }
+        if (!descripcion) { alert('⚠️ Ingrese una descripción'); return; }
 
         const btnGuardar = el('cp_btn_guardar_incidencia');
         btnGuardar.disabled = true; btnGuardar.textContent = '⏳ Guardando...';
@@ -460,12 +458,14 @@ if (buscarInput) {
     }
 };
 
+// Inicialización automática
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.initConsultaPersonas);
 } else {
     window.initConsultaPersonas();
 }
 
+// ✅ Función reutilizable para registrar logs
 async function registrarLog(accion, modulo, registroId = null, detalles = {}) {
     try {
         const { data: { user } } = await window.supabaseClient.auth.getUser();
