@@ -1,0 +1,228 @@
+<style>
+  :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; --success: #15803d; --danger: #dc2626; --info: #1e40af; --warning: #f59e0b; }
+  
+  .logs-container { padding: 10px; }
+  
+  .logs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .logs-header h3 { color: var(--primary); margin: 0; }
+  
+  .logs-filters {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .filter-group label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary);
+  }
+  
+  .filter-group input, .filter-group select {
+    padding: 8px 10px;
+    border: 1.5px solid var(--beige-border);
+    border-radius: 5px;
+    font-size: 0.85rem;
+    min-width: 120px;
+  }
+  
+  .btn-filter {
+    padding: 8px 15px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    height: 38px;
+  }
+  
+  .btn-filter:hover { background: var(--secondary); }
+  
+  .btn-refresh {
+    padding: 8px 15px;
+    background: #64748b;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    height: 38px;
+  }
+  
+  .btn-refresh:hover { background: #475569; }
+  
+  .logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    font-size: 0.85rem;
+  }
+  
+  .logs-table th {
+    background: var(--primary);
+    color: white;
+    padding: 10px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
+  
+  .logs-table td {
+    padding: 10px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+  }
+  
+  .logs-table tr:hover { background: #f8fafc; }
+  
+  .badge {
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-block;
+  }
+  
+  .badge-crear { background: #dcfce7; color: #166534; }
+  .badge-modificar { background: #dbeafe; color: #1e40af; }
+  .badge-eliminar { background: #fee2e2; color: #991b1b; }
+  .badge-login { background: #f3e8ff; color: #7e22ce; }
+  .badge-logout { background: #f1f5f9; color: #475569; }
+  .badge-otros { background: #fef3c7; color: #92400e; }
+  
+  .modulo-badge {
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: #f8fafc;
+    color: #64748b;
+    border: 1px solid var(--beige-border);
+  }
+  
+  .sin-logs {
+    text-align: center;
+    padding: 40px;
+    color: #64748b;
+    font-style: italic;
+  }
+  
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 15px;
+    background: #f8fafc;
+    border-top: 1px solid var(--beige-border);
+  }
+  
+  .pagination button {
+    padding: 6px 12px;
+    background: white;
+    border: 1px solid var(--beige-border);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--primary);
+    font-weight: 600;
+  }
+  
+  .pagination button:hover:not(:disabled) { background: var(--primary); color: white; }
+  .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .pagination button.active { background: var(--primary); color: white; }
+  .pagination-info { font-size: 0.85rem; color: #64748b; }
+  
+  .detalles-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    color: var(--info);
+  }
+  
+  .detalles-cell:hover { text-decoration: underline; }
+  
+  @media (max-width: 768px) {
+    .logs-filters { flex-direction: column; align-items: stretch; }
+    .filter-group input, .filter-group select { min-width: auto; }
+    .logs-table { font-size: 0.75rem; }
+    .logs-table th, .logs-table td { padding: 8px 5px; }
+  }
+</style>
+
+<div class="card">
+  <h3>📋 Logs del Sistema</h3>
+  
+  <div class="logs-container">
+    <div class="logs-header">
+      <h3>Historial de Actividades</h3>
+      <div class="logs-filters">
+        <div class="filter-group">
+          <label>Desde</label>
+          <input type="date" id="log_fecha_desde">
+        </div>
+        <div class="filter-group">
+          <label>Hasta</label>
+          <input type="date" id="log_fecha_hasta">
+        </div>
+        <div class="filter-group">
+          <label>Acción</label>
+          <select id="log_accion">
+            <option value="">Todas</option>
+            <option value="CREAR">Crear</option>
+            <option value="MODIFICAR">Modificar</option>
+            <option value="ELIMINAR">Eliminar</option>
+            <option value="LOGIN">Inicio Sesión</option>
+            <option value="LOGOUT">Cierre Sesión</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Módulo</label>
+          <select id="log_modulo">
+            <option value="">Todos</option>
+            <option value="USUARIOS">Usuarios</option>
+            <option value="PERSONAS">Personas</option>
+            <option value="VEHICULOS">Vehículos</option>
+            <option value="VINCULADOS">Vinculados</option>
+            <option value="PROCESADOS">Procesados</option>
+            <option value="DENUNCIAS">Denuncias</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Buscar Usuario</label>
+          <input type="text" id="log_buscar_usuario" placeholder="Nombre o email...">
+        </div>
+        <button type="button" class="btn-filter" id="log_btn_filtrar">🔍 Filtrar</button>
+        <button type="button" class="btn-refresh" id="log_btn_reset">🔄 Reset</button>
+      </div>
+    </div>
+    
+    <div id="logs-table-container">
+      <div class="sin-logs">Cargando logs...</div>
+    </div>
+    <div class="pagination" id="logs-pagination" style="display: none;"></div>
+  </div>
+</div>
