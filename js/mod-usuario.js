@@ -148,7 +148,7 @@ window.initModUsuario = function() {
         botonesEditar.forEach(btn => {
             btn.onclick = function() {
                 const id = this.getAttribute('data-id');
-                console.log("️ Click en editar, ID:", id);
+                console.log("✏️ Click en editar, ID:", id);
                 abrirEditarUsuario(id);
             };
         });
@@ -171,8 +171,7 @@ window.initModUsuario = function() {
         const usuario = usuariosData.find(u => String(u.id) === String(id));
         
         if (!usuario) {
-            console.error(" Usuario no encontrado. ID buscado:", id);
-            console.error("📋 IDs disponibles:", usuariosData.map(u => String(u.id)));
+            console.error("❌ Usuario no encontrado. ID buscado:", id);
             mostrarMensaje('❌ Usuario no encontrado', 'error');
             return;
         }
@@ -250,7 +249,7 @@ window.initModUsuario = function() {
         };
     }
 
-    // Cambiar foto (botón separado)
+    // Cambiar foto
     if (el('mu_edit_foto_cambiar')) {
         el('mu_edit_foto_cambiar').onclick = () => {
             if (el('mu_edit_foto')) el('mu_edit_foto').click();
@@ -329,7 +328,7 @@ window.initModUsuario = function() {
         }
     }
 
-    // Guardar cambios
+    // ✅ GUARDAR CAMBIOS CON FUNCIÓN SQL
     if (el('mu_btn_guardar')) {
         el('mu_btn_guardar').onclick = async () => {
             const id = el('mu_edit_id').value;
@@ -341,7 +340,7 @@ window.initModUsuario = function() {
             const nivel = el('mu_edit_nivel').value;
 
             if (!nombre || !apellido || !cedula || !jerarquia || !nivel) {
-                mostrarMensaje('️ Todos los campos son obligatorios', 'error');
+                mostrarMensaje('⚠️ Todos los campos son obligatorios', 'error');
                 return;
             }
 
@@ -381,27 +380,25 @@ window.initModUsuario = function() {
 
                 if (error) throw error;
 
-                // 2. Si se marcó cambiar contraseña, llamar a la Edge Function
+                // 2. Si se marcó cambiar contraseña, llamar a la función SQL
                 if (cambiarPassword) {
                     mostrarMensaje('⏳ Actualizando contraseña...', 'info');
                     
-                    const response = await fetch(`${window.supabaseUrl}/functions/v1/cambiar-password-usuario`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${window.supabaseKey}`
-                        },
-                        body: JSON.stringify({
-                            user_id: userId,
-                            nueva_password: nuevaPassword
-                        })
-                    });
+                    const { data, error: rpcError } = await window.supabaseClient
+                        .rpc('cambiar_password_usuario', {
+                            p_user_id: userId,
+                            p_nueva_password: nuevaPassword
+                        });
 
-                    const result = await response.json();
-
-                    if (!result.success) {
-                        throw new Error(result.error || 'Error al cambiar contraseña');
+                    if (rpcError) {
+                        throw new Error('Error al cambiar contraseña: ' + rpcError.message);
                     }
+
+                    if (!data.success) {
+                        throw new Error(data.error || 'Error al cambiar contraseña');
+                    }
+
+                    console.log("✅ Contraseña cambiada:", data);
                 }
 
                 mostrarMensaje('✅ Usuario actualizado correctamente' + (cambiarPassword ? ' (contraseña cambiada)' : ''), 'success');
