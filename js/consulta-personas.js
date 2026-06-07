@@ -165,21 +165,19 @@ window.initConsultaPersonas = function() {
             ? `<button type="button" class="btn-nueva-incidencia" id="cp_btn_nueva_incidencia">➕ Nueva Incidencia</button>`
             : '';
 
-        let html = `
-            <div class="ficha-breve">
-                <div class="ficha-breve-header">
-                    <h3>${tipo === 'persona' ? '👤' : '🚗'} ${nombreCompleto}</h3>
-                    <span class="estatus-badge ${estatusClass}">${estatus}</span>
-                </div>
-                ${alertasHtml}
-                <div class="ficha-breve-grid">${htmlCampos}</div>
-                <div class="ficha-breve-actions">
-                    <button type="button" class="btn-ver-detalles" id="cp_btn_ver_detalles">📋 Ver Detalles Completos</button>
-                    ${btnIncidenciaHtml}
-                </div>
-            </div>
-        `;
-
+let html = `<div class="reporte-header-print" style="text-align: center; margin-bottom: 20px; border-bottom: 3px double var(--primary); padding-bottom: 15px;">
+    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 10px;">
+        <img src="img/LOGO-PNB.png" alt="Logo PNB" style="max-height: 90px; width: auto;" onerror="this.style.display='none'">
+    </div>
+    <h2 style="color: var(--primary); margin: 0; font-family: 'Playfair Display', serif;">CUERPO DE POLICÍA NACIONAL BOLIVARIANA</h2>
+    <h3 style="color: var(--secondary); margin: 5px 0; font-size: 1rem;">CENTRO DE COORDINACIÓN POLICIAL ESTADAL (CCPE) ZULIA</h3>
+    <p style="font-size: 0.9rem; color: #334155; margin-top: 15px;">
+        <strong>N° de Reporte:</strong> 
+        <span id="cp_numero_reporte_display" style="color: var(--primary); font-weight: 800; font-size: 1.1rem;">${numeroReporteFinal}</span>
+    </p>
+    <p style="font-size: 0.85rem; color: #64748b;"><strong>Fecha de Consulta:</strong> ${fechaHoy.toLocaleString('es-VE')}</p>
+    <p style="font-size: 0.85rem; color: #64748b;"><strong>Generado por:</strong> ${user.email}</p>
+</div>`;
         fichaBreve.innerHTML = html;
         fichaBreve.style.display = 'block';
 
