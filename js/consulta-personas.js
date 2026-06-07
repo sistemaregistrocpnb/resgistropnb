@@ -15,11 +15,10 @@ window.initConsultaPersonas = function() {
     let datosProcesado = null;
     let userRoleCache = null;
 
-    // Listeners (usando asignación directa para evitar duplicados al recargar el módulo)
+    // Listeners
     if (btnBuscar) btnBuscar.onclick = () => buscarPersona();
     
     if (buscarInput) {
-        // Validación en tiempo real: solo números, máximo 8 dígitos
         buscarInput.oninput = (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8); };
         buscarInput.onkeypress = (e) => { if (e.key === 'Enter') { e.preventDefault(); btnBuscar?.click(); } };
     }
@@ -199,12 +198,10 @@ window.initConsultaPersonas = function() {
         }, 100);
     }
 
-    // ✅ FUNCIÓN ASÍNCRONA: Reserva el número en la BD al abrir el modal y lo muestra al instante CON EL LOGO
     async function mostrarDetallesCompletos(data, tipo) {
         if (!modalBody || !modalTitulo) return;
         modalTitulo.textContent = `📋 Detalles - ${tipo === 'persona' ? 'Persona' : 'Vehículo Vinculado'}`;
         
-        // Mostrar estado de carga mientras se reserva el número
         modalBody.innerHTML = '<div class="loading">⏳ Generando número de reporte oficial...</div>';
         modalDetalles.classList.add('active');
 
@@ -215,7 +212,6 @@ window.initConsultaPersonas = function() {
             const fechaHoy = new Date();
             const fechaStr = fechaHoy.getFullYear().toString() + String(fechaHoy.getMonth() + 1).padStart(2, '0') + String(fechaHoy.getDate()).padStart(2, '0');
 
-            // 1. RESERVAR EL NÚMERO EN LA BASE DE DATOS INMEDIATAMENTE
             const { data: nuevoReporte, error: errorInsert } = await window.supabaseClient
                 .from('reportes_generados')
                 .insert([{
@@ -230,11 +226,9 @@ window.initConsultaPersonas = function() {
 
             if (errorInsert) throw errorInsert;
 
-            // 2. Formatear el número a 8 dígitos
             const consecutivoFormateado = String(nuevoReporte.consecutivo_global).padStart(8, '0');
             const numeroReporteFinal = `REPORTE-CPNB-${fechaStr}-N° ${consecutivoFormateado}`;
 
-            // 3. Construir el HTML con el LOGO y el número YA ASIGNADO en color azul oscuro
             let html = `<div class="reporte-header-print" style="text-align: center; margin-bottom: 20px; border-bottom: 3px double var(--primary); padding-bottom: 15px;">
                 <img src="img/LOGO-PNB.png" alt="Logo PNB" style="max-height: 90px; width: auto; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;" onerror="this.style.display='none'">
                 <h2 style="color: var(--primary); margin: 0; font-family: 'Playfair Display', serif;">CUERPO DE POLICÍA NACIONAL BOLIVARIANA</h2>
@@ -356,111 +350,9 @@ window.initConsultaPersonas = function() {
                 html += `</div>`;
             }
 
-            // Agregar incidencias al reporte
             html += `<div class="seccion-titulo" style="margin-top: 30px;">📜 Historial de Incidencias</div>`;
             try {
                 const { data: incidencias } = await window.supabaseClient.from('registro_incidencias').select('*').eq('cedula', data.cedula).eq('tipo_registro', tipo).order('fecha_hora', { ascending: false });
                 if (incidencias && incidencias.length > 0) {
                     html += `<div class="incidencias-print-container">`;
-                    incidencias.forEach(inc => {
-                        html += `<div class="incidencia-item-print" style="border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 10px; border-left: 4px solid var(--secondary); border-radius: 4px; page-break-inside: avoid;">
-                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">
-                                <span>🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
-                                <span>Por: ${inc.email_registrante || 'N/A'}</span>
-                            </div>
-                            <div style="font-size: 0.9rem; color: #1e293b; line-height: 1.5;">${inc.descripcion}</div>
-                        </div>`;
-                    });
-                    html += `</div>`;
-                } else {
-                    html += `<div style="text-align: center; padding: 20px; color: #94a3b8; font-style: italic; border: 1px dashed #cbd5e1; border-radius: 5px;">No hay incidencias registradas para este expediente.</div>`;
-                }
-            } catch (err) {
-                html += `<div style="text-align: center; padding: 20px; color: #dc2626;">Error al cargar el historial de incidencias.</div>`;
-            }
-
-            html += `<div class="reporte-footer-print" style="margin-top: 40px; text-align: center; font-size: 0.75rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px;">
-                <p>Documento generado electrónicamente por el Sistema de Verificación y Registro Policial.</p>
-                <p>Este reporte es de carácter informativo y confidencial. Uso exclusivo del CPNB.</p>
-            </div>`;
-
-            modalBody.innerHTML = html;
-
-        } catch (err) {
-            console.error('Error generando reporte:', err);
-            modalBody.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">
-                <h3>❌ Error al generar el reporte</h3>
-                <p>${err.message}</p>
-            </div>`;
-        }
-    }
-
-    async function cargarIncidencias(cedula, tipo) {
-        if (!incidenciasSection) return;
-        try {
-            const { data: incidencias, error } = await window.supabaseClient
-                .from('registro_incidencias').select('*').eq('cedula', cedula).eq('tipo_registro', tipo).order('fecha_hora', { ascending: false });
-            if (error) throw error;
-
-            let html = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3>';
-            if (!incidencias || incidencias.length === 0) {
-                html += '<div class="sin-incidencias">No hay incidencias registradas</div>';
-            } else {
-                incidencias.forEach(inc => {
-                    html += `<div class="incidencia-item">
-                        <div class="incidencia-item-header">
-                            <span class="incidencia-fecha">🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
-                            <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
-                        </div>
-                        <div class="incidencia-descripcion">${inc.descripcion}</div>
-                    </div>`;
-                });
-            }
-            html += '</div>';
-            incidenciasSection.innerHTML = html;
-            incidenciasSection.style.display = 'block';
-        } catch (err) {
-            console.error('Error cargando incidencias:', err);
-            incidenciasSection.innerHTML = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
-            incidenciasSection.style.display = 'block';
-        }
-    }
-
-    async function guardarIncidencia() {
-        const descripcion = el('cp_incidencia_descripcion')?.value.trim();
-        if (!descripcion) { alert('⚠️ Ingrese una descripción'); return; }
-
-        const btnGuardar = el('cp_btn_guardar_incidencia');
-        btnGuardar.disabled = true; btnGuardar.textContent = '⏳ Guardando...';
-
-        try {
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            if (!user) throw new Error('Debe iniciar sesión');
-
-            const { error } = await window.supabaseClient.from('registro_incidencias').insert([{
-                cedula: personaActual.cedula,
-                tipo_registro: tipoRegistroActual,
-                descripcion: descripcion,
-                fecha_hora: new Date().toISOString(),
-                registrada_por: user.id,
-                email_registrante: user.email
-            }]);
-            if (error) throw error;
-
-            modalIncidencia.classList.remove('active');
-            mostrarMensaje('✅ Incidencia registrada', 'success');
-            await cargarIncidencias(personaActual.cedula, tipoRegistroActual);
-        } catch (err) {
-            console.error('Error guardando incidencia:', err);
-            alert('❌ Error: ' + err.message);
-        } finally {
-            btnGuardar.disabled = false; btnGuardar.textContent = '💾 Guardar Incidencia';
-        }
-    }
-};
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', window.initConsultaPersonas);
-} else {
-    window.initConsultaPersonas();
-}
+                   
