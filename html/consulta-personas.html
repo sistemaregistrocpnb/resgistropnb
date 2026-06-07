@@ -87,8 +87,7 @@
 .ficha-completa-value { font-size: 0.95rem; color: #1e293b; font-weight: 500; word-break: break-word; }
 .seccion-titulo { color: var(--primary); font-size: 1.1rem; font-weight: 700; margin: 20px 0 12px 0; padding-bottom: 8px; border-bottom: 2px solid var(--beige-border); }
 .seccion-titulo:first-child { margin-top: 0; }
-
-/* ✅✅✅ REGLAS DE IMPRESIÓN BLINDADAS ✅✅✅ */
+    
 @media print {
     @page { size: letter portrait; margin: 0.5cm; }
     body, body * { visibility: hidden !important; height: auto !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; }
@@ -126,7 +125,6 @@
     <div id="cp_incidencias_section" style="display: none;"></div>
 </div>
 
-<!-- Modal detalles -->
 <div class="modal-overlay" id="cp_modal_detalles">
     <div class="modal-content">
         <div class="modal-header">
@@ -135,14 +133,12 @@
         </div>
         <div class="modal-body" id="cp_modal_body"></div>
         <div class="modal-actions">
-            <!-- ✅ BOTÓN DE IMPRIMIR -->
             <button type="button" class="btn-submit" id="cp_btn_imprimir_reporte" style="background: var(--primary); margin-right: auto;">️ Imprimir Reporte</button>
             <button type="button" class="btn-cancel" id="cp_modal_cerrar">Cerrar</button>
         </div>
     </div>
 </div>
 
-<!-- Modal incidencia -->
 <div class="modal-overlay" id="cp_modal_incidencia">
     <div class="modal-content" style="max-width: 600px;">
         <div class="modal-header">
