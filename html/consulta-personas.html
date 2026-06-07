@@ -369,8 +369,8 @@
   <div class="con-search-box">
     <div class="con-search-field">
       <label>Buscar por Cédula</label>
-      <input type="text" id="cp_buscar_cedula" placeholder="Ej: 12345678">
-      <small>Ingrese el número de cédula para buscar en personas y vinculados</small>
+      <input type="text" id="cp_buscar_cedula" placeholder="Ej: 12345678" inputmode="numeric" pattern="[0-9]*" maxlength="8">
+      <small>Ingrese el número de cédula para buscar personas</small>
     </div>
     <button type="button" class="con-btn" id="cp_btn_buscar">🔍 Buscar</button>
   </div>
