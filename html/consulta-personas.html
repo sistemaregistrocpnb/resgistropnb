@@ -76,18 +76,83 @@
 .seccion-titulo { color: var(--primary); font-size: 1.1rem; font-weight: 700; margin: 20px 0 12px 0; padding-bottom: 8px; border-bottom: 2px solid var(--beige-border); }
 .seccion-titulo:first-child { margin-top: 0; }
 
-/* ✅✅✅ REGLAS DE IMPRESIÓN (HOJA CARTA, SIN CORTES) ✅✅✅ */
+/* ✅✅✅ REGLAS DE IMPRESIÓN OPTIMIZADAS (HOJA CARTA, SIN ESPACIOS BLANCOS, SIN CORTES) ✅✅✅ */
 @media print {
-    @page { size: letter; margin: 1.5cm; }
-    body * { visibility: hidden; }
-    #cp_modal_detalles, #cp_modal_detalles * { visibility: visible; }
-    #cp_modal_detalles { position: absolute; left: 0; top: 0; width: 100%; height: auto; background: white; display: block !important; padding: 0; margin: 0; z-index: 9999; }
-    .modal-header, .modal-actions, .modal-close, #cp_btn_imprimir_reporte { display: none !important; }
-    .modal-content { box-shadow: none; max-width: 100%; max-height: none; overflow: visible; border: none; }
-    .modal-body { padding: 0; }
-    .ficha-completa-item, .incidencia-item-print, .fotos-container, .seccion-titulo { page-break-inside: avoid; break-inside: avoid; }
-    .seccion-titulo { page-break-after: avoid; }
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    @page {
+        size: letter portrait;
+        margin: 1cm 1.5cm; /* 1cm arriba/abajo, 1.5cm a los lados para ganar espacio vertical */
+    }
+    
+    /* Ocultar todo el sitio web por defecto */
+    body, body * {
+        visibility: hidden;
+        height: auto !important;
+        overflow: visible !important;
+    }
+    
+    /* Hacer visible SOLO el modal de detalles y su contenido */
+    #cp_modal_detalles, #cp_modal_detalles * {
+        visibility: visible !important;
+    }
+    
+    #cp_modal_detalles {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        background: white !important;
+        display: block !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        z-index: 9999 !important;
+    }
+    
+    /* Ocultar elementos de interfaz que no van en papel y forzar que no ocupen espacio */
+    .modal-header, .modal-actions, .modal-close, #cp_btn_imprimir_reporte {
+        display: none !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    .modal-content {
+        box-shadow: none !important;
+        max-width: 100% !important;
+        max-height: none !important;
+        overflow: visible !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    .modal-body {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Ajustar el encabezado del reporte para que suba al máximo */
+    .reporte-header-print {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    /* Evitar que los elementos se corten entre páginas */
+    .ficha-completa-item, .incidencia-item-print, .fotos-container, .seccion-titulo {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+    
+    .seccion-titulo {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+    }
+    
+    /* Forzar la impresión de colores de fondo (para alertas y badges) */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
 }
 
 @media (max-width: 768px) {
