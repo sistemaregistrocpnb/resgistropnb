@@ -1,488 +1,476 @@
-<style>
-  :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; --success: #15803d; --danger: #dc2626; --info: #1e40af; }
-  
-  .con-search-box {
-    background: #f8fafc;
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid var(--beige-border);
-    margin-bottom: 20px;
-    display: flex;
-    gap: 15px;
-    align-items: flex-end;
-    flex-wrap: wrap;
-  }
-  
-  .con-search-field {
-    flex: 1;
-    min-width: 250px;
-  }
-  
-  .con-search-field label {
-    font-weight: 600;
-    color: var(--primary);
-    display: block;
-    margin-bottom: 6px;
-    font-size: 0.9rem;
-  }
-  
-  .con-search-field input, .con-search-field select {
-    width: 100%;
-    padding: 10px;
-    border: 1.5px solid var(--beige-border);
-    border-radius: 5px;
-    font-size: 1rem;
-    box-sizing: border-box;
-    height: 42px;
-  }
-  
-  .con-search-field small {
-    color: #64748b;
-    font-size: 0.75rem;
-    display: block;
-    margin-top: 4px;
-  }
-  
-  .con-btn {
-    padding: 10px 20px;
-    background: var(--primary);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 600;
-    height: 42px;
-    white-space: nowrap;
-    transition: background 0.2s;
-  }
-  
-  .con-btn:hover:not(:disabled) { background: var(--secondary); }
-  .con-btn:disabled { background: #9ca3af; cursor: not-allowed; opacity: 0.6; }
-  
-  .msg { padding: 10px; margin-top: 12px; border-radius: 5px; text-align: center; display: none; }
-  .msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
-  .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-  .msg.info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
-  
-  /* Selector de tipo cuando hay duplicados */
-  .tipo-selector {
-    background: #fef3c7;
-    border: 2px solid #fbbf24;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
-  }
-  
-  .tipo-selector h3 {
-    color: #92400e;
-    margin-bottom: 15px;
-    font-size: 1.1rem;
-  }
-  
-  .tipo-options {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-  }
-  
-  .tipo-option {
-    flex: 1;
-    min-width: 200px;
-    background: white;
-    border: 2px solid var(--beige-border);
-    border-radius: 8px;
-    padding: 15px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  
-  .tipo-option:hover {
-    border-color: var(--primary);
-    background: #f8fafc;
-  }
-  
-  .tipo-option.selected {
-    border-color: var(--primary);
-    background: #eff6ff;
-  }
-  
-  .tipo-option-icon {
-    font-size: 2rem;
-    margin-bottom: 8px;
-  }
-  
-  .tipo-option-title {
-    font-weight: 700;
-    color: var(--primary);
-    margin-bottom: 5px;
-  }
-  
-  .tipo-option-detail {
-    font-size: 0.85rem;
-    color: #64748b;
-  }
-  
-  /* Ficha breve */
-  .ficha-breve {
-    background: white;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    border-left: 4px solid var(--primary);
-  }
-  
-  .ficha-breve-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid var(--beige-border);
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  
-  .ficha-breve-header h3 {
-    color: var(--primary);
-    margin: 0;
-    font-size: 1.2rem;
-  }
-  
-  .estatus-badge {
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-weight: 700;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-  }
-  
-  .estatus-verificacion { background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
-  .estatus-procesado { background: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
-  .estatus-liberado { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
-  
-  .ficha-breve-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 12px;
-    margin-bottom: 15px;
-  }
-  
-  .ficha-breve-item {
-    background: #f8fafc;
-    padding: 10px;
-    border-radius: 5px;
-    border-left: 3px solid var(--secondary);
-  }
-  
-  .ficha-breve-item.full-width {
-    grid-column: 1 / -1;
-  }
-  
-  .ficha-breve-label {
-    font-size: 0.75rem;
-    color: #64748b;
-    font-weight: 600;
-    text-transform: uppercase;
-    margin-bottom: 3px;
-  }
-  
-  .ficha-breve-value {
-    font-size: 0.95rem;
-    color: #1e293b;
-    font-weight: 500;
-    word-break: break-word;
-  }
-  
-  .ficha-alert {
-    padding: 10px 14px;
-    border-radius: 6px;
-    margin-bottom: 10px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  
-  .ficha-alert-delito { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; }
-  .ficha-alert-judicial { background: #fef3c7; border: 1px solid #fbbf24; color: #92400e; }
-  .ficha-alert-duplicado { background: #dbeafe; border: 1px solid #93c5fd; color: #1e40af; }
-  
-  .ficha-breve-actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid var(--beige-border);
-  }
-  
-  .btn-ver-detalles {
-    padding: 10px 20px;
-    background: var(--info);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.9rem;
-    transition: background 0.2s;
-  }
-  
-  .btn-ver-detalles:hover { background: #1e3a8a; }
-  
-  .btn-nueva-incidencia {
-    padding: 10px 20px;
-    background: var(--success);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.9rem;
-    transition: background 0.2s;
-  }
-  
-  .btn-nueva-incidencia:hover { background: #166534; }
-  .btn-nueva-incidencia:disabled { background: #9ca3af; cursor: not-allowed; }
-  
-  /* Modal */
-  .modal-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    background: rgba(0, 0, 0, 0.6);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 9998;
-    padding: 20px;
-  }
-  
-  .modal-overlay.active { display: flex; }
-  
-  .modal-content {
-    background: white;
-    border-radius: 10px;
-    width: 100%;
-    max-width: 900px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  }
-  
-  .modal-header {
-    background: var(--primary);
-    color: white;
-    padding: 16px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-radius: 10px 10px 0 0;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-  
-  .modal-header h3 { margin: 0; font-size: 1.1rem; }
-  
-  .modal-close {
-    background: transparent;
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0; width: 30px; height: 30px; line-height: 1;
-  }
-  
-  .modal-body { padding: 25px; }
-  
-  .modal-actions {
-    padding: 15px 20px;
-    background: #f8fafc;
-    border-top: 1px solid var(--beige-border);
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-    border-radius: 0 0 10px 10px;
-    position: sticky;
-    bottom: 0;
-  }
-  
-  .btn-cancel {
-    padding: 12px 24px;
-    background: #64748b;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.95rem;
-  }
-  
-  .btn-cancel:hover { background: #475569; }
-  
-  /* Fotos */
-  .fotos-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 15px;
-    margin-bottom: 20px;
-  }
-  
-  .foto-item { text-align: center; }
-  
-  .foto-item img {
-    width: 100%;
-    max-height: 200px;
-    object-fit: contain;
-    border: 2px solid var(--beige-border);
-    border-radius: 8px;
-    background: #f8fafc;
-  }
-  
-  .foto-item-label {
-    margin-top: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--primary);
-  }
-  
-  /* Historial */
-  .incidencias-section {
-    background: white;
-    border-radius: 10px;
-    padding: 20px;
-    margin-top: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  }
-  
-  .incidencias-section h3 {
-    color: var(--primary);
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid var(--beige-border);
-  }
-  
-  .incidencia-item {
-    background: #f8fafc;
-    border-left: 4px solid var(--secondary);
-    padding: 12px 15px;
-    margin-bottom: 10px;
-    border-radius: 5px;
-  }
-  
-  .incidencia-item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  
-  .incidencia-fecha { font-size: 0.8rem; color: #64748b; font-weight: 600; }
-  .incidencia-autor { font-size: 0.75rem; color: #94a3b8; font-style: italic; }
-  .incidencia-descripcion { font-size: 0.9rem; color: #1e293b; line-height: 1.5; }
-  .sin-incidencias { text-align: center; padding: 30px; color: #94a3b8; font-style: italic; }
-  
-  /* Modal Incidencia */
-  .form-group { margin-bottom: 15px; }
-  .form-group label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 6px; font-size: 0.9rem; }
-  .form-group textarea { width: 100%; padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; resize: vertical; min-height: 100px; box-sizing: border-box; }
-  .btn-submit { padding: 12px 24px; background: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 0.95rem; }
-  .btn-submit:hover { background: var(--secondary); }
-  .btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
-  
-  .loading { text-align: center; padding: 40px; color: #64748b; }
-  
-  .ficha-completa-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 12px;
-  }
-  
-  .ficha-completa-item { background: #f8fafc; padding: 10px; border-radius: 5px; border-left: 3px solid var(--secondary); }
-  .ficha-completa-item.full-width { grid-column: 1 / -1; }
-  .ficha-completa-label { font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 3px; }
-  .ficha-completa-value { font-size: 0.95rem; color: #1e293b; font-weight: 500; word-break: break-word; }
-  .seccion-titulo { color: var(--primary); font-size: 1.1rem; font-weight: 700; margin: 20px 0 12px 0; padding-bottom: 8px; border-bottom: 2px solid var(--beige-border); }
-  .seccion-titulo:first-child { margin-top: 0; }
-  
-  @media (max-width: 768px) {
-    .con-search-box { flex-direction: column; align-items: stretch; }
-    .ficha-breve-grid { grid-template-columns: 1fr; }
-    .ficha-completa-grid { grid-template-columns: 1fr; }
-    .fotos-container { grid-template-columns: 1fr; }
-    .ficha-breve-actions { flex-direction: column; }
-    .ficha-breve-actions button { width: 100%; }
-    .tipo-options { flex-direction: column; }
-  }
-</style>
+window.initConsultaVehiculos = function() {
+    console.log("⚙️ Iniciando módulo consulta-vehiculos.js...");
 
-<div class="card">
-  <h3>🚗 Consulta de Vehículos</h3>
-  
-  <div class="con-search-box">
-    <div class="con-search-field">
-      <label>Tipo de Búsqueda</label>
-      <select id="cv_tipo_busqueda">
-        <option value="placa">Placa</option>
-        <option value="serial_carroceria">Serial de Carrocería</option>
-        <option value="serial_motor">Serial de Motor</option>
-      </select>
-    </div>
-    <div class="con-search-field">
-      <label>Ingrese el valor</label>
-      <input type="text" id="cv_buscar_valor" placeholder="Ej: AF651YK">
-      <small>Ingrese la placa o serial a buscar</small>
-    </div>
-    <button type="button" class="con-btn" id="cv_btn_buscar"> Buscar</button>
-  </div>
-  
-  <div id="cv_msg" class="msg"></div>
-  
-  <!-- Selector de tipo cuando hay duplicados -->
-  <div id="cv_tipo_selector" style="display: none;"></div>
-  
-  <!-- Ficha breve -->
-  <div id="cv_ficha_breve" style="display: none;"></div>
-  
-  <!-- Historial de incidencias -->
-  <div id="cv_incidencias_section" style="display: none;"></div>
-</div>
+    if (window._consultaVehiculosInitialized) {
+        console.log("⚠️ Módulo ya inicializado, omitiendo...");
+        return;
+    }
+    window._consultaVehiculosInitialized = true;
 
-<!-- Modal de detalles completos -->
-<div class="modal-overlay" id="cv_modal_detalles">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3 id="cv_modal_titulo">📋 Detalles Completos</h3>
-      <button class="modal-close" id="cv_modal_close">&times;</button>
-    </div>
-    <div class="modal-body" id="cv_modal_body"></div>
-    <div class="modal-actions">
-      <button type="button" class="btn-cancel" id="cv_modal_cerrar">Cerrar</button>
-    </div>
-  </div>
-</div>
+    const el = (id) => document.getElementById(id);
+    const tipoBusquedaSelect = el('cv_tipo_busqueda');
+    const buscarInput = el('cv_buscar_valor');
+    const btnBuscar = el('cv_btn_buscar');
+    const msg = el('cv_msg');
+    const tipoSelector = el('cv_tipo_selector');
+    const fichaBreve = el('cv_ficha_breve');
+    const incidenciasSection = el('cv_incidencias_section');
+    const modalDetalles = el('cv_modal_detalles');
+    const modalIncidencia = el('cv_modal_incidencia');
+    const modalTitulo = el('cv_modal_titulo');
+    const modalBody = el('cv_modal_body');
 
-<!-- Modal para agregar incidencia -->
-<div class="modal-overlay" id="cv_modal_incidencia">
-  <div class="modal-content" style="max-width: 600px;">
-    <div class="modal-header">
-      <h3>➕ Agregar Nueva Incidencia</h3>
-      <button class="modal-close" id="cv_modal_inc_close">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Descripción de la Incidencia</label>
-        <textarea id="cv_incidencia_descripcion" placeholder="Describa la nueva incidencia..."></textarea>
-      </div>
-    </div>
-    <div class="modal-actions">
-      <button type="button" class="btn-submit" id="cv_btn_guardar_incidencia">💾 Guardar Incidencia</button>
-      <button type="button" class="btn-cancel" id="cv_btn_cancelar_incidencia">Cancelar</button>
-    </div>
-  </div>
-</div>
+    let vehiculoActual = null;
+    let tipoRegistroActual = null; // 'automovil', 'moto' o 'vinculado'
+    let resultadosMultiples = null;
+
+    // Listeners
+    if (btnBuscar) btnBuscar.onclick = () => buscarVehiculo();
+    if (buscarInput) {
+        buscarInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); btnBuscar?.click(); }
+        });
+    }
+
+    if (el('cv_modal_close')) el('cv_modal_close').onclick = () => modalDetalles.classList.remove('active');
+    if (el('cv_modal_cerrar')) el('cv_modal_cerrar').onclick = () => modalDetalles.classList.remove('active');
+    if (el('cv_modal_inc_close')) el('cv_modal_inc_close').onclick = () => modalIncidencia.classList.remove('active');
+    if (el('cv_btn_cancelar_incidencia')) el('cv_btn_cancelar_incidencia').onclick = () => modalIncidencia.classList.remove('active');
+    if (el('cv_btn_guardar_incidencia')) el('cv_btn_guardar_incidencia').onclick = () => guardarIncidencia();
+
+    function mostrarMensaje(texto, tipo) {
+        if (!msg) return;
+        msg.textContent = texto;
+        msg.className = `msg ${tipo}`;
+        msg.style.display = 'block';
+        if (tipo === 'success') setTimeout(() => { if (msg) msg.style.display = 'none'; }, 3000);
+    }
+
+    async function tienePermisosIncidencia() {
+        try {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) return false;
+
+            const { data: perfil, error } = await window.supabaseClient
+                .from('perfiles_usuario')
+                .select('nivel')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (error || !perfil) return false;
+
+            const nivel = (perfil.nivel || '').toLowerCase().trim();
+            return nivel === 'administrador' || nivel === 'moderador';
+        } catch (err) {
+            console.error('❌ Error verificando permisos:', err);
+            return false;
+        }
+    }
+
+    async function buscarVehiculo() {
+        const tipoBusqueda = tipoBusquedaSelect?.value || 'placa';
+        const valor = buscarInput?.value.trim().toUpperCase() || '';
+        
+        if (!valor) {
+            mostrarMensaje('⚠️ Ingrese un valor para buscar', 'error');
+            return;
+        }
+
+        mostrarMensaje(' Buscando...', 'info');
+        tipoSelector.style.display = 'none';
+        fichaBreve.style.display = 'none';
+        incidenciasSection.style.display = 'none';
+        vehiculoActual = null;
+        tipoRegistroActual = null;
+        resultadosMultiples = null;
+
+        try {
+            const resultados = [];
+
+            // Buscar en registro_automoviles
+            const { data: automoviles, error: errAuto } = await window.supabaseClient
+                .from('registro_automoviles')
+                .select('*')
+                .eq(tipoBusqueda, valor);
+            
+            if (errAuto) throw errAuto;
+            if (automoviles && automoviles.length > 0) {
+                automoviles.forEach(v => resultados.push({ ...v, tipo_registro: 'automovil' }));
+            }
+
+            // Buscar en registro_motos
+            const { data: motos, error: errMoto } = await window.supabaseClient
+                .from('registro_motos')
+                .select('*')
+                .eq(tipoBusqueda, valor);
+            
+            if (errMoto) throw errMoto;
+            if (motos && motos.length > 0) {
+                motos.forEach(v => resultados.push({ ...v, tipo_registro: 'moto' }));
+            }
+
+            // Buscar en registro_vinculado
+            const { data: vinculados, error: errVinc } = await window.supabaseClient
+                .from('registro_vinculado')
+                .select('*')
+                .eq(tipoBusqueda, valor);
+            
+            if (errVinc) throw errVinc;
+            if (vinculados && vinculados.length > 0) {
+                vinculados.forEach(v => resultados.push({ ...v, tipo_registro: 'vinculado' }));
+            }
+
+            if (resultados.length === 0) {
+                mostrarMensaje('❌ No se encontró ningún vehículo con ese valor', 'error');
+                return;
+            }
+
+            // Si hay múltiples resultados de diferentes tipos, mostrar selector
+            const tiposUnicos = [...new Set(resultados.map(r => r.tipo_registro))];
+            
+            if (tiposUnicos.length > 1) {
+                resultadosMultiples = resultados;
+                mostrarSelectorTipos(resultados);
+                mostrarMensaje(`⚠️ Se encontraron ${resultados.length} registros en diferentes tipos`, 'info');
+            } else {
+                // Un solo tipo, mostrar directamente
+                vehiculoActual = resultados[0];
+                tipoRegistroActual = resultados[0].tipo_registro;
+                await renderFichaBreve(vehiculoActual, tipoRegistroActual);
+                await cargarIncidencias(vehiculoActual.placa || vehiculoActual.serial_carroceria || vehiculoActual.serial_motor, tipoRegistroActual);
+                mostrarMensaje('✅ Vehículo encontrado', 'success');
+            }
+
+        } catch (err) {
+            console.error('❌ Error buscando vehículo:', err);
+            mostrarMensaje('❌ Error: ' + err.message, 'error');
+        }
+    }
+
+    function mostrarSelectorTipos(resultados) {
+        if (!tipoSelector) return;
+
+        const agrupados = {};
+        resultados.forEach(r => {
+            if (!agrupados[r.tipo_registro]) agrupados[r.tipo_registro] = [];
+            agrupados[r.tipo_registro].push(r);
+        });
+
+        const iconos = {
+            automovil: '',
+            moto: '🏍️',
+            vinculado: '🔗'
+        };
+
+        const titulos = {
+            automovil: 'Automóvil',
+            moto: 'Motocicleta',
+            vinculado: 'Vinculado (Persona + Vehículo)'
+        };
+
+        let html = `
+            <div class="tipo-selector">
+                <h3>⚠️ Se encontraron registros en múltiples tipos. Seleccione cuál desea ver:</h3>
+                <div class="tipo-options">
+        `;
+
+        Object.keys(agrupados).forEach(tipo => {
+            const count = agrupados[tipo].length;
+            html += `
+                <div class="tipo-option" onclick="window.seleccionarTipoVehiculo('${tipo}')">
+                    <div class="tipo-option-icon">${iconos[tipo]}</div>
+                    <div class="tipo-option-title">${titulos[tipo]}</div>
+                    <div class="tipo-option-detail">${count} registro(s) encontrado(s)</div>
+                </div>
+            `;
+        });
+
+        html += `</div></div>`;
+        tipoSelector.innerHTML = html;
+        tipoSelector.style.display = 'block';
+    }
+
+    window.seleccionarTipoVehiculo = async function(tipo) {
+        if (!resultadosMultiples) return;
+        
+        const seleccionados = resultadosMultiples.filter(r => r.tipo_registro === tipo);
+        
+        if (seleccionados.length === 1) {
+            vehiculoActual = seleccionados[0];
+            tipoRegistroActual = tipo;
+            tipoSelector.style.display = 'none';
+            await renderFichaBreve(vehiculoActual, tipoRegistroActual);
+            await cargarIncidencias(vehiculoActual.placa || vehiculoActual.serial_carroceria || vehiculoActual.serial_motor, tipoRegistroActual);
+            mostrarMensaje('✅ Vehículo seleccionado', 'success');
+        } else {
+            // Si hay múltiples del mismo tipo, mostrar el primero por ahora
+            vehiculoActual = seleccionados[0];
+            tipoRegistroActual = tipo;
+            tipoSelector.style.display = 'none';
+            await renderFichaBreve(vehiculoActual, tipoRegistroActual);
+            await cargarIncidencias(vehiculoActual.placa || vehiculoActual.serial_carroceria || vehiculoActual.serial_motor, tipoRegistroActual);
+            mostrarMensaje(`✅ Mostrando primero de ${seleccionados.length} registros`, 'info');
+        }
+    };
+
+    async function renderFichaBreve(data, tipo) {
+        if (!fichaBreve) return;
+
+        const estatus = data.estatus || 'N/A';
+        const estatusLower = (estatus || '').toLowerCase();
+        const estatusClass = estatusLower.includes('verificaci') ? 'estatus-verificacion' : 
+                            estatusLower.includes('procesad') ? 'estatus-procesado' : 'estatus-liberado';
+
+        const tipoIconos = { automovil: '', moto: '🏍️', vinculado: '🔗' };
+        const tipoTitulos = { automovil: 'Automóvil', moto: 'Motocicleta', vinculado: 'Vehículo Vinculado' };
+
+        let htmlCampos = `
+            <div class="ficha-breve-item">
+                <div class="ficha-breve-label">Placa</div>
+                <div class="ficha-breve-value" style="font-weight:800; color:var(--primary); font-size:1.1rem;">${data.placa || 'N/A'}</div>
+            </div>
+            <div class="ficha-breve-item">
+                <div class="ficha-breve-label">Tipo</div>
+                <div class="ficha-breve-value">${tipoIconos[tipo]} ${tipoTitulos[tipo]}</div>
+            </div>
+            <div class="ficha-breve-item">
+                <div class="ficha-breve-label">Vehículo</div>
+                <div class="ficha-breve-value">${data.tipo_vehiculo || data.marca_vehiculo || 'N/A'} ${data.marca_vehiculo || ''} ${data.modelo_vehiculo || ''}</div>
+            </div>
+            <div class="ficha-breve-item">
+                <div class="ficha-breve-label">Año</div>
+                <div class="ficha-breve-value">${data.anio_vehiculo || 'N/A'}</div>
+            </div>
+            <div class="ficha-breve-item">
+                <div class="ficha-breve-label">Color</div>
+                <div class="ficha-breve-value">${data.color_vehiculo || 'N/A'}</div>
+            </div>
+            <div class="ficha-breve-item">
+                <div class="ficha-breve-label">Estación</div>
+                <div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div>
+            </div>
+        `;
+
+        if (tipo === 'vinculado' && data.primer_nombre) {
+            htmlCampos += `
+                <div class="ficha-breve-item">
+                    <div class="ficha-breve-label">Conductor</div>
+                    <div class="ficha-breve-value">${data.primer_nombre || ''} ${data.primer_apellido || ''}</div>
+                </div>
+                <div class="ficha-breve-item">
+                    <div class="ficha-breve-label">Cédula</div>
+                    <div class="ficha-breve-value">${data.cedula || 'N/A'}</div>
+                </div>
+            `;
+        }
+
+        const observaciones = data.observaciones || '';
+        if (observaciones) {
+            htmlCampos += `
+                <div class="ficha-breve-item full-width">
+                    <div class="ficha-breve-label"> Observaciones</div>
+                    <div class="ficha-breve-value">${observaciones}</div>
+                </div>
+            `;
+        }
+
+        const tienePermisos = await tienePermisosIncidencia();
+        const btnIncidenciaHtml = tienePermisos 
+            ? `<button type="button" class="btn-nueva-incidencia" id="cv_btn_nueva_incidencia">➕ Nueva Incidencia</button>` 
+            : '';
+
+        let html = `
+            <div class="ficha-breve">
+                <div class="ficha-breve-header">
+                    <h3>${tipoIconos[tipo]} ${data.placa || 'N/A'} - ${data.marca_vehiculo || ''} ${data.modelo_vehiculo || ''}</h3>
+                    <span class="estatus-badge ${estatusClass}">${estatus}</span>
+                </div>
+                <div class="ficha-breve-grid">
+                    ${htmlCampos}
+                </div>
+                <div class="ficha-breve-actions">
+                    <button type="button" class="btn-ver-detalles" id="cv_btn_ver_detalles">📋 Ver Detalles Completos</button>
+                    ${btnIncidenciaHtml}
+                </div>
+            </div>
+        `;
+
+        fichaBreve.innerHTML = html;
+        fichaBreve.style.display = 'block';
+
+        setTimeout(() => {
+            const btnDetalles = el('cv_btn_ver_detalles');
+            if (btnDetalles) btnDetalles.onclick = () => mostrarDetallesCompletos(data, tipo);
+            
+            const btnIncidencia = el('cv_btn_nueva_incidencia');
+            if (btnIncidencia) {
+                btnIncidencia.onclick = () => {
+                    modalIncidencia.classList.add('active');
+                    el('cv_incidencia_descripcion').value = '';
+                    el('cv_incidencia_descripcion').focus();
+                };
+            }
+        }, 100);
+    }
+
+    function mostrarDetallesCompletos(data, tipo) {
+        if (!modalBody || !modalTitulo) return;
+        modalTitulo.textContent = ` Detalles - ${tipo === 'automovil' ? 'Automóvil' : tipo === 'moto' ? 'Motocicleta' : 'Vehículo Vinculado'}`;
+
+        let html = '';
+
+        // Fotos del vehículo
+        if (data.foto_frontal_vehiculo || data.foto_trasera_vehiculo || data.foto_lado_der_vehiculo || data.foto_lado_izq_vehiculo) {
+            html += `<div class="seccion-titulo">📸 Fotografías del Vehículo</div><div class="fotos-container">`;
+            if (data.foto_frontal_vehiculo) html += `<div class="foto-item"><img src="${data.foto_frontal_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
+            if (data.foto_trasera_vehiculo) html += `<div class="foto-item"><img src="${data.foto_trasera_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Trasera</div></div>`;
+            if (data.foto_lado_der_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_der_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Der.</div></div>`;
+            if (data.foto_lado_izq_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_izq_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Izq.</div></div>`;
+            html += `</div>`;
+        }
+
+        // Datos del vehículo
+        html += `<div class="seccion-titulo">🚗 Datos del Vehículo</div><div class="ficha-completa-grid">`;
+        const camposVehiculo = [
+            { label: 'Placa', value: data.placa, highlight: true },
+            { label: 'Tipo', value: data.tipo_vehiculo },
+            { label: 'Marca', value: data.marca_vehiculo },
+            { label: 'Modelo', value: data.modelo_vehiculo },
+            { label: 'Color', value: data.color_vehiculo },
+            { label: 'Año', value: data.anio_vehiculo },
+            { label: 'Serial Motor', value: data.serial_motor },
+            { label: 'Serial Carroc.', value: data.serial_carroceria },
+            { label: 'Cilindraje', value: data.cilindraje },
+            { label: 'Marca Corporal', value: data.marca_corporal },
+            { label: 'Estación', value: data.estacion_policial },
+            { label: 'Dir. Detención', value: data.direccion_detencion },
+            { label: 'Estatus', value: data.estatus }
+        ];
+        
+        camposVehiculo.forEach(c => {
+            if (c.value !== null && c.value !== undefined && c.value !== '') {
+                const style = c.highlight ? 'font-weight:800; color:var(--primary); font-size:1.1rem;' : '';
+                html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value" style="${style}">${c.value}</div></div>`;
+            }
+        });
+        if (data.observaciones) {
+            html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
+        }
+        html += `</div>`;
+
+        // Si es vinculado, mostrar datos de la persona
+        if (tipo === 'vinculado' && data.primer_nombre) {
+            if (data.foto_frontal_persona || data.foto_perfil_izq_persona || data.foto_perfil_der_persona) {
+                html += `<div class="seccion-titulo">📸 Fotografías de la Persona</div><div class="fotos-container">`;
+                if (data.foto_frontal_persona) html += `<div class="foto-item"><img src="${data.foto_frontal_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
+                if (data.foto_perfil_izq_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_izq_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Izq.</div></div>`;
+                if (data.foto_perfil_der_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_der_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Der.</div></div>`;
+                html += `</div>`;
+            }
+
+            html += `<div class="seccion-titulo">👤 Datos de la Persona</div><div class="ficha-completa-grid">`;
+            const camposPersona = [
+                { label: 'Nombre', value: `${data.primer_nombre || ''} ${data.segundo_nombre || ''}` },
+                { label: 'Apellido', value: `${data.primer_apellido || ''} ${data.segundo_apellido || ''}` },
+                { label: 'Cédula', value: data.cedula },
+                { label: 'Fecha Nac.', value: data.fecha_nacimiento },
+                { label: 'Edad', value: data.edad },
+                { label: 'Nacionalidad', value: data.nacionalidad },
+                { label: 'Sexo', value: data.sexo },
+                { label: 'Teléfono', value: `${data.tlf_pais || ''} ${data.tlf_numero || ''}`.trim() || null },
+                { label: 'Dirección', value: data.direccion },
+                { label: 'Problema Judicial', value: data.problema_judicial }
+            ];
+            camposPersona.forEach(c => {
+                if (c.value) html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value">${c.value}</div></div>`;
+            });
+            html += `</div>`;
+        }
+
+        modalBody.innerHTML = html;
+        modalDetalles.classList.add('active');
+    }
+
+    async function cargarIncidencias(identificador, tipo) {
+        if (!incidenciasSection) return;
+        try {
+            const { data: incidencias, error } = await window.supabaseClient
+                .from('registro_incidencias')
+                .select('*')
+                .eq('cedula', identificador)
+                .eq('tipo_registro', tipo)
+                .order('fecha_hora', { ascending: false });
+
+            if (error) throw error;
+
+            let html = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3>';
+            if (!incidencias || incidencias.length === 0) {
+                html += '<div class="sin-incidencias">No hay incidencias registradas</div>';
+            } else {
+                incidencias.forEach(inc => {
+                    html += `
+                        <div class="incidencia-item">
+                            <div class="incidencia-item-header">
+                                <span class="incidencia-fecha">📅 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+                                <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
+                            </div>
+                            <div class="incidencia-descripcion">${inc.descripcion}</div>
+                        </div>
+                    `;
+                });
+            }
+            html += '</div>';
+            incidenciasSection.innerHTML = html;
+            incidenciasSection.style.display = 'block';
+        } catch (err) {
+            console.error('Error incidencias:', err);
+            incidenciasSection.innerHTML = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
+            incidenciasSection.style.display = 'block';
+        }
+    }
+
+    async function guardarIncidencia() {
+        const descripcion = el('cv_incidencia_descripcion')?.value.trim();
+        if (!descripcion) { alert('⚠️ Ingrese una descripción'); return; }
+
+        const btnGuardar = el('cv_btn_guardar_incidencia');
+        btnGuardar.disabled = true; btnGuardar.textContent = ' Guardando...';
+
+        try {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) throw new Error('Debe iniciar sesión');
+
+            const identificador = vehiculoActual.placa || vehiculoActual.serial_carroceria || vehiculoActual.serial_motor;
+
+            const incidencia = {
+                cedula: identificador,
+                tipo_registro: tipoRegistroActual,
+                descripcion: descripcion,
+                fecha_hora: new Date().toISOString(),
+                registrada_por: user.id,
+                email_registrante: user.email
+            };
+
+            const { error } = await window.supabaseClient.from('registro_incidencias').insert([incidencia]);
+            if (error) throw error;
+
+            modalIncidencia.classList.remove('active');
+            mostrarMensaje('✅ Incidencia registrada', 'success');
+            await cargarIncidencias(identificador, tipoRegistroActual);
+
+        } catch (err) {
+            console.error('Error:', err);
+            alert(' Error: ' + err.message);
+        } finally {
+            btnGuardar.disabled = false; btnGuardar.textContent = '💾 Guardar Incidencia';
+        }
+    }
+
+    console.log("✅ Módulo consulta-vehiculos.js inicializado");
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', window.initConsultaVehiculos);
+} else {
+    window.initConsultaVehiculos();
+}
