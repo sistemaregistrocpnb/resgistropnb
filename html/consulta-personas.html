@@ -1,6 +1,7 @@
 <style>
   :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; --success: #15803d; --danger: #dc2626; --info: #1e40af; }
   
+  /* ✅ BÚSQUEDA ALINEADA */
   .con-search-box {
     background: #f8fafc;
     padding: 20px;
@@ -9,7 +10,7 @@
     margin-bottom: 20px;
     display: flex;
     gap: 15px;
-    align-items: flex-end;
+    align-items: flex-end; /* Alinea todo al fondo */
     flex-wrap: wrap;
   }
   
@@ -33,6 +34,7 @@
     border-radius: 5px;
     font-size: 1rem;
     box-sizing: border-box;
+    height: 42px; /* Altura fija para alineación */
   }
   
   .con-search-field small {
@@ -50,7 +52,7 @@
     border-radius: 5px;
     cursor: pointer;
     font-weight: 600;
-    height: 42px;
+    height: 42px; /* Misma altura que el input */
     white-space: nowrap;
     transition: background 0.2s;
   }
@@ -135,7 +137,7 @@
     word-break: break-word;
   }
   
-  /* Alertas en ficha breve */
+  /* Alertas */
   .ficha-alert {
     padding: 10px 14px;
     border-radius: 6px;
@@ -147,17 +149,8 @@
     gap: 8px;
   }
   
-  .ficha-alert-delito {
-    background: #fee2e2;
-    border: 1px solid #fca5a5;
-    color: #991b1b;
-  }
-  
-  .ficha-alert-judicial {
-    background: #fef3c7;
-    border: 1px solid #fbbf24;
-    color: #92400e;
-  }
+  .ficha-alert-delito { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; }
+  .ficha-alert-judicial { background: #fef3c7; border: 1px solid #fbbf24; color: #92400e; }
   
   .ficha-breve-actions {
     display: flex;
@@ -197,13 +190,11 @@
   .btn-nueva-incidencia:hover { background: #166534; }
   .btn-nueva-incidencia:disabled { background: #9ca3af; cursor: not-allowed; }
   
-  /* Modal de detalles */
+  /* Modal */
   .modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
     background: rgba(0, 0, 0, 0.6);
     display: none;
     justify-content: center;
@@ -245,10 +236,7 @@
     color: white;
     font-size: 1.5rem;
     cursor: pointer;
-    padding: 0;
-    width: 30px;
-    height: 30px;
-    line-height: 1;
+    padding: 0; width: 30px; height: 30px; line-height: 1;
   }
   
   .modal-body { padding: 25px; }
@@ -278,21 +266,19 @@
   
   .btn-cancel:hover { background: #475569; }
   
-  /* Fotos en modal */
+  /* Fotos */
   .fotos-container {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 15px;
     margin-bottom: 20px;
   }
   
-  .foto-item {
-    text-align: center;
-  }
+  .foto-item { text-align: center; }
   
   .foto-item img {
     width: 100%;
-    max-height: 250px;
+    max-height: 200px;
     object-fit: contain;
     border: 2px solid var(--beige-border);
     border-radius: 8px;
@@ -306,7 +292,7 @@
     color: var(--primary);
   }
   
-  /* Historial de incidencias */
+  /* Historial */
   .incidencias-section {
     background: white;
     border-radius: 10px;
@@ -339,74 +325,20 @@
     gap: 8px;
   }
   
-  .incidencia-fecha {
-    font-size: 0.8rem;
-    color: #64748b;
-    font-weight: 600;
-  }
+  .incidencia-fecha { font-size: 0.8rem; color: #64748b; font-weight: 600; }
+  .incidencia-autor { font-size: 0.75rem; color: #94a3b8; font-style: italic; }
+  .incidencia-descripcion { font-size: 0.9rem; color: #1e293b; line-height: 1.5; }
+  .sin-incidencias { text-align: center; padding: 30px; color: #94a3b8; font-style: italic; }
   
-  .incidencia-autor {
-    font-size: 0.75rem;
-    color: #94a3b8;
-    font-style: italic;
-  }
-  
-  .incidencia-descripcion {
-    font-size: 0.9rem;
-    color: #1e293b;
-    line-height: 1.5;
-  }
-  
-  .sin-incidencias {
-    text-align: center;
-    padding: 30px;
-    color: #94a3b8;
-    font-style: italic;
-  }
-  
-  /* Modal para agregar incidencia */
-  .form-group {
-    margin-bottom: 15px;
-  }
-  
-  .form-group label {
-    display: block;
-    font-weight: 600;
-    color: var(--primary);
-    margin-bottom: 6px;
-    font-size: 0.9rem;
-  }
-  
-  .form-group textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1.5px solid var(--beige-border);
-    border-radius: 5px;
-    font-size: 0.9rem;
-    resize: vertical;
-    min-height: 100px;
-    box-sizing: border-box;
-  }
-  
-  .btn-submit {
-    padding: 12px 24px;
-    background: var(--primary);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.95rem;
-  }
-  
+  /* Modal Incidencia */
+  .form-group { margin-bottom: 15px; }
+  .form-group label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 6px; font-size: 0.9rem; }
+  .form-group textarea { width: 100%; padding: 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; resize: vertical; min-height: 100px; box-sizing: border-box; }
+  .btn-submit { padding: 12px 24px; background: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 0.95rem; }
   .btn-submit:hover { background: var(--secondary); }
   .btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
   
-  .loading {
-    text-align: center;
-    padding: 40px;
-    color: #64748b;
-  }
+  .loading { text-align: center; padding: 40px; color: #64748b; }
   
   .ficha-completa-grid {
     display: grid;
@@ -414,44 +346,12 @@
     gap: 12px;
   }
   
-  .ficha-completa-item {
-    background: #f8fafc;
-    padding: 10px;
-    border-radius: 5px;
-    border-left: 3px solid var(--secondary);
-  }
-  
-  .ficha-completa-item.full-width {
-    grid-column: 1 / -1;
-  }
-  
-  .ficha-completa-label {
-    font-size: 0.75rem;
-    color: #64748b;
-    font-weight: 600;
-    text-transform: uppercase;
-    margin-bottom: 3px;
-  }
-  
-  .ficha-completa-value {
-    font-size: 0.95rem;
-    color: #1e293b;
-    font-weight: 500;
-    word-break: break-word;
-  }
-  
-  .seccion-titulo {
-    color: var(--primary);
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin: 20px 0 12px 0;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--beige-border);
-  }
-  
-  .seccion-titulo:first-child {
-    margin-top: 0;
-  }
+  .ficha-completa-item { background: #f8fafc; padding: 10px; border-radius: 5px; border-left: 3px solid var(--secondary); }
+  .ficha-completa-item.full-width { grid-column: 1 / -1; }
+  .ficha-completa-label { font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 3px; }
+  .ficha-completa-value { font-size: 0.95rem; color: #1e293b; font-weight: 500; word-break: break-word; }
+  .seccion-titulo { color: var(--primary); font-size: 1.1rem; font-weight: 700; margin: 20px 0 12px 0; padding-bottom: 8px; border-bottom: 2px solid var(--beige-border); }
+  .seccion-titulo:first-child { margin-top: 0; }
   
   @media (max-width: 768px) {
     .con-search-box { flex-direction: column; align-items: stretch; }
@@ -464,28 +364,23 @@
 </style>
 
 <div class="card">
-  <h3>🔍 Consulta de Personas</h3>
+  <h3> Consulta de Personas y Vehículos</h3>
   
-  <!-- Barra de búsqueda -->
   <div class="con-search-box">
     <div class="con-search-field">
       <label>Buscar por Cédula</label>
       <input type="text" id="cp_buscar_cedula" placeholder="Ej: 12345678">
       <small>Ingrese el número de cédula para buscar en personas y vinculados</small>
     </div>
-    <button type="button" class="con-btn" id="cp_btn_buscar"> Buscar</button>
+    <button type="button" class="con-btn" id="cp_btn_buscar">🔍 Buscar</button>
   </div>
   
   <div id="cp_msg" class="msg"></div>
-  
-  <!-- Ficha breve -->
   <div id="cp_ficha_breve" style="display: none;"></div>
-  
-  <!-- Historial de incidencias -->
   <div id="cp_incidencias_section" style="display: none;"></div>
 </div>
 
-<!-- Modal de detalles completos -->
+<!-- Modal detalles -->
 <div class="modal-overlay" id="cp_modal_detalles">
   <div class="modal-content">
     <div class="modal-header">
@@ -499,7 +394,7 @@
   </div>
 </div>
 
-<!-- Modal para agregar incidencia -->
+<!-- Modal incidencia -->
 <div class="modal-overlay" id="cp_modal_incidencia">
   <div class="modal-content" style="max-width: 600px;">
     <div class="modal-header">
