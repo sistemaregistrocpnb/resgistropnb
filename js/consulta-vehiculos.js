@@ -106,30 +106,34 @@ window.initConsultaVehiculos = function() {
             if (motos && motos.length > 0) {
                 motos.forEach(v => resultados.push({ ...v, tipo_registro: 'moto' }));
             }
-            const { data: vinculados, error: errVinc } = await window.supabaseClient
-                .from('registro_vinculado')
-                .select('*')
-                .eq(tipoBusqueda, valor);
-            if (errVinc) throw errVinc;
-            if (vinculados && vinculados.length > 0) {
-               // ✅ CORRECTO - for...of permite usar await
-for (const v of vinculados) {
-    resultados.push({ ...v, tipo_registro: 'vinculado' });
-    const estatus = (v.estatus || '').toLowerCase();
-    if (estatus.includes('procesad')) {
+// Buscar en registro_vinculado
+const { data: vinculados, error: errVinc } = await window.supabaseClient
+    .from('registro_vinculado')
+    .select('*')
+    .eq(tipoBusqueda, valor);
+if (errVinc) throw errVinc;
+
+if (vinculados && vinculados.length > 0) {
+    vinculados.forEach(v => {
+        resultados.push({ ...v, tipo_registro: 'vinculado' });
+    });
+    
+    // ✅ Consultar procesados solo una vez (fuera del bucle)
+    const primerVinculado = vinculados[0];
+    const estatus = (primerVinculado.estatus || '').toLowerCase();
+    if (estatus.includes('procesad') && primerVinculado.cedula) {
         try {
             const { data: procData } = await window.supabaseClient
                 .from('registro_procesados')
                 .select('tipo_delito')
-                .eq('cedula', v.cedula)
+                .eq('cedula', primerVinculado.cedula)
                 .order('created_at', { ascending: false })
                 .limit(1)
                 .maybeSingle();
             if (procData) datosProcesado = procData;
         } catch (e) { /* Silencioso */ }
     }
-}
-            if (resultados.length === 0) {
+}          if (resultados.length === 0) {
                 mostrarMensaje('❌ No se encontró ningún vehículo con ese valor', 'error');
                 return;
             }
