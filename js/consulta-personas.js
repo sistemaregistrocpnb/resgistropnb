@@ -1,7 +1,4 @@
 window.initConsultaPersonas = function() {
-    // ✅ ELIMINADO el bloqueo de inicialización para permitir que el módulo 
-    // se "despierte" correctamente cada vez que el usuario navega a esta sección.
-
     const el = (id) => document.getElementById(id);
     const buscarInput = el('cp_buscar_cedula');
     const btnBuscar = el('cp_btn_buscar');
@@ -18,21 +15,15 @@ window.initConsultaPersonas = function() {
     let datosProcesado = null;
     let userRoleCache = null;
 
-    // ✅ USAMOS .onclick y .on... en lugar de addEventListener. 
-    // Esto evita que se acumulen eventos duplicados si el módulo se recarga.
+    // Listeners (usando asignación directa para evitar duplicados al recargar el módulo)
     if (btnBuscar) btnBuscar.onclick = () => buscarPersona();
     
     if (buscarInput) {
-        // Validación en tiempo real: solo números, máximo 8 dígitos
         buscarInput.oninput = (e) => {
             e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
         };
-        
         buscarInput.onkeypress = (e) => {
-            if (e.key === 'Enter') { 
-                e.preventDefault(); 
-                btnBuscar?.click(); 
-            }
+            if (e.key === 'Enter') { e.preventDefault(); btnBuscar?.click(); }
         };
     }
 
@@ -42,6 +33,9 @@ window.initConsultaPersonas = function() {
     if (el('cp_modal_inc_close')) el('cp_modal_inc_close').onclick = () => modalIncidencia.classList.remove('active');
     if (el('cp_btn_cancelar_incidencia')) el('cp_btn_cancelar_incidencia').onclick = () => modalIncidencia.classList.remove('active');
     if (el('cp_btn_guardar_incidencia')) el('cp_btn_guardar_incidencia').onclick = () => guardarIncidencia();
+    
+    // ✅ NUEVO: Listener para el botón de imprimir
+    if (el('cp_btn_imprimir_reporte')) el('cp_btn_imprimir_reporte').onclick = () => window.print();
 
     function mostrarMensaje(texto, tipo) {
         if (!msg) return;
@@ -66,7 +60,6 @@ window.initConsultaPersonas = function() {
 
             const nivel = (perfil.nivel || '').toLowerCase().trim();
             const tienePermiso = nivel === 'administrador' || nivel === 'moderador';
-            
             userRoleCache = nivel;
             return tienePermiso;
         } catch (err) {
@@ -77,7 +70,6 @@ window.initConsultaPersonas = function() {
 
     async function buscarPersona() {
         const cedula = buscarInput?.value.trim() || '';
-        
         if (!cedula || cedula.length < 7 || cedula.length > 8) {
             mostrarMensaje('⚠️ Ingrese una cédula válida (entre 7 y 8 dígitos)', 'error');
             return;
@@ -91,7 +83,6 @@ window.initConsultaPersonas = function() {
         datosProcesado = null;
 
         try {
-            // 1. Buscar en registro_personas
             const { data: persona, error: errPersona } = await window.supabaseClient
                 .from('registro_personas')
                 .select('*')
@@ -122,7 +113,6 @@ window.initConsultaPersonas = function() {
                 return;
             }
 
-            // 2. Buscar en registro_vinculado
             const { data: vinculado, error: errVinculado } = await window.supabaseClient
                 .from('registro_vinculado')
                 .select('*')
@@ -267,10 +257,26 @@ window.initConsultaPersonas = function() {
         }, 100);
     }
 
-    function mostrarDetallesCompletos(data, tipo) {
+    // ✅ FUNCIÓN ACTUALIZADA: Ahora incluye las incidencias en el modal para que salgan en la impresión
+    async function mostrarDetallesCompletos(data, tipo) {
         if (!modalBody || !modalTitulo) return;
         modalTitulo.textContent = `📋 Detalles - ${tipo === 'persona' ? 'Persona' : 'Vehículo Vinculado'}`;
-        let html = '';
+        
+        // ✅ GENERAR NÚMERO DE REPORTE ÚNICO
+        const fechaHoy = new Date();
+        const fechaStr = fechaHoy.getFullYear().toString() + 
+                         String(fechaHoy.getMonth() + 1).padStart(2, '0') + 
+                         String(fechaHoy.getDate()).padStart(2, '0');
+        // Usamos un número aleatorio de 10 dígitos para garantizar unicidad inmediata sin crear tabla en BD
+        const consecutivo = String(Math.floor(Math.random() * 10000000000)).padStart(10, '0');
+        const numeroReporte = `REPORTE-CPNB-${fechaStr}-N° ${consecutivo}`;
+
+        let html = `<div class="reporte-header-print" style="text-align: center; margin-bottom: 20px; border-bottom: 3px double var(--primary); padding-bottom: 15px;">
+            <h2 style="color: var(--primary); margin: 0; font-family: 'Playfair Display', serif;">CUERPO DE POLICÍA NACIONAL BOLIVARIANA</h2>
+            <h3 style="color: var(--secondary); margin: 5px 0; font-size: 1rem;">CENTRO DE COORDINACIÓN POLICIAL ESTADAL (CCPE) ZULIA</h3>
+            <p style="font-size: 0.9rem; color: #334155; margin-top: 15px;"><strong>N° de Reporte:</strong> <span style="color: var(--danger); font-weight: 800;">${numeroReporte}</span></p>
+            <p style="font-size: 0.85rem; color: #64748b;"><strong>Fecha de Emisión:</strong> ${fechaHoy.toLocaleString('es-VE')}</p>
+        </div>`;
 
         if (tipo === 'persona') {
             if (data.foto_frontal || data.foto_perfil_izq || data.foto_perfil_der) {
@@ -381,6 +387,43 @@ window.initConsultaPersonas = function() {
             html += `</div>`;
         }
 
+        // ✅ AGREGAR INCIDENCIAS AL REPORTE IMPRESO
+        html += `<div class="seccion-titulo" style="margin-top: 30px;">📜 Historial de Incidencias</div>`;
+        try {
+            const { data: incidencias, error } = await window.supabaseClient
+                .from('registro_incidencias')
+                .select('*')
+                .eq('cedula', data.cedula)
+                .eq('tipo_registro', tipo)
+                .order('fecha_hora', { ascending: false });
+
+            if (!error && incidencias && incidencias.length > 0) {
+                html += `<div class="incidencias-print-container">`;
+                incidencias.forEach(inc => {
+                    html += `
+                        <div class="incidencia-item-print" style="border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 10px; border-left: 4px solid var(--secondary); border-radius: 4px; page-break-inside: avoid;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">
+                                <span>🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+                                <span>Por: ${inc.email_registrante || 'N/A'}</span>
+                            </div>
+                            <div style="font-size: 0.9rem; color: #1e293b; line-height: 1.5;">${inc.descripcion}</div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            } else {
+                html += `<div style="text-align: center; padding: 20px; color: #94a3b8; font-style: italic; border: 1px dashed #cbd5e1; border-radius: 5px;">No hay incidencias registradas para este expediente.</div>`;
+            }
+        } catch (err) {
+            html += `<div style="text-align: center; padding: 20px; color: #dc2626;">Error al cargar el historial de incidencias.</div>`;
+        }
+
+        // Pie de página del reporte
+        html += `<div class="reporte-footer-print" style="margin-top: 40px; text-align: center; font-size: 0.75rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+            <p>Documento generado electrónicamente por el Sistema de Verificación y Registro Policial.</p>
+            <p>Este reporte es de carácter informativo y confidencial. Uso exclusivo del CPNB.</p>
+        </div>`;
+
         modalBody.innerHTML = html;
         modalDetalles.classList.add('active');
     }
@@ -458,14 +501,12 @@ window.initConsultaPersonas = function() {
     }
 };
 
-// Inicialización automática
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.initConsultaPersonas);
 } else {
     window.initConsultaPersonas();
 }
 
-// ✅ Función reutilizable para registrar logs
 async function registrarLog(accion, modulo, registroId = null, detalles = {}) {
     try {
         const { data: { user } } = await window.supabaseClient.auth.getUser();
