@@ -87,7 +87,7 @@
     .modal-body { padding: 0 !important; margin: 0 !important; }
     .reporte-header-print { margin-top: 0 !important; padding-top: 0 !important; margin-bottom: 10px !important; }
     .seccion-titulo { margin-top: 12px !important; margin-bottom: 8px !important; page-break-after: avoid !important; }
-    .ficha-completa-item, .incidencia-item-print, .fotos-container { page-break-inside: avoid !important; }
+    .ficha-completa-item, .incidencia-item-print, .fotos-container, .ficha-alert { page-break-inside: avoid !important; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 }
 
@@ -100,14 +100,14 @@
 </style>
 
 <div class="card">
-    <h3> Consulta de Personas y Vehículos</h3>
+    <h3>🔍 Consulta de Personas y Vehículos</h3>
     <div class="con-search-box">
         <div class="con-search-field">
             <label>Buscar por Cédula</label>
             <input type="text" id="cp_buscar_cedula" placeholder="Ej: 12345678" inputmode="numeric" pattern="[0-9]*" maxlength="8">
             <small>Ingrese el número de cédula (máximo 8 dígitos)</small>
         </div>
-        <button type="button" class="con-btn" id="cp_btn_buscar">🔍 Buscar</button>
+        <button type="button" class="con-btn" id="cp_btn_buscar"> Buscar</button>
     </div>
     <div id="cp_msg" class="msg"></div>
     <div id="cp_ficha_breve" style="display: none;"></div>
@@ -118,13 +118,13 @@
 <div class="modal-overlay" id="cp_modal_detalles">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 id="cp_modal_titulo"> Detalles Completos</h3>
+            <h3 id="cp_modal_titulo">📋 Detalles Completos</h3>
             <button class="modal-close" id="cp_modal_close">&times;</button>
         </div>
         <div class="modal-body" id="cp_modal_body"></div>
         <div class="modal-actions">
-            <!-- ✅ BOTÓN DE IMPRIMIR AGREGADO -->
-            <button type="button" class="btn-submit" id="cp_btn_imprimir_reporte" style="background: var(--primary); margin-right: auto;">🖨️ Imprimir Reporte</button>
+            <!-- ✅ BOTÓN DE IMPRIMIR -->
+            <button type="button" class="btn-submit" id="cp_btn_imprimir_reporte" style="background: var(--primary); margin-right: auto;">️ Imprimir Reporte</button>
             <button type="button" class="btn-cancel" id="cp_modal_cerrar">Cerrar</button>
         </div>
     </div>
