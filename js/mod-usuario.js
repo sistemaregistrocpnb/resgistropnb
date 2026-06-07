@@ -2,7 +2,7 @@ window.initModUsuario = function() {
     console.log("⚙️ Iniciando módulo mod-usuario.js...");
 
     if (window._modUsuarioInitialized) {
-        console.log("️ Módulo ya inicializado, omitiendo...");
+        console.log("⚠️ Módulo ya inicializado, omitiendo...");
         return;
     }
     window._modUsuarioInitialized = true;
@@ -35,6 +35,7 @@ window.initModUsuario = function() {
             if (!perfil) return false;
             
             esAdministrador = perfil.nivel === 'administrador';
+            console.log("🔐 Es administrador:", esAdministrador);
             return true;
         } catch (err) {
             console.error('Error verificando permisos:', err);
@@ -67,6 +68,7 @@ window.initModUsuario = function() {
             if (error) throw error;
 
             usuariosData = usuarios || [];
+            console.log("📊 Usuarios cargados:", usuariosData.length);
             renderTabla(usuariosData);
 
         } catch (err) {
@@ -78,7 +80,7 @@ window.initModUsuario = function() {
         }
     }
 
-    // Renderizar tabla
+    // ✅ RENDERIZAR TABLA CON EVENT DELEGATION
     function renderTabla(usuarios) {
         if (!tablaContainer) return;
 
@@ -122,8 +124,8 @@ window.initModUsuario = function() {
                     <td><span class="bloqueado-badge ${bloqueadoClass}">${bloqueadoText}</span></td>
                     <td>
                         <div class="action-btns">
-                            <button type="button" class="btn-editar" onclick="window.abrirEditarUsuario('${u.id}')">✏️ Editar</button>
-                            ${esAdministrador && u.bloqueado ? `<button type="button" class="btn-desbloquear" onclick="window.desbloquearUsuario('${u.id}', '${u.email}')"> Desbloquear</button>` : ''}
+                            <button type="button" class="btn-editar" data-action="editar" data-id="${u.id}">✏️ Editar</button>
+                            ${esAdministrador && u.bloqueado ? `<button type="button" class="btn-desbloquear" data-action="desbloquear" data-id="${u.id}" data-email="${u.email}">🔓 Desbloquear</button>` : ''}
                         </div>
                     </td>
                 </tr>
@@ -132,40 +134,47 @@ window.initModUsuario = function() {
 
         html += '</tbody></table>';
         tablaContainer.innerHTML = html;
+
+        // ✅ AGREGAR EVENT LISTENERS DESPUÉS DE RENDERIZAR
+        agregarEventListenersTabla();
     }
 
-    // Buscar usuarios
-    if (buscarInput) {
-        buscarInput.addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase().trim();
-            if (!query) {
-                renderTabla(usuariosData);
-                return;
-            }
+    // ✅ EVENT DELEGATION PARA LOS BOTONES
+    function agregarEventListenersTabla() {
+        // Botones de editar
+        const botonesEditar = tablaContainer.querySelectorAll('.btn-editar');
+        botonesEditar.forEach(btn => {
+            btn.onclick = function() {
+                const id = this.getAttribute('data-id');
+                console.log("✏️ Click en editar, ID:", id);
+                abrirEditarUsuario(id);
+            };
+        });
 
-            const filtrados = usuariosData.filter(u => {
-                const nombre = `${u.nombre || ''} ${u.apellido || ''}`.toLowerCase();
-                const email = (u.email || '').toLowerCase();
-                const cedula = (u.cedula || '').toLowerCase();
-                return nombre.includes(query) || email.includes(query) || cedula.includes(query);
-            });
-
-            renderTabla(filtrados);
+        // Botones de desbloquear
+        const botonesDesbloquear = tablaContainer.querySelectorAll('.btn-desbloquear');
+        botonesDesbloquear.forEach(btn => {
+            btn.onclick = function() {
+                const id = this.getAttribute('data-id');
+                const email = this.getAttribute('data-email');
+                console.log("🔓 Click en desbloquear, ID:", id, "Email:", email);
+                desbloquearUsuario(id, email);
+            };
         });
     }
 
-    // Refrescar
-    if (btnRefresh) {
-        btnRefresh.onclick = () => {
-            cargarUsuarios();
-            mostrarMensaje('🔄 Lista actualizada', 'info');
-        };
-    }
-
-    // Abrir modal de edición
-    window.abrirEditarUsuario = async function(id) {
+    // ✅ FUNCIÓN PARA ABRIR MODAL DE EDICIÓN
+    function abrirEditarUsuario(id) {
+        console.log(" Buscando usuario con ID:", id);
+        
         const usuario = usuariosData.find(u => u.id === id);
-        if (!usuario) return;
+        if (!usuario) {
+            console.error("❌ Usuario no encontrado:", id);
+            mostrarMensaje('❌ Usuario no encontrado', 'error');
+            return;
+        }
+
+        console.log("✅ Usuario encontrado:", usuario);
 
         // Llenar formulario
         el('mu_edit_id').value = usuario.id;
@@ -197,7 +206,61 @@ window.initModUsuario = function() {
         }
 
         modalEditar.classList.add('active');
-    };
+        console.log("✅ Modal abierto");
+    }
+
+    // ✅ FUNCIÓN PARA DESBLOQUEAR
+    async function desbloquearUsuario(id, email) {
+        if (!confirm(`¿Está seguro de desbloquear al usuario ${email}?`)) return;
+
+        try {
+            const { error } = await window.supabaseClient
+                .from('perfiles_usuario')
+                .update({
+                    bloqueado: false,
+                    intentos_fallidos: 0,
+                    fecha_bloqueo: null
+                })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            mostrarMensaje(`✅ Usuario ${email} desbloqueado correctamente`, 'success');
+            await cargarUsuarios();
+
+        } catch (err) {
+            console.error('Error desbloqueando usuario:', err);
+            mostrarMensaje('❌ Error: ' + err.message, 'error');
+        }
+    }
+
+    // Buscar usuarios
+    if (buscarInput) {
+        buscarInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            if (!query) {
+                renderTabla(usuariosData);
+                return;
+            }
+
+            const filtrados = usuariosData.filter(u => {
+                const nombre = `${u.nombre || ''} ${u.apellido || ''}`.toLowerCase();
+                const email = (u.email || '').toLowerCase();
+                const cedula = (u.cedula || '').toLowerCase();
+                return nombre.includes(query) || email.includes(query) || cedula.includes(query);
+            });
+
+            renderTabla(filtrados);
+        });
+    }
+
+    // Refrescar
+    if (btnRefresh) {
+        btnRefresh.onclick = () => {
+            cargarUsuarios();
+            mostrarMensaje('🔄 Lista actualizada', 'info');
+        };
+    }
 
     // Cerrar modal
     if (el('mu_modal_close')) {
@@ -276,7 +339,7 @@ window.initModUsuario = function() {
             const nivel = el('mu_edit_nivel').value;
 
             if (!nombre || !apellido || !cedula || !jerarquia || !nivel) {
-                mostrarMensaje('️ Todos los campos son obligatorios', 'error');
+                mostrarMensaje('⚠️ Todos los campos son obligatorios', 'error');
                 return;
             }
 
@@ -312,31 +375,6 @@ window.initModUsuario = function() {
             }
         };
     }
-
-    // Desbloquear usuario
-    window.desbloquearUsuario = async function(id, email) {
-        if (!confirm(`¿Está seguro de desbloquear al usuario ${email}?`)) return;
-
-        try {
-            const { error } = await window.supabaseClient
-                .from('perfiles_usuario')
-                .update({
-                    bloqueado: false,
-                    intentos_fallidos: 0,
-                    fecha_bloqueo: null
-                })
-                .eq('id', id);
-
-            if (error) throw error;
-
-            mostrarMensaje(`✅ Usuario ${email} desbloqueado correctamente`, 'success');
-            await cargarUsuarios();
-
-        } catch (err) {
-            console.error('Error desbloqueando usuario:', err);
-            mostrarMensaje('❌ Error: ' + err.message, 'error');
-        }
-    };
 
     // Inicializar
     async function init() {
