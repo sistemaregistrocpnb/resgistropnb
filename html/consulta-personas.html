@@ -80,6 +80,8 @@
     margin-bottom: 15px;
     padding-bottom: 10px;
     border-bottom: 2px solid var(--beige-border);
+    flex-wrap: wrap;
+    gap: 10px;
   }
   
   .ficha-breve-header h3 {
@@ -114,6 +116,10 @@
     border-left: 3px solid var(--secondary);
   }
   
+  .ficha-breve-item.full-width {
+    grid-column: 1 / -1;
+  }
+  
   .ficha-breve-label {
     font-size: 0.75rem;
     color: #64748b;
@@ -126,6 +132,40 @@
     font-size: 0.95rem;
     color: #1e293b;
     font-weight: 500;
+    word-break: break-word;
+  }
+  
+  /* Alertas en ficha breve */
+  .ficha-alert {
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .ficha-alert-delito {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+  }
+  
+  .ficha-alert-judicial {
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    color: #92400e;
+  }
+  
+  .ficha-breve-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--beige-border);
   }
   
   .btn-ver-detalles {
@@ -141,6 +181,21 @@
   }
   
   .btn-ver-detalles:hover { background: #1e3a8a; }
+  
+  .btn-nueva-incidencia {
+    padding: 10px 20px;
+    background: var(--success);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+  }
+  
+  .btn-nueva-incidencia:hover { background: #166534; }
+  .btn-nueva-incidencia:disabled { background: #9ca3af; cursor: not-allowed; }
   
   /* Modal de detalles */
   .modal-overlay {
@@ -210,18 +265,46 @@
     bottom: 0;
   }
   
-  .btn-agregar-incidencia {
-    padding: 10px 20px;
-    background: var(--success);
+  .btn-cancel {
+    padding: 12px 24px;
+    background: #64748b;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     font-weight: 600;
+    font-size: 0.95rem;
   }
   
-  .btn-agregar-incidencia:hover { background: #166534; }
-  .btn-agregar-incidencia:disabled { background: #9ca3af; cursor: not-allowed; }
+  .btn-cancel:hover { background: #475569; }
+  
+  /* Fotos en modal */
+  .fotos-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .foto-item {
+    text-align: center;
+  }
+  
+  .foto-item img {
+    width: 100%;
+    max-height: 250px;
+    object-fit: contain;
+    border: 2px solid var(--beige-border);
+    border-radius: 8px;
+    background: #f8fafc;
+  }
+  
+  .foto-item-label {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary);
+  }
   
   /* Historial de incidencias */
   .incidencias-section {
@@ -252,6 +335,8 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
   }
   
   .incidencia-fecha {
@@ -317,19 +402,6 @@
   .btn-submit:hover { background: var(--secondary); }
   .btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
   
-  .btn-cancel {
-    padding: 12px 24px;
-    background: #64748b;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.95rem;
-  }
-  
-  .btn-cancel:hover { background: #475569; }
-  
   .loading {
     text-align: center;
     padding: 40px;
@@ -349,6 +421,10 @@
     border-left: 3px solid var(--secondary);
   }
   
+  .ficha-completa-item.full-width {
+    grid-column: 1 / -1;
+  }
+  
   .ficha-completa-label {
     font-size: 0.75rem;
     color: #64748b;
@@ -364,15 +440,31 @@
     word-break: break-word;
   }
   
+  .seccion-titulo {
+    color: var(--primary);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 20px 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--beige-border);
+  }
+  
+  .seccion-titulo:first-child {
+    margin-top: 0;
+  }
+  
   @media (max-width: 768px) {
     .con-search-box { flex-direction: column; align-items: stretch; }
     .ficha-breve-grid { grid-template-columns: 1fr; }
     .ficha-completa-grid { grid-template-columns: 1fr; }
+    .fotos-container { grid-template-columns: 1fr; }
+    .ficha-breve-actions { flex-direction: column; }
+    .ficha-breve-actions button { width: 100%; }
   }
 </style>
 
 <div class="card">
-  <h3> Consulta de Personas</h3>
+  <h3>🔍 Consulta de Personas</h3>
   
   <!-- Barra de búsqueda -->
   <div class="con-search-box">
@@ -381,7 +473,7 @@
       <input type="text" id="cp_buscar_cedula" placeholder="Ej: 12345678">
       <small>Ingrese el número de cédula para buscar en personas y vinculados</small>
     </div>
-    <button type="button" class="con-btn" id="cp_btn_buscar">🔍 Buscar</button>
+    <button type="button" class="con-btn" id="cp_btn_buscar"> Buscar</button>
   </div>
   
   <div id="cp_msg" class="msg"></div>
@@ -402,7 +494,6 @@
     </div>
     <div class="modal-body" id="cp_modal_body"></div>
     <div class="modal-actions">
-      <button type="button" class="btn-agregar-incidencia" id="cp_btn_nueva_incidencia"> Nueva Incidencia</button>
       <button type="button" class="btn-cancel" id="cp_modal_cerrar">Cerrar</button>
     </div>
   </div>
@@ -412,7 +503,7 @@
 <div class="modal-overlay" id="cp_modal_incidencia">
   <div class="modal-content" style="max-width: 600px;">
     <div class="modal-header">
-      <h3> Agregar Nueva Incidencia</h3>
+      <h3>➕ Agregar Nueva Incidencia</h3>
       <button class="modal-close" id="cp_modal_inc_close">&times;</button>
     </div>
     <div class="modal-body">
