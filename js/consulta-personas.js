@@ -13,18 +13,13 @@ window.initConsultaPersonas = function() {
     let personaActual = null;
     let tipoRegistroActual = null;
     let datosProcesado = null;
-    let userRoleCache = null;
 
     // Listeners
     if (btnBuscar) btnBuscar.onclick = () => buscarPersona();
     
     if (buscarInput) {
-        buscarInput.addEventListener('input', (e) => {
-            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
-        });
-        buscarInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') { e.preventDefault(); btnBuscar?.click(); }
-        });
+        buscarInput.oninput = (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8); };
+        buscarInput.onkeypress = (e) => { if (e.key === 'Enter') { e.preventDefault(); btnBuscar?.click(); } };
     }
 
     // Cerrar modales
@@ -33,6 +28,9 @@ window.initConsultaPersonas = function() {
     if (el('cp_modal_inc_close')) el('cp_modal_inc_close').onclick = () => modalIncidencia.classList.remove('active');
     if (el('cp_btn_cancelar_incidencia')) el('cp_btn_cancelar_incidencia').onclick = () => modalIncidencia.classList.remove('active');
     if (el('cp_btn_guardar_incidencia')) el('cp_btn_guardar_incidencia').onclick = () => guardarIncidencia();
+    
+    // ✅ Listener para el botón de imprimir
+    if (el('cp_btn_imprimir_reporte')) el('cp_btn_imprimir_reporte').onclick = () => window.print();
 
     function mostrarMensaje(texto, tipo) {
         if (!msg) return;
@@ -46,19 +44,11 @@ window.initConsultaPersonas = function() {
         try {
             const { data: { user } } = await window.supabaseClient.auth.getUser();
             if (!user) return false;
-
             const { data: perfil, error } = await window.supabaseClient
-                .from('perfiles_usuario')
-                .select('nivel')
-                .eq('user_id', user.id)
-                .maybeSingle();
-
+                .from('perfiles_usuario').select('nivel').eq('user_id', user.id).maybeSingle();
             if (error || !perfil) return false;
-
             const nivel = (perfil.nivel || '').toLowerCase().trim();
-            const tienePermiso = nivel === 'administrador' || nivel === 'moderador';
-            userRoleCache = nivel;
-            return tienePermiso;
+            return nivel === 'administrador' || nivel === 'moderador';
         } catch (err) {
             console.error("Error verificando permisos:", err);
             return false;
@@ -81,11 +71,7 @@ window.initConsultaPersonas = function() {
 
         try {
             const { data: persona, error: errPersona } = await window.supabaseClient
-                .from('registro_personas')
-                .select('*')
-                .eq('cedula', cedula)
-                .maybeSingle();
-
+                .from('registro_personas').select('*').eq('cedula', cedula).maybeSingle();
             if (errPersona) throw errPersona;
 
             if (persona) {
@@ -95,12 +81,8 @@ window.initConsultaPersonas = function() {
                 if (estatus.includes('procesad')) {
                     try {
                         const { data: procData } = await window.supabaseClient
-                            .from('registro_procesados')
-                            .select('tipo_delito')
-                            .eq('cedula', cedula)
-                            .order('created_at', { ascending: false })
-                            .limit(1)
-                            .maybeSingle();
+                            .from('registro_procesados').select('tipo_delito').eq('cedula', cedula)
+                            .order('created_at', { ascending: false }).limit(1).maybeSingle();
                         if (procData) datosProcesado = procData;
                     } catch (e) { /* Silencioso */ }
                 }
@@ -111,11 +93,7 @@ window.initConsultaPersonas = function() {
             }
 
             const { data: vinculado, error: errVinculado } = await window.supabaseClient
-                .from('registro_vinculado')
-                .select('*')
-                .eq('cedula', cedula)
-                .maybeSingle();
-
+                .from('registro_vinculado').select('*').eq('cedula', cedula).maybeSingle();
             if (errVinculado) throw errVinculado;
 
             if (vinculado) {
@@ -125,12 +103,8 @@ window.initConsultaPersonas = function() {
                 if (estatus.includes('procesad')) {
                     try {
                         const { data: procData } = await window.supabaseClient
-                            .from('registro_procesados')
-                            .select('tipo_delito')
-                            .eq('cedula', cedula)
-                            .order('created_at', { ascending: false })
-                            .limit(1)
-                            .maybeSingle();
+                            .from('registro_procesados').select('tipo_delito').eq('cedula', cedula)
+                            .order('created_at', { ascending: false }).limit(1).maybeSingle();
                         if (procData) datosProcesado = procData;
                     } catch (e) { /* Silencioso */ }
                 }
@@ -139,11 +113,10 @@ window.initConsultaPersonas = function() {
                 mostrarMensaje('✅ Vehículo vinculado encontrado', 'success');
                 return;
             }
-
             mostrarMensaje('❌ No se encontró ninguna persona con esa cédula', 'error');
         } catch (err) {
             console.error('Error buscando:', err);
-            mostrarMensaje('❌ Error: ' + err.message, 'error');
+            mostrarMensaje(' Error: ' + err.message, 'error');
         }
     }
 
@@ -154,14 +127,9 @@ window.initConsultaPersonas = function() {
         const estatusClass = estatusLower.includes('verificaci') ? 'estatus-verificacion' :
                              estatusLower.includes('procesad') ? 'estatus-procesado' : 'estatus-liberado';
         
-        let nombreCompleto = '';
-        if (tipo === 'persona') {
-            nombreCompleto = `${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}`.trim() || 'N/A';
-        } else {
-            nombreCompleto = (data.primer_nombre && data.primer_apellido)
-                ? `${data.primer_nombre} ${data.primer_apellido}`
-                : (data.propietario || `Vehículo ${data.placa || ''}`);
-        }
+        let nombreCompleto = tipo === 'persona' 
+            ? `${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}`.trim() || 'N/A'
+            : ((data.primer_nombre && data.primer_apellido) ? `${data.primer_nombre} ${data.primer_apellido}` : (data.propietario || `Vehículo ${data.placa || ''}`));
 
         let alertasHtml = '';
         if (estatusLower.includes('procesad') && datosProcesado?.tipo_delito) {
@@ -173,45 +141,21 @@ window.initConsultaPersonas = function() {
         }
 
         let htmlCampos = `
-            <div class="ficha-breve-item">
-                <div class="ficha-breve-label">Cédula</div>
-                <div class="ficha-breve-value">${data.cedula || 'N/A'}</div>
-            </div>
-            <div class="ficha-breve-item">
-                <div class="ficha-breve-label">Tipo</div>
-                <div class="ficha-breve-value">${tipo === 'persona' ? '👤 Persona' : '🚗 Vinculado (Vehículo)'}</div>
-            </div>
-            <div class="ficha-breve-item">
-                <div class="ficha-breve-label">Estación de Detención</div>
-                <div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div>
-            </div>
-            <div class="ficha-breve-item">
-                <div class="ficha-breve-label">Fecha</div>
-                <div class="ficha-breve-value">${new Date(data.created_at || data.creado_en).toLocaleString('es-VE')}</div>
-            </div>
+            <div class="ficha-breve-item"><div class="ficha-breve-label">Cédula</div><div class="ficha-breve-value">${data.cedula || 'N/A'}</div></div>
+            <div class="ficha-breve-item"><div class="ficha-breve-label">Tipo</div><div class="ficha-breve-value">${tipo === 'persona' ? '👤 Persona' : '🚗 Vinculado (Vehículo)'}</div></div>
+            <div class="ficha-breve-item"><div class="ficha-breve-label">Estación de Detención</div><div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div></div>
+            <div class="ficha-breve-item"><div class="ficha-breve-label">Fecha</div><div class="ficha-breve-value">${new Date(data.created_at || data.creado_en).toLocaleString('es-VE')}</div></div>
         `;
 
         if (tipo === 'vinculado') {
             htmlCampos += `
-                <div class="ficha-breve-item">
-                    <div class="ficha-breve-label">Vehículo</div>
-                    <div class="ficha-breve-value">${data.tipo_vehiculo || 'N/A'} ${data.marca_vehiculo || ''} ${data.modelo_vehiculo || ''}</div>
-                </div>
-                <div class="ficha-breve-item">
-                    <div class="ficha-breve-label">Placa</div>
-                    <div class="ficha-breve-value" style="font-weight:800; color:var(--primary); font-size:1.1rem;">${data.placa || 'N/A'}</div>
-                </div>
+                <div class="ficha-breve-item"><div class="ficha-breve-label">Vehículo</div><div class="ficha-breve-value">${data.tipo_vehiculo || 'N/A'} ${data.marca_vehiculo || ''} ${data.modelo_vehiculo || ''}</div></div>
+                <div class="ficha-breve-item"><div class="ficha-breve-label">Placa</div><div class="ficha-breve-value" style="font-weight:800; color:var(--primary); font-size:1.1rem;">${data.placa || 'N/A'}</div></div>
             `;
         }
 
-        const observaciones = data.observaciones || '';
-        if (observaciones) {
-            htmlCampos += `
-                <div class="ficha-breve-item full-width">
-                    <div class="ficha-breve-label">📝 Observaciones</div>
-                    <div class="ficha-breve-value">${observaciones}</div>
-                </div>
-            `;
+        if (data.observaciones) {
+            htmlCampos += `<div class="ficha-breve-item full-width"><div class="ficha-breve-label"> Observaciones</div><div class="ficha-breve-value">${data.observaciones}</div></div>`;
         }
 
         const tienePermisos = await tienePermisosIncidencia();
@@ -226,9 +170,7 @@ window.initConsultaPersonas = function() {
                     <span class="estatus-badge ${estatusClass}">${estatus}</span>
                 </div>
                 ${alertasHtml}
-                <div class="ficha-breve-grid">
-                    ${htmlCampos}
-                </div>
+                <div class="ficha-breve-grid">${htmlCampos}</div>
                 <div class="ficha-breve-actions">
                     <button type="button" class="btn-ver-detalles" id="cp_btn_ver_detalles">📋 Ver Detalles Completos</button>
                     ${btnIncidenciaHtml}
@@ -254,174 +196,229 @@ window.initConsultaPersonas = function() {
         }, 100);
     }
 
-    // ✅ FUNCIÓN ASYNC PARA MOSTRAR DETALLES COMPLETOS CON DELITO Y ANTECEDENTES
+    // ✅ FUNCIÓN ASYNC: Genera reporte, centra logo, muestra delito/antecedentes
     async function mostrarDetallesCompletos(data, tipo) {
         if (!modalBody || !modalTitulo) return;
-        modalTitulo.textContent = `📋 Detalles - ${tipo === 'persona' ? 'Persona' : 'Vehículo Vinculado'}`;
+        modalTitulo.textContent = ` Detalles - ${tipo === 'persona' ? 'Persona' : 'Vehículo Vinculado'}`;
         
-        // Mostrar loading
-        modalBody.innerHTML = '<div class="loading">⏳ Cargando detalles completos...</div>';
+        modalBody.innerHTML = '<div class="loading">⏳ Generando número de reporte oficial...</div>';
         modalDetalles.classList.add('active');
 
-        // Consultar datos de procesados si el estatus lo indica
-        let datosProcesadosCompletos = null;
-        const estatus = (data.estatus || '').toLowerCase();
-        
-        if (estatus.includes('procesad')) {
+        try {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) throw new Error('Debe iniciar sesión');
+
+            const fechaHoy = new Date();
+            const fechaStr = fechaHoy.getFullYear().toString() + String(fechaHoy.getMonth() + 1).padStart(2, '0') + String(fechaHoy.getDate()).padStart(2, '0');
+
+            // 1. Generar número de reporte en BD
+            const { data: nuevoReporte, error: errorInsert } = await window.supabaseClient
+                .from('reportes_generados')
+                .insert([{
+                    fecha_texto: fechaStr,
+                    cedula_consultada: data.cedula,
+                    tipo_registro: tipo,
+                    user_id: user.id,
+                    user_email: user.email
+                }])
+                .select('consecutivo_global')
+                .single();
+
+            if (errorInsert) throw errorInsert;
+
+            const consecutivoFormateado = String(nuevoReporte.consecutivo_global).padStart(8, '0');
+            const numeroReporteFinal = `REPORTE-CPNB-${fechaStr}-N° ${consecutivoFormateado}`;
+
+            // 2. Consultar datos de procesados para el modal
+            let datosProcesadosCompletos = null;
+            const estatus = (data.estatus || '').toLowerCase();
+            if (estatus.includes('procesad')) {
+                try {
+                    const { data: procData } = await window.supabaseClient
+                        .from('registro_procesados').select('*').eq('cedula', data.cedula)
+                        .order('created_at', { ascending: false }).limit(1).maybeSingle();
+                    if (procData) datosProcesadosCompletos = procData;
+                } catch (e) { /* Silencioso */ }
+            }
+
+            // 3. Construir HTML con LOGO CENTRADO y ALERTAS
+            let html = `<div class="reporte-header-print" style="text-align: center; margin-bottom: 20px; border-bottom: 3px double var(--primary); padding-bottom: 15px;">
+                <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 10px;">
+                    <img src="img/LOGO-PNB.png" alt="Logo PNB" style="max-height: 90px; width: auto;" onerror="this.style.display='none'">
+                </div>
+                <h2 style="color: var(--primary); margin: 0; font-family: 'Playfair Display', serif;">CUERPO DE POLICÍA NACIONAL BOLIVARIANA</h2>
+                <h3 style="color: var(--secondary); margin: 5px 0; font-size: 1rem;">CENTRO DE COORDINACIÓN POLICIAL ESTADAL (CCPE) ZULIA</h3>
+                <p style="font-size: 0.9rem; color: #334155; margin-top: 15px;">
+                    <strong>N° de Reporte:</strong> 
+                    <span id="cp_numero_reporte_display" style="color: var(--primary); font-weight: 800; font-size: 1.1rem;">${numeroReporteFinal}</span>
+                </p>
+                <p style="font-size: 0.85rem; color: #64748b;"><strong>Fecha de Consulta:</strong> ${fechaHoy.toLocaleString('es-VE')}</p>
+                <p style="font-size: 0.85rem; color: #64748b;"><strong>Generado por:</strong> ${user.email}</p>
+            </div>`;
+
+            if (tipo === 'persona') {
+                if (data.foto_frontal || data.foto_perfil_izq || data.foto_perfil_der) {
+                    html += `<div class="seccion-titulo">📸 Fotografías</div><div class="fotos-container">`;
+                    if (data.foto_frontal) html += `<div class="foto-item"><img src="${data.foto_frontal}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
+                    if (data.foto_perfil_izq) html += `<div class="foto-item"><img src="${data.foto_perfil_izq}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Izq.</div></div>`;
+                    if (data.foto_perfil_der) html += `<div class="foto-item"><img src="${data.foto_perfil_der}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Der.</div></div>`;
+                    html += `</div>`;
+                }
+                
+                // ✅ AGREGAR ALERTAS DE DELITO Y ANTECEDENTES
+                let alertasHtml = '';
+                if (datosProcesadosCompletos?.tipo_delito) {
+                    alertasHtml += `<div class="ficha-alert ficha-alert-delito" style="page-break-inside: avoid; margin: 15px 0;">⚖️ <strong>Procesado por:</strong> ${datosProcesadosCompletos.tipo_delito}</div>`;
+                }
+                const problemaJudicial = data.problema_judicial || '';
+                if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLowerCase() !== 'no') {
+                    alertasHtml += `<div class="ficha-alert ficha-alert-judicial" style="page-break-inside: avoid; margin: 15px 0;">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
+                }
+                
+                html += `<div class="seccion-titulo">👤 Datos Personales</div>`;
+                html += alertasHtml;
+                html += `<div class="ficha-completa-grid">`;
+                
+                const camposPersona = [
+                    { label: 'Nombre', value: `${data.primer_nombre || ''} ${data.segundo_nombre || ''}` },
+                    { label: 'Apellido', value: `${data.primer_apellido || ''} ${data.segundo_apellido || ''}` },
+                    { label: 'Cédula', value: data.cedula },
+                    { label: 'Fecha Nac.', value: data.fecha_nacimiento },
+                    { label: 'Edad', value: data.edad ? `${data.edad} años` : null },
+                    { label: 'Nacionalidad', value: data.nacionalidad },
+                    { label: 'Sexo', value: data.sexo },
+                    { label: 'Estatura', value: data.estatura_cm ? `${data.estatura_cm} cm` : null },
+                    { label: 'Color Piel', value: data.color_piel },
+                    { label: 'Color Ojos', value: data.color_ojos },
+                    { label: 'Cabello', value: data.color_cabello },
+                    { label: 'Complexión', value: data.complexion },
+                    { label: 'Teléfono', value: `${data.tlf_pais || ''} ${data.tlf_numero || ''}`.trim() || null },
+                    { label: 'Dirección', value: data.direccion },
+                    { label: 'Apodo', value: data.apodo },
+                    { label: 'Marca Corporal', value: data.marca_corporal },
+                    { label: 'Lentes', value: data.usa_lentes ? 'Sí' : 'No' },
+                    { label: 'Detalle Lentes', value: data.detalle_lentes },
+                    { label: 'Perforaciones', value: data.perforaciones ? 'Sí' : 'No' },
+                    { label: 'Detalle Perfor.', value: data.detalle_perforaciones },
+                    { label: 'Cond. Médica', value: data.condicion_medica },
+                    { label: 'Medicamento', value: data.consume_medicamento },
+                    { label: 'Estación', value: data.estacion_policial },
+                    { label: 'Dir. Detención', value: data.direccion_detencion },
+                    { label: 'Estatus', value: data.estatus }
+                ];
+                camposPersona.forEach(c => {
+                    if (c.value !== null && c.value !== undefined && c.value !== '') {
+                        html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value">${c.value}</div></div>`;
+                    }
+                });
+                if (data.observaciones) {
+                    html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
+                }
+                html += `</div>`;
+            } else {
+                // Lógica para vehículos (se mantiene igual)
+                if (data.foto_frontal_persona || data.foto_perfil_izq_persona || data.foto_perfil_der_persona) {
+                    html += `<div class="seccion-titulo"> Fotografías de la Persona</div><div class="fotos-container">`;
+                    if (data.foto_frontal_persona) html += `<div class="foto-item"><img src="${data.foto_frontal_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
+                    if (data.foto_perfil_izq_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_izq_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Izq.</div></div>`;
+                    if (data.foto_perfil_der_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_der_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Der.</div></div>`;
+                    html += `</div>`;
+                }
+                html += `<div class="seccion-titulo">👤 Datos de la Persona</div><div class="ficha-completa-grid">`;
+                const camposPersonaVinc = [
+                    { label: 'Nombre', value: `${data.primer_nombre || ''} ${data.segundo_nombre || ''}` },
+                    { label: 'Apellido', value: `${data.primer_apellido || ''} ${data.segundo_apellido || ''}` },
+                    { label: 'Cédula', value: data.cedula },
+                    { label: 'Fecha Nac.', value: data.fecha_nacimiento },
+                    { label: 'Edad', value: data.edad },
+                    { label: 'Nacionalidad', value: data.nacionalidad },
+                    { label: 'Sexo', value: data.sexo },
+                    { label: 'Teléfono', value: `${data.tlf_pais || ''} ${data.tlf_numero || ''}`.trim() || null },
+                    { label: 'Dirección', value: data.direccion },
+                    { label: 'Problema Judicial', value: data.problema_judicial }
+                ];
+                camposPersonaVinc.forEach(c => { if (c.value) html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value">${c.value}</div></div>`; });
+                html += `</div>`;
+
+                if (data.foto_frontal_vehiculo || data.foto_trasera_vehiculo || data.foto_lado_der_vehiculo || data.foto_lado_izq_vehiculo) {
+                    html += `<div class="seccion-titulo"> Fotografías del Vehículo</div><div class="fotos-container">`;
+                    if (data.foto_frontal_vehiculo) html += `<div class="foto-item"><img src="${data.foto_frontal_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
+                    if (data.foto_trasera_vehiculo) html += `<div class="foto-item"><img src="${data.foto_trasera_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Trasera</div></div>`;
+                    if (data.foto_lado_der_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_der_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Der.</div></div>`;
+                    if (data.foto_lado_izq_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_izq_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Izq.</div></div>`;
+                    html += `</div>`;
+                }
+                html += `<div class="seccion-titulo">🚗 Datos del Vehículo</div><div class="ficha-completa-grid">`;
+                const camposVehiculo = [
+                    { label: 'Placa', value: data.placa, highlight: true },
+                    { label: 'Tipo', value: data.tipo_vehiculo },
+                    { label: 'Marca', value: data.marca_vehiculo },
+                    { label: 'Modelo', value: data.modelo_vehiculo },
+                    { label: 'Color', value: data.color_vehiculo },
+                    { label: 'Año', value: data.anio_vehiculo },
+                    { label: 'Serial Motor', value: data.serial_motor },
+                    { label: 'Serial Carroc.', value: data.serial_carroceria },
+                    { label: 'Cilindraje', value: data.cilindraje },
+                    { label: 'Marca Corporal', value: data.marca_corporal },
+                    { label: 'Propietario', value: data.propietario },
+                    { label: 'Estación', value: data.estacion_policial },
+                    { label: 'Dir. Detención', value: data.direccion_detencion },
+                    { label: 'Estatus', value: data.estatus }
+                ];
+                camposVehiculo.forEach(c => {
+                    if (c.value !== null && c.value !== undefined && c.value !== '') {
+                        const style = c.highlight ? 'font-weight:800; color:var(--primary); font-size:1.1rem;' : '';
+                        html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value" style="${style}">${c.value}</div></div>`;
+                    }
+                });
+                if (data.observaciones) {
+                    html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
+                }
+                html += `</div>`;
+            }
+
+            // Incidencias
+            html += `<div class="seccion-titulo" style="margin-top: 30px;">📜 Historial de Incidencias</div>`;
             try {
-                const { data: procData } = await window.supabaseClient
-                    .from('registro_procesados')
-                    .select('*')
-                    .eq('cedula', data.cedula)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
-                if (procData) datosProcesadosCompletos = procData;
-            } catch (e) { 
-                console.warn('No se pudo obtener datos de procesados:', e); 
-            }
-        }
-
-        let html = '';
-        
-        if (tipo === 'persona') {
-            // Fotografías
-            if (data.foto_frontal || data.foto_perfil_izq || data.foto_perfil_der) {
-                html += `<div class="seccion-titulo">📸 Fotografías</div><div class="fotos-container">`;
-                if (data.foto_frontal) html += `<div class="foto-item"><img src="${data.foto_frontal}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
-                if (data.foto_perfil_izq) html += `<div class="foto-item"><img src="${data.foto_perfil_izq}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Izq.</div></div>`;
-                if (data.foto_perfil_der) html += `<div class="foto-item"><img src="${data.foto_perfil_der}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Der.</div></div>`;
-                html += `</div>`;
-            }
-            
-            // ✅ AGREGAR ALERTAS DE DELITO Y ANTECEDENTES EN EL MODAL
-            let alertasHtml = '';
-            if (datosProcesadosCompletos?.tipo_delito) {
-                alertasHtml += `<div class="ficha-alert ficha-alert-delito" style="page-break-inside: avoid; margin: 15px 0;">⚖️ <strong>Procesado por:</strong> ${datosProcesadosCompletos.tipo_delito}</div>`;
-            }
-            const problemaJudicial = data.problema_judicial || '';
-            if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLowerCase() !== 'no') {
-                alertasHtml += `<div class="ficha-alert ficha-alert-judicial" style="page-break-inside: avoid; margin: 15px 0;">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
-            }
-            
-            html += `<div class="seccion-titulo">👤 Datos Personales</div>`;
-            html += alertasHtml; // Insertar alertas justo después del título
-            html += `<div class="ficha-completa-grid">`;
-            
-            const camposPersona = [
-                { label: 'Nombre', value: `${data.primer_nombre || ''} ${data.segundo_nombre || ''}` },
-                { label: 'Apellido', value: `${data.primer_apellido || ''} ${data.segundo_apellido || ''}` },
-                { label: 'Cédula', value: data.cedula },
-                { label: 'Fecha Nac.', value: data.fecha_nacimiento },
-                { label: 'Edad', value: data.edad ? `${data.edad} años` : null },
-                { label: 'Nacionalidad', value: data.nacionalidad },
-                { label: 'Sexo', value: data.sexo },
-                { label: 'Estatura', value: data.estatura_cm ? `${data.estatura_cm} cm` : null },
-                { label: 'Color Piel', value: data.color_piel },
-                { label: 'Color Ojos', value: data.color_ojos },
-                { label: 'Cabello', value: data.color_cabello },
-                { label: 'Complexión', value: data.complexion },
-                { label: 'Teléfono', value: `${data.tlf_pais || ''} ${data.tlf_numero || ''}`.trim() || null },
-                { label: 'Dirección', value: data.direccion },
-                { label: 'Apodo', value: data.apodo },
-                { label: 'Marca Corporal', value: data.marca_corporal },
-                { label: 'Lentes', value: data.usa_lentes ? 'Sí' : 'No' },
-                { label: 'Detalle Lentes', value: data.detalle_lentes },
-                { label: 'Perforaciones', value: data.perforaciones ? 'Sí' : 'No' },
-                { label: 'Detalle Perfor.', value: data.detalle_perforaciones },
-                { label: 'Cond. Médica', value: data.condicion_medica },
-                { label: 'Medicamento', value: data.consume_medicamento },
-                { label: 'Prob. Judicial', value: data.problema_judicial },
-                { label: 'Estación', value: data.estacion_policial },
-                { label: 'Dir. Detención', value: data.direccion_detencion },
-                { label: 'Estatus', value: data.estatus }
-            ];
-            camposPersona.forEach(c => {
-                if (c.value !== null && c.value !== undefined && c.value !== '') {
-                    html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value">${c.value}</div></div>`;
+                const { data: incidencias } = await window.supabaseClient.from('registro_incidencias').select('*').eq('cedula', data.cedula).eq('tipo_registro', tipo).order('fecha_hora', { ascending: false });
+                if (incidencias && incidencias.length > 0) {
+                    html += `<div class="incidencias-print-container">`;
+                    incidencias.forEach(inc => {
+                        html += `<div class="incidencia-item-print" style="border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 10px; border-left: 4px solid var(--secondary); border-radius: 4px; page-break-inside: avoid;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">
+                                <span>🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+                                <span>Por: ${inc.email_registrante || 'N/A'}</span>
+                            </div>
+                            <div style="font-size: 0.9rem; color: #1e293b; line-height: 1.5;">${inc.descripcion}</div>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                } else {
+                    html += `<div style="text-align: center; padding: 20px; color: #94a3b8; font-style: italic; border: 1px dashed #cbd5e1; border-radius: 5px;">No hay incidencias registradas para este expediente.</div>`;
                 }
-            });
-            if (data.observaciones) {
-                html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
-            }
-            html += `</div>`;
-        } else {
-            // Código para vehículos vinculados
-            if (data.foto_frontal_persona || data.foto_perfil_izq_persona || data.foto_perfil_der_persona) {
-                html += `<div class="seccion-titulo">📸 Fotografías de la Persona</div><div class="fotos-container">`;
-                if (data.foto_frontal_persona) html += `<div class="foto-item"><img src="${data.foto_frontal_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
-                if (data.foto_perfil_izq_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_izq_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Izq.</div></div>`;
-                if (data.foto_perfil_der_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_der_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Der.</div></div>`;
-                html += `</div>`;
-            }
-            html += `<div class="seccion-titulo">👤 Datos de la Persona</div><div class="ficha-completa-grid">`;
-            const camposPersonaVinc = [
-                { label: 'Nombre', value: `${data.primer_nombre || ''} ${data.segundo_nombre || ''}` },
-                { label: 'Apellido', value: `${data.primer_apellido || ''} ${data.segundo_apellido || ''}` },
-                { label: 'Cédula', value: data.cedula },
-                { label: 'Fecha Nac.', value: data.fecha_nacimiento },
-                { label: 'Edad', value: data.edad },
-                { label: 'Nacionalidad', value: data.nacionalidad },
-                { label: 'Sexo', value: data.sexo },
-                { label: 'Teléfono', value: `${data.tlf_pais || ''} ${data.tlf_numero || ''}`.trim() || null },
-                { label: 'Dirección', value: data.direccion },
-                { label: 'Problema Judicial', value: data.problema_judicial }
-            ];
-            camposPersonaVinc.forEach(c => {
-                if (c.value) html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value">${c.value}</div></div>`;
-            });
-            html += `</div>`;
+            } catch (err) { /* Silencioso */ }
 
-            if (data.foto_frontal_vehiculo || data.foto_trasera_vehiculo || data.foto_lado_der_vehiculo || data.foto_lado_izq_vehiculo) {
-                html += `<div class="seccion-titulo">📸 Fotografías del Vehículo</div><div class="fotos-container">`;
-                if (data.foto_frontal_vehiculo) html += `<div class="foto-item"><img src="${data.foto_frontal_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
-                if (data.foto_trasera_vehiculo) html += `<div class="foto-item"><img src="${data.foto_trasera_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Trasera</div></div>`;
-                if (data.foto_lado_der_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_der_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Der.</div></div>`;
-                if (data.foto_lado_izq_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_izq_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Izq.</div></div>`;
-                html += `</div>`;
-            }
-            html += `<div class="seccion-titulo">🚗 Datos del Vehículo</div><div class="ficha-completa-grid">`;
-            const camposVehiculo = [
-                { label: 'Placa', value: data.placa, highlight: true },
-                { label: 'Tipo', value: data.tipo_vehiculo },
-                { label: 'Marca', value: data.marca_vehiculo },
-                { label: 'Modelo', value: data.modelo_vehiculo },
-                { label: 'Color', value: data.color_vehiculo },
-                { label: 'Año', value: data.anio_vehiculo },
-                { label: 'Serial Motor', value: data.serial_motor },
-                { label: 'Serial Carroc.', value: data.serial_carroceria },
-                { label: 'Cilindraje', value: data.cilindraje },
-                { label: 'Marca Corporal', value: data.marca_corporal },
-                { label: 'Propietario', value: data.propietario },
-                { label: 'Estación', value: data.estacion_policial },
-                { label: 'Dir. Detención', value: data.direccion_detencion },
-                { label: 'Estatus', value: data.estatus }
-            ];
-            camposVehiculo.forEach(c => {
-                if (c.value !== null && c.value !== undefined && c.value !== '') {
-                    const style = c.highlight ? 'font-weight:800; color:var(--primary); font-size:1.1rem;' : '';
-                    html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value" style="${style}">${c.value}</div></div>`;
-                }
-            });
-            if (data.observaciones) {
-                html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
-            }
-            html += `</div>`;
+            html += `<div class="reporte-footer-print" style="margin-top: 40px; text-align: center; font-size: 0.75rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                <p>Documento generado electrónicamente por el Sistema de Verificación y Registro Policial.</p>
+                <p>Este reporte es de carácter informativo y confidencial. Uso exclusivo del CPNB.</p>
+            </div>`;
+
+            modalBody.innerHTML = html;
+
+        } catch (err) {
+            console.error('Error generando reporte:', err);
+            modalBody.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">
+                <h3>❌ Error al generar el reporte</h3>
+                <p>${err.message}</p>
+            </div>`;
         }
-
-        modalBody.innerHTML = html;
     }
 
     async function cargarIncidencias(cedula, tipo) {
         if (!incidenciasSection) return;
         try {
             const { data: incidencias, error } = await window.supabaseClient
-                .from('registro_incidencias')
-                .select('*')
-                .eq('cedula', cedula)
-                .eq('tipo_registro', tipo)
-                .order('fecha_hora', { ascending: false });
-
+                .from('registro_incidencias').select('*').eq('cedula', cedula).eq('tipo_registro', tipo).order('fecha_hora', { ascending: false });
             if (error) throw error;
 
             let html = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3>';
@@ -429,15 +426,13 @@ window.initConsultaPersonas = function() {
                 html += '<div class="sin-incidencias">No hay incidencias registradas</div>';
             } else {
                 incidencias.forEach(inc => {
-                    html += `
-                        <div class="incidencia-item">
-                            <div class="incidencia-item-header">
-                                <span class="incidencia-fecha">🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
-                                <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
-                            </div>
-                            <div class="incidencia-descripcion">${inc.descripcion}</div>
+                    html += `<div class="incidencia-item">
+                        <div class="incidencia-item-header">
+                            <span class="incidencia-fecha">🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+                            <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
                         </div>
-                    `;
+                        <div class="incidencia-descripcion">${inc.descripcion}</div>
+                    </div>`;
                 });
             }
             html += '</div>';
@@ -445,8 +440,6 @@ window.initConsultaPersonas = function() {
             incidenciasSection.style.display = 'block';
         } catch (err) {
             console.error('Error cargando incidencias:', err);
-            incidenciasSection.innerHTML = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
-            incidenciasSection.style.display = 'block';
         }
     }
 
@@ -461,16 +454,14 @@ window.initConsultaPersonas = function() {
             const { data: { user } } = await window.supabaseClient.auth.getUser();
             if (!user) throw new Error('Debe iniciar sesión');
 
-            const incidencia = {
+            const { error } = await window.supabaseClient.from('registro_incidencias').insert([{
                 cedula: personaActual.cedula,
                 tipo_registro: tipoRegistroActual,
                 descripcion: descripcion,
                 fecha_hora: new Date().toISOString(),
                 registrada_por: user.id,
                 email_registrante: user.email
-            };
-
-            const { error } = await window.supabaseClient.from('registro_incidencias').insert([incidencia]);
+            }]);
             if (error) throw error;
 
             modalIncidencia.classList.remove('active');
@@ -495,27 +486,13 @@ async function registrarLog(accion, modulo, registroId = null, detalles = {}) {
     try {
         const { data: { user } } = await window.supabaseClient.auth.getUser();
         if (!user) return;
-
         const { data: perfil } = await window.supabaseClient
-            .from('perfiles_usuario')
-            .select('nombre, apellido')
-            .eq('user_id', user.id)
-            .maybeSingle();
-
+            .from('perfiles_usuario').select('nombre, apellido').eq('user_id', user.id).maybeSingle();
         const nombreCompleto = perfil ? `${perfil.nombre || ''} ${perfil.apellido || ''}`.trim() : 'Sistema';
-
-        await window.supabaseClient
-            .from('sistema_logs')
-            .insert([{
-                user_id: user.id,
-                user_email: user.email,
-                user_nombre: nombreCompleto,
-                accion: accion,
-                modulo: modulo,
-                registro_id: registroId,
-                detalles: detalles,
-                user_agent: navigator.userAgent
-            }]);
+        await window.supabaseClient.from('sistema_logs').insert([{
+            user_id: user.id, user_email: user.email, user_nombre: nombreCompleto,
+            accion: accion, modulo: modulo, registro_id: registroId, detalles: detalles, user_agent: navigator.userAgent
+        }]);
     } catch (err) {
         console.warn('⚠️ Error registrando log:', err);
     }
