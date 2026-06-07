@@ -21,12 +21,19 @@ window.initConsultaPersonas = function() {
     let userRoleCache = null;
 
     // Listeners
-    if (btnBuscar) btnBuscar.onclick = () => buscarPersona();
-    if (buscarInput) {
-        buscarInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') { e.preventDefault(); btnBuscar?.click(); }
-        });
-    }
+// Listeners
+if (btnBuscar) btnBuscar.onclick = () => buscarPersona();
+
+if (buscarInput) {
+    // ✅ NUEVO: Forzar solo números y máximo 8 dígitos en tiempo real
+    buscarInput.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
+    });
+
+    buscarInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); btnBuscar?.click(); }
+    });
+}
 
     // Cerrar modales
     if (el('cp_modal_close')) el('cp_modal_close').onclick = () => modalDetalles.classList.remove('active');
@@ -67,14 +74,18 @@ window.initConsultaPersonas = function() {
         }
     }
 
-    async function buscarPersona() {
-        const cedula = buscarInput?.value.trim().replace(/\D/g, '') || '';
-        if (!cedula || cedula.length < 7) {
-            mostrarMensaje('Ingrese una cédula válida (mínimo 7 dígitos)', 'error');
-            return;
-        }
+   async function buscarPersona() {
+    // Ya no necesitamos .replace(/\D/g, '') aquí porque el input ya lo limpia en tiempo real
+    const cedula = buscarInput?.value.trim() || '';
+    
+    // ✅ VALIDACIÓN ACTUALIZADA: Mínimo 7, máximo 8 dígitos
+    if (!cedula || cedula.length < 7 || cedula.length > 8) {
+        mostrarMensaje('⚠️ Ingrese una cédula válida (entre 7 y 8 dígitos)', 'error');
+        return;
+    }
 
-        mostrarMensaje('Buscando...', 'info');
+    mostrarMensaje('🔍 Buscando...', 'info');
+
         fichaBreve.style.display = 'none';
         incidenciasSection.style.display = 'none';
         personaActual = null;
