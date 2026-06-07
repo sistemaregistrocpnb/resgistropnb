@@ -506,3 +506,33 @@ if (document.readyState === 'loading') {
 } else {
     window.initConsultaPersonas();
 }
+// ✅ Función reutilizable para registrar logs
+async function registrarLog(accion, modulo, registroId = null, detalles = {}) {
+    try {
+        const { data: { user } } = await window.supabaseClient.auth.getUser();
+        if (!user) return;
+
+        const { data: perfil } = await window.supabaseClient
+            .from('perfiles_usuario')
+            .select('nombre, apellido')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+        const nombreCompleto = perfil ? `${perfil.nombre || ''} ${perfil.apellido || ''}`.trim() : 'Sistema';
+
+        await window.supabaseClient
+            .from('sistema_logs')
+            .insert([{
+                user_id: user.id,
+                user_email: user.email,
+                user_nombre: nombreCompleto,
+                accion: accion,
+                modulo: modulo,
+                registro_id: registroId,
+                detalles: detalles,
+                user_agent: navigator.userAgent
+            }]);
+    } catch (err) {
+        console.warn('️ Error registrando log:', err);
+    }
+}
