@@ -76,21 +76,21 @@
 .seccion-titulo { color: var(--primary); font-size: 1.1rem; font-weight: 700; margin: 20px 0 12px 0; padding-bottom: 8px; border-bottom: 2px solid var(--beige-border); }
 .seccion-titulo:first-child { margin-top: 0; }
 
-/* ✅✅✅ REGLAS DE IMPRESIÓN OPTIMIZADAS (HOJA CARTA, SIN ESPACIOS BLANCOS, SIN CORTES) ✅✅✅ */
+/* ✅✅✅ REGLAS DE IMPRESIÓN BLINDADAS (SIN ESPACIOS, SIN CORTES) ✅✅✅ */
 @media print {
     @page {
         size: letter portrait;
-        margin: 1cm 1.5cm; /* 1cm arriba/abajo, 1.5cm a los lados para ganar espacio vertical */
+        margin: 1cm; /* Margen seguro y uniforme para todas las hojas */
     }
     
-    /* Ocultar todo el sitio web por defecto */
+    /* Ocultar absolutamente todo el sitio web */
     body, body * {
         visibility: hidden;
         height: auto !important;
         overflow: visible !important;
     }
     
-    /* Hacer visible SOLO el modal de detalles y su contenido */
+    /* Hacer visible SOLO el modal de detalles */
     #cp_modal_detalles, #cp_modal_detalles * {
         visibility: visible !important;
     }
@@ -108,7 +108,7 @@
         z-index: 9999 !important;
     }
     
-    /* Ocultar elementos de interfaz que no van en papel y forzar que no ocupen espacio */
+    /* Eliminar por completo los elementos de interfaz del modal */
     .modal-header, .modal-actions, .modal-close, #cp_btn_imprimir_reporte {
         display: none !important;
         height: 0 !important;
@@ -131,10 +131,11 @@
         margin: 0 !important;
     }
 
-    /* Ajustar el encabezado del reporte para que suba al máximo */
+    /* Forzar que el encabezado del reporte suba al máximo */
     .reporte-header-print {
         margin-top: 0 !important;
         padding-top: 0 !important;
+        margin-bottom: 15px !important;
     }
 
     /* Evitar que los elementos se corten entre páginas */
@@ -148,7 +149,7 @@
         break-after: avoid !important;
     }
     
-    /* Forzar la impresión de colores de fondo (para alertas y badges) */
+    /* Forzar la impresión de colores de fondo */
     * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
@@ -185,9 +186,7 @@
             <h3 id="cp_modal_titulo">📋 Detalles Completos</h3>
             <button class="modal-close" id="cp_modal_close">&times;</button>
         </div>
-        <div class="modal-body" id="cp_modal_body">
-            <!-- El contenido se inyecta dinámicamente aquí -->
-        </div>
+        <div class="modal-body" id="cp_modal_body"></div>
         <div class="modal-actions">
             <button type="button" class="btn-submit" id="cp_btn_imprimir_reporte" style="background: var(--primary); margin-right: auto;">🖨️ Imprimir Reporte</button>
             <button type="button" class="btn-cancel" id="cp_modal_cerrar">Cerrar</button>
