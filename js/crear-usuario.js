@@ -2,7 +2,6 @@ window.initCrearUsuario = function() {
     console.log("⚙️ Iniciando módulo crear-usuario.js...");
 
     if (window._crearUsuarioInitialized) {
-        console.log("⚠️ Módulo ya inicializado, omitiendo...");
         return;
     }
     window._crearUsuarioInitialized = true;
@@ -16,8 +15,11 @@ window.initCrearUsuario = function() {
     const passwordStrength = el('cu_password_strength');
     const fotoInput = el('cu_foto');
     const fotoPreview = el('cu_foto_preview');
+    const emailInput = el('cu_email');
+    const emailStatus = el('cu_email_status');
 
     let fotoUrl = null;
+    let emailValido = false;
 
     // Verificar permisos (solo administrador)
     async function verificarPermisos() {
@@ -56,51 +58,117 @@ window.initCrearUsuario = function() {
         }
     }
 
-    // Validación de email más robusta
-    function validarEmail(email) {
+    // ✅ VALIDACIÓN DE EMAIL EN TIEMPO REAL
+    function validarFormatoEmail(email) {
         const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         return regex.test(email);
     }
 
-    // ✅ VERIFICAR SI EL EMAIL YA EXISTE
-    async function verificarEmailDuplicado(email) {
+    async function verificarEmailExiste(email) {
+        if (!emailStatus || !window.supabaseClient) return false;
+
+        emailStatus.className = 'email-status checking';
+        emailStatus.textContent = '🔍 Verificando email...';
+        emailInput?.classList.remove('email-duplicate');
+        emailValido = false;
+
         try {
             // 1. Verificar en perfiles_usuario
             const { data: perfilExistente, error: errPerfil } = await window.supabaseClient
                 .from('perfiles_usuario')
-                .select('email')
+                .select('email, nombre, apellido, nivel')
                 .eq('email', email.toLowerCase())
                 .maybeSingle();
 
             if (errPerfil && errPerfil.code !== 'PGRST116') {
-                console.error('Error verificando email en perfiles:', errPerfil);
+                console.warn('Error consultando perfiles:', errPerfil);
             }
 
             if (perfilExistente) {
-                return { existe: true, mensaje: 'Este email ya está registrado en el sistema' };
+                emailStatus.className = 'email-status error';
+                const nombreCompleto = `${perfilExistente.nombre || ''} ${perfilExistente.apellido || ''}`.trim();
+                emailStatus.textContent = `⚠️ Email ya registrado${nombreCompleto ? ` a: ${nombreCompleto} (${perfilExistente.nivel})` : ''}`;
+                emailInput?.classList.add('email-duplicate');
+                return true;
             }
 
-            // 2. Verificar en auth.users (intentando hacer signIn sin contraseña)
-            // Si el usuario existe en auth pero no en perfiles, es un caso inconsistente
+            // 2. Verificar en auth.users con signIn
             try {
-                const { data: authData, error: authError } = await window.supabaseClient.auth.signInWithPassword({
+                const { error: authError } = await window.supabaseClient.auth.signInWithPassword({
                     email: email,
-                    password: 'test_password_invalid_12345'
+                    password: 'test_invalid_password_12345'
                 });
 
-                // Si no hay error de "invalid login credentials", el email existe
-                if (authError && !authError.message.includes('Invalid login credentials')) {
-                    return { existe: true, mensaje: 'Este email ya existe en el sistema de autenticación' };
+                // Si el error NO es "Invalid login credentials", el email existe
+                if (authError && !authError.message.toLowerCase().includes('invalid login credentials')) {
+                    emailStatus.className = 'email-status error';
+                    emailStatus.textContent = '⚠️ Email ya existe en el sistema de autenticación';
+                    emailInput?.classList.add('email-duplicate');
+                    return true;
                 }
             } catch (e) {
-                // Ignorar errores de autenticación
+                // Ignorar errores de auth
             }
 
-            return { existe: false };
-        } catch (err) {
-            console.error('Error verificando email duplicado:', err);
-            return { existe: false };
+            // ✅ Email disponible
+            emailStatus.className = 'email-status success';
+            emailStatus.textContent = '✅ Email disponible';
+            emailInput?.classList.remove('email-duplicate');
+            emailValido = true;
+            return false;
+
+        } catch (e) {
+            console.warn('⚠️ Error verificando email:', e.message);
+            emailStatus.className = 'email-status';
+            emailStatus.textContent = '';
+            return false;
         }
+    }
+
+    // ✅ EVENT LISTENER PARA EMAIL EN TIEMPO REAL
+    let emailCheckTimeout = null;
+    if (emailInput && emailStatus) {
+        emailInput.addEventListener('input', function() {
+            const val = this.value.trim().toLowerCase();
+            
+            if (val.length === 0) {
+                emailStatus.className = 'email-status';
+                emailStatus.textContent = '';
+                this.classList.remove('email-duplicate');
+                emailValido = false;
+                return;
+            }
+
+            // Validar formato básico
+            if (!val.includes('@')) {
+                emailStatus.className = 'email-status error';
+                emailStatus.textContent = '⚠️ Falta el símbolo @';
+                this.classList.remove('email-duplicate');
+                emailValido = false;
+                return;
+            }
+
+            // Si tiene @ pero no está completo
+            if (!validarFormatoEmail(val)) {
+                emailStatus.className = 'email-status checking';
+                emailStatus.textContent = '⏳ Complete el email...';
+                this.classList.remove('email-duplicate');
+                emailValido = false;
+                return;
+            }
+
+            // Email con formato válido, verificar con debounce
+            if (emailCheckTimeout) clearTimeout(emailCheckTimeout);
+            emailCheckTimeout = setTimeout(() => verificarEmailExiste(val), 800);
+        });
+
+        // Verificación al salir del campo
+        emailInput.addEventListener('blur', function() {
+            const val = this.value.trim().toLowerCase();
+            if (val.length > 0 && validarFormatoEmail(val)) {
+                verificarEmailExiste(val);
+            }
+        });
     }
 
     // Validación de contraseña en tiempo real
@@ -149,14 +217,12 @@ window.initCrearUsuario = function() {
                 return;
             }
 
-            // Mostrar preview
             const reader = new FileReader();
             reader.onload = (e) => {
                 if (fotoPreview) fotoPreview.src = e.target.result;
             };
             reader.readAsDataURL(file);
 
-            // Subir a Supabase Storage
             try {
                 mostrarMensaje('⏳ Subiendo foto...', 'info');
                 
@@ -198,12 +264,10 @@ window.initCrearUsuario = function() {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // Verificar permisos
             const tienePermiso = await verificarPermisos();
             if (!tienePermiso) return;
 
-            // Validaciones
-            const email = el('cu_email')?.value.trim().toLowerCase();
+            const email = emailInput?.value.trim().toLowerCase();
             const password = passwordInput?.value;
             const passwordConf = passwordConfirm?.value;
             const nombre = el('cu_nombre')?.value.trim();
@@ -212,30 +276,25 @@ window.initCrearUsuario = function() {
             const jerarquia = el('cu_jerarquia')?.value;
             const nivel = el('cu_nivel')?.value;
 
-            // Validar campos obligatorios
             if (!email || !password || !nombre || !apellido || !cedula || !jerarquia || !nivel) {
                 mostrarMensaje('⚠️ Todos los campos obligatorios deben estar completos', 'error');
                 return;
             }
 
-            // ✅ Validar formato de email
-            if (!validarEmail(email)) {
-                mostrarMensaje('❌ El formato del email no es válido. Ejemplo: usuario@dominio.com', 'error');
-                el('cu_email')?.focus();
+            if (!validarFormatoEmail(email)) {
+                mostrarMensaje('❌ El formato del email no es válido', 'error');
+                emailInput?.focus();
                 return;
             }
 
-            // ✅ Verificar si el email ya existe
-            mostrarMensaje('🔍 Verificando email...', 'info');
-            const emailCheck = await verificarEmailDuplicado(email);
-            
-            if (emailCheck.existe) {
-                mostrarMensaje('❌ ' + emailCheck.mensaje, 'error');
-                el('cu_email')?.focus();
+            // ✅ Verificación final antes de enviar
+            const emailExiste = await verificarEmailExiste(email);
+            if (emailExiste) {
+                mostrarMensaje('❌ No se puede crear el usuario: el email ya está registrado', 'error');
+                emailInput?.focus();
                 return;
             }
 
-            // Validar contraseñas
             if (password !== passwordConf) {
                 mostrarMensaje('❌ Las contraseñas no coinciden', 'error');
                 return;
@@ -246,13 +305,11 @@ window.initCrearUsuario = function() {
                 return;
             }
 
-            // Deshabilitar botón
             btnSubmit.disabled = true;
             btnSubmit.textContent = '⏳ Creando usuario...';
             mostrarMensaje('⏳ Creando usuario...', 'info');
 
             try {
-                // ✅ Crear usuario con signUp
                 const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
                     email: email,
                     password: password,
@@ -266,19 +323,12 @@ window.initCrearUsuario = function() {
                 });
 
                 if (authError) {
-                    console.error('Error de autenticación:', authError);
-                    
-                    // Manejar errores específicos de Supabase Auth
                     let errorMsg = authError.message;
-                    
                     if (authError.message.includes('already been registered')) {
                         errorMsg = 'Este email ya está registrado en el sistema';
                     } else if (authError.message.includes('invalid')) {
                         errorMsg = 'El formato del email no es válido';
-                    } else if (authError.message.includes('password')) {
-                        errorMsg = 'La contraseña no cumple los requisitos mínimos';
                     }
-                    
                     throw new Error(errorMsg);
                 }
 
@@ -286,7 +336,6 @@ window.initCrearUsuario = function() {
                     throw new Error('No se pudo crear el usuario');
                 }
 
-                // ✅ Insertar en perfiles_usuario
                 const { error: perfilError } = await window.supabaseClient
                     .from('perfiles_usuario')
                     .insert([{
@@ -305,14 +354,11 @@ window.initCrearUsuario = function() {
 
                 if (perfilError) {
                     console.error('Error insertando perfil:', perfilError);
-                    
-                    // Si falla el perfil, intentar eliminar el usuario creado
                     try {
                         await window.supabaseClient.auth.admin.deleteUser(authData.user.id);
                     } catch (deleteErr) {
                         console.error('Error eliminando usuario huérfano:', deleteErr);
                     }
-                    
                     throw new Error('Usuario creado pero no se pudo guardar el perfil: ' + perfilError.message);
                 }
 
@@ -320,6 +366,11 @@ window.initCrearUsuario = function() {
                 form.reset();
                 limpiarFoto();
                 if (passwordStrength) passwordStrength.textContent = '';
+                if (emailStatus) {
+                    emailStatus.className = 'email-status';
+                    emailStatus.textContent = '';
+                }
+                emailValido = false;
 
             } catch (err) {
                 console.error('Error creando usuario:', err);
