@@ -1,5 +1,10 @@
 <style>
-  :root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; }
+  :root { 
+    --primary: #002b5c; 
+    --secondary: #c5a028; 
+    --beige-border: #d4c9a8; 
+    --danger: #dc2626;
+  }
   
   .form-container {
     max-width: 800px;
@@ -87,6 +92,7 @@
     border-radius: 5px;
     cursor: pointer;
     font-size: 0.9rem;
+    margin-right: 5px;
   }
   
   .photo-upload-btn:hover {
@@ -153,9 +159,49 @@
   .password-strength.medium { color: #f59e0b; }
   .password-strength.strong { color: #15803d; }
   
+  /* ✅ ESTILOS PARA VERIFICACIÓN DE EMAIL EN TIEMPO REAL */
+  .email-status {
+    font-size: 0.75rem;
+    margin-top: 4px;
+    min-height: 18px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  .email-status.error {
+    color: #dc2626;
+    font-weight: 500;
+  }
+  
+  .email-status.success {
+    color: #15803d;
+  }
+  
+  .email-status.checking {
+    color: #64748b;
+    font-style: italic;
+  }
+  
+  input.email-duplicate {
+    border-color: #dc2626 !important;
+    background: #fef2f2;
+    animation: shake 0.3s;
+  }
+  
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+  }
+  
   @media (max-width: 600px) {
     .form-grid {
       grid-template-columns: 1fr;
+    }
+    .photo-upload {
+      flex-direction: column;
+      align-items: flex-start;
     }
   }
 </style>
@@ -170,15 +216,22 @@
       <div class="form-section">
         <h3>🔐 Datos de Acceso</h3>
         <div class="form-grid">
-         <div class="form-group full-width">
-  <label>Email <span class="required">*</span></label>
-  <input type="email" id="cu_email" required placeholder="ejemplo@correo.com" autocomplete="new-password">
-  <div id="cu_email_status" class="email-status"></div>
-</div>
+          <div class="form-group full-width">
+            <label>Email <span class="required">*</span></label>
+            <input type="email" id="cu_email" required placeholder="ejemplo@correo.com" autocomplete="email">
+            <div id="cu_email_status" class="email-status"></div>
+          </div>
+          
+          <!-- ✅ CORREGIDO: Cada contraseña en su propio form-group -->
           <div class="form-group">
             <label>Contraseña <span class="required">*</span></label>
-<input type="password" id="cu_password" required minlength="6" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
-<input type="password" id="cu_password_confirm" required placeholder="Repita la contraseña" autocomplete="new-password">
+            <input type="password" id="cu_password" required minlength="6" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+            <div class="password-strength" id="cu_password_strength"></div>
+          </div>
+          
+          <div class="form-group">
+            <label>Confirmar Contraseña <span class="required">*</span></label>
+            <input type="password" id="cu_password_confirm" required placeholder="Repita la contraseña" autocomplete="new-password">
           </div>
         </div>
       </div>
@@ -200,32 +253,32 @@
             <input type="text" id="cu_cedula" required placeholder="Ej: 12345678" maxlength="10">
           </div>
           <div class="form-group">
-  <label>Jerarquía <span class="required">*</span></label>
-  <select id="cu_jerarquia" required>
-    <option value="">Seleccione...</option>
-    <optgroup label="👔 Comisarios">
-      <option value="Comisario Superior">Comisario Superior</option>
-      <option value="Comisario Mayor">Comisario Mayor</option>
-      <option value="Comisario General">Comisario General</option>
-      <option value="Comisario Jefe">Comisario Jefe</option>
-      <option value="Primer Comisario">Primer Comisario</option>
-      <option value="Comisario">Comisario</option>
-    </optgroup>
-    <optgroup label="👮 Inspectores">
-      <option value="Inspector Jefe">Inspector Jefe</option>
-      <option value="Primer Inspector">Primer Inspector</option>
-      <option value="Inspector">Inspector</option>
-    </optgroup>
-    <optgroup label="👮‍♂️ Oficiales">
-      <option value="Oficial Jefe">Oficial Jefe</option>
-      <option value="Primer Oficial">Primer Oficial</option>
-      <option value="Oficial">Oficial</option>
-    </optgroup>
-    <optgroup label="👤 Otros">
-      <option value="Ciudadano">Ciudadano</option>
-    </optgroup>
-  </select>
-</div>
+            <label>Jerarquía <span class="required">*</span></label>
+            <select id="cu_jerarquia" required>
+              <option value="">Seleccione...</option>
+              <optgroup label="👔 Comisarios">
+                <option value="Comisario Superior">Comisario Superior</option>
+                <option value="Comisario Mayor">Comisario Mayor</option>
+                <option value="Comisario General">Comisario General</option>
+                <option value="Comisario Jefe">Comisario Jefe</option>
+                <option value="Primer Comisario">Primer Comisario</option>
+                <option value="Comisario">Comisario</option>
+              </optgroup>
+              <optgroup label="👮 Inspectores">
+                <option value="Inspector Jefe">Inspector Jefe</option>
+                <option value="Primer Inspector">Primer Inspector</option>
+                <option value="Inspector">Inspector</option>
+              </optgroup>
+              <optgroup label="👮‍♂️ Oficiales">
+                <option value="Oficial Jefe">Oficial Jefe</option>
+                <option value="Primer Oficial">Primer Oficial</option>
+                <option value="Oficial">Oficial</option>
+              </optgroup>
+              <optgroup label="👤 Otros">
+                <option value="Ciudadano">Ciudadano</option>
+              </optgroup>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -249,7 +302,7 @@
               <div>
                 <input type="file" id="cu_foto" accept="image/*" style="display: none;">
                 <button type="button" class="photo-upload-btn" onclick="document.getElementById('cu_foto').click()">📷 Subir Foto</button>
-               <button type="button" class="photo-upload-btn" style="background: #64748b;" id="cu_btn_quitar_foto">🗑️ Quitar</button>
+                <button type="button" class="photo-upload-btn" style="background: #64748b;" id="cu_btn_quitar_foto">🗑️ Quitar</button>
               </div>
             </div>
           </div>
