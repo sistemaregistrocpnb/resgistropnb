@@ -2,7 +2,7 @@ window.initConsultaPersonas = function() {
     console.log("⚙️ Iniciando módulo consulta-personas.js...");
 
     if (window._consultaPersonasInitialized) {
-        console.log("️ Módulo ya inicializado, omitiendo...");
+        console.log("⚠️ Módulo ya inicializado, omitiendo...");
         return;
     }
     window._consultaPersonasInitialized = true;
@@ -19,8 +19,9 @@ window.initConsultaPersonas = function() {
     const modalBody = el('cp_modal_body');
 
     let personaActual = null;
-    let tipoRegistroActual = null; // 'persona' o 'vinculado'
+    let tipoRegistroActual = null;
     let datosProcesado = null;
+    let userRoleCache = null; // Cache del rol del usuario
 
     // Listeners
     if (btnBuscar) btnBuscar.onclick = () => buscarPersona();
@@ -45,20 +46,62 @@ window.initConsultaPersonas = function() {
         if (tipo === 'success') setTimeout(() => { if (msg) msg.style.display = 'none'; }, 3000);
     }
 
-    function tienePermisosIncidencia() {
-        const rol = sessionStorage.getItem('pnb_user_role') || '';
-        const rolLower = rol.toLowerCase();
-        return rolLower === 'administrador' || rolLower === 'moderador';
+    // ✅ FUNCIÓN ROBUSTA PARA VERIFICAR PERMISOS
+    async function tienePermisosIncidencia() {
+        try {
+            // 1. Intentar obtener el user_id de la sesión actual
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) {
+                console.warn("⚠️ No hay usuario autenticado");
+                return false;
+            }
+
+            // 2. Consultar directamente la tabla perfiles_usuario
+            const { data: perfil, error } = await window.supabaseClient
+                .from('perfiles_usuario')
+                .select('nivel')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (error) {
+                console.error("❌ Error consultando perfiles_usuario:", error);
+                return false;
+            }
+
+            if (!perfil) {
+                console.warn("⚠️ No se encontró perfil para el usuario:", user.id);
+                return false;
+            }
+
+            const nivel = (perfil.nivel || '').toLowerCase().trim();
+            console.log(" Nivel del usuario:", nivel);
+
+            // 3. Verificar si es administrador o moderador
+            const tienePermiso = nivel === 'administrador' || nivel === 'moderador';
+            userRoleCache = nivel; // Guardar en caché
+            
+            if (tienePermiso) {
+                console.log("✅ Usuario tiene permisos para crear incidencias");
+            } else {
+                console.log("❌ Usuario NO tiene permisos (nivel:", nivel, ")");
+            }
+            
+            return tienePermiso;
+
+        } catch (err) {
+            console.error("❌ Error verificando permisos:", err);
+            return false;
+        }
     }
 
     async function buscarPersona() {
         const cedula = buscarInput?.value.trim().replace(/\D/g, '') || '';
         if (!cedula || cedula.length < 7) {
-            mostrarMensaje('⚠️ Ingrese una cédula válida (mínimo 7 dígitos)', 'error');
+            mostrarMensaje('️ Ingrese una cédula válida (mínimo 7 dígitos)', 'error');
             return;
         }
 
-        mostrarMensaje('⏳ Buscando...', 'info');
+        mostrarMensaje(' Buscando...', 'info');
         fichaBreve.style.display = 'none';
         incidenciasSection.style.display = 'none';
         personaActual = null;
@@ -79,7 +122,6 @@ window.initConsultaPersonas = function() {
                 personaActual = persona;
                 tipoRegistroActual = 'persona';
                 
-                // Verificar procesados
                 const estatus = (persona.estatus || '').toLowerCase();
                 if (estatus.includes('procesad')) {
                     try {
@@ -94,7 +136,7 @@ window.initConsultaPersonas = function() {
                     } catch (e) { console.warn('No se pudo obtener datos de procesados:', e); }
                 }
                 
-                renderFichaBreve(persona, 'persona');
+                await renderFichaBreve(persona, 'persona');
                 await cargarIncidencias(cedula, 'persona');
                 mostrarMensaje('✅ Persona encontrada', 'success');
                 return;
@@ -113,7 +155,6 @@ window.initConsultaPersonas = function() {
                 personaActual = vinculado;
                 tipoRegistroActual = 'vinculado';
                 
-                // Verificar procesados (si la persona está en vinculados pero también fue procesada)
                 const estatus = (vinculado.estatus || '').toLowerCase();
                 if (estatus.includes('procesad')) {
                     try {
@@ -128,7 +169,7 @@ window.initConsultaPersonas = function() {
                     } catch (e) {}
                 }
 
-                renderFichaBreve(vinculado, 'vinculado');
+                await renderFichaBreve(vinculado, 'vinculado');
                 await cargarIncidencias(cedula, 'vinculado');
                 mostrarMensaje('✅ Vehículo vinculado encontrado', 'success');
                 return;
@@ -142,8 +183,8 @@ window.initConsultaPersonas = function() {
         }
     }
 
-    // ✅ RENDERIZAR FICHA BREVE (Actualizado para Vinculados)
-    function renderFichaBreve(data, tipo) {
+    // ✅ RENDERIZAR FICHA BREVE (ahora es async para esperar la verificación de permisos)
+    async function renderFichaBreve(data, tipo) {
         if (!fichaBreve) return;
 
         const estatus = data.estatus || 'N/A';
@@ -155,7 +196,6 @@ window.initConsultaPersonas = function() {
         if (tipo === 'persona') {
             nombreCompleto = `${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}`.trim() || 'N/A';
         } else {
-            // Para vinculados mostramos el nombre si existe, o la placa
             nombreCompleto = (data.primer_nombre && data.primer_apellido) 
                 ? `${data.primer_nombre} ${data.primer_apellido}` 
                 : (data.propietario || `Vehículo ${data.placa || ''}`);
@@ -164,14 +204,14 @@ window.initConsultaPersonas = function() {
         // Alertas
         let alertasHtml = '';
         if (estatusLower.includes('procesad') && datosProcesado?.tipo_delito) {
-            alertasHtml += `<div class="ficha-alert ficha-alert-delito">️ <strong>Procesado por:</strong> ${datosProcesado.tipo_delito}</div>`;
+            alertasHtml += `<div class="ficha-alert ficha-alert-delito">⚖️ <strong>Procesado por:</strong> ${datosProcesado.tipo_delito}</div>`;
         }
         const problemaJudicial = data.problema_judicial || '';
         if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLowerCase() !== 'no') {
-            alertasHtml += `<div class="ficha-alert ficha-alert-judicial">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
+            alertasHtml += `<div class="ficha-alert ficha-alert-judicial">️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
         }
 
-        // Campos específicos para ficha breve
+        // Campos de ficha breve
         let htmlCampos = `
             <div class="ficha-breve-item">
                 <div class="ficha-breve-label">Cédula</div>
@@ -191,7 +231,6 @@ window.initConsultaPersonas = function() {
             </div>
         `;
 
-        // Si es vinculado, agregamos datos del vehículo en la ficha breve
         if (tipo === 'vinculado') {
             htmlCampos += `
                 <div class="ficha-breve-item">
@@ -205,7 +244,6 @@ window.initConsultaPersonas = function() {
             `;
         }
 
-        // Observaciones
         const observaciones = data.observaciones || '';
         if (observaciones) {
             htmlCampos += `
@@ -216,13 +254,18 @@ window.initConsultaPersonas = function() {
             `;
         }
 
-        const tienePermisos = tienePermisosIncidencia();
-        const btnIncidenciaHtml = tienePermisos ? `<button type="button" class="btn-nueva-incidencia" id="cp_btn_nueva_incidencia">➕ Nueva Incidencia</button>` : '';
+        // ✅ VERIFICAR PERMISOS DIRECTAMENTE EN LA BASE DE DATOS
+        const tienePermisos = await tienePermisosIncidencia();
+        console.log("🔐 Permisos verificados:", tienePermisos, "| Rol:", userRoleCache);
+        
+        const btnIncidenciaHtml = tienePermisos 
+            ? `<button type="button" class="btn-nueva-incidencia" id="cp_btn_nueva_incidencia">➕ Nueva Incidencia</button>` 
+            : '';
 
         let html = `
             <div class="ficha-breve">
                 <div class="ficha-breve-header">
-                    <h3>${tipo === 'persona' ? '' : '🚗'} ${nombreCompleto}</h3>
+                    <h3>${tipo === 'persona' ? '👤' : '🚗'} ${nombreCompleto}</h3>
                     <span class="estatus-badge ${estatusClass}">${estatus}</span>
                 </div>
                 ${alertasHtml}
@@ -255,20 +298,18 @@ window.initConsultaPersonas = function() {
         }, 100);
     }
 
-    // ✅ DETALLES COMPLETOS (Actualizado para mostrar fotos y datos completos)
     function mostrarDetallesCompletos(data, tipo) {
         if (!modalBody || !modalTitulo) return;
-        modalTitulo.textContent = ` Detalles - ${tipo === 'persona' ? 'Persona' : 'Vehículo Vinculado'}`;
+        modalTitulo.textContent = `📋 Detalles - ${tipo === 'persona' ? 'Persona' : 'Vehículo Vinculado'}`;
 
         let html = '';
 
         if (tipo === 'persona') {
-            // --- FOTOS ---
             if (data.foto_frontal || data.foto_perfil_izq || data.foto_perfil_der) {
                 html += `<div class="seccion-titulo">📸 Fotografías</div><div class="fotos-container">`;
-                if (data.foto_frontal) html += `<div class="foto-item"><img src="${data.foto_frontal}" alt="Frontal"><div class="foto-item-label">Frontal</div></div>`;
-                if (data.foto_perfil_izq) html += `<div class="foto-item"><img src="${data.foto_perfil_izq}" alt="Perfil Izq"><div class="foto-item-label">Perfil Izq.</div></div>`;
-                if (data.foto_perfil_der) html += `<div class="foto-item"><img src="${data.foto_perfil_der}" alt="Perfil Der"><div class="foto-item-label">Perfil Der.</div></div>`;
+                if (data.foto_frontal) html += `<div class="foto-item"><img src="${data.foto_frontal}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
+                if (data.foto_perfil_izq) html += `<div class="foto-item"><img src="${data.foto_perfil_izq}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Izq.</div></div>`;
+                if (data.foto_perfil_der) html += `<div class="foto-item"><img src="${data.foto_perfil_der}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Der.</div></div>`;
                 html += `</div>`;
             }
 
@@ -315,18 +356,14 @@ window.initConsultaPersonas = function() {
             html += `</div>`;
 
         } else {
-            // --- VINCULADO (VEHÍCULO + PERSONA) ---
-            
-            // 1. Fotos de la Persona
             if (data.foto_frontal_persona || data.foto_perfil_izq_persona || data.foto_perfil_der_persona) {
                 html += `<div class="seccion-titulo">📸 Fotografías de la Persona</div><div class="fotos-container">`;
-                if (data.foto_frontal_persona) html += `<div class="foto-item"><img src="${data.foto_frontal_persona}"><div class="foto-item-label">Frontal</div></div>`;
-                if (data.foto_perfil_izq_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_izq_persona}"><div class="foto-item-label">Perfil Izq.</div></div>`;
-                if (data.foto_perfil_der_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_der_persona}"><div class="foto-item-label">Perfil Der.</div></div>`;
+                if (data.foto_frontal_persona) html += `<div class="foto-item"><img src="${data.foto_frontal_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
+                if (data.foto_perfil_izq_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_izq_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Izq.</div></div>`;
+                if (data.foto_perfil_der_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_der_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Der.</div></div>`;
                 html += `</div>`;
             }
 
-            // 2. Datos de la Persona en el vehículo
             html += `<div class="seccion-titulo">👤 Datos de la Persona</div><div class="ficha-completa-grid">`;
             const camposPersonaVinc = [
                 { label: 'Nombre', value: `${data.primer_nombre || ''} ${data.segundo_nombre || ''}` },
@@ -345,17 +382,15 @@ window.initConsultaPersonas = function() {
             });
             html += `</div>`;
 
-            // 3. Fotos del Vehículo
             if (data.foto_frontal_vehiculo || data.foto_trasera_vehiculo || data.foto_lado_der_vehiculo || data.foto_lado_izq_vehiculo) {
                 html += `<div class="seccion-titulo">📸 Fotografías del Vehículo</div><div class="fotos-container">`;
-                if (data.foto_frontal_vehiculo) html += `<div class="foto-item"><img src="${data.foto_frontal_vehiculo}"><div class="foto-item-label">Frontal</div></div>`;
-                if (data.foto_trasera_vehiculo) html += `<div class="foto-item"><img src="${data.foto_trasera_vehiculo}"><div class="foto-item-label">Trasera</div></div>`;
-                if (data.foto_lado_der_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_der_vehiculo}"><div class="foto-item-label">Lado Der.</div></div>`;
-                if (data.foto_lado_izq_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_izq_vehiculo}"><div class="foto-item-label">Lado Izq.</div></div>`;
+                if (data.foto_frontal_vehiculo) html += `<div class="foto-item"><img src="${data.foto_frontal_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
+                if (data.foto_trasera_vehiculo) html += `<div class="foto-item"><img src="${data.foto_trasera_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Trasera</div></div>`;
+                if (data.foto_lado_der_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_der_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Der.</div></div>`;
+                if (data.foto_lado_izq_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_izq_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Izq.</div></div>`;
                 html += `</div>`;
             }
 
-            // 4. Datos del Vehículo
             html += `<div class="seccion-titulo">🚗 Datos del Vehículo</div><div class="ficha-completa-grid">`;
             const camposVehiculo = [
                 { label: 'Placa', value: data.placa, highlight: true },
@@ -371,8 +406,7 @@ window.initConsultaPersonas = function() {
                 { label: 'Propietario', value: data.propietario },
                 { label: 'Estación', value: data.estacion_policial },
                 { label: 'Dir. Detención', value: data.direccion_detencion },
-                { label: 'Estatus', value: data.estatus },
-                { label: 'Observaciones', value: data.observaciones }
+                { label: 'Estatus', value: data.estatus }
             ];
             
             camposVehiculo.forEach(c => {
@@ -381,6 +415,9 @@ window.initConsultaPersonas = function() {
                     html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value" style="${style}">${c.value}</div></div>`;
                 }
             });
+            if (data.observaciones) {
+                html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
+            }
             html += `</div>`;
         }
 
@@ -408,7 +445,7 @@ window.initConsultaPersonas = function() {
                     html += `
                         <div class="incidencia-item">
                             <div class="incidencia-item-header">
-                                <span class="incidencia-fecha">📅 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+                                <span class="incidencia-fecha"> ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
                                 <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
                             </div>
                             <div class="incidencia-descripcion">${inc.descripcion}</div>
@@ -421,14 +458,14 @@ window.initConsultaPersonas = function() {
             incidenciasSection.style.display = 'block';
         } catch (err) {
             console.error('Error incidencias:', err);
-            incidenciasSection.innerHTML = '<div class="incidencias-section"><h3>Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
+            incidenciasSection.innerHTML = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
             incidenciasSection.style.display = 'block';
         }
     }
 
     async function guardarIncidencia() {
         const descripcion = el('cp_incidencia_descripcion')?.value.trim();
-        if (!descripcion) { alert('⚠️ Ingrese una descripción'); return; }
+        if (!descripcion) { alert('️ Ingrese una descripción'); return; }
 
         const btnGuardar = el('cp_btn_guardar_incidencia');
         btnGuardar.disabled = true; btnGuardar.textContent = '⏳ Guardando...';
@@ -457,7 +494,7 @@ window.initConsultaPersonas = function() {
             console.error('Error:', err);
             alert('❌ Error: ' + err.message);
         } finally {
-            btnGuardar.disabled = false; btnGuardar.textContent = ' Guardar Incidencia';
+            btnGuardar.disabled = false; btnGuardar.textContent = '💾 Guardar Incidencia';
         }
     }
 
