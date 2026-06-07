@@ -15,10 +15,11 @@ window.initConsultaPersonas = function() {
     let datosProcesado = null;
     let userRoleCache = null;
 
-    // Listeners
+    // Listeners (usando asignación directa para evitar duplicados al recargar el módulo)
     if (btnBuscar) btnBuscar.onclick = () => buscarPersona();
     
     if (buscarInput) {
+        // Validación en tiempo real: solo números, máximo 8 dígitos
         buscarInput.oninput = (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8); };
         buscarInput.onkeypress = (e) => { if (e.key === 'Enter') { e.preventDefault(); btnBuscar?.click(); } };
     }
@@ -30,7 +31,7 @@ window.initConsultaPersonas = function() {
     if (el('cp_btn_cancelar_incidencia')) el('cp_btn_cancelar_incidencia').onclick = () => modalIncidencia.classList.remove('active');
     if (el('cp_btn_guardar_incidencia')) el('cp_btn_guardar_incidencia').onclick = () => guardarIncidencia();
     
-    // ✅ El botón de imprimir ahora solo ejecuta la impresión, el número ya está generado
+    // El botón de imprimir solo ejecuta la impresión, el número ya está generado
     if (el('cp_btn_imprimir_reporte')) el('cp_btn_imprimir_reporte').onclick = () => window.print();
 
     function mostrarMensaje(texto, tipo) {
@@ -198,7 +199,7 @@ window.initConsultaPersonas = function() {
         }, 100);
     }
 
-    // ✅ FUNCIÓN ASÍNCRONA: Reserva el número en la BD al abrir el modal y lo muestra al instante
+    // ✅ FUNCIÓN ASÍNCRONA: Reserva el número en la BD al abrir el modal y lo muestra al instante CON EL LOGO
     async function mostrarDetallesCompletos(data, tipo) {
         if (!modalBody || !modalTitulo) return;
         modalTitulo.textContent = `📋 Detalles - ${tipo === 'persona' ? 'Persona' : 'Vehículo Vinculado'}`;
@@ -233,8 +234,9 @@ window.initConsultaPersonas = function() {
             const consecutivoFormateado = String(nuevoReporte.consecutivo_global).padStart(8, '0');
             const numeroReporteFinal = `REPORTE-CPNB-${fechaStr}-N° ${consecutivoFormateado}`;
 
-            // 3. Construir el HTML con el número YA ASIGNADO en color azul oscuro (var(--primary))
+            // 3. Construir el HTML con el LOGO y el número YA ASIGNADO en color azul oscuro
             let html = `<div class="reporte-header-print" style="text-align: center; margin-bottom: 20px; border-bottom: 3px double var(--primary); padding-bottom: 15px;">
+                <img src="img/LOGO-PNB.png" alt="Logo PNB" style="max-height: 90px; width: auto; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;" onerror="this.style.display='none'">
                 <h2 style="color: var(--primary); margin: 0; font-family: 'Playfair Display', serif;">CUERPO DE POLICÍA NACIONAL BOLIVARIANA</h2>
                 <h3 style="color: var(--secondary); margin: 5px 0; font-size: 1rem;">CENTRO DE COORDINACIÓN POLICIAL ESTADAL (CCPE) ZULIA</h3>
                 <p style="font-size: 0.9rem; color: #334155; margin-top: 15px;">
