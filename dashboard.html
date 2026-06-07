@@ -349,12 +349,20 @@ body {
           <a href="#" class="submenu-item" data-src="html/historial.html" data-js="js/historial.js" data-init="initHistorial">Ver Historial</a>
         </div>
       </div>
-      <div class="menu-item" id="menu-gestion-usuarios">
-        <button class="menu-btn" data-src="html/gestion-usuarios.html" data-js="js/gestion-usuarios.js" data-init="initGestionUsuarios">
-          <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-          Gestión de Usuarios
-        </button>
-      </div>
+      <!-- ✅ MENÚ GESTIÓN DE USUARIOS CON SUBMENÚ -->
+<div class="menu-item" id="menu-gestion-usuarios">
+  <button class="menu-btn" data-toggle="submenu-gestion-usuarios">
+    <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+    Gestión de Usuarios <span class="arrow">▼</span>
+  </button>
+  <div class="submenu" id="submenu-gestion-usuarios">
+    <a href="#" class="submenu-item" data-src="html/crear-usuario.html" data-js="js/crear-usuario.js" data-init="initCrearUsuario">👤➕ Crear Usuario Nuevo</a>
+    <a href="#" class="submenu-item" data-src="html/mod-usuario.html" data-js="js/mod-usuario.js" data-init="initModUsuario">✏️ Modificar y Desbloquear</a>
+    <a href="#" class="submenu-item danger" data-src="html/elim-usuario.html" data-js="js/elim-usuario.js" data-init="initElimUsuario">️ Eliminar Usuario</a>
+    <a href="#" class="submenu-item" data-src="html/logs-sistema.html" data-js="js/logs-sistema.js" data-init="initLogsSistema">📋 Logs del Sistema</a>
+  </div>
+</div>
+<!-- ✅ FIN MENÚ GESTIÓN DE USUARIOS -->
     </nav>
   </aside>
   <main id="app-content" class="main-content">
