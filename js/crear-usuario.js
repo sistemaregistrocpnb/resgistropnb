@@ -1,7 +1,8 @@
 window.initCrearUsuario = function() {
-    console.log("⚙️ Iniciando módulo crear-usuario.js...");
+    console.log("️ Iniciando módulo crear-usuario.js...");
 
     if (window._crearUsuarioInitialized) {
+        console.log("⚠️ Módulo ya inicializado, omitiendo...");
         return;
     }
     window._crearUsuarioInitialized = true;
@@ -22,7 +23,7 @@ window.initCrearUsuario = function() {
     let emailValido = false;
 
     // 🔍 DIAGNÓSTICO: Verificar que los elementos existen
-    console.log(" Diagnóstico de elementos:");
+    console.log("🔍 Diagnóstico de elementos:");
     console.log("  emailInput:", emailInput ? "✅ Existe" : "❌ NO EXISTE");
     console.log("  emailStatus:", emailStatus ? "✅ Existe" : "❌ NO EXISTE");
     console.log("  supabaseClient:", window.supabaseClient ? "✅ Existe" : "❌ NO EXISTE");
@@ -34,7 +35,7 @@ window.initCrearUsuario = function() {
         return;
     }
 
-    // Verificar permisos
+    // Verificar permisos (solo administrador)
     async function verificarPermisos() {
         try {
             const { data: { user } } = await window.supabaseClient.auth.getUser();
@@ -50,7 +51,7 @@ window.initCrearUsuario = function() {
                 .maybeSingle();
 
             if (!perfil || perfil.nivel !== 'administrador') {
-                mostrarMensaje(' Solo los administradores pueden crear usuarios', 'error');
+                mostrarMensaje('❌ Solo los administradores pueden crear usuarios', 'error');
                 return false;
             }
 
@@ -71,12 +72,12 @@ window.initCrearUsuario = function() {
         }
     }
 
+    // ✅ VALIDACIÓN DE EMAIL EN TIEMPO REAL
     function validarFormatoEmail(email) {
         const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         return regex.test(email);
     }
 
-    // ✅ FUNCIÓN DE VERIFICACIÓN CON LOGS DETALLADOS
     async function verificarEmailExiste(email) {
         console.log("🔍 [VERIFICAR EMAIL] Iniciando verificación para:", email);
         
@@ -91,7 +92,7 @@ window.initCrearUsuario = function() {
         emailValido = false;
 
         try {
-            console.log(" [VERIFICAR EMAIL] Consultando Supabase...");
+            console.log("📡 [VERIFICAR EMAIL] Consultando Supabase...");
             
             const { data: perfilExistente, error: errPerfil } = await window.supabaseClient
                 .from('perfiles_usuario')
@@ -134,7 +135,7 @@ window.initCrearUsuario = function() {
         }
     }
 
-    // ✅ EVENT LISTENERS CON LOGS
+    // ✅ EVENT LISTENERS PARA EMAIL EN TIEMPO REAL
     let emailCheckTimeout = null;
     
     emailInput.addEventListener('input', function() {
@@ -182,54 +183,88 @@ window.initCrearUsuario = function() {
         }
     });
 
-    // Validación de contraseña
-    if (passwordInput) {
-        passwordInput.addEventListener('input', (e) => {
-            const val = e.target.value;
-            let strength = '';
-            let className = '';
-
-            if (val.length === 0) strength = '';
-            else if (val.length < 6) { strength = '⚠️ Muy débil (mínimo 6 caracteres)'; className = 'weak'; }
-            else if (val.length < 8) { strength = '🟡 Débil'; className = 'medium'; }
-            else if (val.length < 12) { strength = '🟠 Media'; className = 'medium'; }
-            else { strength = '🟢 Fuerte'; className = 'strong'; }
-
-            if (passwordStrength) {
-                passwordStrength.textContent = strength;
-                passwordStrength.className = `password-strength ${className}`;
-            }
-        });
+    // ✅ FUNCIÓN LIMPIAR FOTO (global)
+    function limpiarFoto() {
+        fotoUrl = null;
+        if (fotoPreview) {
+            fotoPreview.src = 'https://ui-avatars.com/api/?name=Usuario&background=002b5c&color=fff';
+        }
+        if (fotoInput) fotoInput.value = '';
+        mostrarMensaje('🗑️ Foto eliminada', 'info');
     }
 
-    // Subir foto
+    // Hacerla global para que funcione desde el HTML
+    window.limpiarFoto = limpiarFoto;
+
+    // ✅ Listener para el botón "Quitar foto"
+    if (el('cu_btn_quitar_foto')) {
+        el('cu_btn_quitar_foto').onclick = () => limpiarFoto();
+    }
+
+    // ✅ SUBIR FOTO CON VALIDACIÓN DE CAMPOS OBLIGATORIOS
     if (fotoInput) {
         fotoInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
+            // ✅ VALIDAR CAMPOS OBLIGATORIOS ANTES DE SUBIR
+            const camposObligatorios = [
+                { id: 'cu_email', nombre: 'Email' },
+                { id: 'cu_nombre', nombre: 'Nombre' },
+                { id: 'cu_apellido', nombre: 'Apellido' },
+                { id: 'cu_cedula', nombre: 'Cédula' },
+                { id: 'cu_jerarquia', nombre: 'Jerarquía' },
+                { id: 'cu_nivel', nombre: 'Nivel de Acceso' }
+            ];
+
+            const camposFaltantes = [];
+            camposObligatorios.forEach(campo => {
+                const elCampo = el(campo.id);
+                if (!elCampo || !elCampo.value.trim()) {
+                    camposFaltantes.push(campo.nombre);
+                }
+            });
+
+            if (camposFaltantes.length > 0) {
+                mostrarMensaje(`⚠️ Complete primero: ${camposFaltantes.join(', ')}`, 'error');
+                fotoInput.value = ''; // Resetear el input
+                return;
+            }
+
+            // Validar tipo de archivo
             if (!file.type.startsWith('image/')) {
                 mostrarMensaje('❌ Solo se permiten imágenes', 'error');
+                fotoInput.value = '';
                 return;
             }
 
+            // Validar tamaño (máximo 2MB)
             if (file.size > 2 * 1024 * 1024) {
                 mostrarMensaje('❌ La imagen no debe superar 2MB', 'error');
+                fotoInput.value = '';
                 return;
             }
 
+            // Mostrar preview
             const reader = new FileReader();
-            reader.onload = (e) => { if (fotoPreview) fotoPreview.src = e.target.result; };
+            reader.onload = (e) => {
+                if (fotoPreview) fotoPreview.src = e.target.result;
+            };
             reader.readAsDataURL(file);
 
+            // Subir a Supabase Storage
             try {
-                mostrarMensaje('⏳ Subiendo foto...', 'info');
+                mostrarMensaje(' Subiendo foto...', 'info');
+                
                 const { data: { user } } = await window.supabaseClient.auth.getUser();
                 const fileName = `fotos_perfiles/${user.id}/${Date.now()}_${file.name}`;
                 
-                const { error } = await window.supabaseClient.storage
+                const { data, error } = await window.supabaseClient.storage
                     .from('fotos_perfiles')
-                    .upload(fileName, file, { cacheControl: '3600', upsert: false });
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
 
                 if (error) throw error;
 
@@ -242,14 +277,39 @@ window.initCrearUsuario = function() {
             } catch (err) {
                 console.error('Error subiendo foto:', err);
                 mostrarMensaje('❌ Error al subir la foto: ' + err.message, 'error');
+                fotoInput.value = '';
             }
         });
     }
 
-    function limpiarFoto() {
-        fotoUrl = null;
-        if (fotoPreview) fotoPreview.src = 'https://ui-avatars.com/api/?name=Usuario&background=002b5c&color=fff';
-        if (fotoInput) fotoInput.value = '';
+    // Validación de contraseña en tiempo real
+    if (passwordInput) {
+        passwordInput.addEventListener('input', (e) => {
+            const val = e.target.value;
+            let strength = '';
+            let className = '';
+
+            if (val.length === 0) {
+                strength = '';
+            } else if (val.length < 6) {
+                strength = '⚠️ Muy débil (mínimo 6 caracteres)';
+                className = 'weak';
+            } else if (val.length < 8) {
+                strength = '🟡 Débil';
+                className = 'medium';
+            } else if (val.length < 12) {
+                strength = '🟠 Media';
+                className = 'medium';
+            } else {
+                strength = '🟢 Fuerte';
+                className = 'strong';
+            }
+
+            if (passwordStrength) {
+                passwordStrength.textContent = strength;
+                passwordStrength.className = `password-strength ${className}`;
+            }
+        });
     }
 
     // Envío del formulario
@@ -269,8 +329,29 @@ window.initCrearUsuario = function() {
             const jerarquia = el('cu_jerarquia')?.value;
             const nivel = el('cu_nivel')?.value;
 
-            if (!email || !password || !nombre || !apellido || !cedula || !jerarquia || !nivel) {
-                mostrarMensaje('⚠️ Todos los campos obligatorios deben estar completos', 'error');
+            // ✅ VALIDACIÓN COMPLETA DE CAMPOS OBLIGATORIOS
+            const camposRequeridos = [
+                { valor: email, nombre: 'Email', id: 'cu_email' },
+                { valor: password, nombre: 'Contraseña', id: 'cu_password' },
+                { valor: passwordConf, nombre: 'Confirmar Contraseña', id: 'cu_password_confirm' },
+                { valor: nombre, nombre: 'Nombre', id: 'cu_nombre' },
+                { valor: apellido, nombre: 'Apellido', id: 'cu_apellido' },
+                { valor: cedula, nombre: 'Cédula', id: 'cu_cedula' },
+                { valor: jerarquia, nombre: 'Jerarquía', id: 'cu_jerarquia' },
+                { valor: nivel, nombre: 'Nivel de Acceso', id: 'cu_nivel' }
+            ];
+
+            const camposFaltantes = camposRequeridos.filter(c => !c.valor).map(c => c.nombre);
+            
+            if (camposFaltantes.length > 0) {
+                mostrarMensaje(`⚠️ Faltan campos: ${camposFaltantes.join(', ')}`, 'error');
+                
+                // Enfocar el primer campo faltante
+                const primerFaltante = camposRequeridos.find(c => !c.valor);
+                if (primerFaltante) {
+                    const input = el(primerFaltante.id);
+                    if (input) input.focus();
+                }
                 return;
             }
 
@@ -280,6 +361,7 @@ window.initCrearUsuario = function() {
                 return;
             }
 
+            // ✅ Verificación final antes de enviar
             const emailExiste = await verificarEmailExiste(email);
             if (emailExiste) {
                 mostrarMensaje('❌ No se puede crear el usuario: el email ya está registrado', 'error');
@@ -298,36 +380,80 @@ window.initCrearUsuario = function() {
             }
 
             btnSubmit.disabled = true;
-            btnSubmit.textContent = '⏳ Creando usuario...';
+            btnSubmit.textContent = ' Creando usuario...';
             mostrarMensaje('⏳ Creando usuario...', 'info');
 
             try {
                 const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
                     email: email,
                     password: password,
-                    options: { data: { nombre, apellido, cedula } }
+                    options: {
+                        data: {
+                            nombre: nombre,
+                            apellido: apellido,
+                            cedula: cedula
+                        }
+                    }
                 });
 
-                if (authError) throw new Error(authError.message);
-                if (!authData.user) throw new Error('No se pudo crear el usuario');
+                if (authError) {
+                    let errorMsg = authError.message;
+                    if (authError.message.includes('already been registered')) {
+                        errorMsg = 'Este email ya está registrado en el sistema';
+                    } else if (authError.message.includes('invalid')) {
+                        errorMsg = 'El formato del email no es válido';
+                    }
+                    throw new Error(errorMsg);
+                }
+
+                if (!authData.user) {
+                    throw new Error('No se pudo crear el usuario');
+                }
+
+                // ✅ Confirmar email automáticamente
+                const { error: confirmError } = await window.supabaseClient
+                    .from('auth.users')
+                    .update({ email_confirmed_at: new Date().toISOString() })
+                    .eq('id', authData.user.id);
+
+                if (confirmError) {
+                    console.warn('️ No se pudo confirmar el email automáticamente:', confirmError);
+                }
 
                 const { error: perfilError } = await window.supabaseClient
                     .from('perfiles_usuario')
                     .insert([{
                         user_id: authData.user.id,
-                        nivel, creado_en: new Date().toISOString(),
-                        intentos_fallidos: 0, bloqueado: false,
-                        email, nombre, apellido, cedula,
-                        foto_url: fotoUrl, jerarquia
+                        nivel: nivel,
+                        creado_en: new Date().toISOString(),
+                        intentos_fallidos: 0,
+                        bloqueado: false,
+                        email: email,
+                        nombre: nombre,
+                        apellido: apellido,
+                        cedula: cedula,
+                        foto_url: fotoUrl,
+                        jerarquia: jerarquia
                     }]);
 
-                if (perfilError) throw new Error('Error en perfil: ' + perfilError.message);
+                if (perfilError) {
+                    console.error('Error insertando perfil:', perfilError);
+                    try {
+                        await window.supabaseClient.auth.admin.deleteUser(authData.user.id);
+                    } catch (deleteErr) {
+                        console.error('Error eliminando usuario huérfano:', deleteErr);
+                    }
+                    throw new Error('Usuario creado pero no se pudo guardar el perfil: ' + perfilError.message);
+                }
 
                 mostrarMensaje(`✅ Usuario creado exitosamente: ${email}`, 'success');
                 form.reset();
                 limpiarFoto();
                 if (passwordStrength) passwordStrength.textContent = '';
-                if (emailStatus) { emailStatus.className = 'email-status'; emailStatus.textContent = ''; }
+                if (emailStatus) {
+                    emailStatus.className = 'email-status';
+                    emailStatus.textContent = '';
+                }
                 emailValido = false;
 
             } catch (err) {
