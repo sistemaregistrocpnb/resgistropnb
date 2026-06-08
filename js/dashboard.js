@@ -1,4 +1,12 @@
-document.addEventListener('DOMContentLoaded', async () => {
+// 🔒 SEGURIDAD: Desactivar mensajes de depuración en producción
+// Solo permite logs si estás trabajando en tu computadora local
+const esEntornoLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+if (!esEntornoLocal) {
+    console.log = function() {};
+    console.warn = function() {};
+    // Nota: No desactivamos console.error para poder detectar fallos reales del sistema si ocurren
+}document.addEventListener('DOMContentLoaded', async () => {
   const userEmailEl = document.getElementById('user-email');
   const userRoleEl = document.getElementById('user-role');
   const btnLogout = document.getElementById('btn-logout');
