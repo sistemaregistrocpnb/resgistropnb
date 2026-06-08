@@ -569,7 +569,7 @@ window.initConsultaPersonas = function() {
             btnGuardar.disabled = false; btnGuardar.textContent = ' Guardar Incidencia';
         }
     }
-        // ✅ FUNCIÓN PARA ELIMINAR INCIDENCIA CON RESPALDO (Solo Admin)
+      // ✅ FUNCIÓN PARA ELIMINAR INCIDENCIA CON RESPALDO (Solo Admin)
     window.eliminarIncidencia = async (incidenciaId, cedula, tipo, paginaActual) => {
         if (!confirm('⚠️ ¿Está SEGURO de eliminar esta incidencia?\n\nSe guardará un respaldo permanente en el sistema con su usuario y fecha.')) {
             return;
@@ -588,8 +588,9 @@ window.initConsultaPersonas = function() {
 
             if (fetchError) throw fetchError;
 
-            // 2. Insertar en la tabla de respaldo (quitamos el 'id' original para que la tabla backup genere uno nuevo)
-            const { id, ...datosParaBackup } = incData;
+            // 2. ✅ CORRECCIÓN: Excluir 'id' Y 'created_at' para que no den conflicto con la tabla backup
+            const { id, created_at, ...datosParaBackup } = incData;
+            
             datosParaBackup.incidencia_id_original = incidenciaId;
             datosParaBackup.eliminado_por = user.id;
             datosParaBackup.email_eliminador = user.email;
