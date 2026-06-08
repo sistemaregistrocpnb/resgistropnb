@@ -1,11 +1,5 @@
-// 🛑 DESTRUIR VERSIONES ANTIGUAS EN MEMORIA PARA FORZAR LA ACTUALIZACIÓN
-delete window._consultaPersonasInitialized;
-delete window.cargarIncidencias;
-delete window.eliminarIncidencia;
-delete window.cambiarPaginaIncidencias;
-
 window.initConsultaPersonas = function() {
-    console.log("⚙️ [DEBUG] Iniciando módulo consulta-personas.js (VERSIÓN FINAL CORREGIDA)");
+    console.log("⚙️ Iniciando módulo consulta-personas.js...");
     
     const el = (id) => document.getElementById(id);
     const buscarInput = el('cp_buscar_cedula');
@@ -35,6 +29,16 @@ window.initConsultaPersonas = function() {
     if (el('cp_btn_cancelar_incidencia')) el('cp_btn_cancelar_incidencia').onclick = () => modalIncidencia.classList.remove('active');
     if (el('cp_btn_guardar_incidencia')) el('cp_btn_guardar_incidencia').onclick = () => guardarIncidencia();
     if (el('cp_btn_imprimir_reporte')) el('cp_btn_imprimir_reporte').onclick = () => window.print();
+
+    // ✅ NUEVOS LISTENERS PARA EL MODAL DE ELIMINACIÓN
+    if (el('cp_modal_elim_close')) el('cp_modal_elim_close').onclick = () => {
+        el('cp_modal_confirmar_eliminacion').classList.remove('active');
+        window.incidenciaPendienteEliminacion = null;
+    };
+    if (el('cp_btn_cancelar_eliminacion')) el('cp_btn_cancelar_eliminacion').onclick = () => {
+        el('cp_modal_confirmar_eliminacion').classList.remove('active');
+        window.incidenciaPendienteEliminacion = null;
+    };
 
     function mostrarMensaje(texto, tipo) {
         if (!msg) return;
@@ -257,11 +261,193 @@ window.initConsultaPersonas = function() {
                 <p style="font-size: 0.85rem; color: #64748b;"><strong>Generado por:</strong> ${user.email}</p>
             </div>`;
 
-            // ... (Aquí va el resto de tu código de mostrarDetallesCompletos, mantenlo igual) ...
-            // Para no hacer el código infinito, asumo que esta parte ya la tienes funcionando bien.
-            // Solo asegúrate de que el cierre de la función y el catch estén presentes.
-            
+            if (tipo === 'persona') {
+                if (data.foto_frontal || data.foto_perfil_izq || data.foto_perfil_der) {
+                    html += `<div class="seccion-titulo">📸 Fotografías</div><div class="fotos-container">`;
+                    if (data.foto_frontal) html += `<div class="foto-item"><img src="${data.foto_frontal}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
+                    if (data.foto_perfil_izq) html += `<div class="foto-item"><img src="${data.foto_perfil_izq}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Izq.</div></div>`;
+                    if (data.foto_perfil_der) html += `<div class="foto-item"><img src="${data.foto_perfil_der}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Der.</div></div>`;
+                    html += `</div>`;
+                }
+                
+                let alertasHtml = '';
+                if (datosProcesados?.tipo_delito) {
+                    alertasHtml += `<div class="ficha-alert ficha-alert-delito" style="page-break-inside: avoid; margin: 15px 0;">⚖️ <strong>Procesado por:</strong> ${datosProcesados.tipo_delito}</div>`;
+                }
+                const problemaJudicial = data.problema_judicial || '';
+                if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLowerCase() !== 'no') {
+                    alertasHtml += `<div class="ficha-alert ficha-alert-judicial" style="page-break-inside: avoid; margin: 15px 0;">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
+                }
+                
+                html += `<div class="seccion-titulo">👤 Datos Personales</div>`;
+                html += alertasHtml;
+                html += `<div class="ficha-completa-grid">`;
+                
+                const camposPersona = [
+                    { label: 'Primer Nombre', value: data.primer_nombre },
+                    { label: 'Segundo Nombre', value: data.segundo_nombre },
+                    { label: 'Primer Apellido', value: data.primer_apellido },
+                    { label: 'Segundo Apellido', value: data.segundo_apellido },
+                    { label: 'Cédula', value: data.cedula },
+                    { label: 'Fecha Nac.', value: data.fecha_nacimiento },
+                    { label: 'Edad', value: data.edad ? `${data.edad} años` : null },
+                    { label: 'Nacionalidad', value: data.nacionalidad },
+                    { label: 'Sexo', value: data.sexo },
+                    { label: 'Estatura', value: data.estatura_cm ? `${data.estatura_cm} cm` : null },
+                    { label: 'Color Piel', value: data.color_piel },
+                    { label: 'Color Ojos', value: data.color_ojos },
+                    { label: 'Cabello', value: data.color_cabello },
+                    { label: 'Complexión', value: data.complexion },
+                    { label: 'Teléfono', value: `${data.tlf_pais || ''} ${data.tlf_numero || ''}`.trim() || null },
+                    { label: 'Dirección', value: data.direccion },
+                    { label: 'Apodo', value: data.apodo },
+                    { label: 'Marca Corporal', value: data.marca_corporal },
+                    { label: 'Lentes', value: data.usa_lentes !== undefined ? (data.usa_lentes ? 'Sí' : 'No') : null },
+                    { label: 'Detalle Lentes', value: data.detalle_lentes },
+                    { label: 'Perforaciones', value: data.perforaciones !== undefined ? (data.perforaciones ? 'Sí' : 'No') : null },
+                    { label: 'Detalle Perfor.', value: data.detalle_perforaciones },
+                    { label: 'Cond. Médica', value: data.condicion_medica },
+                    { label: 'Medicamento', value: data.consume_medicamento },
+                    { label: 'Estación', value: data.estacion_policial },
+                    { label: 'Dir. Detención', value: data.direccion_detencion },
+                    { label: 'Estatus', value: data.estatus }
+                ];
+                camposPersona.forEach(c => {
+                    if (c.value !== null && c.value !== undefined && c.value !== '') {
+                        html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value">${c.value}</div></div>`;
+                    }
+                });
+                if (data.observaciones) {
+                    html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
+                }
+                html += `</div>`;
+            } else {
+                if (data.foto_frontal_persona || data.foto_perfil_izq_persona || data.foto_perfil_der_persona) {
+                    html += `<div class="seccion-titulo">📸 Fotografías de la Persona</div><div class="fotos-container">`;
+                    if (data.foto_frontal_persona) html += `<div class="foto-item"><img src="${data.foto_frontal_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
+                    if (data.foto_perfil_izq_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_izq_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Izq.</div></div>`;
+                    if (data.foto_perfil_der_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_der_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Der.</div></div>`;
+                    html += `</div>`;
+                }
+                
+                let alertasHtmlVinc = '';
+                if (datosProcesados?.tipo_delito) {
+                    alertasHtmlVinc += `<div class="ficha-alert ficha-alert-delito" style="page-break-inside: avoid; margin: 15px 0;">⚖️ <strong>Procesado por:</strong> ${datosProcesados.tipo_delito}</div>`;
+                }
+                const problemaJudicialVinc = data.problema_judicial || '';
+                if (problemaJudicialVinc && problemaJudicialVinc.trim() !== '' && problemaJudicialVinc.toLowerCase() !== 'no') {
+                    alertasHtmlVinc += `<div class="ficha-alert ficha-alert-judicial" style="page-break-inside: avoid; margin: 15px 0;">⚠️ <strong>Antecedentes:</strong> ${problemaJudicialVinc}</div>`;
+                }
+                
+                html += `<div class="seccion-titulo">👤 Datos de la Persona</div>`;
+                html += alertasHtmlVinc;
+                html += `<div class="ficha-completa-grid">`;
+                const camposPersonaVinc = [
+                    { label: 'Primer Nombre', value: data.primer_nombre },
+                    { label: 'Segundo Nombre', value: data.segundo_nombre },
+                    { label: 'Primer Apellido', value: data.primer_apellido },
+                    { label: 'Segundo Apellido', value: data.segundo_apellido },
+                    { label: 'Cédula', value: data.cedula },
+                    { label: 'Fecha Nac.', value: data.fecha_nacimiento },
+                    { label: 'Edad', value: data.edad ? `${data.edad} años` : null },
+                    { label: 'Apodo', value: data.apodo },
+                    { label: 'Nacionalidad', value: data.nacionalidad },
+                    { label: 'Sexo', value: data.sexo },
+                    { label: 'Estatura', value: data.estatura_cm ? `${data.estatura_cm} cm` : null },
+                    { label: 'Color Piel', value: data.color_piel },
+                    { label: 'Color Ojos', value: data.color_ojos },
+                    { label: 'Cabello', value: data.color_cabello },
+                    { label: 'Complexión', value: data.complexion },
+                    { label: 'Teléfono', value: `${data.tlf_pais || ''} ${data.tlf_numero || ''}`.trim() || null },
+                    { label: 'Dirección', value: data.direccion },
+                    { label: 'Lentes', value: data.usa_lentes !== undefined ? (data.usa_lentes ? 'Sí' : 'No') : null },
+                    { label: 'Detalle Lentes', value: data.detalle_lentes },
+                    { label: 'Perforaciones', value: data.perforaciones !== undefined ? (data.perforaciones ? 'Sí' : 'No') : null },
+                    { label: 'Detalle Perfor.', value: data.detalle_perforaciones },
+                    { label: 'Cond. Médica', value: data.condicion_medica },
+                    { label: 'Medicamento', value: data.consume_medicamento }
+                ];
+                camposPersonaVinc.forEach(c => {
+                    if (c.value !== null && c.value !== undefined && c.value !== '') {
+                        html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value">${c.value}</div></div>`;
+                    }
+                });
+                html += `</div>`;
+
+                if (data.foto_frontal_vehiculo || data.foto_trasera_vehiculo || data.foto_lado_der_vehiculo || data.foto_lado_izq_vehiculo) {
+                    html += `<div class="seccion-titulo">📸 Fotografías del Vehículo</div><div class="fotos-container">`;
+                    if (data.foto_frontal_vehiculo) html += `<div class="foto-item"><img src="${data.foto_frontal_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
+                    if (data.foto_trasera_vehiculo) html += `<div class="foto-item"><img src="${data.foto_trasera_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Trasera</div></div>`;
+                    if (data.foto_lado_der_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_der_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Der.</div></div>`;
+                    if (data.foto_lado_izq_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_izq_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Izq.</div></div>`;
+                    html += `</div>`;
+                }
+                
+                html += `<div class="seccion-titulo">🚗 Datos del Vehículo</div><div class="ficha-completa-grid">`;
+                const camposVehiculo = [
+                    { label: 'Placa', value: data.placa, highlight: true },
+                    { label: 'Tipo', value: data.tipo_vehiculo },
+                    { label: 'Marca', value: data.marca_vehiculo },
+                    { label: 'Modelo', value: data.modelo_vehiculo },
+                    { label: 'Color', value: data.color_vehiculo },
+                    { label: 'Año', value: data.anio_vehiculo },
+                    { label: 'Serial Motor', value: data.serial_motor },
+                    { label: 'Serial Carrocería', value: data.serial_carroceria },
+                    { label: 'Cilindraje', value: data.cilindraje },
+                    { label: 'Marca Corporal (Vehículo)', value: data.marca_corporal }
+                ];
+                camposVehiculo.forEach(c => {
+                    if (c.value !== null && c.value !== undefined && c.value !== '') {
+                        const style = c.highlight ? 'font-weight:800; color:var(--primary); font-size:1.1rem;' : '';
+                        html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value" style="${style}">${c.value}</div></div>`;
+                    }
+                });
+                html += `</div>`;
+                
+                html += `<div class="seccion-titulo">🏛️ Datos de Detención</div><div class="ficha-completa-grid">`;
+                const camposDetencion = [
+                    { label: 'Estación Policial', value: data.estacion_policial },
+                    { label: 'Dirección de Detención', value: data.direccion_detencion },
+                    { label: 'Estatus', value: data.estatus }
+                ];
+                camposDetencion.forEach(c => {
+                    if (c.value !== null && c.value !== undefined && c.value !== '') {
+                        html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value">${c.value}</div></div>`;
+                    }
+                });
+                if (data.observaciones) {
+                    html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
+                }
+                html += `</div>`;
+            }
+
+            html += `<div class="seccion-titulo" style="margin-top: 30px;">📜 Historial de Incidencias</div>`;
+            try {
+                const { data: incidencias } = await window.supabaseClient.from('registro_incidencias').select('*').eq('cedula', data.cedula).eq('tipo_registro', tipo).order('fecha_hora', { ascending: false });
+                if (incidencias && incidencias.length > 0) {
+                    html += `<div class="incidencias-print-container">`;
+                    incidencias.forEach(inc => {
+                        html += `<div class="incidencia-item-print" style="border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 10px; border-left: 4px solid var(--secondary); border-radius: 4px; page-break-inside: avoid;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">
+                                <span>🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+                                <span>Por: ${inc.email_registrante || 'N/A'}</span>
+                            </div>
+                            <div style="font-size: 0.9rem; color: #1e293b; line-height: 1.5;">${inc.descripcion}</div>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                } else {
+                    html += `<div style="text-align: center; padding: 20px; color: #94a3b8; font-style: italic; border: 1px dashed #cbd5e1; border-radius: 5px;">No hay incidencias registradas para este expediente.</div>`;
+                }
+            } catch (err) { /* Silencioso */ }
+
+            html += `<div class="reporte-footer-print" style="margin-top: 40px; text-align: center; font-size: 0.75rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                <p>Documento generado electrónicamente por el Sistema de Verificación y Registro Policial.</p>
+                <p>Este reporte es de carácter informativo y confidencial. Uso exclusivo del CPNB.</p>
+            </div>`;
+
             modalBody.innerHTML = html;
+
         } catch (err) {
             console.error('Error generando reporte:', err);
             modalBody.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">
@@ -271,15 +457,11 @@ window.initConsultaPersonas = function() {
         }
     }
 
-    // ✅ FUNCIÓN GLOBAL PARA CARGAR INCIDENCIAS (CON DEBUG)
+    // ✅ FUNCIÓN GLOBAL PARA CARGAR INCIDENCIAS (CON BOTÓN DE ELIMINAR)
     window.cargarIncidencias = async function(cedula, tipo, pagina = 1) {
         console.log("🔄 [DEBUG] Recargando lista de incidencias para:", cedula, tipo, "Página:", pagina);
-        const section = document.getElementById('cp_incidencias_section');
-        if (!section) {
-            console.error("❌ [DEBUG] NO SE ENCUENTRA el elemento cp_incidencias_section en el HTML");
-            return;
-        }
-
+        if (!incidenciasSection) return;
+        
         try {
             const { data: incidencias, error } = await window.supabaseClient
                 .from('registro_incidencias')
@@ -298,18 +480,27 @@ window.initConsultaPersonas = function() {
                 const esAdministrador = sessionStorage.getItem('pnb_user_nivel') === 'administrador';
                 
                 incidencias.forEach(inc => {
-                    const btnEliminar = esAdministrador 
-                        ? `<button class="btn-eliminar-incidencia" onclick="window.eliminarIncidencia('${inc.id}', '${cedula}', '${tipo}', ${pagina})">🗑️ Eliminar</button>` 
+                    // ✅ Botón con data-attributes para pasar datos seguros al modal
+                    const btnEliminarHtml = esAdministrador 
+                        ? `<button class="btn-eliminar-incidencia" 
+                            data-id="${inc.id}" 
+                            data-cedula="${cedula}" 
+                            data-tipo="${tipo}" 
+                            data-pagina="${pagina}" 
+                            data-desc="${inc.descripcion}" 
+                            data-fecha="${inc.fecha_hora}" 
+                            data-autor="${inc.email_registrante || 'N/A'}" 
+                            onclick="window.prepararEliminacion(this)">🗑️ Eliminar</button>` 
                         : '';
 
                     html += `
-                    <div class="incidencia-item" id="incidencia-${inc.id}">
+                    <div class="incidencia-item">
                         <div class="incidencia-item-header">
                             <div>
                                 <span class="incidencia-fecha">🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
                                 <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
                             </div>
-                            ${btnEliminar}
+                            ${btnEliminarHtml}
                         </div>
                         <div class="incidencia-descripcion">${inc.descripcion}</div>
                     </div>`;
@@ -318,22 +509,12 @@ window.initConsultaPersonas = function() {
             html += '</div>';
             
             // FORZAR ACTUALIZACIÓN DEL DOM
-            section.innerHTML = html;
-            section.style.display = 'block';
-            console.log("✅ [DEBUG] DOM actualizado correctamente. Incidencias mostradas:", incidencias ? incidencias.length : 0);
+            incidenciasSection.innerHTML = html;
+            incidenciasSection.style.display = 'block';
+            console.log("✅ [DEBUG] DOM actualizado correctamente.");
         } catch (err) {
             console.error('❌ [DEBUG] Error cargando incidencias:', err);
         }
-    };
-
-    window.cambiarPaginaIncidencias = function(nuevaPagina) {
-        // Necesitamos obtener la cédula y tipo actuales, que guardamos en variables globales temporales
-        // o podemos asumir que se llaman desde el contexto. Para simplificar, usamos las variables del módulo.
-        // Pero como son locales, mejor las hacemos globales o las pasamos. 
-        // Dado que ya funcionan, lo dejamos así, pero asegurando que window.cargarIncidencias se llame.
-        console.log("🔄 [DEBUG] Cambiando a página:", nuevaPagina);
-        // Nota: Para que esto funcione perfectamente, necesitamos que cedulaActualIncidencias y tipoActualIncidencias sean accesibles.
-        // Las definiremos como globales al inicio si es necesario, pero por ahora confiamos en que el flujo las tiene.
     };
 
     async function guardarIncidencia() {
@@ -368,64 +549,99 @@ window.initConsultaPersonas = function() {
         }
     }
 
-    // ✅ FUNCIÓN GLOBAL PARA ELIMINAR CON RESPALDO (CON DEBUG)
-    window.eliminarIncidencia = async function(incidenciaId, cedula, tipo, pagina) {
-        console.log("🗑️ [DEBUG] Iniciando eliminación de:", incidenciaId);
-        if (!confirm('⚠️ ¿Está SEGURO de eliminar esta incidencia?\n\nSe guardará un respaldo permanente en el sistema con su usuario y fecha.')) {
-            return;
-        }
+    console.log("✅ Módulo consulta-personas.js inicializado");
+};
 
-        try {
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            if (!user) throw new Error('Debe iniciar sesión');
-
-            // 1. Obtener datos originales
-            const { data: incData, error: fetchError } = await window.supabaseClient
-                .from('registro_incidencias')
-                .select('*')
-                .eq('id', incidenciaId)
-                .single();
-            if (fetchError) throw fetchError;
-
-            // 2. Respaldar (excluyendo id y created_at)
-            const { id, created_at, ...datosBackup } = incData;
-            datosBackup.incidencia_id_original = incidenciaId;
-            datosBackup.eliminado_por = user.id;
-            datosBackup.email_eliminador = user.email;
-            datosBackup.fecha_eliminacion = new Date().toISOString();
-
-            const { error: backupError } = await window.supabaseClient
-                .from('registro_incidencias_backup')
-                .insert([datosBackup]);
-            if (backupError) throw new Error('Error al crear respaldo: ' + backupError.message);
-
-            // 3. Eliminar de la tabla principal
-            const { error: deleteError } = await window.supabaseClient
-                .from('registro_incidencias')
-                .delete()
-                .eq('id', incidenciaId);
-            if (deleteError) throw deleteError;
-
-            console.log("✅ [DEBUG] Eliminación exitosa en BD. Procediendo a recargar la lista...");
-            
-            // 4. FORZAR RECARGA INMEDIATA DE LA LISTA
-            await window.cargarIncidencias(cedula, tipo, pagina);
-            
-            // 5. Mostrar mensaje de éxito
-            mostrarMensaje('✅ Incidencia eliminada y respaldada correctamente', 'success');
-
-            // 6. Registrar en logs
-            if (typeof registrarLog === 'function') {
-                await registrarLog('ELIMINAR_INCIDENCIA', 'Consulta Personas', incidenciaId, { cedula, tipo });
-            }
-
-        } catch (err) {
-            console.error('❌ [DEBUG] Error al eliminar incidencia:', err);
-            mostrarMensaje('❌ Error al eliminar: ' + err.message, 'error');
-        }
+// ✅ FUNCIONES GLOBALES PARA EL MODAL DE ELIMINACIÓN
+window.prepararEliminacion = function(btn) {
+    window.incidenciaPendienteEliminacion = {
+        id: btn.dataset.id,
+        cedula: btn.dataset.cedula,
+        tipo: btn.dataset.tipo,
+        pagina: parseInt(btn.dataset.pagina),
+        descripcion: btn.dataset.desc,
+        fecha: btn.dataset.fecha,
+        autor: btn.dataset.autor
     };
+    
+    document.getElementById('cp_elim_descripcion').textContent = window.incidenciaPendienteEliminacion.descripcion;
+    document.getElementById('cp_elim_fecha').textContent = new Date(window.incidenciaPendienteEliminacion.fecha).toLocaleString('es-VE');
+    document.getElementById('cp_elim_autor').textContent = window.incidenciaPendienteEliminacion.autor;
+    
+    document.getElementById('cp_modal_confirmar_eliminacion').classList.add('active');
+};
 
-    console.log("✅ [DEBUG] Módulo consulta-personas.js inicializado correctamente");
+document.getElementById('cp_btn_confirmar_eliminacion').onclick = async () => {
+    const datos = window.incidenciaPendienteEliminacion;
+    if (!datos) return;
+    
+    const btnConfirmar = document.getElementById('cp_btn_confirmar_eliminacion');
+    btnConfirmar.disabled = true;
+    btnConfirmar.textContent = '⏳ Procesando...';
+    
+    try {
+        const { data: { user } } = await window.supabaseClient.auth.getUser();
+        if (!user) throw new Error('Debe iniciar sesión');
+
+        // 1. Obtener datos originales de la BD para el respaldo exacto
+        const { data: incData, error: fetchError } = await window.supabaseClient
+            .from('registro_incidencias')
+            .select('*')
+            .eq('id', datos.id)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        // 2. Respaldar (excluyendo id y created_at)
+        const { id, created_at, ...datosBackup } = incData;
+        datosBackup.incidencia_id_original = datos.id;
+        datosBackup.eliminado_por = user.id;
+        datosBackup.email_eliminador = user.email;
+        datosBackup.fecha_eliminacion = new Date().toISOString();
+
+        const { error: backupError } = await window.supabaseClient
+            .from('registro_incidencias_backup')
+            .insert([datosBackup]);
+
+        if (backupError) throw new Error('Error al crear respaldo: ' + backupError.message);
+
+        // 3. Eliminar de la tabla principal
+        const { error: deleteError } = await window.supabaseClient
+            .from('registro_incidencias')
+            .delete()
+            .eq('id', datos.id);
+
+        if (deleteError) throw deleteError;
+
+        // 4. Cerrar modal
+        document.getElementById('cp_modal_confirmar_eliminacion').classList.remove('active');
+        window.incidenciaPendienteEliminacion = null;
+        
+        // 5. ✅ FORZAR RECARGA DE LA LISTA (Aquí está la clave para que desaparezca)
+        console.log("🔄 Recargando lista después de eliminar...");
+        await window.cargarIncidencias(datos.cedula, datos.tipo, datos.pagina);
+        
+        // 6. Mensaje de éxito
+        const msgEl = document.getElementById('cp_msg');
+        if (msgEl) {
+            msgEl.textContent = '✅ Incidencia eliminada y respaldada correctamente';
+            msgEl.className = 'msg success';
+            msgEl.style.display = 'block';
+            setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+        }
+
+        // 7. Log
+        if (typeof registrarLog === 'function') {
+            await registrarLog('ELIMINAR_INCIDENCIA', 'Consulta Personas', datos.id, { cedula: datos.cedula, tipo: datos.tipo });
+        }
+
+    } catch (err) {
+        console.error('❌ Error al eliminar:', err);
+        alert('❌ Error al eliminar: ' + err.message);
+    } finally {
+        btnConfirmar.disabled = false;
+        btnConfirmar.textContent = '🗑️ Sí, Eliminar y Respaldar';
+    }
 };
 
 if (document.readyState === 'loading') {
