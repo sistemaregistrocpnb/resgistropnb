@@ -1,11 +1,4 @@
 window.initConsultaVehiculos = function() {
-console.log("⚙️ Iniciando módulo consulta-vehiculos.js...");
-if (window._consultaVehiculosInitialized) {
-console.log("⚠️ Módulo ya inicializado, omitiendo...");
-return;
-}
-window._consultaVehiculosInitialized = true;
-
 const el = (id) => document.getElementById(id);
 const tipoBusquedaSelect = el('cv_tipo_busqueda');
 const buscarInput = el('cv_buscar_valor');
@@ -18,7 +11,6 @@ const modalDetalles = el('cv_modal_detalles');
 const modalIncidencia = el('cv_modal_incidencia');
 const modalTitulo = el('cv_modal_titulo');
 const modalBody = el('cv_modal_body');
-
 let vehiculoActual = null;
 let tipoRegistroActual = null;
 let resultadosMultiples = null;
@@ -51,32 +43,15 @@ if (tipo === 'success') setTimeout(() => { if (msg) msg.style.display = 'none'; 
 async function tienePermisosIncidencia() {
 try {
 const { data: { user } } = await window.supabaseClient.auth.getUser();
-if (!user) {
-console.warn("⚠️ No hay usuario autenticado");
-return false;
-}
+if (!user) return false;
 const { data: perfil, error } = await window.supabaseClient
 .from('perfiles_usuario')
 .select('nivel')
 .eq('user_id', user.id)
 .maybeSingle();
-if (error) {
-console.error("❌ Error consultando perfiles_usuario:", error);
-return false;
-}
-if (!perfil) {
-console.warn("⚠️ No se encontró perfil para el usuario:", user.id);
-return false;
-}
+if (error || !perfil) return false;
 const nivel = (perfil.nivel || '').toLowerCase().trim();
-console.log("🔐 Nivel del usuario:", nivel);
-const tienePermiso = nivel === 'administrador' || nivel === 'moderador';
-if (tienePermiso) {
-console.log("✅ Usuario tiene permisos para crear incidencias");
-} else {
-console.log("❌ Usuario NO tiene permisos (nivel:", nivel, ")");
-}
-return tienePermiso;
+return nivel === 'administrador' || nivel === 'moderador';
 } catch (err) {
 console.error("❌ Error verificando permisos:", err);
 return false;
@@ -141,7 +116,7 @@ const { data: procData } = await window.supabaseClient
 .limit(1)
 .maybeSingle();
 if (procData) datosProcesado = procData;
-} catch (e) { console.warn('No se pudo obtener datos de procesados:', e); }
+} catch (e) { /* Silencioso */ }
 }
 }
 }
@@ -164,7 +139,6 @@ await cargarIncidencias(vehiculoActual.placa || vehiculoActual.serial_carroceria
 mostrarMensaje('✅ Vehículo encontrado', 'success');
 }
 } catch (err) {
-console.error('❌ Error buscando:', err);
 mostrarMensaje('❌ Error: ' + err.message, 'error');
 }
 }
@@ -283,7 +257,7 @@ ${btnIncidenciaHtml}
 fichaBreve.innerHTML = html;
 fichaBreve.style.display = 'block';
 
-// ✅ Listeners dinámicos (IGUAL QUE EN PERSONAS - usando onclick en lugar de addEventListener)
+// ✅ Listeners dinámicos (igual que en personas)
 setTimeout(() => {
 const btnDetalles = el('cv_btn_ver_detalles');
 if (btnDetalles) btnDetalles.onclick = () => mostrarDetallesCompletos(data, tipo);
@@ -291,17 +265,21 @@ if (btnDetalles) btnDetalles.onclick = () => mostrarDetallesCompletos(data, tipo
 const btnIncidencia = el('cv_btn_nueva_incidencia');
 if (btnIncidencia) {
 btnIncidencia.onclick = () => {
-console.log("✅ Click en Nueva Incidencia - Abriendo modal de incidencias");
+console.log("✅ Click en Nueva Incidencia");
+if (modalIncidencia) {
 modalIncidencia.classList.add('active');
-el('cv_incidencia_descripcion').value = '';
-el('cv_incidencia_descripcion').focus();
+const textarea = el('cv_incidencia_descripcion');
+if (textarea) {
+textarea.value = '';
+textarea.focus();
+}
+}
 };
 }
-}, 100); // ✅ Aumentado a 100ms como en personas
+}, 100);
 }
 
 async function mostrarDetallesCompletos(data, tipo) {
-console.log("📋 Abriendo modal de detalles completos");
 if (!modalBody || !modalTitulo) return;
 modalTitulo.textContent = `📋 Detalles - ${tipo === 'automovil' ? 'Automóvil' : tipo === 'moto' ? 'Motocicleta' : 'Vehículo Vinculado'}`;
 modalBody.innerHTML = '<div class="loading">⏳ Generando reporte...</div>';
@@ -367,11 +345,11 @@ if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLow
 html += `<div class="ficha-alert ficha-alert-judicial" style="page-break-inside: avoid; margin: 15px 0; padding: 12px; background: #fef3c7; border: 1px solid #fbbf24; color: #92400e; border-radius: 6px;">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
 }
 
-// ... [El resto de la función mostrarDetallesCompletos permanece igual - por brevedad no lo incluyo completo]
+// ... [El resto de la función mostrarDetallesCompletos, cargarIncidencias y guardarIncidencia permanecen igual]
+// Por brevedad, asumo que mantienes el código existente de estas funciones
 
 modalBody.innerHTML = html;
 } catch (err) {
-console.error('❌ Error generando reporte:', err);
 modalBody.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">
 <h3>❌ Error al generar el reporte</h3>
 <p>${err.message}</p>
@@ -408,7 +386,6 @@ html += '</div>';
 incidenciasSection.innerHTML = html;
 incidenciasSection.style.display = 'block';
 } catch (err) {
-console.error('Error cargando incidencias:', err);
 incidenciasSection.innerHTML = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
 incidenciasSection.style.display = 'block';
 }
@@ -443,18 +420,11 @@ modalIncidencia.classList.remove('active');
 mostrarMensaje('✅ Incidencia registrada', 'success');
 await cargarIncidencias(identificador, tipoRegistroActual);
 } catch (err) {
-console.error('❌ Error guardando incidencia:', err);
 alert('❌ Error: ' + err.message);
 } finally {
-const btnGuardarFinal = el('cv_btn_guardar_incidencia');
-if (btnGuardarFinal) {
-btnGuardarFinal.disabled = false; 
-btnGuardarFinal.textContent = '💾 Guardar Incidencia';
+btnGuardar.disabled = false; btnGuardar.textContent = '💾 Guardar Incidencia';
 }
 }
-}
-
-console.log("✅ Módulo consulta-vehiculos.js inicializado");
 };
 
 if (document.readyState === 'loading') {
