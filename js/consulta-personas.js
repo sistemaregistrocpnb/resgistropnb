@@ -460,7 +460,6 @@ window.initConsultaPersonas = function() {
         incidenciasPaginaActual = pagina;
         
         try {
-
             const desde = (pagina - 1) * incidenciasPorPagina;
             const hasta = desde + incidenciasPorPagina - 1;
             
@@ -484,16 +483,27 @@ window.initConsultaPersonas = function() {
             
             if (error) throw error;
 
+            // ✅ VERIFICAR SI ES ADMINISTRADOR PARA MOSTRAR EL BOTÓN DE ELIMINAR
+            const esAdministrador = sessionStorage.getItem('pnb_user_nivel') === 'administrador';
+
             let html = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3>';
             
             if (!incidencias || incidencias.length === 0) {
                 html += '<div class="sin-incidencias">No hay incidencias registradas</div>';
             } else {
                 incidencias.forEach(inc => {
+                    // ✅ Generar botón de eliminar SOLO si es administrador
+                    const btnEliminarHtml = esAdministrador 
+                        ? `<button class="btn-eliminar-incidencia" onclick="window.eliminarIncidencia('${inc.id}', '${cedula}', '${tipo}', ${pagina})">🗑️ Eliminar</button>` 
+                        : '';
+
                     html += `<div class="incidencia-item">
                         <div class="incidencia-item-header">
-                            <span class="incidencia-fecha">🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
-                            <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
+                            <div>
+                                <span class="incidencia-fecha">🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+                                <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
+                            </div>
+                            ${btnEliminarHtml}
                         </div>
                         <div class="incidencia-descripcion">${inc.descripcion}</div>
                     </div>`;
@@ -502,12 +512,10 @@ window.initConsultaPersonas = function() {
                 if (totalPaginas > 1) {
                     html += `<div class="paginacion-incidencias" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--beige-border);">`;
             
-                    html += `<button type="button" class="btn-paginacion" ${pagina === 1 ? 'disabled' : ''} onclick="window.cambiarPaginaIncidencias(${pagina - 1})" style="padding: 8px 16px; background: ${pagina === 1 ? '#cbd5e1' : 'var(--primary)'}; color: white; border: none; border-radius: 5px; cursor: ${pagina === 1 ? 'not-allowed' : 'pointer'}; font-weight: 600;">️ Anterior</button>`;
+                    html += `<button type="button" class="btn-paginacion" ${pagina === 1 ? 'disabled' : ''} onclick="window.cambiarPaginaIncidencias(${pagina - 1})" style="padding: 8px 16px; background: ${pagina === 1 ? '#cbd5e1' : 'var(--primary)'}; color: white; border: none; border-radius: 5px; cursor: ${pagina === 1 ? 'not-allowed' : 'pointer'}; font-weight: 600;">⬅️ Anterior</button>`;
                     
-       
                     html += `<span style="font-size: 0.9rem; color: #64748b; font-weight: 600;">Página ${pagina} de ${totalPaginas} (${totalIncidencias} incidencias)</span>`;
                     
-        
                     html += `<button type="button" class="btn-paginacion" ${pagina === totalPaginas ? 'disabled' : ''} onclick="window.cambiarPaginaIncidencias(${pagina + 1})" style="padding: 8px 16px; background: ${pagina === totalPaginas ? '#cbd5e1' : 'var(--primary)'}; color: white; border: none; border-radius: 5px; cursor: ${pagina === totalPaginas ? 'not-allowed' : 'pointer'}; font-weight: 600;">Siguiente ➡️</button>`;
                     
                     html += `</div>`;
@@ -523,7 +531,6 @@ window.initConsultaPersonas = function() {
             incidenciasSection.style.display = 'block';
         }
     }
-
 
     window.cambiarPaginaIncidencias = function(nuevaPagina) {
         if (cedulaActualIncidencias && tipoActualIncidencias) {
@@ -562,7 +569,63 @@ window.initConsultaPersonas = function() {
             btnGuardar.disabled = false; btnGuardar.textContent = ' Guardar Incidencia';
         }
     }
-};
+        // ✅ FUNCIÓN PARA ELIMINAR INCIDENCIA CON RESPALDO (Solo Admin)
+    window.eliminarIncidencia = async (incidenciaId, cedula, tipo, paginaActual) => {
+        if (!confirm('⚠️ ¿Está SEGURO de eliminar esta incidencia?\n\nSe guardará un respaldo permanente en el sistema con su usuario y fecha.')) {
+            return;
+        }
+
+        try {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) throw new Error('Debe iniciar sesión');
+
+            // 1. Obtener los datos originales de la incidencia
+            const { data: incData, error: fetchError } = await window.supabaseClient
+                .from('registro_incidencias')
+                .select('*')
+                .eq('id', incidenciaId)
+                .single();
+
+            if (fetchError) throw fetchError;
+
+            // 2. Insertar en la tabla de respaldo (quitamos el 'id' original para que la tabla backup genere uno nuevo)
+            const { id, ...datosParaBackup } = incData;
+            datosParaBackup.incidencia_id_original = incidenciaId;
+            datosParaBackup.eliminado_por = user.id;
+            datosParaBackup.email_eliminador = user.email;
+            datosParaBackup.fecha_eliminacion = new Date().toISOString();
+
+            const { error: backupError } = await window.supabaseClient
+                .from('registro_incidencias_backup')
+                .insert([datosParaBackup]);
+
+            if (backupError) throw new Error('Error al crear respaldo: ' + backupError.message);
+
+            // 3. Eliminar de la tabla principal
+            const { error: deleteError } = await window.supabaseClient
+                .from('registro_incidencias')
+                .delete()
+                .eq('id', incidenciaId);
+
+            if (deleteError) throw deleteError;
+
+            mostrarMensaje('✅ Incidencia eliminada y respaldada correctamente', 'success');
+            
+            // 4. Recargar la lista de incidencias en la página actual
+            await cargarIncidencias(cedula, tipo, paginaActual);
+
+            // 5. Registrar en logs del sistema (auditoría)
+            if (typeof registrarLog === 'function') {
+                await registrarLog('ELIMINAR_INCIDENCIA', 'Consulta Personas', incidenciaId, { cedula, tipo });
+            }
+
+        } catch (err) {
+            console.error('❌ Error al eliminar incidencia:', err);
+            mostrarMensaje('❌ Error al eliminar: ' + err.message, 'error');
+        }
+    };
+}; // <--- ESTE ES EL CIERRE ORIGINAL DE initConsultaPersonas, NO LO BORRES
+
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.initConsultaPersonas);
