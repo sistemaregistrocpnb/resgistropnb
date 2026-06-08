@@ -226,8 +226,12 @@ window.initConsultaVehiculos = function() {
     }
 
     const tienePermisos = await tienePermisosIncidencia();
+    
+    // ✅ CORRECCIÓN CLAVE: Usamos un ID único (_ficha) para evitar conflictos con el modal
+    const btnIncidenciaHtml = tienePermisos 
+      ? `<button type="button" class="btn-nueva-incidencia" id="cv_btn_nueva_incidencia_ficha">➕ Nueva Incidencia</button>` 
+      : '';
 
-    // ✅ MEJORA: Usamos un contenedor vacío para inyectar el botón dinámicamente y evitar conflictos de IDs con el modal
     let html = `
       <div class="ficha-breve">
         <div class="ficha-breve-header">
@@ -238,7 +242,7 @@ window.initConsultaVehiculos = function() {
         <div class="ficha-breve-grid">${htmlCampos}</div>
         <div class="ficha-breve-actions">
           <button type="button" class="btn-ver-detalles" id="cv_btn_ver_detalles">📋 Ver Detalles Completos</button>
-          <div id="cv_contenedor_btn_incidencia"></div>
+          ${btnIncidenciaHtml}
         </div>
       </div>
     `;
@@ -246,39 +250,31 @@ window.initConsultaVehiculos = function() {
     fichaBreve.innerHTML = html;
     fichaBreve.style.display = 'block';
 
-    // ✅ SOLUCIÓN: Asignación segura de eventos tras renderizar
+    // ✅ ASIGNACIÓN DE EVENTOS BLINDADA: Solo busca dentro de 'fichaBreve'
     setTimeout(() => {
-      // 1. Evento para Ver Detalles
-      const btnDetalles = document.getElementById('cv_btn_ver_detalles');
+      // 1. Evento Ver Detalles
+      const btnDetalles = fichaBreve.querySelector('#cv_btn_ver_detalles');
       if (btnDetalles) {
-        const newBtnDetalles = btnDetalles.cloneNode(true);
-        btnDetalles.parentNode.replaceChild(newBtnDetalles, btnDetalles);
-        newBtnDetalles.addEventListener('click', () => mostrarDetallesCompletos(data, tipo));
+        const cleanBtnDetalles = btnDetalles.cloneNode(true);
+        btnDetalles.parentNode.replaceChild(cleanBtnDetalles, btnDetalles);
+        cleanBtnDetalles.addEventListener('click', () => mostrarDetallesCompletos(data, tipo));
       }
 
-      // 2. Generar y asignar evento a "Nueva Incidencia" SOLO en la ficha breve
-      if (tienePermisos) {
-        const contenedorIncidencia = document.getElementById('cv_contenedor_btn_incidencia');
-        if (contenedorIncidencia) {
-          const btnIncidencia = document.createElement('button');
-          btnIncidencia.type = 'button';
-          btnIncidencia.className = 'btn-nueva-incidencia';
-          btnIncidencia.id = 'cv_btn_nueva_incidencia'; // Mantiene compatibilidad con tus estilos CSS
-          btnIncidencia.textContent = '➕ Nueva Incidencia';
-          
-          btnIncidencia.addEventListener('click', () => {
-            if (modalIncidencia) {
-              modalIncidencia.classList.add('active');
-              const textarea = document.getElementById('cv_incidencia_descripcion');
-              if (textarea) {
-                textarea.value = '';
-                textarea.focus();
-              }
+      // 2. Evento Nueva Incidencia (Solo en la ficha breve)
+      const btnIncidencia = fichaBreve.querySelector('#cv_btn_nueva_incidencia_ficha');
+      if (btnIncidencia) {
+        const cleanBtnIncidencia = btnIncidencia.cloneNode(true);
+        btnIncidencia.parentNode.replaceChild(cleanBtnIncidencia, btnIncidencia);
+        cleanBtnIncidencia.addEventListener('click', () => {
+          if (modalIncidencia) {
+            modalIncidencia.classList.add('active');
+            const textarea = document.getElementById('cv_incidencia_descripcion');
+            if (textarea) {
+              textarea.value = '';
+              textarea.focus();
             }
-          });
-          
-          contenedorIncidencia.appendChild(btnIncidencia);
-        }
+          }
+        });
       }
     }, 50);
   }
@@ -339,10 +335,33 @@ window.initConsultaVehiculos = function() {
         html += `<div class="ficha-alert ficha-alert-judicial" style="page-break-inside: avoid; margin: 15px 0; padding: 12px; background: #fef3c7; border: 1px solid #fbbf24; color: #92400e; border-radius: 6px;">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
       }
 
-      // (El resto de la generación del HTML del reporte se mantiene igual por brevedad, asegúrate de copiarlo completo de tu archivo original hasta el cierre de la función)
-      // ... [Aquí va todo el bloque de generación de HTML de fotos, datos del vehículo, persona e incidencias igual que en tu código original] ...
+      // ... [Aquí va el resto de tu código de generación de HTML de fotos y datos, idéntico al original para no romper el reporte] ...
+      // (Por brevedad, asumo que mantienes el bloque de generación de fotos y campos de tu código original hasta el cierre de la función)
       
-      // Para no alargar la respuesta, asumo que copiarás el bloque `html += ...` de tu función `mostrarDetallesCompletos` original desde la sección de fotos hasta el footer.
+      html += `<div class="seccion-titulo" style="margin-top: 30px;">📜 Historial de Incidencias</div>`;
+      try {
+        const { data: incidencias } = await window.supabaseClient.from('registro_incidencias').select('*').eq('cedula', identificador).eq('tipo_registro', tipo).order('fecha_hora', { ascending: false });
+        if (incidencias && incidencias.length > 0) {
+          html += `<div class="incidencias-print-container">`;
+          incidencias.forEach(inc => {
+            html += `<div class="incidencia-item-print" style="border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 10px; border-left: 4px solid var(--secondary); border-radius: 4px; page-break-inside: avoid;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">
+                <span>🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+                <span>Por: ${inc.email_registrante || 'N/A'}</span>
+              </div>
+              <div style="font-size: 0.9rem; color: #1e293b; line-height: 1.5;">${inc.descripcion}</div>
+            </div>`;
+          });
+          html += `</div>`;
+        } else {
+          html += `<div style="text-align: center; padding: 20px; color: #94a3b8; font-style: italic; border: 1px dashed #cbd5e1; border-radius: 5px;">No hay incidencias registradas para este expediente.</div>`;
+        }
+      } catch (err) { /* Silencioso */ }
+      
+      html += `<div class="reporte-footer-print" style="margin-top: 40px; text-align: center; font-size: 0.75rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+        <p>Documento generado electrónicamente por el Sistema de Verificación y Registro Policial.</p>
+        <p>Este reporte es de carácter informativo y confidencial. Uso exclusivo del CPNB.</p>
+      </div>`;
       
       modalBody.innerHTML = html;
     } catch (err) {
