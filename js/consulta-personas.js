@@ -144,7 +144,7 @@ window.initConsultaPersonas = function() {
 
         let htmlCampos = `
             <div class="ficha-breve-item"><div class="ficha-breve-label">Cédula</div><div class="ficha-breve-value">${data.cedula || 'N/A'}</div></div>
-            <div class="ficha-breve-item"><div class="ficha-breve-label">Tipo</div><div class="ficha-breve-value">${tipo === 'persona' ? '👤 Persona' : ' Vinculado (Vehículo)'}</div></div>
+            <div class="ficha-breve-item"><div class="ficha-breve-label">Tipo</div><div class="ficha-breve-value">${tipo === 'persona' ? '👤 Persona' : '🚗 Vinculado (Vehículo)'}</div></div>
             <div class="ficha-breve-item"><div class="ficha-breve-label">Estación de Detención</div><div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div></div>
             <div class="ficha-breve-item"><div class="ficha-breve-label">Fecha</div><div class="ficha-breve-value">${new Date(data.created_at || data.creado_en).toLocaleString('es-VE')}</div></div>
         `;
@@ -162,19 +162,19 @@ window.initConsultaPersonas = function() {
 
         const tienePermisos = await tienePermisosIncidencia();
         const btnIncidenciaHtml = tienePermisos
-            ? `<button type="button" class="btn-nueva-incidencia" id="cp_btn_nueva_incidencia"> Nueva Incidencia</button>`
+            ? `<button type="button" class="btn-nueva-incidencia" id="cp_btn_nueva_incidencia">➕ Nueva Incidencia</button>`
             : '';
 
         let html = `
             <div class="ficha-breve">
                 <div class="ficha-breve-header">
-                    <h3>${tipo === 'persona' ? '👤' : ''} ${nombreCompleto}</h3>
+                    <h3>${tipo === 'persona' ? '👤' : '🚗'} ${nombreCompleto}</h3>
                     <span class="estatus-badge ${estatusClass}">${estatus}</span>
                 </div>
                 ${alertasHtml}
                 <div class="ficha-breve-grid">${htmlCampos}</div>
                 <div class="ficha-breve-actions">
-                    <button type="button" class="btn-ver-detalles" id="cp_btn_ver_detalles"> Ver Detalles Completos</button>
+                    <button type="button" class="btn-ver-detalles" id="cp_btn_ver_detalles">📋 Ver Detalles Completos</button>
                     ${btnIncidenciaHtml}
                 </div>
             </div>
@@ -370,7 +370,7 @@ window.initConsultaPersonas = function() {
                 html += `</div>`;
 
                 if (data.foto_frontal_vehiculo || data.foto_trasera_vehiculo || data.foto_lado_der_vehiculo || data.foto_lado_izq_vehiculo) {
-                    html += `<div class="seccion-titulo"> Fotografías del Vehículo</div><div class="fotos-container">`;
+                    html += `<div class="seccion-titulo">📸 Fotografías del Vehículo</div><div class="fotos-container">`;
                     if (data.foto_frontal_vehiculo) html += `<div class="foto-item"><img src="${data.foto_frontal_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
                     if (data.foto_trasera_vehiculo) html += `<div class="foto-item"><img src="${data.foto_trasera_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Trasera</div></div>`;
                     if (data.foto_lado_der_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_der_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Der.</div></div>`;
@@ -452,7 +452,8 @@ window.initConsultaPersonas = function() {
         }
     }
 
-window.cargarIncidencias = async function(cedula, tipo, pagina = 1) {
+    // ✅ FUNCIÓN CARGAR INCIDENCIAS (CORREGIDA - Ahora es global con window.)
+    window.cargarIncidencias = async function(cedula, tipo, pagina = 1) {
         if (!incidenciasSection) return;
         
         cedulaActualIncidencias = cedula;
@@ -486,23 +487,30 @@ window.cargarIncidencias = async function(cedula, tipo, pagina = 1) {
             // ✅ Verificar si es administrador
             const esAdministrador = sessionStorage.getItem('pnb_user_nivel') === 'administrador';
 
-            incidencias.forEach(inc => {
-                // ✅ Botón de eliminar SOLO si es administrador
-                const btnEliminarHtml = esAdministrador 
-                    ? `<button class="btn-eliminar-incidencia" onclick="window.eliminarIncidencia('${inc.id}', '${cedula}', '${tipo}', ${pagina})">🗑️ Eliminar</button>` 
-                    : '';
+            // ✅ INICIALIZAR LA VARIABLE HTML
+            let html = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3>';
+            
+            if (!incidencias || incidencias.length === 0) {
+                html += '<div class="sin-incidencias">No hay incidencias registradas</div>';
+            } else {
+                incidencias.forEach(inc => {
+                    // ✅ Botón de eliminar SOLO si es administrador
+                    const btnEliminarHtml = esAdministrador 
+                        ? `<button class="btn-eliminar-incidencia" onclick="window.eliminarIncidencia('${inc.id}', '${cedula}', '${tipo}', ${pagina})">🗑️ Eliminar</button>` 
+                        : '';
 
-                html += `<div class="incidencia-item">
-                    <div class="incidencia-item-header">
-                        <div>
-                            <span class="incidencia-fecha">🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
-                            <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
+                    html += `<div class="incidencia-item">
+                        <div class="incidencia-item-header">
+                            <div>
+                                <span class="incidencia-fecha">🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+                                <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
+                            </div>
+                            ${btnEliminarHtml}
                         </div>
-                        ${btnEliminarHtml}
-                    </div>
-                    <div class="incidencia-descripcion">${inc.descripcion}</div>
-                </div>`;
-            });
+                        <div class="incidencia-descripcion">${inc.descripcion}</div>
+                    </div>`;
+                });
+                
                 if (totalPaginas > 1) {
                     html += `<div class="paginacion-incidencias" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--beige-border);">`;
             
@@ -528,7 +536,7 @@ window.cargarIncidencias = async function(cedula, tipo, pagina = 1) {
 
     window.cambiarPaginaIncidencias = function(nuevaPagina) {
         if (cedulaActualIncidencias && tipoActualIncidencias) {
-            cargarIncidencias(cedulaActualIncidencias, tipoActualIncidencias, nuevaPagina);
+            window.cargarIncidencias(cedulaActualIncidencias, tipoActualIncidencias, nuevaPagina);
         }
     };
 
@@ -555,15 +563,16 @@ window.cargarIncidencias = async function(cedula, tipo, pagina = 1) {
 
             modalIncidencia.classList.remove('active');
             mostrarMensaje('✅ Incidencia registrada', 'success');
-            await cargarIncidencias(personaActual.cedula, tipoRegistroActual, 1); 
+            await window.cargarIncidencias(personaActual.cedula, tipoRegistroActual, 1); 
         } catch (err) {
             console.error('Error guardando incidencia:', err);
             alert('❌ Error: ' + err.message);
         } finally {
-            btnGuardar.disabled = false; btnGuardar.textContent = ' Guardar Incidencia';
+            btnGuardar.disabled = false; btnGuardar.textContent = '💾 Guardar Incidencia';
         }
     }
-      // ✅ FUNCIÓN PARA ELIMINAR INCIDENCIA CON RESPALDO (Solo Admin)
+
+    // ✅ FUNCIÓN PARA ELIMINAR INCIDENCIA CON RESPALDO (Solo Admin)
     window.eliminarIncidencia = async (incidenciaId, cedula, tipo, paginaActual) => {
         if (!confirm('⚠️ ¿Está SEGURO de eliminar esta incidencia?\n\nSe guardará un respaldo permanente en el sistema con su usuario y fecha.')) {
             return;
@@ -582,7 +591,7 @@ window.cargarIncidencias = async function(cedula, tipo, pagina = 1) {
 
             if (fetchError) throw fetchError;
 
-            // 2. ✅ CORRECCIÓN: Excluir 'id' Y 'created_at' para que no den conflicto con la tabla backup
+            // 2. ✅ Excluir 'id' Y 'created_at' para que no den conflicto con la tabla backup
             const { id, created_at, ...datosParaBackup } = incData;
             
             datosParaBackup.incidencia_id_original = incidenciaId;
@@ -607,7 +616,7 @@ window.cargarIncidencias = async function(cedula, tipo, pagina = 1) {
             mostrarMensaje('✅ Incidencia eliminada y respaldada correctamente', 'success');
             
             // 4. Recargar la lista de incidencias en la página actual
-            await cargarIncidencias(cedula, tipo, paginaActual);
+            await window.cargarIncidencias(cedula, tipo, paginaActual);
 
             // 5. Registrar en logs del sistema (auditoría)
             if (typeof registrarLog === 'function') {
@@ -619,8 +628,7 @@ window.cargarIncidencias = async function(cedula, tipo, pagina = 1) {
             mostrarMensaje('❌ Error al eliminar: ' + err.message, 'error');
         }
     };
-}; // <--- ESTE ES EL CIERRE ORIGINAL DE initConsultaPersonas, NO LO BORRES
-
+}; // <--- CIERRE DE initConsultaPersonas
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.initConsultaPersonas);
@@ -628,6 +636,7 @@ if (document.readyState === 'loading') {
     window.initConsultaPersonas();
 }
 
+// ✅ Función reutilizable para registrar logs
 async function registrarLog(accion, modulo, registroId = null, detalles = {}) {
     try {
         const { data: { user } } = await window.supabaseClient.auth.getUser();
