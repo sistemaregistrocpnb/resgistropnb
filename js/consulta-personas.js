@@ -1,4 +1,6 @@
 window.initConsultaPersonas = function() {
+    console.log("⚙️ Iniciando módulo consulta-personas.js...");
+    
     const el = (id) => document.getElementById(id);
     const buscarInput = el('cp_buscar_cedula');
     const btnBuscar = el('cp_btn_buscar');
@@ -89,7 +91,7 @@ window.initConsultaPersonas = function() {
                     } catch (e) { /* Silencioso */ }
                 }
                 await renderFichaBreve(persona, 'persona');
-                await cargarIncidencias(cedula, 'persona', 1);
+                await window.cargarIncidencias(cedula, 'persona', 1);
                 mostrarMensaje('✅ Persona encontrada', 'success');
                 return;
             }
@@ -111,7 +113,7 @@ window.initConsultaPersonas = function() {
                     } catch (e) { /* Silencioso */ }
                 }
                 await renderFichaBreve(vinculado, 'vinculado');
-                await cargarIncidencias(cedula, 'vinculado', 1);
+                await window.cargarIncidencias(cedula, 'vinculado', 1);
                 mostrarMensaje('✅ Vehículo vinculado encontrado', 'success');
                 return;
             }
@@ -201,7 +203,6 @@ window.initConsultaPersonas = function() {
     async function mostrarDetallesCompletos(data, tipo) {
         if (!modalBody || !modalTitulo) return;
         modalTitulo.textContent = `📋 Detalles - ${tipo === 'persona' ? 'Persona' : 'Vehículo Vinculado'}`;
-        
         modalBody.innerHTML = '<div class="loading">⏳ Generando número de reporte oficial...</div>';
         modalDetalles.classList.add('active');
 
@@ -452,8 +453,8 @@ window.initConsultaPersonas = function() {
         }
     }
 
-    // ✅ FUNCIÓN CARGAR INCIDENCIAS (CON BOTÓN DE ELIMINAR PARA ADMIN)
-    async function cargarIncidencias(cedula, tipo, pagina = 1) {
+    // ✅ FUNCIÓN GLOBAL PARA CARGAR INCIDENCIAS (CON BOTÓN DE ELIMINAR PARA ADMIN)
+    window.cargarIncidencias = async function(cedula, tipo, pagina = 1) {
         if (!incidenciasSection) return;
         
         cedulaActualIncidencias = cedula;
@@ -474,6 +475,7 @@ window.initConsultaPersonas = function() {
             
             totalIncidencias = todasIncidencias ? todasIncidencias.length : 0;
             const totalPaginas = Math.ceil(totalIncidencias / incidenciasPorPagina);
+            
             const { data: incidencias, error } = await window.supabaseClient
                 .from('registro_incidencias')
                 .select('*')
@@ -535,7 +537,7 @@ window.initConsultaPersonas = function() {
 
     window.cambiarPaginaIncidencias = function(nuevaPagina) {
         if (cedulaActualIncidencias && tipoActualIncidencias) {
-            cargarIncidencias(cedulaActualIncidencias, tipoActualIncidencias, nuevaPagina);
+            window.cargarIncidencias(cedulaActualIncidencias, tipoActualIncidencias, nuevaPagina);
         }
     };
 
@@ -562,7 +564,7 @@ window.initConsultaPersonas = function() {
 
             modalIncidencia.classList.remove('active');
             mostrarMensaje('✅ Incidencia registrada', 'success');
-            await cargarIncidencias(personaActual.cedula, tipoRegistroActual, 1); 
+            await window.cargarIncidencias(personaActual.cedula, tipoRegistroActual, 1); 
         } catch (err) {
             console.error('Error guardando incidencia:', err);
             alert('❌ Error: ' + err.message);
@@ -571,9 +573,8 @@ window.initConsultaPersonas = function() {
         }
     }
 
-    // ✅ FUNCIÓN PARA ELIMINAR INCIDENCIA CON RESPALDO (Solo Admin)
-    // ✅ AHORA ESTÁ DENTRO DE initConsultaPersonas para tener acceso a cargarIncidencias
-    window.eliminarIncidencia = async (incidenciaId, cedula, tipo, paginaActual) => {
+    // ✅ FUNCIÓN GLOBAL PARA ELIMINAR INCIDENCIA CON RESPALDO (Solo Admin)
+    window.eliminarIncidencia = async function(incidenciaId, cedula, tipo, paginaActual) {
         if (!confirm('⚠️ ¿Está SEGURO de eliminar esta incidencia?\n\nSe guardará un respaldo permanente en el sistema con su usuario y fecha.')) {
             return;
         }
@@ -615,8 +616,8 @@ window.initConsultaPersonas = function() {
 
             mostrarMensaje('✅ Incidencia eliminada y respaldada correctamente', 'success');
             
-            // 4. ✅ Recargar la lista de incidencias en la página actual (AHORA SÍ FUNCIONA)
-            await cargarIncidencias(cedula, tipo, paginaActual);
+            // 4. ✅ Recargar la lista INMEDIATAMENTE (esto hace que desaparezca en tiempo real)
+            await window.cargarIncidencias(cedula, tipo, paginaActual);
 
             // 5. Registrar en logs del sistema (auditoría)
             if (typeof registrarLog === 'function') {
@@ -628,7 +629,9 @@ window.initConsultaPersonas = function() {
             mostrarMensaje('❌ Error al eliminar: ' + err.message, 'error');
         }
     };
-}; // <--- CIERRE DE initConsultaPersonas
+
+    console.log("✅ Módulo consulta-personas.js inicializado");
+};
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.initConsultaPersonas);
@@ -649,6 +652,6 @@ async function registrarLog(accion, modulo, registroId = null, detalles = {}) {
             accion: accion, modulo: modulo, registro_id: registroId, detalles: detalles, user_agent: navigator.userAgent
         }]);
     } catch (err) {
-        console.warn('️ Error registrando log:', err);
+        console.warn('⚠️ Error registrando log:', err);
     }
 }
