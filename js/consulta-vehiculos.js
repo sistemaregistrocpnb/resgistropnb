@@ -53,46 +53,69 @@ window.initConsultaVehiculos = function() {
       if (error || !perfil) return false;
       const nivel = (perfil.nivel || '').toLowerCase().trim();
       return nivel === 'administrador' || nivel === 'moderador';
-    } catch (err) { return false; }
+    } catch (err) {
+      console.error("Error verificando permisos:", err);
+      return false;
+    }
   }
 
   async function buscarVehiculo() {
     const tipoBusqueda = tipoBusquedaSelect?.value || 'placa';
     const valor = buscarInput?.value.trim().toUpperCase() || '';
     
-    if (!valor) { mostrarMensaje('⚠️ Ingrese un valor para buscar', 'error'); return; }
+    if (!valor) {
+      mostrarMensaje('⚠️ Ingrese un valor para buscar', 'error');
+      return;
+    }
 
     mostrarMensaje('🔍 Buscando...', 'info');
     tipoSelector.style.display = 'none';
     fichaBreve.style.display = 'none';
     incidenciasSection.style.display = 'none';
-    vehiculoActual = null; tipoRegistroActual = null; resultadosMultiples = null; datosProcesado = null;
+    vehiculoActual = null;
+    tipoRegistroActual = null;
+    resultadosMultiples = null;
+    datosProcesado = null;
 
     try {
       const resultados = [];
       
-      const { data: automoviles, error: errAuto } = await window.supabaseClient.from('registro_automoviles').select('*').eq(tipoBusqueda, valor);
+      const { data: automoviles, error: errAuto } = await window.supabaseClient
+        .from('registro_automoviles').select('*').eq(tipoBusqueda, valor);
       if (errAuto) throw errAuto;
-      if (automoviles?.length) automoviles.forEach(v => resultados.push({ ...v, tipo_registro: 'automovil' }));
+      if (automoviles && automoviles.length > 0) {
+        automoviles.forEach(v => resultados.push({ ...v, tipo_registro: 'automovil' }));
+      }
 
-      const { data: motos, error: errMoto } = await window.supabaseClient.from('registro_motos').select('*').eq(tipoBusqueda, valor);
+      const { data: motos, error: errMoto } = await window.supabaseClient
+        .from('registro_motos').select('*').eq(tipoBusqueda, valor);
       if (errMoto) throw errMoto;
-      if (motos?.length) motos.forEach(v => resultados.push({ ...v, tipo_registro: 'moto' }));
+      if (motos && motos.length > 0) {
+        motos.forEach(v => resultados.push({ ...v, tipo_registro: 'moto' }));
+      }
 
-      const { data: vinculados, error: errVinc } = await window.supabaseClient.from('registro_vinculado').select('*').eq(tipoBusqueda, valor);
+      const { data: vinculados, error: errVinc } = await window.supabaseClient
+        .from('registro_vinculado').select('*').eq(tipoBusqueda, valor);
       if (errVinc) throw errVinc;
-      if (vinculados?.length) {
-        vinculados.forEach(v => {
+      if (vinculados && vinculados.length > 0) {
+        for (const v of vinculados) {
           resultados.push({ ...v, tipo_registro: 'vinculado' });
           const estatus = (v.estatus || '').toLowerCase();
           if (estatus.includes('procesad') && v.cedula) {
-            window.supabaseClient.from('registro_procesados').select('tipo_delito').eq('cedula', v.cedula).order('created_at', { ascending: false }).limit(1).maybeSingle()
-              .then(res => { if (res.data) datosProcesado = res.data; }).catch(() => {});
+            try {
+              const { data: procData } = await window.supabaseClient
+                .from('registro_procesados').select('tipo_delito').eq('cedula', v.cedula)
+                .order('created_at', { ascending: false }).limit(1).maybeSingle();
+              if (procData) datosProcesado = procData;
+            } catch (e) { /* Silencioso */ }
           }
-        });
+        }
       }
 
-      if (!resultados.length) { mostrarMensaje('❌ No se encontró ningún vehículo con ese valor', 'error'); return; }
+      if (resultados.length === 0) {
+        mostrarMensaje('❌ No se encontró ningún vehículo con ese valor', 'error');
+        return;
+      }
 
       const tiposUnicos = [...new Set(resultados.map(r => r.tipo_registro))];
       if (tiposUnicos.length > 1) {
@@ -106,34 +129,43 @@ window.initConsultaVehiculos = function() {
         await cargarIncidencias(vehiculoActual.placa || vehiculoActual.serial_carroceria || vehiculoActual.serial_motor, tipoRegistroActual);
         mostrarMensaje('✅ Vehículo encontrado', 'success');
       }
-    } catch (err) { mostrarMensaje('❌ Error: ' + err.message, 'error'); }
+    } catch (err) {
+      mostrarMensaje('❌ Error: ' + err.message, 'error');
+    }
   }
 
   function mostrarSelectorTipos(resultados) {
     if (!tipoSelector) return;
     const agrupados = {};
-    resultados.forEach(r => { if (!agrupados[r.tipo_registro]) agrupados[r.tipo_registro] = []; agrupados[r.tipo_registro].push(r); });
+    resultados.forEach(r => {
+      if (!agrupados[r.tipo_registro]) agrupados[r.tipo_registro] = [];
+      agrupados[r.tipo_registro].push(r);
+    });
     
     const iconos = { automovil: '🚗', moto: '🏍️', vinculado: '🔗' };
     const titulos = { automovil: 'Automóvil', moto: 'Motocicleta', vinculado: 'Vinculado (Persona + Vehículo)' };
     
-    let html = `<div class="tipo-selector"><h3>⚠️ Registros en múltiples tipos. Seleccione:</h3><div class="tipo-options">`;
+    let html = `<div class="tipo-selector"><h3>⚠️ Se encontraron registros en múltiples tipos. Seleccione cuál desea ver:</h3><div class="tipo-options">`;
     Object.keys(agrupados).forEach(tipo => {
+      const count = agrupados[tipo].length;
       html += `<div class="tipo-option" onclick="window.seleccionarTipoVehiculo('${tipo}')">
         <div class="tipo-option-icon">${iconos[tipo]}</div>
         <div class="tipo-option-title">${titulos[tipo]}</div>
-        <div class="tipo-option-detail">${agrupados[tipo].length} registro(s)</div>
+        <div class="tipo-option-detail">${count} registro(s) encontrado(s)</div>
       </div>`;
     });
     html += `</div></div>`;
-    tipoSelector.innerHTML = html; tipoSelector.style.display = 'block';
+    
+    tipoSelector.innerHTML = html;
+    tipoSelector.style.display = 'block';
   }
 
   window.seleccionarTipoVehiculo = async function(tipo) {
     if (!resultadosMultiples) return;
     const seleccionados = resultadosMultiples.filter(r => r.tipo_registro === tipo);
-    if (seleccionados.length) {
-      vehiculoActual = seleccionados[0]; tipoRegistroActual = tipo;
+    if (seleccionados.length >= 1) {
+      vehiculoActual = seleccionados[0];
+      tipoRegistroActual = tipo;
       tipoSelector.style.display = 'none';
       await renderFichaBreve(vehiculoActual, tipoRegistroActual);
       await cargarIncidencias(vehiculoActual.placa || vehiculoActual.serial_carroceria || vehiculoActual.serial_motor, tipoRegistroActual);
@@ -143,9 +175,12 @@ window.initConsultaVehiculos = function() {
 
   async function renderFichaBreve(data, tipo) {
     if (!fichaBreve) return;
+    
     const estatus = data.estatus || 'N/A';
     const estatusLower = (estatus || '').toLowerCase();
-    const estatusClass = estatusLower.includes('verificaci') ? 'estatus-verificacion' : estatusLower.includes('procesad') ? 'estatus-procesado' : 'estatus-liberado';
+    const estatusClass = estatusLower.includes('verificaci') ? 'estatus-verificacion' :
+                         estatusLower.includes('procesad') ? 'estatus-procesado' : 'estatus-liberado';
+                         
     const tipoIconos = { automovil: '🚗', moto: '🏍️', vinculado: '🔗' };
     const tipoTitulos = { automovil: 'Automóvil', moto: 'Motocicleta', vinculado: 'Vehículo Vinculado' };
     
@@ -153,6 +188,7 @@ window.initConsultaVehiculos = function() {
     if (estatusLower.includes('procesad') && datosProcesado?.tipo_delito) {
       alertasHtml += `<div class="ficha-alert ficha-alert-delito">⚖️ <strong>Procesado por:</strong> ${datosProcesado.tipo_delito}</div>`;
     }
+    
     const problemaJudicial = data.problema_judicial || '';
     if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLowerCase() !== 'no') {
       alertasHtml += `<div class="ficha-alert ficha-alert-judicial">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
@@ -182,17 +218,21 @@ window.initConsultaVehiculos = function() {
         `;
       }
     }
+    
     htmlCampos += `<div class="ficha-breve-item"><div class="ficha-breve-label">Estación</div><div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div></div>`;
+    
     const observaciones = data.observaciones || '';
-    if (observaciones) htmlCampos += `<div class="ficha-breve-item full-width"><div class="ficha-breve-label">📝 Observaciones</div><div class="ficha-breve-value">${observaciones}</div></div>`;
+    if (observaciones) {
+      htmlCampos += `<div class="ficha-breve-item full-width"><div class="ficha-breve-label">📝 Observaciones</div><div class="ficha-breve-value">${observaciones}</div></div>`;
+    }
 
-    const tienePermisos = await tienePermisosIncidencia();
-    const btnIncidenciaHtml = tienePermisos ? `<button type="button" class="btn-nueva-incidencia" id="cv_btn_nueva_incidencia">➕ Nueva Incidencia</button>` : '';
+    // ✅ MEJORA CLAVE: El botón SIEMPRE se dibuja. La validación de permisos se hace al hacer clic.
+    const btnIncidenciaHtml = `<button type="button" class="btn-nueva-incidencia" id="cv_btn_nueva_incidencia_ficha">➕ Nueva Incidencia</button>`;
 
-    const html = `
+    let html = `
       <div class="ficha-breve">
         <div class="ficha-breve-header">
-          <h3>${tipoIconos[tipo]} ${data.placa||'N/A'} - ${tipo === 'vinculado' ? (data.marca_vehiculo||'') : (data.marca||'')} ${tipo === 'vinculado' ? (data.modelo_vehiculo||'') : (data.modelo||'')}</h3>
+          <h3>${tipoIconos[tipo]} ${data.placa || 'N/A'} - ${tipo === 'vinculado' ? (data.marca_vehiculo || '') : (data.marca || '')} ${tipo === 'vinculado' ? (data.modelo_vehiculo || '') : (data.modelo || '')}</h3>
           <span class="estatus-badge ${estatusClass}">${estatus}</span>
         </div>
         ${alertasHtml}
@@ -204,24 +244,41 @@ window.initConsultaVehiculos = function() {
       </div>
     `;
     
-    // ✅ INYECCIÓN DIRECTA (Síncrona, no hace falta setTimeout)
     fichaBreve.innerHTML = html;
     fichaBreve.style.display = 'block';
 
-    // ✅ ASIGNACIÓN SEGURA DE EVENTOS (Scoped a fichaBreve, sin acumulación)
-    const btnDetalles = fichaBreve.querySelector('#cv_btn_ver_detalles');
-    if (btnDetalles) btnDetalles.onclick = () => mostrarDetallesCompletos(data, tipo);
+    // ✅ ASIGNACIÓN DE EVENTOS BLINDADA: Solo busca dentro de 'fichaBreve'
+    setTimeout(() => {
+      // 1. Evento Ver Detalles
+      const btnDetalles = fichaBreve.querySelector('#cv_btn_ver_detalles');
+      if (btnDetalles) {
+        const cleanBtnDetalles = btnDetalles.cloneNode(true);
+        btnDetalles.parentNode.replaceChild(cleanBtnDetalles, btnDetalles);
+        cleanBtnDetalles.addEventListener('click', () => mostrarDetallesCompletos(data, tipo));
+      }
 
-    const btnIncidencia = fichaBreve.querySelector('#cv_btn_nueva_incidencia');
-    if (btnIncidencia) {
-      btnIncidencia.onclick = () => {
-        if (modalIncidencia) {
-          modalIncidencia.classList.add('active');
-          const textarea = document.getElementById('cv_incidencia_descripcion');
-          if (textarea) { textarea.value = ''; textarea.focus(); }
-        }
-      };
-    }
+      // 2. Evento Nueva Incidencia (Valida permisos al hacer clic)
+      const btnIncidencia = fichaBreve.querySelector('#cv_btn_nueva_incidencia_ficha');
+      if (btnIncidencia) {
+        const cleanBtnIncidencia = btnIncidencia.cloneNode(true);
+        btnIncidencia.parentNode.replaceChild(cleanBtnIncidencia, btnIncidencia);
+        cleanBtnIncidencia.addEventListener('click', async () => {
+          const tienePermiso = await tienePermisosIncidencia();
+          if (!tienePermiso) {
+            mostrarMensaje('⚠️ Solo usuarios con nivel Administrador o Moderador pueden agregar incidencias.', 'error');
+            return;
+          }
+          if (modalIncidencia) {
+            modalIncidencia.classList.add('active');
+            const textarea = document.getElementById('cv_incidencia_descripcion');
+            if (textarea) {
+              textarea.value = '';
+              textarea.focus();
+            }
+          }
+        });
+      }
+    }, 50);
   }
 
   async function mostrarDetallesCompletos(data, tipo) {
@@ -240,15 +297,20 @@ window.initConsultaVehiculos = function() {
       
       const [nuevoReporte, datosProcesadosCompletos] = await Promise.all([
         window.supabaseClient.from('reportes_generados').insert([{
-          fecha_texto: fechaStr, cedula_consultada: identificador, tipo_registro: tipo,
-          user_id: user.id, user_email: user.email
+          fecha_texto: fechaStr,
+          cedula_consultada: identificador,
+          tipo_registro: tipo,
+          user_id: user.id,
+          user_email: user.email
         }]).select('consecutivo_global').single(),
+        
         (data.estatus || '').toLowerCase().includes('procesad')
           ? window.supabaseClient.from('registro_procesados').select('*').eq('cedula', data.cedula || identificador).order('created_at', { ascending: false }).limit(1).maybeSingle()
           : Promise.resolve({ data: null })
       ]);
       
       if (nuevoReporte.error) throw nuevoReporte.error;
+      
       const consecutivoFormateado = String(nuevoReporte.data.consecutivo_global).padStart(8, '0');
       const numeroReporte = `REPORTE-CPNB-${fechaStr}-N° ${consecutivoFormateado}`;
       const datosProcesados = datosProcesadosCompletos.data;
@@ -259,65 +321,83 @@ window.initConsultaVehiculos = function() {
         </div>
         <h2 style="color: var(--primary); margin: 0; font-family: 'Playfair Display', serif; font-size: 1.5rem;">CUERPO DE POLICÍA NACIONAL BOLIVARIANA</h2>
         <h3 style="color: var(--secondary); margin: 5px 0; font-size: 1rem;">CENTRO DE COORDINACIÓN POLICIAL ESTADAL (CCPE) ZULIA</h3>
-        <p style="font-size: 0.95rem; color: #334155; margin-top: 15px; font-weight: 600;">N° de Reporte: <span style="color: var(--primary); font-size: 1.1rem;">${numeroReporte}</span></p>
-        <p style="font-size: 0.85rem; color: #64748b; margin: 5px 0;"><strong>Fecha:</strong> ${fechaHoy.toLocaleString('es-VE')} | <strong>Generado por:</strong> ${user.email}</p>
+        <p style="font-size: 0.95rem; color: #334155; margin-top: 15px; font-weight: 600;">
+          N° de Reporte: <span style="color: var(--primary); font-size: 1.1rem;">${numeroReporte}</span>
+        </p>
+        <p style="font-size: 0.85rem; color: #64748b; margin: 5px 0;"><strong>Fecha de Consulta:</strong> ${fechaHoy.toLocaleString('es-VE')}</p>
+        <p style="font-size: 0.85rem; color: #64748b; margin: 5px 0;"><strong>Generado por:</strong> ${user.email}</p>
       </div>`;
       
-      if (datosProcesados?.tipo_delito) html += `<div class="ficha-alert ficha-alert-delito" style="margin: 15px 0; padding: 12px; background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; border-radius: 6px;">⚖️ <strong>Procesado por:</strong> ${datosProcesados.tipo_delito}</div>`;
+      if (datosProcesados?.tipo_delito) {
+        html += `<div class="ficha-alert ficha-alert-delito" style="page-break-inside: avoid; margin: 15px 0; padding: 12px; background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; border-radius: 6px;">⚖️ <strong>Procesado por:</strong> ${datosProcesados.tipo_delito}</div>`;
+      }
+      
       const problemaJudicial = data.problema_judicial || '';
       if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLowerCase() !== 'no') {
-        html += `<div class="ficha-alert ficha-alert-judicial" style="margin: 15px 0; padding: 12px; background: #fef3c7; border: 1px solid #fbbf24; color: #92400e; border-radius: 6px;">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
+        html += `<div class="ficha-alert ficha-alert-judicial" style="page-break-inside: avoid; margin: 15px 0; padding: 12px; background: #fef3c7; border: 1px solid #fbbf24; color: #92400e; border-radius: 6px;">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
       }
 
-      // ... [Aquí mantén el bloque de fotos/campos de tu código original] ...
-      // Para no alargar, el HTML de campos se genera igual que antes.
+      // ... [Aquí va el resto de tu código de generación de HTML de fotos y datos, idéntico al original para no romper el reporte] ...
+      // (Por brevedad, asumo que mantienes el bloque de generación de fotos y campos de tu código original hasta el cierre de la función)
       
       html += `<div class="seccion-titulo" style="margin-top: 30px;">📜 Historial de Incidencias</div>`;
       try {
         const { data: incidencias } = await window.supabaseClient.from('registro_incidencias').select('*').eq('cedula', identificador).eq('tipo_registro', tipo).order('fecha_hora', { ascending: false });
-        if (incidencias?.length) {
+        if (incidencias && incidencias.length > 0) {
           html += `<div class="incidencias-print-container">`;
           incidencias.forEach(inc => {
-            html += `<div class="incidencia-item-print" style="border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 10px; border-left: 4px solid var(--secondary); border-radius: 4px;">
+            html += `<div class="incidencia-item-print" style="border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 10px; border-left: 4px solid var(--secondary); border-radius: 4px; page-break-inside: avoid;">
               <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">
-                <span>🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span><span>Por: ${inc.email_registrante || 'N/A'}</span>
+                <span>🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+                <span>Por: ${inc.email_registrante || 'N/A'}</span>
               </div>
               <div style="font-size: 0.9rem; color: #1e293b; line-height: 1.5;">${inc.descripcion}</div>
             </div>`;
           });
           html += `</div>`;
         } else {
-          html += `<div style="text-align: center; padding: 20px; color: #94a3b8; font-style: italic; border: 1px dashed #cbd5e1; border-radius: 5px;">Sin incidencias registradas.</div>`;
+          html += `<div style="text-align: center; padding: 20px; color: #94a3b8; font-style: italic; border: 1px dashed #cbd5e1; border-radius: 5px;">No hay incidencias registradas para este expediente.</div>`;
         }
       } catch (err) { /* Silencioso */ }
       
       html += `<div class="reporte-footer-print" style="margin-top: 40px; text-align: center; font-size: 0.75rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px;">
-        <p>Documento generado electrónicamente. Uso exclusivo del CPNB.</p>
+        <p>Documento generado electrónicamente por el Sistema de Verificación y Registro Policial.</p>
+        <p>Este reporte es de carácter informativo y confidencial. Uso exclusivo del CPNB.</p>
       </div>`;
+      
       modalBody.innerHTML = html;
     } catch (err) {
-      modalBody.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);"><h3>❌ Error al generar reporte</h3><p>${err.message}</p></div>`;
+      modalBody.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">
+        <h3>❌ Error al generar el reporte</h3>
+        <p>${err.message}</p>
+      </div>`;
     }
   }
 
   async function cargarIncidencias(identificador, tipo) {
     if (!incidenciasSection) return;
     try {
-      const { data: incidencias, error } = await window.supabaseClient.from('registro_incidencias').select('*').eq('cedula', identificador).eq('tipo_registro', tipo).order('fecha_hora', { ascending: false });
+      const { data: incidencias, error } = await window.supabaseClient
+        .from('registro_incidencias').select('*').eq('cedula', identificador).eq('tipo_registro', tipo).order('fecha_hora', { ascending: false });
       if (error) throw error;
+      
       let html = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3>';
-      if (!incidencias?.length) {
+      if (!incidencias || incidencias.length === 0) {
         html += '<div class="sin-incidencias">No hay incidencias registradas</div>';
       } else {
         incidencias.forEach(inc => {
-          html += `<div class="incidencia-item"><div class="incidencia-item-header">
-            <span class="incidencia-fecha">📅 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
-            <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
-          </div><div class="incidencia-descripcion">${inc.descripcion}</div></div>`;
+          html += `<div class="incidencia-item">
+            <div class="incidencia-item-header">
+              <span class="incidencia-fecha">📅 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+              <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
+            </div>
+            <div class="incidencia-descripcion">${inc.descripcion}</div>
+          </div>`;
         });
       }
       html += '</div>';
-      incidenciasSection.innerHTML = html; incidenciasSection.style.display = 'block';
+      incidenciasSection.innerHTML = html;
+      incidenciasSection.style.display = 'block';
     } catch (err) {
       incidenciasSection.innerHTML = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
       incidenciasSection.style.display = 'block';
@@ -325,32 +405,56 @@ window.initConsultaVehiculos = function() {
   }
 
   async function guardarIncidencia() {
-    const textarea = el('cv_incidencia_descripcion');
-    const descripcion = textarea?.value.trim();
-    if (!descripcion) { mostrarMensaje('⚠️ Ingrese una descripción', 'error'); return; }
-    if (!vehiculoActual) { mostrarMensaje('❌ No hay vehículo seleccionado', 'error'); return; }
+    const descripcion = el('cv_incidencia_descripcion')?.value.trim();
+    if (!descripcion) { 
+      mostrarMensaje('⚠️ Ingrese una descripción', 'error'); 
+      return; 
+    }
+    
+    // ✅ Verificación de seguridad al guardar
+    const tienePermiso = await tienePermisosIncidencia();
+    if (!tienePermiso) {
+      mostrarMensaje('⚠️ No tienes permisos para realizar esta acción', 'error');
+      return;
+    }
 
     const btnGuardar = el('cv_btn_guardar_incidencia');
-    if (btnGuardar) { btnGuardar.disabled = true; btnGuardar.textContent = '⏳ Guardando...'; }
+    if (btnGuardar) {
+      btnGuardar.disabled = true; 
+      btnGuardar.textContent = '⏳ Guardando...';
+    }
 
     try {
       const { data: { user } } = await window.supabaseClient.auth.getUser();
       if (!user) throw new Error('Debe iniciar sesión');
       
       const identificador = vehiculoActual.placa || vehiculoActual.serial_carroceria || vehiculoActual.serial_motor;
-      const { error } = await window.supabaseClient.from('registro_incidencias').insert([{
-        cedula: identificador, tipo_registro: tipoRegistroActual, descripcion,
-        fecha_hora: new Date().toISOString(), registrada_por: user.id, email_registrante: user.email
-      }]);
+      
+      const incidencia = {
+        cedula: identificador,
+        tipo_registro: tipoRegistroActual,
+        descripcion: descripcion,
+        fecha_hora: new Date().toISOString(),
+        registrada_por: user.id,
+        email_registrante: user.email
+      };
+      
+      const { error } = await window.supabaseClient.from('registro_incidencias').insert([incidencia]);
       if (error) throw error;
       
-      modalIncidencia?.classList.remove('active');
-      textarea.value = '';
+      if (modalIncidencia) modalIncidencia.classList.remove('active');
       mostrarMensaje('✅ Incidencia registrada', 'success');
+      
       await cargarIncidencias(identificador, tipoRegistroActual);
-    } catch (err) { mostrarMensaje('❌ Error: ' + err.message, 'error'); } 
-    finally {
-      if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.textContent = '💾 Guardar Incidencia'; }
+      
+    } catch (err) {
+      mostrarMensaje('❌ Error: ' + err.message, 'error');
+    } finally {
+      const btnGuardarFinal = el('cv_btn_guardar_incidencia');
+      if (btnGuardarFinal) {
+        btnGuardarFinal.disabled = false; 
+        btnGuardarFinal.textContent = '💾 Guardar Incidencia';
+      }
     }
   }
 };
