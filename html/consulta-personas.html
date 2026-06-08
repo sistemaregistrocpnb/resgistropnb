@@ -108,6 +108,7 @@
     .ficha-breve-actions { flex-direction: column; }
     .ficha-breve-actions button { width: 100%; }
 }
+/* Botón de eliminar incidencia (Solo Admin) */
 .btn-eliminar-incidencia {
     padding: 6px 12px;
     background: var(--danger);
@@ -122,7 +123,6 @@
     align-items: center;
     gap: 5px;
 }
-
 .btn-eliminar-incidencia:hover {
     background: #b91c1c;
     transform: translateY(-1px);
@@ -180,6 +180,31 @@
         <div class="modal-actions">
             <button type="button" class="btn-submit" id="cp_btn_guardar_incidencia">💾 Guardar Incidencia</button>
             <button type="button" class="btn-cancel" id="cp_btn_cancelar_incidencia">Cancelar</button>
+        </div>
+    </div>
+</div>
+<!-- Modal de Confirmación de Eliminación -->
+<div class="modal-overlay" id="cp_modal_confirmar_eliminacion">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header" style="background: var(--danger);">
+            <h3>⚠️ Confirmar Eliminación</h3>
+            <button class="modal-close" id="cp_modal_elim_close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin-bottom: 15px; font-weight: 600; color: var(--text);">¿Está seguro de que desea eliminar esta incidencia?</p>
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid var(--danger); margin-bottom: 15px;">
+                <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 5px;"><strong>Descripción:</strong></p>
+                <p id="cp_elim_descripcion" style="font-size: 0.95rem; color: #1e293b; margin-bottom: 10px; white-space: pre-wrap;"></p>
+                <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 5px;"><strong>Fecha:</strong> <span id="cp_elim_fecha"></span></p>
+                <p style="font-size: 0.85rem; color: #64748b;"><strong>Registrada por:</strong> <span id="cp_elim_autor"></span></p>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--danger); font-weight: 600;">
+                ℹ️ Esta acción guardará un respaldo permanente en el sistema con su usuario y fecha, pero la incidencia desaparecerá del historial visible inmediatamente.
+            </p>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn-cancel" id="cp_btn_cancelar_eliminacion">Cancelar</button>
+            <button type="button" class="btn-submit" id="cp_btn_confirmar_eliminacion" style="background: var(--danger);">🗑️ Sí, Eliminar y Respaldar</button>
         </div>
     </div>
 </div>
