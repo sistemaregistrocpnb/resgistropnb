@@ -108,6 +108,32 @@
     .ficha-breve-actions { flex-direction: column; }
     .ficha-breve-actions button { width: 100%; }
 }
+.btn-eliminar-incidencia {
+    padding: 6px 12px;
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-eliminar-incidencia:hover {
+    background: #b91c1c;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+}
+
+.incidencia-item-header > div:first-child {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
 </style>
 
 <div class="card">
