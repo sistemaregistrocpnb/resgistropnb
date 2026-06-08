@@ -138,6 +138,7 @@ window.initConsultaVehiculos = function() {
         mostrarMensaje('✅ Vehículo encontrado', 'success');
       }
     } catch (err) {
+      console.error('Error buscando:', err);
       mostrarMensaje('❌ Error: ' + err.message, 'error');
     }
   }
@@ -150,7 +151,7 @@ window.initConsultaVehiculos = function() {
       agrupados[r.tipo_registro].push(r);
     });
     
-    const iconos = { automovil: '', moto: '🏍️', vinculado: '🔗' };
+    const iconos = { automovil: '🚗', moto: '️', vinculado: '🔗' };
     const titulos = { automovil: 'Automóvil', moto: 'Motocicleta', vinculado: 'Vinculado (Persona + Vehículo)' };
     
     let html = `<div class="tipo-selector"><h3>⚠️ Se encontraron registros en múltiples tipos. Seleccione cuál desea ver:</h3><div class="tipo-options">`;
@@ -189,7 +190,7 @@ window.initConsultaVehiculos = function() {
     const estatusClass = estatusLower.includes('verificaci') ? 'estatus-verificacion' :
                          estatusLower.includes('procesad') ? 'estatus-procesado' : 'estatus-liberado';
                          
-    const tipoIconos = { automovil: '🚗', moto: '️', vinculado: '🔗' };
+    const tipoIconos = { automovil: '🚗', moto: '🏍️', vinculado: '🔗' };
     const tipoTitulos = { automovil: 'Automóvil', moto: 'Motocicleta', vinculado: 'Vehículo Vinculado' };
     
     let alertasHtml = '';
@@ -199,7 +200,7 @@ window.initConsultaVehiculos = function() {
     
     const problemaJudicial = data.problema_judicial || '';
     if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLowerCase() !== 'no') {
-      alertasHtml += `<div class="ficha-alert ficha-alert-judicial">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
+      alertasHtml += `<div class="ficha-alert ficha-alert-judicial">️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
     }
 
     let htmlCampos = `
@@ -231,12 +232,12 @@ window.initConsultaVehiculos = function() {
     
     const observaciones = data.observaciones || '';
     if (observaciones) {
-      htmlCampos += `<div class="ficha-breve-item full-width"><div class="ficha-breve-label">📝 Observaciones</div><div class="ficha-breve-value">${observaciones}</div></div>`;
+      htmlCampos += `<div class="ficha-breve-item full-width"><div class="ficha-breve-label"> Observaciones</div><div class="ficha-breve-value">${observaciones}</div></div>`;
     }
 
     const tienePermisos = await tienePermisosIncidencia();
     const btnIncidenciaHtml = tienePermisos
-      ? `<button type="button" class="btn-nueva-incidencia" id="cv_btn_nueva_incidencia"> Nueva Incidencia</button>`
+      ? `<button type="button" class="btn-nueva-incidencia" id="cv_btn_nueva_incidencia">➕ Nueva Incidencia</button>`
       : '';
 
     let html = `
@@ -272,21 +273,23 @@ window.initConsultaVehiculos = function() {
     }, 100);
   }
 
+  // ✅ CORRECCIÓN: Usar las variables del closure en lugar de buscar con getElementById
   async function mostrarDetallesCompletos(data, tipo) {
     console.log("📋 Abriendo detalles completos - Tipo:", tipo);
     
-    const modalBodyLocal = document.getElementById('cv_modal_body');
-    const modalTituloLocal = document.getElementById('cv_modal_titulo');
-    const modalDetallesLocal = document.getElementById('cv_modal_detalles');
-    
-    if (!modalBodyLocal || !modalTituloLocal || !modalDetallesLocal) {
-      console.error("❌ No se encontraron los elementos del modal");
+    // ✅ USAR LAS VARIABLES QUE YA SE OBTUVIERON AL INICIO
+    if (!modalBody || !modalTitulo || !modalDetalles) {
+      console.error("❌ No se encontraron los elementos del modal:", {
+        modalBody: !!modalBody,
+        modalTitulo: !!modalTitulo,
+        modalDetalles: !!modalDetalles
+      });
       return;
     }
     
-    modalTituloLocal.textContent = `📋 Detalles - ${tipo === 'automovil' ? 'Automóvil' : tipo === 'moto' ? 'Motocicleta' : 'Vehículo Vinculado'}`;
-    modalBodyLocal.innerHTML = '<div class="loading">⏳ Generando reporte...</div>';
-    modalDetallesLocal.classList.add('active');
+    modalTitulo.textContent = `📋 Detalles - ${tipo === 'automovil' ? 'Automóvil' : tipo === 'moto' ? 'Motocicleta' : 'Vehículo Vinculado'}`;
+    modalBody.innerHTML = '<div class="loading">⏳ Generando reporte...</div>';
+    modalDetalles.classList.add('active');
     
     try {
       const { data: { user } } = await window.supabaseClient.auth.getUser();
@@ -470,7 +473,7 @@ window.initConsultaVehiculos = function() {
           incidencias.forEach(inc => {
             html += `<div class="incidencia-item-print" style="border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 10px; border-left: 4px solid var(--secondary); border-radius: 4px; page-break-inside: avoid;">
               <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">
-                <span> ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+                <span>🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
                 <span>Por: ${inc.email_registrante || 'N/A'}</span>
               </div>
               <div style="font-size: 0.9rem; color: #1e293b; line-height: 1.5;">${inc.descripcion}</div>
@@ -487,12 +490,12 @@ window.initConsultaVehiculos = function() {
         <p>Este reporte es de carácter informativo y confidencial. Uso exclusivo del CPNB.</p>
       </div>`;
       
-      modalBodyLocal.innerHTML = html;
+      modalBody.innerHTML = html;
       console.log("✅ Detalles completos generados correctamente");
     } catch (err) {
-      console.error('❌ Error generando reporte:', err);
-      modalBodyLocal.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">
-        <h3> Error al generar el reporte</h3>
+      console.error('Error generando reporte:', err);
+      modalBody.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">
+        <h3>❌ Error al generar el reporte</h3>
         <p>${err.message}</p>
       </div>`;
     }
@@ -505,7 +508,7 @@ window.initConsultaVehiculos = function() {
         .from('registro_incidencias').select('*').eq('cedula', identificador).eq('tipo_registro', tipo).order('fecha_hora', { ascending: false });
       if (error) throw error;
       
-      let html = '<div class="incidencias-section"><h3> Historial de Incidencias</h3>';
+      let html = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3>';
       if (!incidencias || incidencias.length === 0) {
         html += '<div class="sin-incidencias">No hay incidencias registradas</div>';
       } else {
@@ -523,7 +526,8 @@ window.initConsultaVehiculos = function() {
       incidenciasSection.innerHTML = html;
       incidenciasSection.style.display = 'block';
     } catch (err) {
-      incidenciasSection.innerHTML = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
+      console.error('Error cargando incidencias:', err);
+      incidenciasSection.innerHTML = '<div class="incidencias-section"><h3> Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
       incidenciasSection.style.display = 'block';
     }
   }
@@ -536,14 +540,14 @@ window.initConsultaVehiculos = function() {
     }
     
     if (!vehiculoActual) {
-      mostrarMensaje('❌ Error: No hay un vehículo seleccionado', 'error');
+      mostrarMensaje(' Error: No hay un vehículo seleccionado', 'error');
       return;
     }
 
     const btnGuardar = el('cv_btn_guardar_incidencia');
     if (btnGuardar) {
       btnGuardar.disabled = true; 
-      btnGuardar.textContent = '⏳ Guardando...';
+      btnGuardar.textContent = ' Guardando...';
     }
 
     try {
@@ -570,6 +574,7 @@ window.initConsultaVehiculos = function() {
       await cargarIncidencias(identificador, tipoRegistroActual);
       
     } catch (err) {
+      console.error('Error guardando incidencia:', err);
       mostrarMensaje('❌ Error: ' + err.message, 'error');
     } finally {
       const btnGuardarFinal = el('cv_btn_guardar_incidencia');
