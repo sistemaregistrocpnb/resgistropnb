@@ -68,52 +68,62 @@ document.addEventListener('DOMContentLoaded', async () => {
     iniciarReloj();
   }
 
+// 🔒 Matriz de permisos estricta
 function aplicarPermisos(rol) {
-    // Mostrar todo por defecto
+    // 1. Resetear visibilidad por defecto (mostrar todo primero)
     document.querySelectorAll('.menu-item').forEach(item => item.style.display = 'block');
     document.querySelectorAll('.submenu-item').forEach(item => item.style.display = 'block');
     document.getElementById('menu-historial')?.style.removeProperty('display');
     document.getElementById('menu-gestion-usuarios')?.style.removeProperty('display');
 
     if (rol === 'consultor') {
-        // Ocultar todo lo que no sea consulta (Personas, Vehículos, etc.)
+        // Solo ve el menú de Consulta
         document.querySelectorAll('.menu-item').forEach(item => {
-            const esConsulta = item.querySelector('[data-toggle="submenu-consulta"]');
-            const esDenuncias = item.querySelector('[data-toggle="submenu-denuncias"]'); // ✅ NUEVO
-            
-            // Si NO es consulta Y NO es denuncias, lo ocultamos
-            if (!esConsulta && !esDenuncias) {
-                item.style.display = 'none';
-            }
-        });
-        
-        // ✅ Permitir solo "Consultar" dentro del submenú de Denuncias
-        document.querySelectorAll('#submenu-denuncias .submenu-item').forEach(item => {
-            if (!item.dataset.src.includes('consulta-')) {
+            if (!item.querySelector('[data-toggle="submenu-consulta"]')) {
                 item.style.display = 'none';
             }
         });
         
     } else if (rol === 'moderador') {
+        // A. Ocultar menús de alto nivel (Historial y Gestión de Usuarios)
         document.getElementById('menu-historial')?.style.setProperty('display', 'none', 'important');
         document.getElementById('menu-gestion-usuarios')?.style.setProperty('display', 'none', 'important');
+        
+        // B. ✅ RESTRICCIÓN ESPECÍFICA: En "Procesar" y "Denuncias", SOLO permitir "Registrar"
+        const menusRestringidos = ['submenu-procesar', 'submenu-denuncias'];
+        menusRestringidos.forEach(menuId => {
+            const submenu = document.getElementById(menuId);
+            if (submenu) {
+                submenu.querySelectorAll('.submenu-item').forEach(item => {
+                    const src = item.dataset.src || '';
+                    // Si el archivo NO contiene 'reg-' (identificador de los módulos de registro), se oculta
+                    if (!src.includes('reg-')) {
+                        item.style.setProperty('display', 'none', 'important');
+                    }
+                });
+            }
+        });
+
+        // C. ✅ RESTRICCIÓN GENERAL: Ocultar modificar y eliminar en otros módulos (Personas, Vehículos, PV)
         document.querySelectorAll('.submenu-item').forEach(item => {
             const src = item.dataset.src || '';
-            if (src.includes('mod-') || src.includes('elim-')) {
+            if (src.includes('mod-') || src.includes('elim-') || src.includes('editar-') || src.includes('eliminar-')) {
                 item.style.setProperty('display', 'none', 'important');
             }
         });
+
     } else if (rol === 'administrador') {
-        // Ve todo
+        // Ve todo (no se aplica ninguna restricción, el reset inicial ya lo mostró todo)
+        
     } else {
+        // Rol desconocido o sin permisos: tratar como consultor por seguridad
         document.querySelectorAll('.menu-item').forEach(item => {
             if (!item.querySelector('[data-toggle="submenu-consulta"]')) {
                 item.style.display = 'none';
             }
         });
     }
-}
-  // 🔹 MOTOR DE CARGA DINÁMICA
+}// 🔹 MOTOR DE CARGA DINÁMICA
   async function cargarModulo(htmlPath, jsPath, initFnName) {
     appContent.innerHTML = '<div class="loading">⏳ Cargando módulo...</div>';
     try {
