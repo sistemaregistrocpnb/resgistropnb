@@ -452,7 +452,7 @@ window.initConsultaPersonas = function() {
         }
     }
 
-    async function cargarIncidencias(cedula, tipo, pagina = 1) {
+window.cargarIncidencias = async function(cedula, tipo, pagina = 1) {
         if (!incidenciasSection) return;
         
         cedulaActualIncidencias = cedula;
@@ -483,32 +483,26 @@ window.initConsultaPersonas = function() {
             
             if (error) throw error;
 
-            // ✅ VERIFICAR SI ES ADMINISTRADOR PARA MOSTRAR EL BOTÓN DE ELIMINAR
+            // ✅ Verificar si es administrador
             const esAdministrador = sessionStorage.getItem('pnb_user_nivel') === 'administrador';
 
-            let html = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3>';
-            
-            if (!incidencias || incidencias.length === 0) {
-                html += '<div class="sin-incidencias">No hay incidencias registradas</div>';
-            } else {
-                incidencias.forEach(inc => {
-                    // ✅ Generar botón de eliminar SOLO si es administrador
-                    const btnEliminarHtml = esAdministrador 
-                        ? `<button class="btn-eliminar-incidencia" onclick="window.eliminarIncidencia('${inc.id}', '${cedula}', '${tipo}', ${pagina})">🗑️ Eliminar</button>` 
-                        : '';
+            incidencias.forEach(inc => {
+                // ✅ Botón de eliminar SOLO si es administrador
+                const btnEliminarHtml = esAdministrador 
+                    ? `<button class="btn-eliminar-incidencia" onclick="window.eliminarIncidencia('${inc.id}', '${cedula}', '${tipo}', ${pagina})">🗑️ Eliminar</button>` 
+                    : '';
 
-                    html += `<div class="incidencia-item">
-                        <div class="incidencia-item-header">
-                            <div>
-                                <span class="incidencia-fecha">🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
-                                <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
-                            </div>
-                            ${btnEliminarHtml}
+                html += `<div class="incidencia-item">
+                    <div class="incidencia-item-header">
+                        <div>
+                            <span class="incidencia-fecha">🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+                            <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
                         </div>
-                        <div class="incidencia-descripcion">${inc.descripcion}</div>
-                    </div>`;
-                });
-    
+                        ${btnEliminarHtml}
+                    </div>
+                    <div class="incidencia-descripcion">${inc.descripcion}</div>
+                </div>`;
+            });
                 if (totalPaginas > 1) {
                     html += `<div class="paginacion-incidencias" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--beige-border);">`;
             
