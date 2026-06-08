@@ -32,6 +32,8 @@ window.initConsultaVehiculos = function() {
     if (el('cv_modal_inc_close')) el('cv_modal_inc_close').onclick = () => modalIncidencia.classList.remove('active');
     if (el('cv_btn_cancelar_incidencia')) el('cv_btn_cancelar_incidencia').onclick = () => modalIncidencia.classList.remove('active');
     if (el('cv_btn_guardar_incidencia')) el('cv_btn_guardar_incidencia').onclick = () => guardarIncidencia();
+    // ✅ AGREGADO listener para el botón de imprimir
+    if (el('cv_btn_imprimir_reporte')) el('cv_btn_imprimir_reporte').onclick = () => window.print();
 
     function mostrarMensaje(texto, tipo) {
         if (!msg) return;
@@ -232,6 +234,7 @@ window.initConsultaVehiculos = function() {
             alertasHtml += `<div class="ficha-alert ficha-alert-judicial">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
         }
 
+        // ✅ CORREGIDO: Usar los campos correctos según el tipo
         let htmlCampos = `
             <div class="ficha-breve-item">
                 <div class="ficha-breve-label">Placa</div>
@@ -241,36 +244,61 @@ window.initConsultaVehiculos = function() {
                 <div class="ficha-breve-label">Tipo</div>
                 <div class="ficha-breve-value">${tipoIconos[tipo]} ${tipoTitulos[tipo]}</div>
             </div>
-            <div class="ficha-breve-item">
-                <div class="ficha-breve-label">Vehículo</div>
-                <div class="ficha-breve-value">${data.tipo_vehiculo || data.marca_vehiculo || 'N/A'} ${data.marca_vehiculo || ''} ${data.modelo_vehiculo || ''}</div>
-            </div>
-            <div class="ficha-breve-item">
-                <div class="ficha-breve-label">Año</div>
-                <div class="ficha-breve-value">${data.anio_vehiculo || 'N/A'}</div>
-            </div>
-            <div class="ficha-breve-item">
-                <div class="ficha-breve-label">Color</div>
-                <div class="ficha-breve-value">${data.color_vehiculo || 'N/A'}</div>
-            </div>
+        `;
+
+        // Campos específicos según el tipo de registro
+        if (tipo === 'automovil' || tipo === 'moto') {
+            htmlCampos += `
+                <div class="ficha-breve-item">
+                    <div class="ficha-breve-label">Vehículo</div>
+                    <div class="ficha-breve-value">${data.marca || 'N/A'} ${data.modelo || ''}</div>
+                </div>
+                <div class="ficha-breve-item">
+                    <div class="ficha-breve-label">Año</div>
+                    <div class="ficha-breve-value">${data.anio || 'N/A'}</div>
+                </div>
+                <div class="ficha-breve-item">
+                    <div class="ficha-breve-label">Color</div>
+                    <div class="ficha-breve-value">${data.color || 'N/A'}</div>
+                </div>
+            `;
+        } else if (tipo === 'vinculado') {
+            htmlCampos += `
+                <div class="ficha-breve-item">
+                    <div class="ficha-breve-label">Vehículo</div>
+                    <div class="ficha-breve-value">${data.marca_vehiculo || 'N/A'} ${data.modelo_vehiculo || ''}</div>
+                </div>
+                <div class="ficha-breve-item">
+                    <div class="ficha-breve-label">Año</div>
+                    <div class="ficha-breve-value">${data.anio_vehiculo || 'N/A'}</div>
+                </div>
+                <div class="ficha-breve-item">
+                    <div class="ficha-breve-label">Color</div>
+                    <div class="ficha-breve-value">${data.color_vehiculo || 'N/A'}</div>
+                </div>
+            `;
+            
+            // Si es vinculado, mostrar datos del conductor
+            if (data.primer_nombre) {
+                htmlCampos += `
+                    <div class="ficha-breve-item">
+                        <div class="ficha-breve-label">Conductor</div>
+                        <div class="ficha-breve-value">${data.primer_nombre || ''} ${data.primer_apellido || ''}</div>
+                    </div>
+                    <div class="ficha-breve-item">
+                        <div class="ficha-breve-label">Cédula</div>
+                        <div class="ficha-breve-value">${data.cedula || 'N/A'}</div>
+                    </div>
+                `;
+            }
+        }
+
+        htmlCampos += `
             <div class="ficha-breve-item">
                 <div class="ficha-breve-label">Estación</div>
                 <div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div>
             </div>
         `;
-
-        if (tipo === 'vinculado' && data.primer_nombre) {
-            htmlCampos += `
-                <div class="ficha-breve-item">
-                    <div class="ficha-breve-label">Conductor</div>
-                    <div class="ficha-breve-value">${data.primer_nombre || ''} ${data.primer_apellido || ''}</div>
-                </div>
-                <div class="ficha-breve-item">
-                    <div class="ficha-breve-label">Cédula</div>
-                    <div class="ficha-breve-value">${data.cedula || 'N/A'}</div>
-                </div>
-            `;
-        }
 
         const observaciones = data.observaciones || '';
         if (observaciones) {
@@ -290,7 +318,7 @@ window.initConsultaVehiculos = function() {
         let html = `
             <div class="ficha-breve">
                 <div class="ficha-breve-header">
-                    <h3>${tipoIconos[tipo]} ${data.placa || 'N/A'} - ${data.marca_vehiculo || ''} ${data.modelo_vehiculo || ''}</h3>
+                    <h3>${tipoIconos[tipo]} ${data.placa || 'N/A'} - ${tipo === 'vinculado' ? (data.marca_vehiculo || '') : (data.marca || '')} ${tipo === 'vinculado' ? (data.modelo_vehiculo || '') : (data.modelo || '')}</h3>
                     <span class="estatus-badge ${estatusClass}">${estatus}</span>
                 </div>
                 ${alertasHtml}
@@ -322,7 +350,7 @@ window.initConsultaVehiculos = function() {
         }, 100);
     }
 
-    // ✅ FUNCIÓN COMPLETA CON ENCABEZADO DE REPORTE Y NÚMERO DE LA TABLA
+    // ✅ FUNCIÓN COMPLETA CON ENCABEZADO DE REPORTE Y TODOS LOS DATOS
     async function mostrarDetallesCompletos(data, tipo) {
         if (!modalBody || !modalTitulo) return;
         modalTitulo.textContent = `📋 Detalles - ${tipo === 'automovil' ? 'Automóvil' : tipo === 'moto' ? 'Motocicleta' : 'Vehículo Vinculado'}`;
@@ -397,45 +425,17 @@ window.initConsultaVehiculos = function() {
             }
 
             // ✅ FOTOS DEL VEHÍCULO
-            if (data.foto_frontal_vehiculo || data.foto_trasera_vehiculo || data.foto_lado_der_vehiculo || data.foto_lado_izq_vehiculo) {
-                html += `<div class="seccion-titulo">📸 Fotografías del Vehículo</div><div class="fotos-container">`;
-                if (data.foto_frontal_vehiculo) html += `<div class="foto-item"><img src="${data.foto_frontal_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
-                if (data.foto_trasera_vehiculo) html += `<div class="foto-item"><img src="${data.foto_trasera_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Trasera</div></div>`;
-                if (data.foto_lado_der_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_der_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Der.</div></div>`;
-                if (data.foto_lado_izq_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_izq_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Izq.</div></div>`;
-                html += `</div>`;
-            }
-
-            // ✅ DATOS DEL VEHÍCULO
-            html += `<div class="seccion-titulo">🚗 Datos del Vehículo</div><div class="ficha-completa-grid">`;
-            const camposVehiculo = [
-                { label: 'Placa', value: data.placa, highlight: true },
-                { label: 'Tipo', value: data.tipo_vehiculo },
-                { label: 'Marca', value: data.marca_vehiculo },
-                { label: 'Modelo', value: data.modelo_vehiculo },
-                { label: 'Año', value: data.anio_vehiculo },
-                { label: 'Color', value: data.color_vehiculo },
-                { label: 'Serial Motor', value: data.serial_motor },
-                { label: 'Serial Carroc.', value: data.serial_carroceria },
-                { label: 'Cilindraje', value: data.cilindraje },
-                { label: 'Marca Corporal', value: data.marca_corporal },
-                { label: 'Estación', value: data.estacion_policial },
-                { label: 'Dir. Detención', value: data.direccion_detencion },
-                { label: 'Estatus', value: data.estatus }
-            ];
-            camposVehiculo.forEach(c => {
-                if (c.value !== null && c.value !== undefined && c.value !== '') {
-                    const style = c.highlight ? 'font-weight:800; color:var(--primary); font-size:1.1rem;' : '';
-                    html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value" style="${style}">${c.value}</div></div>`;
+            if (tipo === 'automovil' || tipo === 'moto') {
+                if (data.foto_frontal || data.foto_trasera || data.foto_lado_derecho || data.foto_lado_izquierdo) {
+                    html += `<div class="seccion-titulo">📸 Fotografías del Vehículo</div><div class="fotos-container">`;
+                    if (data.foto_frontal) html += `<div class="foto-item"><img src="${data.foto_frontal}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
+                    if (data.foto_trasera) html += `<div class="foto-item"><img src="${data.foto_trasera}" onerror="this.style.display='none'"><div class="foto-item-label">Trasera</div></div>`;
+                    if (data.foto_lado_derecho) html += `<div class="foto-item"><img src="${data.foto_lado_derecho}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Der.</div></div>`;
+                    if (data.foto_lado_izquierdo) html += `<div class="foto-item"><img src="${data.foto_lado_izquierdo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Izq.</div></div>`;
+                    html += `</div>`;
                 }
-            });
-            if (data.observaciones) {
-                html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
-            }
-            html += `</div>`;
-
-            // ✅ DATOS DE LA PERSONA (solo para vinculado)
-            if (tipo === 'vinculado' && data.primer_nombre) {
+            } else if (tipo === 'vinculado') {
+                // Fotos de la persona
                 if (data.foto_frontal_persona || data.foto_perfil_izq_persona || data.foto_perfil_der_persona) {
                     html += `<div class="seccion-titulo">📸 Fotografías de la Persona</div><div class="fotos-container">`;
                     if (data.foto_frontal_persona) html += `<div class="foto-item"><img src="${data.foto_frontal_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
@@ -444,7 +444,83 @@ window.initConsultaVehiculos = function() {
                     html += `</div>`;
                 }
                 
+                // Fotos del vehículo
+                if (data.foto_frontal_vehiculo || data.foto_trasera_vehiculo || data.foto_lado_der_vehiculo || data.foto_lado_izq_vehiculo) {
+                    html += `<div class="seccion-titulo">📸 Fotografías del Vehículo</div><div class="fotos-container">`;
+                    if (data.foto_frontal_vehiculo) html += `<div class="foto-item"><img src="${data.foto_frontal_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
+                    if (data.foto_trasera_vehiculo) html += `<div class="foto-item"><img src="${data.foto_trasera_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Trasera</div></div>`;
+                    if (data.foto_lado_der_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_der_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Der.</div></div>`;
+                    if (data.foto_lado_izq_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_izq_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Izq.</div></div>`;
+                    html += `</div>`;
+                }
+            }
+
+            // ✅ DATOS DEL VEHÍCULO
+            html += `<div class="seccion-titulo">🚗 Datos del Vehículo</div><div class="ficha-completa-grid">`;
+            
+            if (tipo === 'automovil' || tipo === 'moto') {
+                const camposVehiculo = [
+                    { label: 'Placa', value: data.placa, highlight: true },
+                    { label: 'Marca', value: data.marca },
+                    { label: 'Modelo', value: data.modelo },
+                    { label: 'Año', value: data.anio },
+                    { label: 'Color', value: data.color },
+                    { label: 'Serial Motor', value: data.serial_motor },
+                    { label: 'Serial Carroc.', value: data.serial_carroceria },
+                    { label: 'Cilindraje', value: data.cilindraje },
+                    { label: 'Tipo Carrocería', value: data.tipo_carroceria },
+                    { label: 'Cédula Propietario', value: data.cedula_propietario },
+                    { label: 'Estación', value: data.estacion_policial },
+                    { label: 'Estatus', value: data.estatus }
+                ];
+                
+                camposVehiculo.forEach(c => {
+                    if (c.value !== null && c.value !== undefined && c.value !== '') {
+                        const style = c.highlight ? 'font-weight:800; color:var(--primary); font-size:1.1rem;' : '';
+                        html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value" style="${style}">${c.value}</div></div>`;
+                    }
+                });
+                
+                if (data.observaciones) {
+                    html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
+                }
+                if (data.direccion_detencion) {
+                    html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Dirección de Detención</div><div class="ficha-completa-value">${data.direccion_detencion}</div></div>`;
+                }
+            } else if (tipo === 'vinculado') {
+                const camposVehiculo = [
+                    { label: 'Placa', value: data.placa, highlight: true },
+                    { label: 'Tipo Vehículo', value: data.tipo_vehiculo },
+                    { label: 'Marca', value: data.marca_vehiculo },
+                    { label: 'Modelo', value: data.modelo_vehiculo },
+                    { label: 'Año', value: data.anio_vehiculo },
+                    { label: 'Color', value: data.color_vehiculo },
+                    { label: 'Serial Motor', value: data.serial_motor },
+                    { label: 'Serial Carroc.', value: data.serial_carroceria },
+                    { label: 'Cilindraje', value: data.cilindraje },
+                    { label: 'Marca Corporal', value: data.marca_corporal },
+                    { label: 'Estación', value: data.estacion_policial },
+                    { label: 'Estatus', value: data.estatus }
+                ];
+                
+                camposVehiculo.forEach(c => {
+                    if (c.value !== null && c.value !== undefined && c.value !== '') {
+                        const style = c.highlight ? 'font-weight:800; color:var(--primary); font-size:1.1rem;' : '';
+                        html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value" style="${style}">${c.value}</div></div>`;
+                    }
+                });
+                
+                if (data.observaciones) {
+                    html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
+                }
+            }
+            
+            html += `</div>`;
+
+            // ✅ DATOS DE LA PERSONA (solo para vinculado)
+            if (tipo === 'vinculado' && data.primer_nombre) {
                 html += `<div class="seccion-titulo">👤 Datos de la Persona</div><div class="ficha-completa-grid">`;
+                
                 const camposPersona = [
                     { label: 'Primer Nombre', value: data.primer_nombre },
                     { label: 'Segundo Nombre', value: data.segundo_nombre },
@@ -471,11 +547,13 @@ window.initConsultaVehiculos = function() {
                     { label: 'Medicamento', value: data.consume_medicamento },
                     { label: 'Prob. Judicial', value: data.problema_judicial }
                 ];
+                
                 camposPersona.forEach(c => {
                     if (c.value !== null && c.value !== undefined && c.value !== '') {
                         html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value">${c.value}</div></div>`;
                     }
                 });
+                
                 html += `</div>`;
             }
 
