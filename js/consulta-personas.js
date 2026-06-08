@@ -204,7 +204,7 @@ window.initConsultaPersonas = function() {
         }, 100);
     }
 
-    // ✅ FUNCIÓN COMPLETA DE DETALLES (SIN ABRIVIATURAS)
+    // ✅ FUNCIÓN COMPLETA DE DETALLES (CON TODOS LOS CAMPOS DE VINCULADO)
     async function mostrarDetallesCompletos(data, tipo) {
         if (!modalBody || !modalTitulo) return;
         modalTitulo.textContent = `📋 Detalles - ${tipo === 'persona' ? 'Persona' : 'Vehículo Vinculado'}`;
@@ -323,6 +323,7 @@ window.initConsultaPersonas = function() {
                 }
                 html += `</div>`;
             } else {
+                // ✅ SECCIÓN COMPLETA PARA VINCULADO (PERSONA + VEHÍCULO + DETENCIÓN)
                 if (data.foto_frontal_persona || data.foto_perfil_izq_persona || data.foto_perfil_der_persona) {
                     html += `<div class="seccion-titulo">📸 Fotografías de la Persona</div><div class="fotos-container">`;
                     if (data.foto_frontal_persona) html += `<div class="foto-item"><img src="${data.foto_frontal_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
@@ -343,6 +344,8 @@ window.initConsultaPersonas = function() {
                 html += `<div class="seccion-titulo">👤 Datos de la Persona</div>`;
                 html += alertasHtmlVinc;
                 html += `<div class="ficha-completa-grid">`;
+                
+                // ✅ TODOS LOS CAMPOS DE LA PERSONA VINCULADA SEGÚN EL CSV
                 const camposPersonaVinc = [
                     { label: 'Primer Nombre', value: data.primer_nombre },
                     { label: 'Segundo Nombre', value: data.segundo_nombre },
@@ -366,7 +369,8 @@ window.initConsultaPersonas = function() {
                     { label: 'Perforaciones', value: data.perforaciones !== undefined ? (data.perforaciones ? 'Sí' : 'No') : null },
                     { label: 'Detalle Perfor.', value: data.detalle_perforaciones },
                     { label: 'Cond. Médica', value: data.condicion_medica },
-                    { label: 'Medicamento', value: data.consume_medicamento }
+                    { label: 'Medicamento', value: data.consume_medicamento },
+                    { label: 'Problema Judicial', value: data.problema_judicial }
                 ];
                 camposPersonaVinc.forEach(c => {
                     if (c.value !== null && c.value !== undefined && c.value !== '') {
@@ -385,6 +389,8 @@ window.initConsultaPersonas = function() {
                 }
                 
                 html += `<div class="seccion-titulo">🚗 Datos del Vehículo</div><div class="ficha-completa-grid">`;
+                
+                // ✅ TODOS LOS CAMPOS DEL VEHÍCULO SEGÚN EL CSV
                 const camposVehiculo = [
                     { label: 'Placa', value: data.placa, highlight: true },
                     { label: 'Tipo', value: data.tipo_vehiculo },
