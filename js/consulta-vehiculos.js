@@ -177,102 +177,114 @@ window.initConsultaVehiculos = function() {
         }
     };
 
-    async function renderFichaBreve(data, tipo) {
-        if (!fichaBreve) return;
-        const estatus = data.estatus || 'N/A';
-        const estatusLower = (estatus || '').toLowerCase();
-        const estatusClass = estatusLower.includes('verificaci') ? 'estatus-verificacion' :
-                             estatusLower.includes('procesad') ? 'estatus-procesado' : 'estatus-liberado';
-        
-        const tipoIconos = { automovil: '🚗', moto: '🏍️', vinculado: '🔗' };
-        const tipoTitulos = { automovil: 'Automóvil', moto: 'Motocicleta', vinculado: 'Vehículo Vinculado' };
+async function renderFichaBreve(data, tipo) {
+    if (!fichaBreve) return;
+    const estatus = data.estatus || 'N/A';
+    const estatusLower = (estatus || '').toLowerCase();
+    const estatusClass = estatusLower.includes('verificaci') ? 'estatus-verificacion' :
+                         estatusLower.includes('procesad') ? 'estatus-procesado' : 'estatus-liberado';
+    
+    const tipoIconos = { automovil: '🚗', moto: '🏍️', vinculado: '🔗' };
+    const tipoTitulos = { automovil: 'Automóvil', moto: 'Motocicleta', vinculado: 'Vehículo Vinculado' };
 
-        let alertasHtml = '';
-        if (estatusLower.includes('procesad') && datosProcesado?.tipo_delito) {
-            alertasHtml += `<div class="ficha-alert ficha-alert-delito">⚖️ <strong>Procesado por:</strong> ${datosProcesado.tipo_delito}</div>`;
-        }
-        const problemaJudicial = data.problema_judicial || '';
-        if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLowerCase() !== 'no') {
-            alertasHtml += `<div class="ficha-alert ficha-alert-judicial">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
-        }
+    let htmlCampos = `
+        <div class="ficha-breve-item">
+            <div class="ficha-breve-label">Placa</div>
+            <div class="ficha-breve-value" style="font-weight:800; color:var(--primary); font-size:1.1rem;">${data.placa || 'N/A'}</div>
+        </div>
+        <div class="ficha-breve-item">
+            <div class="ficha-breve-label">Tipo</div>
+            <div class="ficha-breve-value">${tipoIconos[tipo]} ${tipoTitulos[tipo]}</div>
+        </div>
+        <div class="ficha-breve-item">
+            <div class="ficha-breve-label">Vehículo</div>
+            <div class="ficha-breve-value">${data.tipo_vehiculo || data.marca_vehiculo || 'N/A'} ${data.marca_vehiculo || ''} ${data.modelo_vehiculo || ''}</div>
+        </div>
+        <div class="ficha-breve-item">
+            <div class="ficha-breve-label">Año</div>
+            <div class="ficha-breve-value">${data.anio_vehiculo || 'N/A'}</div>
+        </div>
+        <div class="ficha-breve-item">
+            <div class="ficha-breve-label">Color</div>
+            <div class="ficha-breve-value">${data.color_vehiculo || 'N/A'}</div>
+        </div>
+        <div class="ficha-breve-item">
+            <div class="ficha-breve-label">Estación</div>
+            <div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div>
+        </div>
+    `;
 
-        let htmlCampos = `
-            <div class="ficha-breve-item"><div class="ficha-breve-label">Placa</div><div class="ficha-breve-value" style="font-weight:800; color:var(--primary); font-size:1.1rem;">${data.placa || 'N/A'}</div></div>
-            <div class="ficha-breve-item"><div class="ficha-breve-label">Tipo</div><div class="ficha-breve-value">${tipoIconos[tipo]} ${tipoTitulos[tipo]}</div></div>
-        `;
-
-        if (tipo === 'automovil' || tipo === 'moto') {
-            htmlCampos += `
-                <div class="ficha-breve-item"><div class="ficha-breve-label">Vehículo</div><div class="ficha-breve-value">${data.marca || 'N/A'} ${data.modelo || ''}</div></div>
-                <div class="ficha-breve-item"><div class="ficha-breve-label">Año</div><div class="ficha-breve-value">${data.anio || 'N/A'}</div></div>
-                <div class="ficha-breve-item"><div class="ficha-breve-label">Color</div><div class="ficha-breve-value">${data.color || 'N/A'}</div></div>
-            `;
-        } else if (tipo === 'vinculado') {
-            htmlCampos += `
-                <div class="ficha-breve-item"><div class="ficha-breve-label">Vehículo</div><div class="ficha-breve-value">${data.marca_vehiculo || 'N/A'} ${data.modelo_vehiculo || ''}</div></div>
-                <div class="ficha-breve-item"><div class="ficha-breve-label">Año</div><div class="ficha-breve-value">${data.anio_vehiculo || 'N/A'}</div></div>
-                <div class="ficha-breve-item"><div class="ficha-breve-label">Color</div><div class="ficha-breve-value">${data.color_vehiculo || 'N/A'}</div></div>
-            `;
-            if (data.primer_nombre) {
-                htmlCampos += `
-                    <div class="ficha-breve-item"><div class="ficha-breve-label">Conductor</div><div class="ficha-breve-value">${data.primer_nombre || ''} ${data.primer_apellido || ''}</div></div>
-                    <div class="ficha-breve-item"><div class="ficha-breve-label">Cédula</div><div class="ficha-breve-value">${data.cedula || 'N/A'}</div></div>
-                `;
-            }
-        }
-
-        htmlCampos += `<div class="ficha-breve-item"><div class="ficha-breve-label">Estación</div><div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div></div>`;
-
-        const observaciones = data.observaciones || '';
-        if (observaciones) {
-            htmlCampos += `<div class="ficha-breve-item full-width"><div class="ficha-breve-label">📝 Observaciones</div><div class="ficha-breve-value">${observaciones}</div></div>`;
-        }
-
-        const tienePermisos = await tienePermisosIncidencia();
-        const btnIncidenciaHtml = tienePermisos
-            ? `<button type="button" class="btn-nueva-incidencia" id="cv_btn_nueva_incidencia">➕ Nueva Incidencia</button>`
-            : '';
-
-        let html = `
-            <div class="ficha-breve">
-                <div class="ficha-breve-header">
-                    <h3>${tipoIconos[tipo]} ${data.placa || 'N/A'} - ${tipo === 'vinculado' ? (data.marca_vehiculo || '') : (data.marca || '')} ${tipo === 'vinculado' ? (data.modelo_vehiculo || '') : (data.modelo || '')}</h3>
-                    <span class="estatus-badge ${estatusClass}">${estatus}</span>
-                </div>
-                ${alertasHtml}
-                <div class="ficha-breve-grid">${htmlCampos}</div>
-                <div class="ficha-breve-actions">
-                    <button type="button" class="btn-ver-detalles" id="cv_btn_ver_detalles">📋 Ver Detalles Completos</button>
-                    ${btnIncidenciaHtml}
-                </div>
+    if (tipo === 'vinculado' && data.primer_nombre) {
+        htmlCampos += `
+            <div class="ficha-breve-item">
+                <div class="ficha-breve-label">Conductor</div>
+                <div class="ficha-breve-value">${data.primer_nombre || ''} ${data.primer_apellido || ''}</div>
+            </div>
+            <div class="ficha-breve-item">
+                <div class="ficha-breve-label">Cédula</div>
+                <div class="ficha-breve-value">${data.cedula || 'N/A'}</div>
             </div>
         `;
-
-        fichaBreve.innerHTML = html;
-        fichaBreve.style.display = 'block';
-
-        // ✅ SOLUCIÓN: Usar setTimeout para asegurar que el DOM esté completamente renderizado
-        setTimeout(() => {
-            const btnDetalles = document.getElementById('cv_btn_ver_detalles');
-            if (btnDetalles) {
-                btnDetalles.addEventListener('click', () => mostrarDetallesCompletos(data, tipo));
-            }
-            
-            const btnIncidencia = document.getElementById('cv_btn_nueva_incidencia');
-            if (btnIncidencia) {
-                btnIncidencia.addEventListener('click', () => {
-                    if (modalIncidencia) {
-                        modalIncidencia.classList.add('active');
-                        const textarea = document.getElementById('cv_incidencia_descripcion');
-                        if (textarea) {
-                            textarea.value = '';
-                            textarea.focus();
-                        }
-                    }
-                });
-            }
-        }, 50); // 50ms es suficiente para que el DOM se actualice
     }
+
+    const observaciones = data.observaciones || '';
+    if (observaciones) {
+        htmlCampos += `
+            <div class="ficha-breve-item full-width">
+                <div class="ficha-breve-label">📝 Observaciones</div>
+                <div class="ficha-breve-value">${observaciones}</div>
+            </div>
+        `;
+    }
+
+    const tienePermisos = await tienePermisosIncidencia();
+    const btnIncidenciaHtml = tienePermisos
+        ? `<button type="button" class="btn-nueva-incidencia" id="cv_btn_nueva_incidencia">➕ Nueva Incidencia</button>`
+        : '';
+
+    let html = `
+        <div class="ficha-breve">
+            <div class="ficha-breve-header">
+                <h3>${tipoIconos[tipo]} ${data.placa || 'N/A'} - ${data.marca_vehiculo || ''} ${data.modelo_vehiculo || ''}</h3>
+                <span class="estatus-badge ${estatusClass}">${estatus}</span>
+            </div>
+            <div class="ficha-breve-grid">
+                ${htmlCampos}
+            </div>
+            <div class="ficha-breve-actions">
+                <button type="button" class="btn-ver-detalles" id="cv_btn_ver_detalles">📋 Ver Detalles Completos</button>
+                ${btnIncidenciaHtml}
+            </div>
+        </div>
+    `;
+
+    fichaBreve.innerHTML = html;
+    fichaBreve.style.display = 'block';
+
+    // ✅ SOLUCIÓN: Usar requestAnimationFrame para asegurar que el DOM esté completamente renderizado
+    requestAnimationFrame(() => {
+        const btnDetalles = document.getElementById('cv_btn_ver_detalles');
+        if (btnDetalles) {
+            btnDetalles.addEventListener('click', () => mostrarDetallesCompletos(data, tipo));
+        }
+        
+        const btnIncidencia = document.getElementById('cv_btn_nueva_incidencia');
+        if (btnIncidencia) {
+            btnIncidencia.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (modalIncidencia) {
+                    modalIncidencia.classList.add('active');
+                    const textarea = document.getElementById('cv_incidencia_descripcion');
+                    if (textarea) {
+                        textarea.value = '';
+                        setTimeout(() => textarea.focus(), 100);
+                    }
+                }
+            });
+        }
+    });
+}
 
     async function mostrarDetallesCompletos(data, tipo) {
         if (!modalBody || !modalTitulo) return;
