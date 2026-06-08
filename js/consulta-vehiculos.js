@@ -1,5 +1,4 @@
 window.initConsultaVehiculos = function() {
-    // ✅ ELIMINADO el bloqueo de inicialización
     const el = (id) => document.getElementById(id);
     const tipoBusquedaSelect = el('cv_tipo_busqueda');
     const buscarInput = el('cv_buscar_valor');
@@ -18,21 +17,21 @@ window.initConsultaVehiculos = function() {
     let resultadosMultiples = null;
     let datosProcesado = null;
 
-    // Listeners - USANDO .onclick para evitar duplicados
+    // Listeners principales
     if (btnBuscar) btnBuscar.onclick = () => buscarVehiculo();
-    
     if (buscarInput) {
         buscarInput.onkeypress = (e) => {
             if (e.key === 'Enter') { e.preventDefault(); btnBuscar?.click(); }
         };
     }
     
+    // Cerrar modales
     if (el('cv_modal_close')) el('cv_modal_close').onclick = () => modalDetalles.classList.remove('active');
     if (el('cv_modal_cerrar')) el('cv_modal_cerrar').onclick = () => modalDetalles.classList.remove('active');
     if (el('cv_modal_inc_close')) el('cv_modal_inc_close').onclick = () => modalIncidencia.classList.remove('active');
     if (el('cv_btn_cancelar_incidencia')) el('cv_btn_cancelar_incidencia').onclick = () => modalIncidencia.classList.remove('active');
     if (el('cv_btn_guardar_incidencia')) el('cv_btn_guardar_incidencia').onclick = () => guardarIncidencia();
-    // ✅ AGREGADO listener para el botón de imprimir
+    // ✅ BOTÓN DE IMPRIMIR
     if (el('cv_btn_imprimir_reporte')) el('cv_btn_imprimir_reporte').onclick = () => window.print();
 
     function mostrarMensaje(texto, tipo) {
@@ -110,7 +109,6 @@ window.initConsultaVehiculos = function() {
             if (vinculados && vinculados.length > 0) {
                 for (const v of vinculados) {
                     resultados.push({ ...v, tipo_registro: 'vinculado' });
-                    // Consultar procesados si el estatus lo indica
                     const estatus = (v.estatus || '').toLowerCase();
                     if (estatus.includes('procesad') && v.cedula) {
                         try {
@@ -132,14 +130,12 @@ window.initConsultaVehiculos = function() {
                 return;
             }
 
-            // Si hay múltiples resultados de diferentes tipos, mostrar selector
             const tiposUnicos = [...new Set(resultados.map(r => r.tipo_registro))];
             if (tiposUnicos.length > 1) {
                 resultadosMultiples = resultados;
                 mostrarSelectorTipos(resultados);
                 mostrarMensaje(`⚠️ Se encontraron ${resultados.length} registros en diferentes tipos`, 'info');
             } else {
-                // Un solo tipo, mostrar directamente
                 vehiculoActual = resultados[0];
                 tipoRegistroActual = resultados[0].tipo_registro;
                 await renderFichaBreve(vehiculoActual, tipoRegistroActual);
@@ -160,34 +156,14 @@ window.initConsultaVehiculos = function() {
             agrupados[r.tipo_registro].push(r);
         });
 
-        const iconos = {
-            automovil: '🚗',
-            moto: '🏍️',
-            vinculado: '🔗'
-        };
-        const titulos = {
-            automovil: 'Automóvil',
-            moto: 'Motocicleta',
-            vinculado: 'Vinculado (Persona + Vehículo)'
-        };
+        const iconos = { automovil: '🚗', moto: '🏍️', vinculado: '🔗' };
+        const titulos = { automovil: 'Automóvil', moto: 'Motocicleta', vinculado: 'Vinculado (Persona + Vehículo)' };
 
-        let html = `
-            <div class="tipo-selector">
-                <h3>⚠️ Se encontraron registros en múltiples tipos. Seleccione cuál desea ver:</h3>
-                <div class="tipo-options">
-        `;
-
+        let html = `<div class="tipo-selector"><h3>⚠️ Se encontraron registros en múltiples tipos. Seleccione cuál desea ver:</h3><div class="tipo-options">`;
         Object.keys(agrupados).forEach(tipo => {
             const count = agrupados[tipo].length;
-            html += `
-                <div class="tipo-option" onclick="window.seleccionarTipoVehiculo('${tipo}')">
-                    <div class="tipo-option-icon">${iconos[tipo]}</div>
-                    <div class="tipo-option-title">${titulos[tipo]}</div>
-                    <div class="tipo-option-detail">${count} registro(s) encontrado(s)</div>
-                </div>
-            `;
+            html += `<div class="tipo-option" onclick="window.seleccionarTipoVehiculo('${tipo}')"><div class="tipo-option-icon">${iconos[tipo]}</div><div class="tipo-option-title">${titulos[tipo]}</div><div class="tipo-option-detail">${count} registro(s) encontrado(s)</div></div>`;
         });
-
         html += `</div></div>`;
         tipoSelector.innerHTML = html;
         tipoSelector.style.display = 'block';
@@ -197,20 +173,13 @@ window.initConsultaVehiculos = function() {
         if (!resultadosMultiples) return;
         const seleccionados = resultadosMultiples.filter(r => r.tipo_registro === tipo);
         
-        if (seleccionados.length === 1) {
+        if (seleccionados.length >= 1) {
             vehiculoActual = seleccionados[0];
             tipoRegistroActual = tipo;
             tipoSelector.style.display = 'none';
             await renderFichaBreve(vehiculoActual, tipoRegistroActual);
             await cargarIncidencias(vehiculoActual.placa || vehiculoActual.serial_carroceria || vehiculoActual.serial_motor, tipoRegistroActual);
             mostrarMensaje('✅ Vehículo seleccionado', 'success');
-        } else {
-            vehiculoActual = seleccionados[0];
-            tipoRegistroActual = tipo;
-            tipoSelector.style.display = 'none';
-            await renderFichaBreve(vehiculoActual, tipoRegistroActual);
-            await cargarIncidencias(vehiculoActual.placa || vehiculoActual.serial_carroceria || vehiculoActual.serial_motor, tipoRegistroActual);
-            mostrarMensaje(`✅ Mostrando primero de ${seleccionados.length} registros`, 'info');
         }
     };
 
@@ -224,7 +193,6 @@ window.initConsultaVehiculos = function() {
         const tipoIconos = { automovil: '🚗', moto: '🏍️', vinculado: '🔗' };
         const tipoTitulos = { automovil: 'Automóvil', moto: 'Motocicleta', vinculado: 'Vehículo Vinculado' };
 
-        // ✅ ALERTAS - Mostrar Tipo de Delito y Antecedentes
         let alertasHtml = '';
         if (estatusLower.includes('procesad') && datosProcesado?.tipo_delito) {
             alertasHtml += `<div class="ficha-alert ficha-alert-delito">⚖️ <strong>Procesado por:</strong> ${datosProcesado.tipo_delito}</div>`;
@@ -234,80 +202,36 @@ window.initConsultaVehiculos = function() {
             alertasHtml += `<div class="ficha-alert ficha-alert-judicial">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
         }
 
-        // ✅ CORREGIDO: Usar los campos correctos según el tipo
         let htmlCampos = `
-            <div class="ficha-breve-item">
-                <div class="ficha-breve-label">Placa</div>
-                <div class="ficha-breve-value" style="font-weight:800; color:var(--primary); font-size:1.1rem;">${data.placa || 'N/A'}</div>
-            </div>
-            <div class="ficha-breve-item">
-                <div class="ficha-breve-label">Tipo</div>
-                <div class="ficha-breve-value">${tipoIconos[tipo]} ${tipoTitulos[tipo]}</div>
-            </div>
+            <div class="ficha-breve-item"><div class="ficha-breve-label">Placa</div><div class="ficha-breve-value" style="font-weight:800; color:var(--primary); font-size:1.1rem;">${data.placa || 'N/A'}</div></div>
+            <div class="ficha-breve-item"><div class="ficha-breve-label">Tipo</div><div class="ficha-breve-value">${tipoIconos[tipo]} ${tipoTitulos[tipo]}</div></div>
         `;
 
-        // Campos específicos según el tipo de registro
         if (tipo === 'automovil' || tipo === 'moto') {
             htmlCampos += `
-                <div class="ficha-breve-item">
-                    <div class="ficha-breve-label">Vehículo</div>
-                    <div class="ficha-breve-value">${data.marca || 'N/A'} ${data.modelo || ''}</div>
-                </div>
-                <div class="ficha-breve-item">
-                    <div class="ficha-breve-label">Año</div>
-                    <div class="ficha-breve-value">${data.anio || 'N/A'}</div>
-                </div>
-                <div class="ficha-breve-item">
-                    <div class="ficha-breve-label">Color</div>
-                    <div class="ficha-breve-value">${data.color || 'N/A'}</div>
-                </div>
+                <div class="ficha-breve-item"><div class="ficha-breve-label">Vehículo</div><div class="ficha-breve-value">${data.marca || 'N/A'} ${data.modelo || ''}</div></div>
+                <div class="ficha-breve-item"><div class="ficha-breve-label">Año</div><div class="ficha-breve-value">${data.anio || 'N/A'}</div></div>
+                <div class="ficha-breve-item"><div class="ficha-breve-label">Color</div><div class="ficha-breve-value">${data.color || 'N/A'}</div></div>
             `;
         } else if (tipo === 'vinculado') {
             htmlCampos += `
-                <div class="ficha-breve-item">
-                    <div class="ficha-breve-label">Vehículo</div>
-                    <div class="ficha-breve-value">${data.marca_vehiculo || 'N/A'} ${data.modelo_vehiculo || ''}</div>
-                </div>
-                <div class="ficha-breve-item">
-                    <div class="ficha-breve-label">Año</div>
-                    <div class="ficha-breve-value">${data.anio_vehiculo || 'N/A'}</div>
-                </div>
-                <div class="ficha-breve-item">
-                    <div class="ficha-breve-label">Color</div>
-                    <div class="ficha-breve-value">${data.color_vehiculo || 'N/A'}</div>
-                </div>
+                <div class="ficha-breve-item"><div class="ficha-breve-label">Vehículo</div><div class="ficha-breve-value">${data.marca_vehiculo || 'N/A'} ${data.modelo_vehiculo || ''}</div></div>
+                <div class="ficha-breve-item"><div class="ficha-breve-label">Año</div><div class="ficha-breve-value">${data.anio_vehiculo || 'N/A'}</div></div>
+                <div class="ficha-breve-item"><div class="ficha-breve-label">Color</div><div class="ficha-breve-value">${data.color_vehiculo || 'N/A'}</div></div>
             `;
-            
-            // Si es vinculado, mostrar datos del conductor
             if (data.primer_nombre) {
                 htmlCampos += `
-                    <div class="ficha-breve-item">
-                        <div class="ficha-breve-label">Conductor</div>
-                        <div class="ficha-breve-value">${data.primer_nombre || ''} ${data.primer_apellido || ''}</div>
-                    </div>
-                    <div class="ficha-breve-item">
-                        <div class="ficha-breve-label">Cédula</div>
-                        <div class="ficha-breve-value">${data.cedula || 'N/A'}</div>
-                    </div>
+                    <div class="ficha-breve-item"><div class="ficha-breve-label">Conductor</div><div class="ficha-breve-value">${data.primer_nombre || ''} ${data.primer_apellido || ''}</div></div>
+                    <div class="ficha-breve-item"><div class="ficha-breve-label">Cédula</div><div class="ficha-breve-value">${data.cedula || 'N/A'}</div></div>
                 `;
             }
         }
 
-        htmlCampos += `
-            <div class="ficha-breve-item">
-                <div class="ficha-breve-label">Estación</div>
-                <div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div>
-            </div>
-        `;
+        htmlCampos += `<div class="ficha-breve-item"><div class="ficha-breve-label">Estación</div><div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div></div>`;
 
         const observaciones = data.observaciones || '';
         if (observaciones) {
-            htmlCampos += `
-                <div class="ficha-breve-item full-width">
-                    <div class="ficha-breve-label">📝 Observaciones</div>
-                    <div class="ficha-breve-value">${observaciones}</div>
-                </div>
-            `;
+            htmlCampos += `<div class="ficha-breve-item full-width"><div class="ficha-breve-label">📝 Observaciones</div><div class="ficha-breve-value">${observaciones}</div></div>`;
         }
 
         const tienePermisos = await tienePermisosIncidencia();
@@ -322,9 +246,7 @@ window.initConsultaVehiculos = function() {
                     <span class="estatus-badge ${estatusClass}">${estatus}</span>
                 </div>
                 ${alertasHtml}
-                <div class="ficha-breve-grid">
-                    ${htmlCampos}
-                </div>
+                <div class="ficha-breve-grid">${htmlCampos}</div>
                 <div class="ficha-breve-actions">
                     <button type="button" class="btn-ver-detalles" id="cv_btn_ver_detalles">📋 Ver Detalles Completos</button>
                     ${btnIncidenciaHtml}
@@ -335,22 +257,26 @@ window.initConsultaVehiculos = function() {
         fichaBreve.innerHTML = html;
         fichaBreve.style.display = 'block';
 
-        setTimeout(() => {
-            const btnDetalles = el('cv_btn_ver_detalles');
-            if (btnDetalles) btnDetalles.onclick = () => mostrarDetallesCompletos(data, tipo);
-            
-            const btnIncidencia = el('cv_btn_nueva_incidencia');
-            if (btnIncidencia) {
-                btnIncidencia.onclick = () => {
-                    modalIncidencia.classList.add('active');
-                    el('cv_incidencia_descripcion').value = '';
-                    el('cv_incidencia_descripcion').focus();
-                };
-            }
-        }, 100);
+        // ✅ ASIGNAR EVENTOS INMEDIATAMENTE DESPUÉS DE INYECTAR EL HTML
+        const btnDetalles = el('cv_btn_ver_detalles');
+        if (btnDetalles) {
+            btnDetalles.onclick = () => mostrarDetallesCompletos(data, tipo);
+        }
+        
+        const btnIncidencia = el('cv_btn_nueva_incidencia');
+        if (btnIncidencia) {
+            btnIncidencia.onclick = () => {
+                modalIncidencia.classList.add('active');
+                const textarea = el('cv_incidencia_descripcion');
+                if (textarea) {
+                    textarea.value = '';
+                    textarea.focus();
+                }
+            };
+        }
     }
 
-    // ✅ FUNCIÓN COMPLETA CON ENCABEZADO DE REPORTE Y TODOS LOS DATOS
+    // ✅ FUNCIÓN COMPLETA CON REPORTE, LOGO, DELITO Y ANTECEDENTES
     async function mostrarDetallesCompletos(data, tipo) {
         if (!modalBody || !modalTitulo) return;
         modalTitulo.textContent = `📋 Detalles - ${tipo === 'automovil' ? 'Automóvil' : tipo === 'moto' ? 'Motocicleta' : 'Vehículo Vinculado'}`;
@@ -366,42 +292,36 @@ window.initConsultaVehiculos = function() {
             const fechaStr = fechaHoy.getFullYear().toString() + String(fechaHoy.getMonth() + 1).padStart(2, '0') + String(fechaHoy.getDate()).padStart(2, '0');
             const identificador = data.placa || data.serial_carroceria || data.serial_motor;
 
-            // ✅ GENERAR NÚMERO DE REPORTE Y GUARDAR EN BD
-            const { data: nuevoReporte, error: errorReporte } = await window.supabaseClient
-                .from('reportes_generados')
-                .insert([{
-                    fecha_texto: fechaStr,
-                    cedula_consultada: identificador,
-                    tipo_registro: tipo,
-                    user_id: user.id,
-                    user_email: user.email
-                }])
-                .select('consecutivo_global')
-                .single();
-
-            if (errorReporte) throw errorReporte;
-
-            const consecutivoFormateado = String(nuevoReporte.consecutivo_global).padStart(8, '0');
-            const numeroReporte = `REPORTE-CPNB-${fechaStr}-N° ${consecutivoFormateado}`;
-
-            // Consultar procesados
-            let datosProcesadosCompletos = null;
-            const estatus = (data.estatus || '').toLowerCase();
-            if (estatus.includes('procesad')) {
-                const cedulaBusqueda = data.cedula || identificador;
-                try {
-                    const { data: procData } = await window.supabaseClient
+            const [nuevoReporte, datosProcesadosCompletos] = await Promise.all([
+                window.supabaseClient
+                    .from('reportes_generados')
+                    .insert([{
+                        fecha_texto: fechaStr,
+                        cedula_consultada: identificador,
+                        tipo_registro: tipo,
+                        user_id: user.id,
+                        user_email: user.email
+                    }])
+                    .select('consecutivo_global')
+                    .single(),
+                
+                (data.estatus || '').toLowerCase().includes('procesad')
+                    ? window.supabaseClient
                         .from('registro_procesados')
                         .select('*')
-                        .eq('cedula', cedulaBusqueda)
+                        .eq('cedula', data.cedula || identificador)
                         .order('created_at', { ascending: false })
                         .limit(1)
-                        .maybeSingle();
-                    if (procData) datosProcesadosCompletos = procData;
-                } catch (e) { /* Silencioso */ }
-            }
+                        .maybeSingle()
+                    : Promise.resolve({ data: null })
+            ]);
 
-            // ✅ ENCABEZADO COMPLETO CON LOGO
+            if (nuevoReporte.error) throw nuevoReporte.error;
+            
+            const consecutivoFormateado = String(nuevoReporte.data.consecutivo_global).padStart(8, '0');
+            const numeroReporte = `REPORTE-CPNB-${fechaStr}-N° ${consecutivoFormateado}`;
+            const datosProcesados = datosProcesadosCompletos.data;
+
             let html = `<div class="reporte-header-print" style="text-align: center; margin-bottom: 20px; border-bottom: 3px double var(--primary); padding-bottom: 15px;">
                 <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 10px;">
                     <img src="img/LOGO-PNB.png" alt="Logo PNB" style="max-height: 90px; width: auto;" onerror="this.style.display='none'">
@@ -415,16 +335,15 @@ window.initConsultaVehiculos = function() {
                 <p style="font-size: 0.85rem; color: #64748b; margin: 5px 0;"><strong>Generado por:</strong> ${user.email}</p>
             </div>`;
 
-            // ✅ ALERTAS PARA IMPRESIÓN
-            if (datosProcesadosCompletos?.tipo_delito) {
-                html += `<div class="ficha-alert ficha-alert-delito" style="page-break-inside: avoid; margin: 15px 0; padding: 12px; background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; border-radius: 6px;">⚖️ <strong>Procesado por:</strong> ${datosProcesadosCompletos.tipo_delito}</div>`;
+            if (datosProcesados?.tipo_delito) {
+                html += `<div class="ficha-alert ficha-alert-delito" style="page-break-inside: avoid; margin: 15px 0; padding: 12px; background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; border-radius: 6px;">⚖️ <strong>Procesado por:</strong> ${datosProcesados.tipo_delito}</div>`;
             }
             const problemaJudicial = data.problema_judicial || '';
             if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLowerCase() !== 'no') {
                 html += `<div class="ficha-alert ficha-alert-judicial" style="page-break-inside: avoid; margin: 15px 0; padding: 12px; background: #fef3c7; border: 1px solid #fbbf24; color: #92400e; border-radius: 6px;">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
             }
 
-            // ✅ FOTOS DEL VEHÍCULO
+            // FOTOS
             if (tipo === 'automovil' || tipo === 'moto') {
                 if (data.foto_frontal || data.foto_trasera || data.foto_lado_derecho || data.foto_lado_izquierdo) {
                     html += `<div class="seccion-titulo">📸 Fotografías del Vehículo</div><div class="fotos-container">`;
@@ -435,7 +354,6 @@ window.initConsultaVehiculos = function() {
                     html += `</div>`;
                 }
             } else if (tipo === 'vinculado') {
-                // Fotos de la persona
                 if (data.foto_frontal_persona || data.foto_perfil_izq_persona || data.foto_perfil_der_persona) {
                     html += `<div class="seccion-titulo">📸 Fotografías de la Persona</div><div class="fotos-container">`;
                     if (data.foto_frontal_persona) html += `<div class="foto-item"><img src="${data.foto_frontal_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
@@ -443,8 +361,6 @@ window.initConsultaVehiculos = function() {
                     if (data.foto_perfil_der_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_der_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Der.</div></div>`;
                     html += `</div>`;
                 }
-                
-                // Fotos del vehículo
                 if (data.foto_frontal_vehiculo || data.foto_trasera_vehiculo || data.foto_lado_der_vehiculo || data.foto_lado_izq_vehiculo) {
                     html += `<div class="seccion-titulo">📸 Fotografías del Vehículo</div><div class="fotos-container">`;
                     if (data.foto_frontal_vehiculo) html += `<div class="foto-item"><img src="${data.foto_frontal_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
@@ -455,11 +371,10 @@ window.initConsultaVehiculos = function() {
                 }
             }
 
-            // ✅ DATOS DEL VEHÍCULO
+            // DATOS DEL VEHÍCULO
             html += `<div class="seccion-titulo">🚗 Datos del Vehículo</div><div class="ficha-completa-grid">`;
-            
             if (tipo === 'automovil' || tipo === 'moto') {
-                const camposVehiculo = [
+                const campos = [
                     { label: 'Placa', value: data.placa, highlight: true },
                     { label: 'Marca', value: data.marca },
                     { label: 'Modelo', value: data.modelo },
@@ -473,22 +388,16 @@ window.initConsultaVehiculos = function() {
                     { label: 'Estación', value: data.estacion_policial },
                     { label: 'Estatus', value: data.estatus }
                 ];
-                
-                camposVehiculo.forEach(c => {
+                campos.forEach(c => {
                     if (c.value !== null && c.value !== undefined && c.value !== '') {
                         const style = c.highlight ? 'font-weight:800; color:var(--primary); font-size:1.1rem;' : '';
                         html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value" style="${style}">${c.value}</div></div>`;
                     }
                 });
-                
-                if (data.observaciones) {
-                    html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
-                }
-                if (data.direccion_detencion) {
-                    html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Dirección de Detención</div><div class="ficha-completa-value">${data.direccion_detencion}</div></div>`;
-                }
+                if (data.observaciones) html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
+                if (data.direccion_detencion) html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Dirección de Detención</div><div class="ficha-completa-value">${data.direccion_detencion}</div></div>`;
             } else if (tipo === 'vinculado') {
-                const camposVehiculo = [
+                const campos = [
                     { label: 'Placa', value: data.placa, highlight: true },
                     { label: 'Tipo Vehículo', value: data.tipo_vehiculo },
                     { label: 'Marca', value: data.marca_vehiculo },
@@ -502,26 +411,20 @@ window.initConsultaVehiculos = function() {
                     { label: 'Estación', value: data.estacion_policial },
                     { label: 'Estatus', value: data.estatus }
                 ];
-                
-                camposVehiculo.forEach(c => {
+                campos.forEach(c => {
                     if (c.value !== null && c.value !== undefined && c.value !== '') {
                         const style = c.highlight ? 'font-weight:800; color:var(--primary); font-size:1.1rem;' : '';
                         html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value" style="${style}">${c.value}</div></div>`;
                     }
                 });
-                
-                if (data.observaciones) {
-                    html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
-                }
+                if (data.observaciones) html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
             }
-            
             html += `</div>`;
 
-            // ✅ DATOS DE LA PERSONA (solo para vinculado)
+            // DATOS DE LA PERSONA (solo vinculado)
             if (tipo === 'vinculado' && data.primer_nombre) {
                 html += `<div class="seccion-titulo">👤 Datos de la Persona</div><div class="ficha-completa-grid">`;
-                
-                const camposPersona = [
+                const campos = [
                     { label: 'Primer Nombre', value: data.primer_nombre },
                     { label: 'Segundo Nombre', value: data.segundo_nombre },
                     { label: 'Primer Apellido', value: data.primer_apellido },
@@ -547,17 +450,15 @@ window.initConsultaVehiculos = function() {
                     { label: 'Medicamento', value: data.consume_medicamento },
                     { label: 'Prob. Judicial', value: data.problema_judicial }
                 ];
-                
-                camposPersona.forEach(c => {
+                campos.forEach(c => {
                     if (c.value !== null && c.value !== undefined && c.value !== '') {
                         html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value">${c.value}</div></div>`;
                     }
                 });
-                
                 html += `</div>`;
             }
 
-            // ✅ INCIDENCIAS
+            // INCIDENCIAS
             html += `<div class="seccion-titulo" style="margin-top: 30px;">📜 Historial de Incidencias</div>`;
             try {
                 const { data: incidencias } = await window.supabaseClient.from('registro_incidencias').select('*').eq('cedula', identificador).eq('tipo_registro', tipo).order('fecha_hora', { ascending: false });
@@ -578,7 +479,6 @@ window.initConsultaVehiculos = function() {
                 }
             } catch (err) { /* Silencioso */ }
 
-            // ✅ PIE DE PÁGINA
             html += `<div class="reporte-footer-print" style="margin-top: 40px; text-align: center; font-size: 0.75rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px;">
                 <p>Documento generado electrónicamente por el Sistema de Verificación y Registro Policial.</p>
                 <p>Este reporte es de carácter informativo y confidencial. Uso exclusivo del CPNB.</p>
@@ -611,15 +511,13 @@ window.initConsultaVehiculos = function() {
                 html += '<div class="sin-incidencias">No hay incidencias registradas</div>';
             } else {
                 incidencias.forEach(inc => {
-                    html += `
-                        <div class="incidencia-item">
-                            <div class="incidencia-item-header">
-                                <span class="incidencia-fecha">📅 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
-                                <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
-                            </div>
-                            <div class="incidencia-descripcion">${inc.descripcion}</div>
+                    html += `<div class="incidencia-item">
+                        <div class="incidencia-item-header">
+                            <span class="incidencia-fecha">📅 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+                            <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
                         </div>
-                    `;
+                        <div class="incidencia-descripcion">${inc.descripcion}</div>
+                    </div>`;
                 });
             }
             html += '</div>';
@@ -668,7 +566,6 @@ window.initConsultaVehiculos = function() {
     }
 };
 
-// ✅ INICIALIZACIÓN SIN BLOQUEO
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.initConsultaVehiculos);
 } else {
