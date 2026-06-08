@@ -63,7 +63,7 @@ window.initConsultaPersonas = function() {
             return;
         }
 
-        mostrarMensaje(' Buscando...', 'info');
+        mostrarMensaje('🔍 Buscando...', 'info');
         fichaBreve.style.display = 'none';
         incidenciasSection.style.display = 'none';
         personaActual = null;
@@ -452,8 +452,8 @@ window.initConsultaPersonas = function() {
         }
     }
 
-    // ✅ FUNCIÓN CARGAR INCIDENCIAS (CORREGIDA - Ahora es global con window.)
-    window.cargarIncidencias = async function(cedula, tipo, pagina = 1) {
+    // ✅ FUNCIÓN CARGAR INCIDENCIAS (CON BOTÓN DE ELIMINAR PARA ADMIN)
+    async function cargarIncidencias(cedula, tipo, pagina = 1) {
         if (!incidenciasSection) return;
         
         cedulaActualIncidencias = cedula;
@@ -487,7 +487,6 @@ window.initConsultaPersonas = function() {
             // ✅ Verificar si es administrador
             const esAdministrador = sessionStorage.getItem('pnb_user_nivel') === 'administrador';
 
-            // ✅ INICIALIZAR LA VARIABLE HTML
             let html = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3>';
             
             if (!incidencias || incidencias.length === 0) {
@@ -510,7 +509,7 @@ window.initConsultaPersonas = function() {
                         <div class="incidencia-descripcion">${inc.descripcion}</div>
                     </div>`;
                 });
-                
+    
                 if (totalPaginas > 1) {
                     html += `<div class="paginacion-incidencias" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--beige-border);">`;
             
@@ -536,7 +535,7 @@ window.initConsultaPersonas = function() {
 
     window.cambiarPaginaIncidencias = function(nuevaPagina) {
         if (cedulaActualIncidencias && tipoActualIncidencias) {
-            window.cargarIncidencias(cedulaActualIncidencias, tipoActualIncidencias, nuevaPagina);
+            cargarIncidencias(cedulaActualIncidencias, tipoActualIncidencias, nuevaPagina);
         }
     };
 
@@ -563,7 +562,7 @@ window.initConsultaPersonas = function() {
 
             modalIncidencia.classList.remove('active');
             mostrarMensaje('✅ Incidencia registrada', 'success');
-            await window.cargarIncidencias(personaActual.cedula, tipoRegistroActual, 1); 
+            await cargarIncidencias(personaActual.cedula, tipoRegistroActual, 1); 
         } catch (err) {
             console.error('Error guardando incidencia:', err);
             alert('❌ Error: ' + err.message);
@@ -573,6 +572,7 @@ window.initConsultaPersonas = function() {
     }
 
     // ✅ FUNCIÓN PARA ELIMINAR INCIDENCIA CON RESPALDO (Solo Admin)
+    // ✅ AHORA ESTÁ DENTRO DE initConsultaPersonas para tener acceso a cargarIncidencias
     window.eliminarIncidencia = async (incidenciaId, cedula, tipo, paginaActual) => {
         if (!confirm('⚠️ ¿Está SEGURO de eliminar esta incidencia?\n\nSe guardará un respaldo permanente en el sistema con su usuario y fecha.')) {
             return;
@@ -615,8 +615,8 @@ window.initConsultaPersonas = function() {
 
             mostrarMensaje('✅ Incidencia eliminada y respaldada correctamente', 'success');
             
-            // 4. Recargar la lista de incidencias en la página actual
-            await window.cargarIncidencias(cedula, tipo, paginaActual);
+            // 4. ✅ Recargar la lista de incidencias en la página actual (AHORA SÍ FUNCIONA)
+            await cargarIncidencias(cedula, tipo, paginaActual);
 
             // 5. Registrar en logs del sistema (auditoría)
             if (typeof registrarLog === 'function') {
