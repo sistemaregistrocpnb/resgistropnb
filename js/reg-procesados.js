@@ -1,472 +1,415 @@
-window.initRegProcesados = function() {
-  console.log("✅ Módulo reg-procesados.js cargado correctamente.");
-  
-  // ==========================================
-  // LISTAS DE DOCUMENTOS (Con mapeo exacto a las columnas de tu CSV)
-  // ==========================================
-  const docsUnicos = [
-    { id: 'portada', label: '📑 Portada', dbColumn: 'portada' },
-    { id: 'oficio_remision', label: '📨 Oficio de Remisión', dbColumn: 'oficio_remision' },
-    { id: 'acta_denuncia', label: '📝 Acta de Denuncia', dbColumn: 'acta_denuncia' },
-    { id: 'datos_filiatorios', label: '👤 Datos Filiatorios', dbColumn: 'datos_filiatorios' },
-    { id: 'acta_policial', label: '📋 Acta Policial', dbColumn: 'acta_policial' },
-    { id: 'derechos_imputado', label: '⚖️ Derechos del Imputado', dbColumn: 'derechos_imputado' },
-    { id: 'evaluacion_medica', label: '🏥 Evaluación Médica', dbColumn: 'evaluacion_medica' },
-    { id: 'identificacion_cedula', label: '🆔 Identificación (Cédula)', dbColumn: 'identificacion_cedula' },
-    { id: 'solicitud_examen_forense', label: '🔬 Solicitud de Examen Forense', dbColumn: 'solicitud_examen_forense' },
-    { id: 'resultados_examen_forense', label: '🔬 Resultados del Examen Forense', dbColumn: 'resultados_examen_forense' },
-    { id: 'asistencia_comdepro', label: '🤝 Asistencia de Comdepro', dbColumn: 'asistencia_comdepro' },
-    { id: 'remision_estacionamiento', label: '🚗 Remisión a Estacionamiento', dbColumn: 'remision_estacionamiento' },
-    { id: 'planilla_pvr', label: '🚙 Planilla de Revisión de Vehículo (PVR)', dbColumn: 'planilla_pvr' },
-    { id: 'otros_documentos', label: '📎 Otros Documentos', dbColumn: 'otros_documentos' }
-  ];
+window.initRegPersonas = function() {
+    console.log("✅ Módulo reg-personas.js cargado correctamente.");
 
-  const docsMultiples = [
-    { id: 'entrevista_multi', label: '🎤 Entrevistas (Múltiples)', max: 10, min: 1, dbColumn: 'entrevista' },
-    { id: 'cadena_custodia', label: '⛓️ Cadena de Custodia', max: 10, min: 1, dbColumn: 'cadena_custodia' },
-    { id: 'inspecciones_tecnicas', label: '🔧 Inspecciones Técnicas', max: 10, min: 1, dbColumn: 'inspecciones_tecnicas' }
-  ];
-
-  const archivosMultiples = {};
-  docsMultiples.forEach(d => archivosMultiples[d.id] = []);
-
-  // ==========================================
-  // GENERAR DOCUMENTOS EN DOM
-  // ==========================================
-  const contenedorUnicos = document.getElementById('docs-unicos-container');
-  if (contenedorUnicos) {
-    docsUnicos.forEach(doc => {
-      const div = document.createElement('div');
-      div.className = 'doc-item';
-      div.innerHTML = `
-        <div class="doc-header">
-          <label>${doc.label}</label>
-          <div class="doc-si-no">
-            <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
-            <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
-          </div>
-        </div>
-        <div class="doc-upload-area" id="upload-${doc.id}">
-          <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="mostrarArchivoCargado('${doc.id}', this)">
-          <div id="status-${doc.id}" class="file-status-container"></div>
-        </div>
-      `;
-      contenedorUnicos.appendChild(div);
-    });
-  }
-
-  const contenedorMultiples = document.getElementById('docs-multiples-container');
-  if (contenedorMultiples) {
-    docsMultiples.forEach(doc => {
-      const div = document.createElement('div');
-      div.className = 'doc-item';
-      div.innerHTML = `
-        <div class="doc-header">
-          <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Mínimo ${doc.min}, máximo ${doc.max})</span></label>
-          <div class="doc-si-no">
-            <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
-            <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
-          </div>
-        </div>
-        <div class="doc-upload-area" id="upload-${doc.id}">
-          <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
-          <button type="button" class="btn-add-file" onclick="agregarArchivo('${doc.id}', ${doc.max})">➕ Agregar</button>
-          <div class="file-count" id="count-${doc.id}">0 de ${doc.max} archivos</div>
-          <div class="file-list" id="list-${doc.id}"></div>
-          <div id="status-${doc.id}" class="file-status-container"></div>
-        </div>
-      `;
-      contenedorMultiples.appendChild(div);
-    });
-  }
-
-  // ==========================================
-  // FUNCIONES GLOBALES DE UI
-  // ==========================================
-  window.toggleDocField = function(campo, mostrar) {
-    const area = document.getElementById(`upload-${campo}`);
-    if (area) area.classList.toggle('active', mostrar);
-  };
-
-  window.mostrarArchivoCargado = function(docId, input) {
-    const statusContainer = document.getElementById(`status-${docId}`);
-    if (!statusContainer) return;
-    if (input.files && input.files[0]) {
-      statusContainer.innerHTML = `<div class="file-loaded"><span>✅</span><span class="file-name">${input.files[0].name}</span><button type="button" class="btn-remove" onclick="removerArchivo('${docId}')">❌ Quitar</button></div>`;
-    } else {
-      statusContainer.innerHTML = '';
-    }
-  };
-
-  window.removerArchivo = function(docId) {
-    const input = document.getElementById(`file_${docId}`);
-    const statusContainer = document.getElementById(`status-${docId}`);
-    if (input) input.value = '';
-    if (statusContainer) statusContainer.innerHTML = '';
-  };
-
-  window.agregarArchivo = function(campo, max) {
-    const input = document.getElementById(`file_${campo}`);
-    const statusContainer = document.getElementById(`status-${campo}`);
-    if (!input || !input.files || input.files.length === 0) return;
-    
-    const disponibles = max - archivosMultiples[campo].length;
-    if (disponibles <= 0) { alert(`Máximo ${max} archivos permitidos`); return; }
-
-    let agregados = 0;
-    const archivosAgregados = [];
-    for (const file of input.files) {
-      if (agregados >= disponibles) break;
-      if (file.type === 'application/pdf') {
-        archivosMultiples[campo].push(file);
-        archivosAgregados.push(file.name);
-        agregados++;
-      }
-    }
-    
-    actualizarListaArchivos(campo, max);
-    input.value = '';
-    
-    if (archivosAgregados.length > 0 && statusContainer) {
-      statusContainer.innerHTML = `<div class="file-loaded"><span>✅</span><span class="file-name">${archivosAgregados.length} archivo(s) cargado(s)</span></div>`;
-      setTimeout(() => { if (statusContainer) statusContainer.innerHTML = ''; }, 3000);
-    }
-  };
-
-  function actualizarListaArchivos(campo, max) {
-    const list = document.getElementById(`list-${campo}`);
-    const count = document.getElementById(`count-${campo}`);
-    if (!list || !count) return;
-    list.innerHTML = '';
-    archivosMultiples[campo].forEach((file, index) => {
-      const item = document.createElement('div');
-      item.className = 'file-item-multiple';
-      item.innerHTML = `<span>📄 ${file.name}</span><button type="button" onclick="eliminarArchivoMultiple('${campo}', ${max}, ${index})">❌</button>`;
-      list.appendChild(item);
-    });
-    count.textContent = `${archivosMultiples[campo].length} de ${max} archivos`;
-  }
-
-  window.eliminarArchivoMultiple = function(campo, max, index) {
-    archivosMultiples[campo].splice(index, 1);
-    actualizarListaArchivos(campo, max);
-  };
-
-  // ==========================================
-  // REFERENCIAS DOM
-  // ==========================================
-  const btnBuscar = document.getElementById('proc_btn_buscar');
-  const inputBusqueda = document.getElementById('proc_busqueda_input');
-  const msgBusqueda = document.getElementById('proc_msg_busqueda');
-  const selectionPanel = document.getElementById('selection-panel');
-  const selectionList = document.getElementById('selection-list');
-  const resultCount = document.getElementById('result-count');
-  const btnCancelSearch = document.getElementById('btn-cancelar-seleccion');
-  const datosPanel = document.getElementById('datos-encontrados-panel');
-  const datosContenido = document.getElementById('datos-contenido');
-  const form = document.getElementById('form-reg-procesados');
-  const msgForm = document.getElementById('msg-reg-procesados');
-  let registroSeleccionado = null;
-
-  const mostrarMsg = (el, txt, type) => {
-    if (!el) return;
-    el.innerHTML = txt;
-    el.className = `msg ${type}`;
-    el.style.display = 'block';
-  };
-
-  function detectarCoincidencias(reg, val, tabla) {
-    const campos = [];
-    const v = val.trim().toUpperCase();
-    if ((tabla === 'registro_personas' || tabla === 'registro_vinculado') && reg.cedula && reg.cedula.toUpperCase() === v) campos.push('Cédula');
-    if (reg.placa && reg.placa.toUpperCase() === v) campos.push('Placa');
-    if (reg.serial_carroceria && reg.serial_carroceria.toUpperCase() === v) campos.push('Serial Carrocería');
-    if (reg.serial_motor && reg.serial_motor.toUpperCase() === v) campos.push('Serial Motor');
-    return campos;
-  }
-
-  async function buscarEnTodasLasTablas(valor) {
-    const resultados = [];
-    const val = valor.trim().toUpperCase();
-    try {
-      const { data: personas, error: errPers } = await window.supabaseClient.from('registro_personas').select('*').eq('cedula', val).eq('estatus', 'Verificación');
-      if (!errPers && personas) {
-        personas.forEach(reg => resultados.push({ origen: 'registro_personas', id: reg.id, tipo: '👤 Persona', icono: '👤', color: '#7c3aed', colorBg: '#f5f3ff', tipoRegistro: 'persona', datos: reg, linea1: `${reg.primer_nombre || ''} ${reg.primer_apellido || ''} | C.I: ${reg.cedula || '-'}`, linea2: `Sexo: ${reg.sexo || '-'} | Edad: ${reg.edad || '-'}`, linea3: `Estación: ${reg.estacion_policial || '-'}`, encontrado_por: ['Cédula'] }));
-      }
-
-      const { data: motos, error: errMoto } = await window.supabaseClient.from('registro_motos').select('*').or(`placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`).eq('estatus', 'Verificación');
-      if (!errMoto && motos) {
-        motos.forEach(reg => resultados.push({ origen: 'registro_motos', id: reg.id, tipo: '🏍️ Motocicleta', icono: '🏍️', color: '#dc2626', colorBg: '#fef2f2', tipoRegistro: 'moto', datos: reg, linea1: `Placa: ${reg.placa || '-'}`, linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`, linea3: `Serial: ${reg.serial_carroceria || '-'}`, encontrado_por: detectarCoincidencias(reg, val, 'registro_motos') }));
-      }
-
-      const { data: autos, error: errAuto } = await window.supabaseClient.from('registro_automoviles').select('*').or(`placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`).eq('estatus', 'Verificación');
-      if (!errAuto && autos) {
-        autos.forEach(reg => resultados.push({ origen: 'registro_automoviles', id: reg.id, tipo: '🚙 Automóvil', icono: '🚙', color: '#059669', colorBg: '#ecfdf5', tipoRegistro: 'auto', datos: reg, linea1: `Placa: ${reg.placa || '-'}`, linea2: `${reg.marca || ''} ${reg.modelo || ''} ${reg.anio || ''}`, linea3: `Serial: ${reg.serial_carroceria || '-'}`, encontrado_por: detectarCoincidencias(reg, val, 'registro_automoviles') }));
-      }
-
-      const { data: vinculados, error: errVinc } = await window.supabaseClient.from('registro_vinculado').select('*').or(`cedula.eq.${val},placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`).eq('estatus', 'Verificación');
-      if (!errVinc && vinculados) {
-        vinculados.forEach(reg => resultados.push({ origen: 'registro_vinculado', id: reg.id, tipo: '🔗 Persona + Vehículo', icono: '🔗', color: '#002b5c', colorBg: '#eff6ff', tipoRegistro: 'vinculado', datos: reg, linea1: `👤 ${reg.primer_nombre || ''} ${reg.primer_apellido || ''} | C.I: ${reg.cedula || '-'}`, linea2: `🚗 ${reg.tipo_vehiculo || ''} ${reg.marca_vehiculo || ''} | Placa: ${reg.placa || '-'}`, linea3: `🏛️ ${reg.estacion_policial || '-'}`, encontrado_por: detectarCoincidencias(reg, val, 'registro_vinculado') }));
-      }
-      return resultados;
-    } catch (err) {
-      console.error('Error en búsqueda:', err);
-      throw err;
-    }
-  }
-
-  function mostrarPanelSeleccion(resultados) {
-    selectionList.innerHTML = '';
-    resultCount.textContent = resultados.length;
-    resultados.forEach((res, index) => {
-      const card = document.createElement('div');
-      card.style.cssText = `background: ${res.colorBg}; border: 2px solid ${res.color}; border-left: 6px solid ${res.color}; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 12px;`;
-      card.innerHTML = `
-        <div style="flex: 1;">
-          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;"><span style="font-size: 1.5rem;">${res.icono}</span><strong style="color: ${res.color};">${res.tipo}</strong></div>
-          <div style="font-size: 0.9rem; color: #334155;">${res.linea1}</div>
-          <div style="font-size: 0.85rem; color: #475569;">${res.linea2}</div>
-          <div style="font-size: 0.8rem; color: #64748b;">${res.linea3}</div>
-          <div style="font-size: 0.75rem; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 6px;">🔎 Coincidencia: <strong>${res.encontrado_por.join(', ')}</strong></div>
-        </div>
-        <button class="btn-seleccionar" data-index="${index}" style="padding: 12px 24px; background: ${res.color}; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer;">⚖️ Procesar</button>
-      `;
-      selectionList.appendChild(card);
-    });
-    document.querySelectorAll('.btn-seleccionar').forEach(btn => {
-      btn.addEventListener('click', (e) => seleccionarRegistro(resultados[parseInt(e.target.dataset.index)]));
-    });
-    selectionPanel.style.display = 'block';
-    form.style.display = 'none';
-    datosPanel.style.display = 'none';
-    msgBusqueda.style.display = 'none';
-  }
-
-  function seleccionarRegistro(resultado) {
-    registroSeleccionado = resultado;
-    selectionPanel.style.display = 'none';
-    const data = resultado.datos;
-
-    const badge = document.getElementById('tipo-vehiculo-badge');
-    if (badge) { badge.textContent = ` ${resultado.tipo}`; badge.style.display = 'inline-block'; }
-
-    let html = '';
-    if (resultado.origen === 'registro_personas' || resultado.origen === 'registro_vinculado') {
-      html += `<div class="dato-fila"><span class="dato-label"> Nombre:</span><span class="dato-valor">${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}</span></div>`;
-      html += `<div class="dato-fila"><span class="dato-label">🆔 Cédula:</span><span class="dato-valor">${data.cedula || '-'}</span></div>`;
-      html += `<div class="dato-fila"><span class="dato-label"> Edad:</span><span class="dato-valor">${data.edad || '-'}</span></div>`;
-      html += `<div class="dato-fila"><span class="dato-label">🌍 Nacionalidad:</span><span class="dato-valor">${data.nacionalidad || '-'}</span></div>`;
-      html += `<div class="dato-fila"><span class="dato-label">⚧ Sexo:</span><span class="dato-valor">${data.sexo || '-'}</span></div>`;
-      html += `<div class="dato-fila"><span class="dato-label">🏛️ Estación:</span><span class="dato-valor">${data.estacion_policial || '-'}</span></div>`;
-      html += `<div class="dato-fila"><span class="dato-label">📍 Detención:</span><span class="dato-valor">${data.direccion_detencion || '-'}</span></div>`;
-    }
-
-    if (resultado.origen === 'registro_motos' || resultado.origen === 'registro_automoviles' || resultado.origen === 'registro_vinculado') {
-      if (html) html += `<div style="margin-top: 12px; padding-top: 12px; border-top: 2px dashed #bbf7d0;"></div>`;
-      const tipoVeh = resultado.origen === 'registro_motos' ? '🏍️ Motocicleta' : resultado.origen === 'registro_automoviles' ? '🚙 Automóvil' : (data.tipo_vehiculo || '-');
-      html += `<div class="dato-fila"><span class="dato-label">🚗 Tipo Vehículo:</span><span class="dato-valor">${tipoVeh}</span></div>`;
-      html += `<div class="dato-fila"><span class="dato-label">🔢 Placa:</span><span class="dato-valor">${data.placa || '-'}</span></div>`;
-      html += `<div class="dato-fila"><span class="dato-label">🔢 Serial Carrocería:</span><span class="dato-valor">${data.serial_carroceria || '-'}</span></div>`;
-      html += `<div class="dato-fila"><span class="dato-label">🔢 Serial Motor:</span><span class="dato-valor">${data.serial_motor || '-'}</span></div>`;
-      html += `<div class="dato-fila"><span class="dato-label">🏭 Marca:</span><span class="dato-valor">${data.marca || data.marca_vehiculo || '-'}</span></div>`;
-      html += `<div class="dato-fila"><span class="dato-label">📦 Modelo:</span><span class="dato-valor">${data.modelo || data.modelo_vehiculo || '-'}</span></div>`;
-      html += `<div class="dato-fila"><span class="dato-label">📅 Año:</span><span class="dato-valor">${data.anio || data.anio_vehiculo || '-'}</span></div>`;
-      html += `<div class="dato-fila"><span class="dato-label"> Color:</span><span class="dato-valor">${data.color || data.color_vehiculo || '-'}</span></div>`;
-    }
-
-    datosContenido.innerHTML = html;
-    datosPanel.style.display = 'block';
-
-    document.getElementById('proc_tabla_origen').value = resultado.origen;
-    document.getElementById('proc_registro_id').value = resultado.id;
-    document.getElementById('proc_tipo_registro').value = resultado.tipoRegistro || '';
-    document.getElementById('proc_identificador').value = resultado.origen === 'registro_personas' ? (data.cedula || '') : (data.placa || '');
-    
-    form.style.display = 'block';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  if (btnBuscar && inputBusqueda) {
-    btnBuscar.addEventListener('click', async () => {
-      const val = inputBusqueda.value.trim();
-      if (val.length < 5) return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 5 caracteres.', 'error');
-      
-      mostrarMsg(msgBusqueda, '🔍 Buscando...', 'success');
-      btnBuscar.disabled = true;
-      form.style.display = 'none';
-      datosPanel.style.display = 'none';
-      selectionPanel.style.display = 'none';
-      
-      try {
-        const resultados = await buscarEnTodasLasTablas(val);
-        if (resultados.length === 0) {
-          mostrarMsg(msgBusqueda, '❌ No se encontró ningún registro en estado Verificación.', 'error');
-        } else if (resultados.length === 1) {
-          mostrarMsg(msgBusqueda, '✅ 1 registro encontrado.', 'success');
-          setTimeout(() => seleccionarRegistro(resultados[0]), 300);
+    // ==========================================
+    // 🔹 1. FUNCIONES GLOBALES
+    // ==========================================
+    window.toggleCampo = function(select, targetId) {
+        const el = document.getElementById(targetId);
+        const input = el?.querySelector('input');
+        if (select.value === 'true') {
+            if (el) el.style.display = 'block';
+            if (input) input.required = true;
         } else {
-          mostrarMsg(msgBusqueda, `🔎 Se encontraron <strong>${resultados.length} registros</strong>.`, 'success');
-          setTimeout(() => mostrarPanelSeleccion(resultados), 300);
+            if (el) el.style.display = 'none';
+            if (input) { input.value = ''; input.required = false; }
         }
-      } catch (err) {
-        mostrarMsg(msgBusqueda, '❌ Error: ' + err.message, 'error');
-      } finally {
-        btnBuscar.disabled = false;
-      }
-    });
-    inputBusqueda.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); btnBuscar.click(); } });
-  }
+    };
 
-  if (btnCancelSearch) {
-    btnCancelSearch.addEventListener('click', () => {
-      selectionPanel.style.display = 'none';
-      msgBusqueda.style.display = 'none';
-      inputBusqueda.value = '';
-      inputBusqueda.focus();
-    });
-  }
+    window.activarCampoPerforacion = function(select) {
+        const caja = document.getElementById('box-lugar-perforacion');
+        const input = document.getElementById('txt_lugar_perforacion');
+        if (!caja || !input) return;
+        if (select.value === 'true') { caja.style.display = 'block'; input.required = true; }
+        else { caja.style.display = 'none'; input.value = ''; input.required = false; }
+    };
 
-  // ==========================================
-  // ENVÍO DEL FORMULARIO (BLINDADO)
-  // ==========================================
-  if (form) {
+    window.convertirEstatura = function() {
+        const inputM = document.getElementById('p_estatura');
+        const inputCm = document.getElementById('p_estatura_cm');
+        if (!inputM) return null;
+        const metros = parseFloat(inputM.value);
+        if (!isNaN(metros) && metros >= 0.50 && metros <= 2.30) {
+            const cm = Math.round(metros * 100);
+            if (inputCm) inputCm.value = cm;
+            return cm;
+        }
+        return null;
+    };
+
+    // ==========================================
+    // 🔹 2. REFERENCIAS DEL DOM
+    // ==========================================
+    const form = document.getElementById('form-reg-personas');
+    const cedulaInput = document.getElementById('p_cedula');
+    const cedulaStatus = document.getElementById('cedula-status');
+    const tlfNumInput = document.getElementById('p_tlf_num');
+    const estaturaInput = document.getElementById('p_estatura');
+    const fechaNac = document.getElementById('p_fecha_nac');
+    const edadInput = document.getElementById('p_edad');
+    const btn = form?.querySelector('.btn-submit');
+    const msg = document.getElementById('msg-reg-personas');
+
+    // ==========================================
+    // 🔹 3. DROPDOWN DE BANDERAS
+    // ==========================================
+    const nativeSelect = document.getElementById('p_tlf_pais');
+    const displayBox = document.querySelector('.phone-display');
+    const optionsBox = document.querySelector('.phone-options');
+    const flagImg = document.getElementById('tlf-flag-img');
+    const codeText = document.getElementById('tlf-code-text');
+    const countryText = document.getElementById('tlf-country-text');
+
+    const isoMap = {
+        "Afganistán":"af","Albania":"al","Alemania":"de","Andorra":"ad","Angola":"ao",
+        "Antigua y Barbuda":"ag","Arabia Saudita":"sa","Argelia":"dz","Argentina":"ar",
+        "Armenia":"am","Australia":"au","Austria":"at","Azerbaiyán":"az","Bahamas":"bs",
+        "Baréin":"bh","Bangladés":"bd","Barbados":"bb","Bélgica":"be","Belice":"bz",
+        "Benín":"bj","Bielorrusia":"by","Birmania":"mm","Bolivia":"bo","Bosnia y Herzegovina":"ba",
+        "Botsuana":"bw","Brasil":"br","Brunéi":"bn","Bulgaria":"bg","Burkina Faso":"bf",
+        "Burundi":"bi","Bután":"bt","Cabo Verde":"cv","Camboya":"kh","Camerún":"cm",
+        "Canadá":"ca","Catar":"qa","Rep. Centroafricana":"cf","Chad":"td","Rep. Checa":"cz",
+        "Chile":"cl","China":"cn","Chipre":"cy","Colombia":"co","Comoras":"km",
+        "Congo (Rep.)":"cg","Congo (R.D.)":"cd","Corea del Norte":"kp","Corea del Sur":"kr",
+        "Costa de Marfil":"ci","Costa Rica":"cr","Croacia":"hr","Cuba":"cu","Dinamarca":"dk",
+        "Dominica":"dm","Ecuador":"ec","Egipto":"eg","El Salvador":"sv",
+        "Emiratos Árabes":"ae","Eritrea":"er","Eslovaquia":"sk","Eslovenia":"si","España":"es",
+        "Estados Unidos":"us","Estonia":"ee","Etiopía":"et","Filipinas":"ph","Finlandia":"fi",
+        "Fiyi":"fj","Francia":"fr","Gabón":"ga","Gambia":"gm","Georgia":"ge","Ghana":"gh",
+        "Granada":"gd","Grecia":"gr","Guatemala":"gt","Guinea":"gn","Guinea Ecuatorial":"gq",
+        "Guinea-Bisáu":"gw","Guyana":"gy","Haití":"ht","Honduras":"hn","Hungría":"hu",
+        "India":"in","Indonesia":"id","Irak":"iq","Irán":"ir","Irlanda":"ie","Islandia":"is",
+        "Israel":"il","Italia":"it","Jamaica":"jm","Japón":"jp","Jordania":"jo",
+        "Kazajistán":"kz","Kenia":"ke","Kirguistán":"kg","Kiribati":"ki","Kuwait":"kw",
+        "Laos":"la","Lesoto":"ls","Letonia":"lv","Líbano":"lb","Liberia":"lr","Libia":"ly",
+        "Liechtenstein":"li","Lituania":"lt","Luxemburgo":"lu","Macedonia del Norte":"mk",
+        "Madagascar":"mg","Malasia":"my","Malaui":"mw","Maldivas":"mv","Malí":"ml","Malta":"mt",
+        "Marruecos":"ma","Mauricio":"mu","Mauritania":"mr","México":"mx","Micronesia":"fm",
+        "Moldavia":"md","Mónaco":"mc","Mongolia":"mn","Montenegro":"me","Mozambique":"mz",
+        "Namibia":"na","Nauru":"nr","Nepal":"np","Nicaragua":"ni","Níger":"ne","Nigeria":"ng",
+        "Nueva Zelanda":"nz","Noruega":"no","Omán":"om","Países Bajos":"nl","Pakistán":"pk",
+        "Palaos":"pw","Palestina":"ps","Panamá":"pa","Papúa Nueva Guinea":"pg","Paraguay":"py",
+        "Perú":"pe","Polonia":"pl","Portugal":"pt","Reino Unido":"gb","Puerto Rico":"pr",
+        "Ruanda":"rw","Rumania":"ro","Rusia":"ru","Samoa":"ws","San Marino":"sm",
+        "Santa Lucía":"lc","Santo Tomé y Príncipe":"st","San Vicente y las Granadinas":"vc",
+        "Senegal":"sn","Serbia":"rs","Seychelles":"sc","Sierra Leona":"sl","Singapur":"sg",
+        "Siria":"sy","Somalia":"so","Sudáfrica":"za","Sudán":"sd","Sudán del Sur":"ss",
+        "Suecia":"se","Suiza":"ch","Surinam":"sr","Esuatini":"sz","Tayikistán":"tj",
+        "Tanzania":"tz","Tailandia":"th","Timor Oriental":"tl","Togo":"tg","Tonga":"to",
+        "Trinidad y Tobago":"tt","Túnez":"tn","Turquía":"tr","Turkmenistán":"tm","Tuvalu":"tv",
+        "Ucrania":"ua","Uganda":"ug","Uruguay":"uy","Uzbekistán":"uz","Vanuatu":"vu",
+        "Vaticano":"va","Venezuela":"ve","Vietnam":"vn","Yemen":"ye","Yibuti":"dj",
+        "Zambia":"zm","Zimbabue":"zw"
+    };
+
+    if (optionsBox && nativeSelect && displayBox) {
+        optionsBox.innerHTML = '';
+        Array.from(nativeSelect.options).forEach(opt => {
+            if (!opt.value) return;
+            const iso = isoMap[opt.text] || opt.value.replace('+','').toLowerCase();
+            const div = document.createElement('div');
+            div.className = 'phone-option';
+            div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.8rem;">${opt.text}</span>`;
+            div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;';
+            div.onmouseenter = () => div.style.background = '#f8fafc';
+            div.onmouseleave = () => div.style.background = '';
+            div.addEventListener('click', () => {
+                nativeSelect.value = opt.value;
+                flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
+                codeText.textContent = opt.value;
+                countryText.textContent = opt.text;
+                optionsBox.style.display = 'none';
+            });
+            optionsBox.appendChild(div);
+        });
+        displayBox.addEventListener('click', (e) => { e.stopPropagation(); optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block'; });
+        document.addEventListener('click', (e) => { if (!e.target.closest('.phone-dropdown-wrapper')) optionsBox.style.display = 'none'; });
+    }
+
+    // ==========================================
+    // 🔹 4. VISTA PREVIA + EDAD + MÁSCARAS
+    // ==========================================
+    const setupPreview = (idIn, idImg) => {
+        const input = document.getElementById(idIn), preview = document.getElementById(idImg);
+        if (!input || !preview) return;
+        input.addEventListener('change', function() {
+            const f = this.files[0];
+            if (f) { const r = new FileReader(); r.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; }; r.readAsDataURL(f); }
+            else preview.style.display = 'none';
+        });
+    };
+    setupPreview('foto_frontal', 'prev_frontal');
+    setupPreview('foto_perfil_izq', 'prev_izq');
+    setupPreview('foto_perfil_der', 'prev_der');
+
+    if (fechaNac && edadInput) {
+        fechaNac.addEventListener('change', () => {
+            if (!fechaNac.value) { edadInput.value = ''; return; }
+            const hoy = new Date(), nac = new Date(fechaNac.value);
+            let edad = hoy.getFullYear() - nac.getFullYear();
+            const m = hoy.getMonth() - nac.getMonth();
+            if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
+            edadInput.value = (edad >= 0 && edad <= 120) ? edad : '';
+        });
+    }
+
+    if (cedulaInput) cedulaInput.addEventListener('input', e => e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8));
+    if (tlfNumInput) tlfNumInput.addEventListener('input', e => e.target.value = e.target.value.replace(/\D/g, '').slice(0, 20));
+    if (estaturaInput) {
+        estaturaInput.addEventListener('input', window.convertirEstatura);
+        estaturaInput.addEventListener('blur', window.convertirEstatura);
+    }
+
+    // ==========================================
+    // 🔹 5. VALIDACIÓN DE CÉDULA (Personas + Procesados)
+    // ==========================================
+    let cedulaCheckTimeout = null;
+
+    async function verificarCedula(cedula) {
+        if (!cedulaStatus || !window.supabaseClient) return false;
+        cedulaStatus.className = 'cedula-status checking';
+        cedulaStatus.textContent = '🔍 Verificando...';
+        cedulaInput?.classList.remove('cedula-duplicate');
+
+        try {
+            // 1. Buscar en registro_personas
+            const { data: dataPersonas, error: errPersonas } = await window.supabaseClient
+                .from('registro_personas')
+                .select('cedula')
+                .eq('cedula', cedula)
+                .maybeSingle();
+
+            if (errPersonas) throw errPersonas;
+
+            if (dataPersonas) {
+                cedulaStatus.className = 'cedula-status error';
+                cedulaStatus.textContent = '⚠️ Cédula ya registrada en personas';
+                cedulaInput?.classList.add('cedula-duplicate');
+                return true;
+            }
+
+            // 2. Buscar en registro_procesados
+            const { data: dataProcesados, error: errProcesados } = await window.supabaseClient
+                .from('registro_procesados')
+                .select('cedula, tipo_delito')
+                .eq('cedula', cedula)
+                .maybeSingle();
+
+            if (errProcesados) throw errProcesados;
+
+            if (dataProcesados) {
+                cedulaStatus.className = 'cedula-status error';
+                const delito = dataProcesados.tipo_delito || 'sin especificar';
+                cedulaStatus.textContent = `⚠️ Cédula ya está PROCESADA`;
+                cedulaStatus.title = `Esta cédula ya tiene un proceso registrado: ${delito}`;
+                cedulaInput?.classList.add('cedula-duplicate');
+                return true;
+            }
+
+            // ✅ Disponible
+            cedulaStatus.className = 'cedula-status success';
+            cedulaStatus.textContent = '✅ Cédula disponible';
+            cedulaInput?.classList.remove('cedula-duplicate');
+            return false;
+
+        } catch (e) {
+            console.warn('⚠️ Error verificando cédula:', e.message);
+            cedulaStatus.className = 'cedula-status';
+            cedulaStatus.textContent = '';
+            return false;
+        }
+    }
+
+    if (cedulaInput && cedulaStatus) {
+        cedulaInput.addEventListener('input', function() {
+            const val = this.value.trim();
+            if (val.length > 0 && val.length < 7) {
+                cedulaStatus.className = 'cedula-status error';
+                cedulaStatus.textContent = '⚠️ Faltan dígitos (mínimo 7)';
+                this.classList.remove('cedula-duplicate');
+                return;
+            }
+            if (val.length === 0) {
+                cedulaStatus.className = 'cedula-status';
+                cedulaStatus.textContent = '';
+                this.classList.remove('cedula-duplicate');
+                return;
+            }
+            if (cedulaCheckTimeout) clearTimeout(cedulaCheckTimeout);
+            cedulaCheckTimeout = setTimeout(() => verificarCedula(val), 600);
+        });
+
+        cedulaInput.addEventListener('blur', function() {
+            const val = this.value.trim();
+            if (val.length > 0 && val.length < 7) {
+                cedulaStatus.className = 'cedula-status error';
+                cedulaStatus.textContent = '⚠️ Faltan dígitos (mínimo 7)';
+            } else if (val.length >= 7) {
+                verificarCedula(val);
+            }
+        });
+    }
+
+    // ==========================================
+    // 🔹 6. ENVÍO DEL FORMULARIO
+    // ==========================================
+    const mostrarError = (t) => {
+        if(msg){msg.textContent='❌ '+t; msg.className='msg error'; msg.style.display='block';}
+    };
+
+    if (!form || !btn) { console.error('❌ Formulario no encontrado'); return; }
+
     form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!registroSeleccionado) return mostrarMsg(msgForm, '❌ Debe buscar y seleccionar un registro primero.', 'error');
-      
-      const tipoDelito = document.getElementById('proc_tipo_delito').value.trim();
-      if (!tipoDelito) return mostrarMsg(msgForm, '⚠️ El tipo de delito es obligatorio.', 'error');
+        e.preventDefault();
+        if (!form.checkValidity()) { form.reportValidity(); return; }
 
-      for (const doc of docsUnicos) {
-        const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-        if (radio && radio.value === 'si') {
-          if (!document.getElementById(`file_${doc.id}`).files?.length) return mostrarMsg(msgForm, `⚠️ Debe subir un PDF para: ${doc.label}`, 'error');
+        const cedula = cedulaInput?.value.trim().replace(/\D/g, '') || '';
+        const edad = parseInt(edadInput?.value) || 0;
+        const tlfPais = document.getElementById('p_tlf_pais')?.value;
+        const tlfNumRaw = (document.getElementById('p_tlf_num')?.value.trim().replace(/\D/g, '') || '').slice(0, 20);
+        const estCm = window.convertirEstatura();
+
+        // Validaciones
+        if (cedula.length < 7 || cedula.length > 8) {
+            mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
+            cedulaInput?.focus();
+            return;
         }
-      }
-
-      for (const doc of docsMultiples) {
-        const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-        if (radio && radio.value === 'si' && archivosMultiples[doc.id].length < doc.min) {
-          return mostrarMsg(msgForm, `❌ Debe subir al menos ${doc.min} PDF para: ${doc.label}`, 'error');
+        if (!document.getElementById('p_fecha_nac')?.value || edad < 0 || edad > 120) {
+            mostrarError('Verifique la fecha de nacimiento.');
+            document.getElementById('p_fecha_nac')?.focus();
+            return;
         }
-      }
-
-      const loadingOverlay = document.getElementById('loading-overlay');
-      if (loadingOverlay) loadingOverlay.classList.add('active');
-      
-      const btnSubmit = form.querySelector('.btn-submit');
-      btnSubmit.disabled = true;
-      btnSubmit.textContent = '⏳ Procesando y subiendo archivos...';
-      msgForm.style.display = 'none';
-
-      try {
-        const { data: { user } } = await window.supabaseClient.auth.getUser();
-        const bucket = window.supabaseClient.storage.from('procesados_documentos');
-        const uid = sessionStorage.getItem('pnb_user_id') || 'user';
-        const ts = Date.now();
-
-        const subirPDF = async (fileInputId, suffix) => {
-          const fileInput = document.getElementById(fileInputId);
-          if (fileInput?.files?.[0]) {
-            const path = `${uid}/${ts}_${suffix}.pdf`;
-            const { error } = await bucket.upload(path, fileInput.files[0], { contentType: 'application/pdf' });
-            if (error) throw new Error(`Error subiendo ${suffix}: ${error.message}`);
-            return bucket.getPublicUrl(path).data.publicUrl;
-          }
-          return null;
-        };
-
-        const subirPDFsMultiples = async (campo) => {
-          const urls = [];
-          for (let i = 0; i < archivosMultiples[campo].length; i++) {
-            const path = `${uid}/${ts}_${campo}_${i}.pdf`;
-            const { error } = await bucket.upload(path, archivosMultiples[campo][i], { contentType: 'application/pdf' });
-            if (error) throw new Error(`Error subiendo ${campo}[${i}]: ${error.message}`);
-            urls.push(bucket.getPublicUrl(path).data.publicUrl);
-          }
-          return urls;
-        };
-
-        const dataOriginal = registroSeleccionado.datos;
-        const documentosAdjuntos = {};
-
-        // ✅ CONSTRUCCIÓN SEGURA: SOLO COLUMNAS QUE EXISTEN EN TU CSV
-        const dataToInsert = {
-          tabla_origen: registroSeleccionado.origen,
-          registro_id: registroSeleccionado.id,
-          tipo_registro: registroSeleccionado.tipoRegistro || '',
-          identificador_principal: document.getElementById('proc_identificador').value,
-          tipo_delito: tipoDelito,
-          procesado_por: user?.email || 'usuario@sistema',
-          observaciones: document.getElementById('proc_observaciones').value.trim() || null,
-          cedula: dataOriginal.cedula || null,
-          fecha_procesamiento: new Date().toISOString(),
-          estatus: 'Procesado'
-        };
-
-        // Mapeo de documentos a columnas reales + respaldo en JSON
-        for (const doc of docsUnicos) {
-          const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-          if (radio?.value === 'si') {
-            const url = await subirPDF(`file_${doc.id}`, doc.id);
-            dataToInsert[doc.dbColumn] = url;
-            documentosAdjuntos[doc.id] = url;
-          } else {
-            dataToInsert[doc.dbColumn] = null;
-            documentosAdjuntos[doc.id] = null;
-          }
+        if (!estCm || estCm < 50 || estCm > 230) {
+            mostrarError('Estatura inválida (0.50m - 2.30m).');
+            document.getElementById('p_estatura')?.focus();
+            return;
+        }
+        if (tlfPais && tlfNumRaw.length < 1) {
+            mostrarError('Ingrese al menos un dígito para el teléfono.');
+            document.getElementById('p_tlf_num')?.focus();
+            return;
         }
 
-        for (const doc of docsMultiples) {
-          const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-          if (radio?.value === 'si' && archivosMultiples[doc.id].length > 0) {
-            const urls = await subirPDFsMultiples(doc.id);
-            dataToInsert[doc.dbColumn] = urls;
-            documentosAdjuntos[doc.id] = urls;
-          } else {
-            dataToInsert[doc.dbColumn] = [];
-            documentosAdjuntos[doc.id] = [];
-          }
+        // ✅ Verificación final contra ambas tablas
+        const estaDuplicada = await verificarCedula(cedula);
+        if (estaDuplicada) {
+            const { data: dataProc } = await window.supabaseClient
+                .from('registro_procesados')
+                .select('tipo_delito')
+                .eq('cedula', cedula)
+                .maybeSingle();
+
+            if (dataProc) {
+                mostrarError(`Esta cédula ya está en PROCESADOS (${dataProc.tipo_delito || 'sin delito'}).`);
+            } else {
+                mostrarError('Esta cédula ya está registrada en el sistema.');
+            }
+            cedulaInput?.focus();
+            return;
         }
 
-        // Guardamos TODO el registro original + los documentos en el campo JSON
-        dataToInsert.datos_originales = { ...dataOriginal, documentos_adjuntos: documentosAdjuntos };
+        btn.disabled = true;
+        btn.textContent = '⏳ Guardando...';
+        if(msg) msg.style.display='none';
 
-        console.log("📦 Datos finales a insertar en BD:", dataToInsert);
+        try {
+            const bucket = window.supabaseClient.storage.from('fotos_personas');
+            const files = {
+                f: document.getElementById('foto_frontal').files[0],
+                i: document.getElementById('foto_perfil_izq').files[0],
+                d: document.getElementById('foto_perfil_der').files[0]
+            };
 
-        const { error: insErr } = await window.supabaseClient.from('registro_procesados').insert([dataToInsert]);
-        if (insErr) throw new Error(`Error al registrar: ${insErr.message}`);
+            if (!files.f || !files.i || !files.d) {
+                throw new Error('Las 3 fotografías son obligatorias.');
+            }
 
-        const { error: updErr } = await window.supabaseClient.from(registroSeleccionado.origen).update({ estatus: 'Procesado' }).eq('id', registroSeleccionado.id);
-        if (updErr) throw new Error(`Error al cambiar estatus: ${updErr.message}`);
+            const uid = sessionStorage.getItem('pnb_user_id') || 'user', ts = Date.now();
+            const paths = { f: `${uid}/${ts}_f.jpg`, i: `${uid}/${ts}_i.jpg`, d: `${uid}/${ts}_d.jpg` };
 
-        mostrarMsg(msgForm, '✅ Procesado registrado exitosamente.', 'success');
-        
-        setTimeout(() => {
-          form.style.display = 'none';
-          datosPanel.style.display = 'none';
-          inputBusqueda.value = '';
-          msgBusqueda.style.display = 'none';
-          registroSeleccionado = null;
-          form.reset();
-          docsMultiples.forEach(d => { archivosMultiples[d.id] = []; actualizarListaArchivos(d.id, d.max); });
-          document.querySelectorAll('.doc-upload-area').forEach(area => area.classList.remove('active'));
-          document.querySelectorAll('.file-status-container').forEach(c => c.innerHTML = '');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 3000);
+            const upload = async (file, path) => {
+                const { error } = await bucket.upload(path, file, { cacheControl: '3600' });
+                if(error) throw new Error('Error subiendo imágenes.');
+                return bucket.getPublicUrl(path).data.publicUrl;
+            };
 
-      } catch (err) {
-        console.error('Error al procesar:', err);
-        mostrarMsg(msgForm, '❌ Error: ' + err.message, 'error');
-      } finally {
-        const loadingOverlay = document.getElementById('loading-overlay');
-        if (loadingOverlay) loadingOverlay.classList.remove('active');
-        const btnSubmit = form.querySelector('.btn-submit');
-        btnSubmit.disabled = false;
-        btnSubmit.textContent = '💾 Registrar Procesado y Cambiar Estatus';
-      }
+            const urls = {
+                f: await upload(files.f, paths.f),
+                i: await upload(files.i, paths.i),
+                d: await upload(files.d, paths.d)
+            };
+
+            const tlfCodigoFinal = (tlfPais && tlfNumRaw.length >= 1) ? tlfPais : null;
+            const tlfNumeroFinal = (tlfPais && tlfNumRaw.length >= 1) ? tlfNumRaw : null;
+
+            const data = {
+                estatus: 'Verificación',
+                estacion_policial: document.getElementById('p_estacion')?.value || null,
+                direccion_detencion: document.getElementById('p_direccion_detencion')?.value.trim() || null,
+                foto_frontal: urls.f, foto_perfil_izq: urls.i, foto_perfil_der: urls.d,
+                primer_nombre: document.getElementById('p_nombre1')?.value.trim(),
+                segundo_nombre: document.getElementById('p_nombre2')?.value.trim() || null,
+                primer_apellido: document.getElementById('p_apellido1')?.value.trim(),
+                segundo_apellido: document.getElementById('p_apellido2')?.value.trim() || null,
+                cedula,
+                fecha_nacimiento: document.getElementById('p_fecha_nac')?.value,
+                edad,
+                tlf_pais: tlfCodigoFinal,
+                tlf_numero: tlfNumeroFinal,
+                direccion: document.getElementById('p_direccion')?.value.trim(),
+                apodo: document.getElementById('p_apodo')?.value.trim() || null,
+                marca_corporal: document.getElementById('p_marca')?.value.trim() || null,
+                nacionalidad: document.getElementById('p_nacionalidad')?.value,
+                sexo: document.getElementById('p_sexo')?.value,
+                estatura_cm: estCm,
+                color_piel: document.getElementById('p_color_piel')?.value,
+                color_ojos: document.getElementById('p_color_ojos')?.value,
+                color_cabello: document.getElementById('p_color_cabello')?.value,
+                complexion: document.getElementById('p_complexion')?.value,
+                usa_lentes: document.getElementById('p_lentes')?.value === 'true',
+                detalle_lentes: document.getElementById('p_lentes')?.value === 'true' ? document.getElementById('txt_lentes')?.value.trim() : null,
+                perforaciones: document.getElementById('p_perforaciones')?.value === 'true',
+                detalle_perforaciones: document.getElementById('p_perforaciones')?.value === 'true' ? document.getElementById('txt_lugar_perforacion')?.value.trim() : null,
+                condicion_medica: document.getElementById('p_cond_medica')?.value === 'true' ? document.getElementById('txt_cond')?.value : null,
+                consume_medicamento: document.getElementById('p_medicamento')?.value === 'true' ? document.getElementById('txt_med')?.value : null,
+                problema_judicial: document.getElementById('p_judicial')?.value === 'true' ? document.getElementById('txt_jud')?.value : null,
+                observaciones: document.getElementById('p_observaciones')?.value.trim() || null
+            };
+
+            const { error } = await window.supabaseClient.from('registro_personas').insert([data]);
+            if (error) throw error;
+
+            if (msg) {
+                msg.textContent = '✅ Registro guardado exitosamente.';
+                msg.className = 'msg success';
+                msg.style.display = 'block';
+                setTimeout(() => msg.style.display = 'none', 4000);
+            }
+
+            form.reset();
+            if(edadInput) edadInput.value = '';
+            document.querySelectorAll('.hidden-field').forEach(e => e.style.display='none');
+            document.querySelectorAll('.img-preview').forEach(e => e.style.display='none');
+            if(cedulaStatus){cedulaStatus.className='cedula-status';cedulaStatus.textContent='';}
+            if(nativeSelect) nativeSelect.value = '';
+            flagImg.src = 'https://flagcdn.com/w20/xx.png';
+            codeText.textContent = '+XX';
+            countryText.textContent = 'País';
+
+        } catch (err) {
+            console.error('Error:', err);
+            let m = 'Error inesperado. Intente nuevamente.';
+            if (err.message.includes('23505') || err.message.includes('cedula')) m = 'Esta cédula ya está registrada.';
+            else if (err.message.includes('storage')) m = 'Error subiendo fotografías.';
+            else if (err.message.includes('22001') || err.message.includes('too long')) m = 'El número de teléfono es demasiado largo (máx. 20 dígitos).';
+            else if (err.message.includes('tlf_numero_check')) m = 'Formato de teléfono inválido.';
+            mostrarError(m);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '✅ Registrar Persona';
+        }
     });
-  }
-  
-  console.log("✅ Módulo reg-procesados.js inicializado correctamente");
+
+    console.log("✅ Módulo reg-personas.js inicializado correctamente");
 };
