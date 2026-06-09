@@ -276,129 +276,198 @@ if (form) {
     });
 }
 
-    if (form && submitBtn) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!form.checkValidity()) { form.reportValidity(); return; }
-            if (!currentId) { mostrarError('Busque un registro primero.'); return; }
+ if (form && submitBtn) {
+form.addEventListener('submit', async (e) => {
+e.preventDefault();
+if (!form.checkValidity()) { form.reportValidity(); return; }
+if (!currentId) { mostrarError('Busque un registro primero.'); return; }
 
-            const nuevaCedula = document.getElementById('p_cedula')?.value.trim().replace(/\D/g, '');
-            if (nuevaCedula.length < 7 || nuevaCedula.length > 8) {
-                mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
-                document.getElementById('p_cedula')?.focus();
-                return;
-            }
-            
-            const verif = await verificarCedulaEdicion(nuevaCedula, currentId);
-            if (!verif.valido) {
-                mostrarError('Esta cédula ya está registrada por otra persona.');
-                document.getElementById('p_cedula')?.focus();
-                return;
-            }
+const nuevaCedula = document.getElementById('p_cedula')?.value.trim().replace(/\D/g, '');
+if (nuevaCedula.length < 7 || nuevaCedula.length > 8) {
+mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
+document.getElementById('p_cedula')?.focus();
+return;
+}
 
-            const fechaVal = document.getElementById('p_fecha_nac')?.value;
-            const edadCalculada = window.calcularEdad(fechaVal);
-            if (!fechaVal || edadCalculada === null) {
-                mostrarError('Verifique la fecha de nacimiento para calcular la edad correctamente.');
-                document.getElementById('p_fecha_nac')?.focus();
-                return;
-            }
-            const estCm = window.convertirEstatura();
-            if (!estCm) { mostrarError('La estatura es obligatoria y debe estar entre 0.50 y 2.30 m.'); return; }
+const verif = await verificarCedulaEdicion(nuevaCedula, currentId);
+if (!verif.valido) {
+mostrarError('Esta cédula ya está registrada por otra persona.');
+document.getElementById('p_cedula')?.focus();
+return;
+}
 
-            submitBtn.disabled = true;
-            submitBtn.textContent = '⏳ Guardando cambios...';
-            if (msgForm) msgForm.style.display = 'none';
+const fechaVal = document.getElementById('p_fecha_nac')?.value;
+const edadCalculada = window.calcularEdad(fechaVal);
+if (!fechaVal || edadCalculada === null) {
+mostrarError('Verifique la fecha de nacimiento para calcular la edad correctamente.');
+document.getElementById('p_fecha_nac')?.focus();
+return;
+}
 
-            try {
-                const bucket = window.supabaseClient.storage.from('fotos_personas');
-                const uploadIfChanged = async (fileInput, originalUrl) => {
-                    const f = document.getElementById(fileInput).files[0];
-                    if (!f) return originalUrl;
-                    const uid = sessionStorage.getItem('pnb_user_id') || 'user';
-                    const path = `${uid}/${Date.now()}_${fileInput}.jpg`;
-                    const { error } = await bucket.upload(path, f, { cacheControl: '3600' });
-                    if (error) throw new Error('Error subiendo imagen: ' + error.message);
-                    return bucket.getPublicUrl(path).data.publicUrl;
-                };
+const estCm = window.convertirEstatura();
+if (!estCm) { mostrarError('La estatura es obligatoria y debe estar entre 0.50 y 2.30 m.'); return; }
 
-                const newFront = await uploadIfChanged('foto_frontal', currentUrls.front);
-                const newIzq = await uploadIfChanged('foto_perfil_izq', currentUrls.izq);
-                const newDer = await uploadIfChanged('foto_perfil_der', currentUrls.der);
+// ✅ VALIDAR QUE AL MENOS LA FOTO FRONTAL EXISTA
+const fotoFrontalFile = document.getElementById('foto_frontal').files[0];
+const fotoIzqFile = document.getElementById('foto_perfil_izq').files[0];
+const fotoDerFile = document.getElementById('foto_perfil_der').files[0];
 
-                const tlfPais = document.getElementById('p_tlf_pais')?.value;
-                const tlfNumRaw = (document.getElementById('p_tlf_num')?.value.trim().replace(/\D/g, '') || '').slice(0, 20);
-                const tlfCodigoFinal = (tlfPais && tlfNumRaw.length >= 1) ? tlfPais : null;
-                const tlfNumeroFinal = (tlfPais && tlfNumRaw.length >= 1) ? tlfNumRaw : null;
+if (!fotoFrontalFile && !currentUrls.front) {
+mostrarError('La fotografía frontal es obligatoria.');
+return;
+}
 
-                const updateData = {
-                    cedula: nuevaCedula,
-                    foto_frontal: newFront, foto_perfil_izq: newIzq, foto_perfil_der: newDer,
-                    primer_nombre: document.getElementById('p_nombre1').value.trim(),
-                    segundo_nombre: document.getElementById('p_nombre2').value.trim() || null,
-                    primer_apellido: document.getElementById('p_apellido1').value.trim(),
-                    segundo_apellido: document.getElementById('p_apellido2').value.trim() || null,
-                    fecha_nacimiento: fechaVal,
-                    edad: edadCalculada,
-                    tlf_pais: tlfCodigoFinal,
-                    tlf_numero: tlfNumeroFinal,
-                    direccion: document.getElementById('p_direccion').value.trim(),
-                    apodo: document.getElementById('p_apodo').value.trim() || null,
-                    marca_corporal: document.getElementById('p_marca').value.trim() || null,
-                    nacionalidad: document.getElementById('p_nacionalidad').value,
-                    sexo: document.getElementById('p_sexo').value,
-                    estatura_cm: estCm,
-                    color_piel: document.getElementById('p_color_piel').value,
-                    color_ojos: document.getElementById('p_color_ojos').value,
-                    color_cabello: document.getElementById('p_color_cabello').value,
-                    complexion: document.getElementById('p_complexion').value,
-                    usa_lentes: document.getElementById('p_lentes').value === 'true',
-                    detalle_lentes: document.getElementById('p_lentes').value === 'true' ? document.getElementById('txt_lentes').value.trim() : null,
-                    perforaciones: document.getElementById('p_perforaciones').value === 'true',
-                    detalle_perforaciones: document.getElementById('p_perforaciones').value === 'true' ? document.getElementById('txt_lugar_perforacion').value.trim() : null,
-                    condicion_medica: document.getElementById('p_cond_medica').value === 'true' ? document.getElementById('txt_cond').value : null,
-                    consume_medicamento: document.getElementById('p_medicamento').value === 'true' ? document.getElementById('txt_med').value : null,
-                    problema_judicial: document.getElementById('p_judicial').value === 'true' ? document.getElementById('txt_jud').value : null,
-                    estacion_policial: document.getElementById('p_estacion').value,
-                    direccion_detencion: document.getElementById('p_direccion_detencion')?.value.trim() || null,
-                    observaciones: document.getElementById('p_observaciones').value.trim() || null
-                };
+submitBtn.disabled = true;
+submitBtn.textContent = '⏳ Guardando cambios...';
+if (msgForm) msgForm.style.display = 'none';
 
-                const { data, error } = await window.supabaseClient
-                    .from('registro_personas')
-                    .update(updateData)
-                    .eq('id', currentId)
-                    .select('id, cedula');
-                
-                if (error) throw error;
-                if (!data || data.length === 0) throw new Error('No se pudo aplicar la actualización.');
+try {
+const bucket = window.supabaseClient.storage.from('fotos_personas');
 
-                if (msgForm) {
-                    const cedulaCambio = (nuevaCedula !== cedulaOriginal) ? ` (Cédula: ${cedulaOriginal} → ${nuevaCedula})` : '';
-                    msgForm.textContent = `✅ Cambios guardados correctamente.${cedulaCambio}`;
-                    msgForm.className = 'msg success';
-                    msgForm.style.display = 'block';
-                    setTimeout(() => msgForm.style.display = 'none', 5000);
-                }
-                setTimeout(() => { form.style.display = 'none'; buscarInput.value = ''; msgBuscar.style.display = 'none'; currentId = null; cedulaOriginal = ''; }, 5000);
+const uploadIfChanged = async (file, originalUrl, suffix) => {
+if (!file) return originalUrl;
+const uid = sessionStorage.getItem('pnb_user_id') || 'user';
+const path = `${uid}/${Date.now()}_${suffix}.jpg`;
+const { error } = await bucket.upload(path, file, { cacheControl: '3600' });
+if (error) throw new Error('Error subiendo imagen: ' + error.message);
+return bucket.getPublicUrl(path).data.publicUrl;
+};
 
-            } catch (err) {
-                console.error('Error actualización:', err);
-                let mensaje = 'Error al guardar cambios. Intente nuevamente.';
-                if (err.message.includes('23505') || err.message.includes('unique_cedula') || err.message.includes('cedula_key')) {
-                    mensaje = 'Esta cédula ya está registrada por otra persona. Verifique el número.';
-                } else if (err.message.includes('storage')) {
-                    mensaje = 'No se pudieron subir las fotografías nuevas.';
-                } else if (err.message.includes('22001') || err.message.includes('too long')) {
-                    mensaje = 'El número de teléfono es demasiado largo (máx. 20 dígitos).';
-                } else if (err.message.includes('edad') || err.message.includes('23502')) {
-                    mensaje = 'Error con la edad. Verifique la fecha de nacimiento.';
-                }
-                mostrarError(mensaje);
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = '💾 Guardar Cambios';
-            }
-        });
-    }
+// Subir fotos solo si se proporcionaron nuevas
+const newFront = await uploadIfChanged(fotoFrontalFile, currentUrls.front, 'f');
+const newIzq = await uploadIfChanged(fotoIzqFile, currentUrls.izq, 'i');
+const newDer = await uploadIfChanged(fotoDerFile, currentUrls.der, 'd');
+
+const tlfPais = document.getElementById('p_tlf_pais')?.value;
+const tlfNumRaw = (document.getElementById('p_tlf_num')?.value.trim().replace(/\D/g, '') || '').slice(0, 20);
+const tlfCodigoFinal = (tlfPais && tlfNumRaw.length >= 1) ? tlfPais : null;
+const tlfNumeroFinal = (tlfPais && tlfNumRaw.length >= 1) ? tlfNumRaw : null;
+
+const updateData = {
+cedula: nuevaCedula,
+foto_frontal: newFront, foto_perfil_izq: newIzq, foto_perfil_der: newDer,
+primer_nombre: document.getElementById('p_nombre1').value.trim(),
+segundo_nombre: document.getElementById('p_nombre2').value.trim() || null,
+primer_apellido: document.getElementById('p_apellido1').value.trim(),
+segundo_apellido: document.getElementById('p_apellido2').value.trim() || null,
+fecha_nacimiento: fechaVal,
+edad: edadCalculada,
+tlf_pais: tlfCodigoFinal,
+tlf_numero: tlfNumeroFinal,
+direccion: document.getElementById('p_direccion').value.trim(),
+apodo: document.getElementById('p_apodo').value.trim() || null,
+marca_corporal: document.getElementById('p_marca').value.trim() || null,
+nacionalidad: document.getElementById('p_nacionalidad').value,
+sexo: document.getElementById('p_sexo').value,
+estatura_cm: estCm,
+color_piel: document.getElementById('p_color_piel').value,
+color_ojos: document.getElementById('p_color_ojos').value,
+color_cabello: document.getElementById('p_color_cabello').value,
+complexion: document.getElementById('p_complexion').value,
+usa_lentes: document.getElementById('p_lentes').value === 'true',
+detalle_lentes: document.getElementById('p_lentes').value === 'true' ? document.getElementById('txt_lentes').value.trim() : null,
+perforaciones: document.getElementById('p_perforaciones').value === 'true',
+detalle_perforaciones: document.getElementById('p_perforaciones').value === 'true' ? document.getElementById('txt_lugar_perforacion').value.trim() : null,
+condicion_medica: document.getElementById('p_cond_medica').value === 'true' ? document.getElementById('txt_cond').value : null,
+consume_medicamento: document.getElementById('p_medicamento').value === 'true' ? document.getElementById('txt_med').value : null,
+problema_judicial: document.getElementById('p_judicial').value === 'true' ? document.getElementById('txt_jud').value : null,
+estacion_policial: document.getElementById('p_estacion').value,
+direccion_detencion: document.getElementById('p_direccion_detencion')?.value.trim() || null,
+observaciones: document.getElementById('p_observaciones').value.trim() || null
+};
+
+const { data, error } = await window.supabaseClient
+.from('registro_personas')
+.update(updateData)
+.eq('id', currentId)
+.select('id, cedula');
+
+if (error) throw error;
+if (!data || data.length === 0) throw new Error('No se pudo aplicar la actualización.');
+
+// ✅ CREAR LOG DE MODIFICACIÓN
+(async () => {
+try {
+let userName = sessionStorage.getItem('pnb_user_name') || sessionStorage.getItem('nombre') || 'Usuario';
+let userEmail = sessionStorage.getItem('pnb_user_email') || sessionStorage.getItem('email') || 'usuario@sistema';
+let userId = sessionStorage.getItem('pnb_user_id');
+
+// Buscar nombre completo en perfiles_usuario
+if (userId) {
+const { data: perfil } = await window.supabaseClient
+.from('perfiles_usuario')
+.select('nombre, email')
+.eq('user_id', userId)
+.maybeSingle();
+if (perfil) {
+userName = perfil.nombre || userName;
+userEmail = perfil.email || userEmail;
+}
+}
+
+// Asegurar email con dominio
+if (userEmail && !userEmail.includes('@')) {
+userEmail = userEmail + '@gmail.com';
+}
+
+const nombreCompleto = `${updateData.primer_nombre} ${updateData.primer_apellido}`.trim();
+
+await window.supabaseClient.from('sistema_logs').insert([{
+accion: 'MODIFICAR',
+modulo: 'PERSONAS',
+registro_id: currentId,
+user_id: userId || null,
+user_nombre: userName,
+user_email: userEmail,
+detalles: JSON.stringify({
+cedula: nuevaCedula,
+nombre_completo: nombreCompleto,
+estatus: 'Verificación',
+estacion: updateData.estacion_policial,
+cambios_realizados: 'Actualización de datos'
+})
+}]);
+
+console.log('✅ Log de modificación creado:', userName);
+} catch (logErr) {
+console.warn('⚠️ Falló log de modificación:', logErr);
+}
+})();
+
+// ✅ MOSTRAR ÉXITO
+if (msgForm) {
+const cedulaCambio = (nuevaCedula !== cedulaOriginal) ? ` (Cédula: ${cedulaOriginal} → ${nuevaCedula})` : '';
+msgForm.textContent = `✅ Cambios guardados correctamente.${cedulaCambio}`;
+msgForm.className = 'msg success';
+msgForm.style.display = 'block';
+setTimeout(() => msgForm.style.display = 'none', 5000);
+}
+
+setTimeout(() => { 
+form.style.display = 'none'; 
+buscarInput.value = ''; 
+msgBuscar.style.display = 'none'; 
+currentId = null; 
+cedulaOriginal = ''; 
+}, 5000);
+
+} catch (err) {
+console.error('Error actualización:', err);
+let mensaje = 'Error al guardar cambios. Intente nuevamente.';
+if (err.message.includes('23505') || err.message.includes('unique_cedula') || err.message.includes('cedula_key')) {
+mensaje = 'Esta cédula ya está registrada por otra persona. Verifique el número.';
+} else if (err.message.includes('storage')) {
+mensaje = 'No se pudieron subir las fotografías nuevas.';
+} else if (err.message.includes('22001') || err.message.includes('too long')) {
+mensaje = 'El número de teléfono es demasiado largo (máx. 20 dígitos).';
+} else if (err.message.includes('edad') || err.message.includes('23502')) {
+mensaje = 'Error con la edad. Verifique la fecha de nacimiento.';
+}
+mostrarError(mensaje);
+} finally {
+submitBtn.disabled = false;
+submitBtn.textContent = '💾 Guardar Cambios';
+}
+});
+}
 };
