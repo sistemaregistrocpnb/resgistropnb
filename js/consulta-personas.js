@@ -1,6 +1,4 @@
-window.initConsultaPersonas = function() {
-    console.log("⚙️ [DEBUG] Iniciando módulo consulta-personas.js (VERSIÓN FINAL COMPLETA)");
-    
+ window.initConsultaPersonas = function() {
     const el = (id) => document.getElementById(id);
     const buscarInput = el('cp_buscar_cedula');
     const btnBuscar = el('cp_btn_buscar');
@@ -15,14 +13,18 @@ window.initConsultaPersonas = function() {
     let personaActual = null;
     let tipoRegistroActual = null;
     let datosProcesado = null;
+    let incidenciasPaginaActual = 1;
+    const incidenciasPorPagina = 10;
+    let totalIncidencias = 0;
+    let cedulaActualIncidencias = null;
+    let tipoActualIncidencias = null;
 
     if (btnBuscar) btnBuscar.onclick = () => buscarPersona();
-    
     if (buscarInput) {
         buscarInput.oninput = (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8); };
         buscarInput.onkeypress = (e) => { if (e.key === 'Enter') { e.preventDefault(); btnBuscar?.click(); } };
     }
-    
+
     if (el('cp_modal_close')) el('cp_modal_close').onclick = () => modalDetalles.classList.remove('active');
     if (el('cp_modal_cerrar')) el('cp_modal_cerrar').onclick = () => modalDetalles.classList.remove('active');
     if (el('cp_modal_inc_close')) el('cp_modal_inc_close').onclick = () => modalIncidencia.classList.remove('active');
@@ -45,7 +47,7 @@ window.initConsultaPersonas = function() {
         msg.textContent = texto;
         msg.className = `msg ${tipo}`;
         msg.style.display = 'block';
-        if (tipo === 'success') setTimeout(() => { if (msg) msg.style.display = 'none'; }, 4000);
+        if (tipo === 'success') setTimeout(() => { if (msg) msg.style.display = 'none'; }, 3000);
     }
 
     async function tienePermisosIncidencia() {
@@ -58,7 +60,6 @@ window.initConsultaPersonas = function() {
             const nivel = (perfil.nivel || '').toLowerCase().trim();
             return nivel === 'administrador' || nivel === 'moderador';
         } catch (err) {
-            console.error("Error verificando permisos:", err);
             return false;
         }
     }
@@ -76,6 +77,7 @@ window.initConsultaPersonas = function() {
         personaActual = null;
         tipoRegistroActual = null;
         datosProcesado = null;
+        incidenciasPaginaActual = 1; 
 
         try {
             const { data: persona, error: errPersona } = await window.supabaseClient
@@ -97,6 +99,14 @@ window.initConsultaPersonas = function() {
                 await renderFichaBreve(persona, 'persona');
                 await window.cargarIncidencias(cedula, 'persona', 1);
                 mostrarMensaje('✅ Persona encontrada', 'success');
+                
+                // ✅ REGISTRAR LOG DE CONSULTA DE PERSONA
+                if (typeof registrarLog === 'function') {
+                    await registrarLog('CONSULTA_PERSONA', 'Consulta Personas', null, { 
+                        valor_buscado: cedula,
+                        estatus: persona.estatus || 'N/A'
+                    });
+                }
                 return;
             }
 
@@ -119,6 +129,15 @@ window.initConsultaPersonas = function() {
                 await renderFichaBreve(vinculado, 'vinculado');
                 await window.cargarIncidencias(cedula, 'vinculado', 1);
                 mostrarMensaje('✅ Vehículo vinculado encontrado', 'success');
+                
+                // ✅ REGISTRAR LOG DE CONSULTA DE VINCULADO
+                if (typeof registrarLog === 'function') {
+                    await registrarLog('CONSULTA_PERSONA', 'Consulta Personas', null, { 
+                        valor_buscado: cedula,
+                        tipo: 'Vinculado',
+                        estatus: vinculado.estatus || 'N/A'
+                    });
+                }
                 return;
             }
             mostrarMensaje('❌ No se encontró ninguna persona con esa cédula', 'error');
@@ -204,7 +223,6 @@ window.initConsultaPersonas = function() {
         }, 100);
     }
 
-    // ✅ FUNCIÓN COMPLETA DE DETALLES (CON TODOS LOS CAMPOS DE VINCULADO)
     async function mostrarDetallesCompletos(data, tipo) {
         if (!modalBody || !modalTitulo) return;
         modalTitulo.textContent = `📋 Detalles - ${tipo === 'persona' ? 'Persona' : 'Vehículo Vinculado'}`;
@@ -323,7 +341,6 @@ window.initConsultaPersonas = function() {
                 }
                 html += `</div>`;
             } else {
-                // ✅ SECCIÓN COMPLETA PARA VINCULADO (PERSONA + VEHÍCULO + DETENCIÓN)
                 if (data.foto_frontal_persona || data.foto_perfil_izq_persona || data.foto_perfil_der_persona) {
                     html += `<div class="seccion-titulo">📸 Fotografías de la Persona</div><div class="fotos-container">`;
                     if (data.foto_frontal_persona) html += `<div class="foto-item"><img src="${data.foto_frontal_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
@@ -344,8 +361,6 @@ window.initConsultaPersonas = function() {
                 html += `<div class="seccion-titulo">👤 Datos de la Persona</div>`;
                 html += alertasHtmlVinc;
                 html += `<div class="ficha-completa-grid">`;
-                
-                // ✅ TODOS LOS CAMPOS DE LA PERSONA VINCULADA SEGÚN EL CSV
                 const camposPersonaVinc = [
                     { label: 'Primer Nombre', value: data.primer_nombre },
                     { label: 'Segundo Nombre', value: data.segundo_nombre },
@@ -370,7 +385,7 @@ window.initConsultaPersonas = function() {
                     { label: 'Detalle Perfor.', value: data.detalle_perforaciones },
                     { label: 'Cond. Médica', value: data.condicion_medica },
                     { label: 'Medicamento', value: data.consume_medicamento },
-                    { label: 'Problema Judicial', value: data.problema_judicial }
+                    { label: 'Prob. Judicial', value: data.problema_judicial }
                 ];
                 camposPersonaVinc.forEach(c => {
                     if (c.value !== null && c.value !== undefined && c.value !== '') {
@@ -389,8 +404,6 @@ window.initConsultaPersonas = function() {
                 }
                 
                 html += `<div class="seccion-titulo">🚗 Datos del Vehículo</div><div class="ficha-completa-grid">`;
-                
-                // ✅ TODOS LOS CAMPOS DEL VEHÍCULO SEGÚN EL CSV
                 const camposVehiculo = [
                     { label: 'Placa', value: data.placa, highlight: true },
                     { label: 'Tipo', value: data.tipo_vehiculo },
@@ -464,36 +477,44 @@ window.initConsultaPersonas = function() {
         }
     }
 
-    // ✅ FUNCIÓN GLOBAL PARA CARGAR INCIDENCIAS (CON BOTÓN DE ELIMINAR)
     window.cargarIncidencias = async function(cedula, tipo, pagina = 1) {
-        console.log("🔄 [DEBUG] Recargando lista de incidencias para:", cedula, tipo, "Página:", pagina);
-        if (!incidenciasSection) {
-            console.error("❌ [DEBUG] NO SE ENCUENTRA el elemento cp_incidencias_section en el HTML");
-            return;
-        }
-
+        if (!incidenciasSection) return;
+        
+        cedulaActualIncidencias = cedula;
+        tipoActualIncidencias = tipo;
+        incidenciasPaginaActual = pagina;
+        
         try {
+            const desde = (pagina - 1) * incidenciasPorPagina;
+            const hasta = desde + incidenciasPorPagina - 1;
+            
+            const { data: todasIncidencias, error: errorCount } = await window.supabaseClient
+                .from('registro_incidencias')
+                .select('*', { count: 'exact', head: false })
+                .eq('cedula', cedula)
+                .eq('tipo_registro', tipo);
+            
+            if (errorCount) throw errorCount;
+            
+            totalIncidencias = todasIncidencias ? todasIncidencias.length : 0;
+            const totalPaginas = Math.ceil(totalIncidencias / incidenciasPorPagina);
             const { data: incidencias, error } = await window.supabaseClient
                 .from('registro_incidencias')
                 .select('*')
                 .eq('cedula', cedula)
                 .eq('tipo_registro', tipo)
-                .order('fecha_hora', { ascending: false });
+                .order('fecha_hora', { ascending: false })
+                .range(desde, hasta);
+            
+            if (error) throw error;
 
-            if (error) {
-                console.error("❌ [DEBUG] Error en la consulta de incidencias:", error);
-                throw error;
-            }
-
-            console.log("✅ [DEBUG] Incidencias obtenidas de la BD:", incidencias ? incidencias.length : 0);
+            const esAdministrador = sessionStorage.getItem('pnb_user_nivel') === 'administrador';
 
             let html = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3>';
             
             if (!incidencias || incidencias.length === 0) {
                 html += '<div class="sin-incidencias">No hay incidencias registradas</div>';
             } else {
-                const esAdministrador = sessionStorage.getItem('pnb_user_nivel') === 'administrador';
-                
                 incidencias.forEach(inc => {
                     const btnEliminarHtml = esAdministrador 
                         ? `<button class="btn-eliminar-incidencia" 
@@ -519,16 +540,29 @@ window.initConsultaPersonas = function() {
                         <div class="incidencia-descripcion">${inc.descripcion}</div>
                     </div>`;
                 });
+    
+                if (totalPaginas > 1) {
+                    html += `<div class="paginacion-incidencias" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--beige-border);">`;
+                    html += `<button type="button" class="btn-paginacion" ${pagina === 1 ? 'disabled' : ''} onclick="window.cambiarPaginaIncidencias(${pagina - 1})" style="padding: 8px 16px; background: ${pagina === 1 ? '#cbd5e1' : 'var(--primary)'}; color: white; border: none; border-radius: 5px; cursor: ${pagina === 1 ? 'not-allowed' : 'pointer'}; font-weight: 600;">⬅️ Anterior</button>`;
+                    html += `<span style="font-size: 0.9rem; color: #64748b; font-weight: 600;">Página ${pagina} de ${totalPaginas} (${totalIncidencias} incidencias)</span>`;
+                    html += `<button type="button" class="btn-paginacion" ${pagina === totalPaginas ? 'disabled' : ''} onclick="window.cambiarPaginaIncidencias(${pagina + 1})" style="padding: 8px 16px; background: ${pagina === totalPaginas ? '#cbd5e1' : 'var(--primary)'}; color: white; border: none; border-radius: 5px; cursor: ${pagina === totalPaginas ? 'not-allowed' : 'pointer'}; font-weight: 600;">Siguiente ➡️</button>`;
+                    html += `</div>`;
+                }
             }
-            html += '</div>';
             
+            html += '</div>';
             incidenciasSection.innerHTML = html;
             incidenciasSection.style.display = 'block';
-            console.log("✅ [DEBUG] DOM actualizado correctamente en pantalla.");
         } catch (err) {
-            console.error('❌ [DEBUG] Error cargando incidencias:', err);
+            console.error('Error cargando incidencias:', err);
             incidenciasSection.innerHTML = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
             incidenciasSection.style.display = 'block';
+        }
+    };
+
+    window.cambiarPaginaIncidencias = function(nuevaPagina) {
+        if (cedulaActualIncidencias && tipoActualIncidencias) {
+            window.cargarIncidencias(cedulaActualIncidencias, tipoActualIncidencias, nuevaPagina);
         }
     };
 
@@ -556,6 +590,14 @@ window.initConsultaPersonas = function() {
             modalIncidencia.classList.remove('active');
             mostrarMensaje('✅ Incidencia registrada', 'success');
             await window.cargarIncidencias(personaActual.cedula, tipoRegistroActual, 1); 
+            
+            if (typeof registrarLog === 'function') {
+                await registrarLog('CREAR_INCIDENCIA_PERSONA', 'Consulta Personas', null, { 
+                    cedula: personaActual.cedula, 
+                    tipo: tipoRegistroActual,
+                    descripcion: descripcion
+                });
+            }
         } catch (err) {
             console.error('Error guardando incidencia:', err);
             alert('❌ Error: ' + err.message);
@@ -564,121 +606,96 @@ window.initConsultaPersonas = function() {
         }
     }
 
-    console.log("✅ Módulo consulta-personas.js inicializado correctamente");
-};
-
-// ✅ FUNCIONES GLOBALES PARA EL MODAL DE ELIMINACIÓN
-window.prepararEliminacion = function(btn) {
-    console.log("📝 [DEBUG] Preparando eliminación para ID:", btn.dataset.id);
-    window.incidenciaPendienteEliminacion = {
-        id: btn.dataset.id,
-        cedula: btn.dataset.cedula,
-        tipo: btn.dataset.tipo,
-        pagina: parseInt(btn.dataset.pagina),
-        descripcion: btn.dataset.desc,
-        fecha: btn.dataset.fecha,
-        autor: btn.dataset.autor
+    window.prepararEliminacion = function(btn) {
+        window.incidenciaPendienteEliminacion = {
+            id: btn.dataset.id,
+            cedula: btn.dataset.cedula,
+            tipo: btn.dataset.tipo,
+            pagina: parseInt(btn.dataset.pagina),
+            descripcion: btn.dataset.desc,
+            fecha: btn.dataset.fecha,
+            autor: btn.dataset.autor
+        };
+        
+        document.getElementById('cp_elim_descripcion').textContent = window.incidenciaPendienteEliminacion.descripcion;
+        document.getElementById('cp_elim_fecha').textContent = new Date(window.incidenciaPendienteEliminacion.fecha).toLocaleString('es-VE');
+        document.getElementById('cp_elim_autor').textContent = window.incidenciaPendienteEliminacion.autor;
+        
+        document.getElementById('cp_modal_confirmar_eliminacion').classList.add('active');
     };
-    
-    document.getElementById('cp_elim_descripcion').textContent = window.incidenciaPendienteEliminacion.descripcion;
-    document.getElementById('cp_elim_fecha').textContent = new Date(window.incidenciaPendienteEliminacion.fecha).toLocaleString('es-VE');
-    document.getElementById('cp_elim_autor').textContent = window.incidenciaPendienteEliminacion.autor;
-    
-    document.getElementById('cp_modal_confirmar_eliminacion').classList.add('active');
-};
 
-document.getElementById('cp_btn_confirmar_eliminacion').onclick = async () => {
-    const datos = window.incidenciaPendienteEliminacion;
-    if (!datos) return;
-    
-    console.log("🔴 [DEBUG] INICIO PROCESO DE ELIMINACIÓN. ID:", datos.id);
-    
-    const btnConfirmar = document.getElementById('cp_btn_confirmar_eliminacion');
-    btnConfirmar.disabled = true;
-    btnConfirmar.textContent = '⏳ Procesando...';
-    
-    try {
-        const { data: { user } } = await window.supabaseClient.auth.getUser();
-        if (!user) throw new Error('Debe iniciar sesión');
-        console.log("✅ [DEBUG] Usuario autenticado:", user.email);
-
-        // 1. Obtener datos originales de la BD
-        console.log("🔍 [DEBUG] Buscando incidencia original en BD...");
-        const { data: incData, error: fetchError } = await window.supabaseClient
-            .from('registro_incidencias')
-            .select('*')
-            .eq('id', datos.id)
-            .single();
-
-        if (fetchError) {
-            console.error("❌ [DEBUG] Error al buscar incidencia:", fetchError);
-            throw new Error('No se encontró la incidencia: ' + fetchError.message);
-        }
-        console.log("✅ [DEBUG] Incidencia encontrada:", incData);
-
-        // 2. Respaldar
-        const { id, created_at, ...datosBackup } = incData;
-        datosBackup.incidencia_id_original = datos.id;
-        datosBackup.eliminado_por = user.id;
-        datosBackup.email_eliminador = user.email;
-        datosBackup.fecha_eliminacion = new Date().toISOString();
-
-        console.log("💾 [DEBUG] Guardando respaldo en registro_incidencias_backup...");
-        const { data: backupResult, error: backupError } = await window.supabaseClient
-            .from('registro_incidencias_backup')
-            .insert([datosBackup])
-            .select();
-
-        if (backupError) {
-            console.error("❌ [DEBUG] Error al crear respaldo:", backupError);
-            throw new Error('Error al crear respaldo: ' + backupError.message);
-        }
-        console.log("✅ [DEBUG] Respaldo creado exitosamente");
-
-        // 3. Eliminar de la tabla principal
-        console.log("🗑️ [DEBUG] Ejecutando DELETE en registro_incidencias con ID:", datos.id);
-        const { data: deleteResult, error: deleteError } = await window.supabaseClient
-            .from('registro_incidencias')
-            .delete()
-            .eq('id', datos.id)
-            .select();
-
-        if (deleteError) {
-            console.error("❌ [DEBUG] Error al eliminar de la BD:", deleteError);
-            throw new Error('Error al eliminar: ' + deleteError.message);
-        }
+    document.getElementById('cp_btn_confirmar_eliminacion').onclick = async () => {
+        const datos = window.incidenciaPendienteEliminacion;
+        if (!datos) return;
         
-        console.log("✅ [DEBUG] Resultado del DELETE:", deleteResult);
-
-        // 4. Cerrar modal
-        document.getElementById('cp_modal_confirmar_eliminacion').classList.remove('active');
-        window.incidenciaPendienteEliminacion = null;
+        const btnConfirmar = document.getElementById('cp_btn_confirmar_eliminacion');
+        btnConfirmar.disabled = true;
+        btnConfirmar.textContent = '⏳ Procesando...';
         
-        // 5. FORZAR RECARGA DE LA LISTA
-        console.log("🔄 [DEBUG] Recargando lista de incidencias después de eliminar...");
-        await window.cargarIncidencias(datos.cedula, datos.tipo, datos.pagina);
-        
-        // 6. Mensaje de éxito
-        const msgEl = document.getElementById('cp_msg');
-        if (msgEl) {
-            msgEl.textContent = '✅ Incidencia eliminada y respaldada correctamente';
-            msgEl.className = 'msg success';
-            msgEl.style.display = 'block';
-            setTimeout(() => { msgEl.style.display = 'none'; }, 4000);
-        }
+        try {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) throw new Error('Debe iniciar sesión');
 
-        // 7. Log del sistema
-        if (typeof registrarLog === 'function') {
-            await registrarLog('ELIMINAR_INCIDENCIA', 'Consulta Personas', datos.id, { cedula: datos.cedula, tipo: datos.tipo });
-        }
+            const { data: incData, error: fetchError } = await window.supabaseClient
+                .from('registro_incidencias')
+                .select('*')
+                .eq('id', datos.id)
+                .single();
 
-    } catch (err) {
-        console.error('❌ [DEBUG] Error fatal al eliminar:', err);
-        alert('❌ Error al eliminar: ' + err.message);
-    } finally {
-        btnConfirmar.disabled = false;
-        btnConfirmar.textContent = '🗑️ Sí, Eliminar y Respaldar';
-    }
+            if (fetchError) throw new Error('No se encontró la incidencia: ' + fetchError.message);
+
+            const { id, created_at, ...datosBackup } = incData;
+            datosBackup.incidencia_id_original = datos.id;
+            datosBackup.eliminado_por = user.id;
+            datosBackup.email_eliminador = user.email;
+            datosBackup.fecha_eliminacion = new Date().toISOString();
+
+            const { error: backupError } = await window.supabaseClient
+                .from('registro_incidencias_backup')
+                .insert([datosBackup])
+                .select();
+
+            if (backupError) throw new Error('Error al crear respaldo: ' + backupError.message);
+
+            const { error: deleteError } = await window.supabaseClient
+                .from('registro_incidencias')
+                .delete()
+                .eq('id', datos.id)
+                .select();
+
+            if (deleteError) throw new Error('Error al eliminar: ' + deleteError.message);
+
+            document.getElementById('cp_modal_confirmar_eliminacion').classList.remove('active');
+            window.incidenciaPendienteEliminacion = null;
+            
+            await window.cargarIncidencias(datos.cedula, datos.tipo, datos.pagina);
+            
+            const msgEl = document.getElementById('cp_msg');
+            if (msgEl) {
+                msgEl.textContent = '✅ Incidencia eliminada y respaldada correctamente';
+                msgEl.className = 'msg success';
+                msgEl.style.display = 'block';
+                setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+            }
+
+            if (typeof registrarLog === 'function') {
+                await registrarLog('ELIMINAR_INCIDENCIA_PERSONA', 'Consulta Personas', datos.id, { 
+                    cedula: datos.cedula, 
+                    tipo: datos.tipo,
+                    descripcion_eliminada: datos.descripcion 
+                });
+            }
+
+        } catch (err) {
+            console.error('Error al eliminar:', err);
+            alert('❌ Error al eliminar: ' + err.message);
+        } finally {
+            btnConfirmar.disabled = false;
+            btnConfirmar.textContent = '🗑️ Sí, Eliminar y Respaldar';
+        }
+    };
+
+    console.log("✅ Módulo consulta-personas.js inicializado correctamente");
 };
 
 if (document.readyState === 'loading') {
@@ -695,10 +712,16 @@ async function registrarLog(accion, modulo, registroId = null, detalles = {}) {
             .from('perfiles_usuario').select('nombre, apellido').eq('user_id', user.id).maybeSingle();
         const nombreCompleto = perfil ? `${perfil.nombre || ''} ${perfil.apellido || ''}`.trim() : 'Sistema';
         await window.supabaseClient.from('sistema_logs').insert([{
-            user_id: user.id, user_email: user.email, user_nombre: nombreCompleto,
-            accion: accion, modulo: modulo, registro_id: registroId, detalles: detalles, user_agent: navigator.userAgent
+            user_id: user.id, 
+            user_email: user.email, 
+            user_nombre: nombreCompleto,
+            accion: accion, 
+            modulo: modulo, 
+            registro_id: registroId, 
+            detalles: detalles, 
+            user_agent: navigator.userAgent
         }]);
     } catch (err) {
-        console.warn('⚠️ Error registrando log:', err);
+        // Silencioso para no mostrar errores de logs al usuario final
     }
 }
