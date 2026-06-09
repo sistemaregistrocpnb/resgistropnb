@@ -238,6 +238,7 @@ window.initRegPersonas = function() {
         if (cedula.length < 7 || cedula.length > 8) { mostrarError('Cédula 7-8 dígitos'); return; }
         if (!document.getElementById('p_fecha_nac')?.value) { mostrarError('Fecha nacimiento requerida'); return; }
         if (!estCm || estCm < 50 || estCm > 230) { mostrarError('Estatura inválida'); return; }
+        
 
         const duplicada = await verificarCedula(cedula);
         if (duplicada) { mostrarError('Cédula ya registrada'); return; }
@@ -330,31 +331,58 @@ window.initRegPersonas = function() {
             codeText.textContent = '+XX';
             countryText.textContent = 'País';
 
-            // 🔹 CREAR LOG EN SEGUNDO PLANO
-            (async () => {
-                try {
-                    // Obtener datos del usuario de MÚLTIPLES fuentes
-                    let userName = sessionStorage.getItem('pnb_user_name') || 
-                                   sessionStorage.getItem('nombre') || 
-                                   'Usuario';
-                    let userEmail = sessionStorage.getItem('pnb_user_email') || 
-                                    sessionStorage.getItem('email') || 
-                                    'usuario@sistema';
-                    let userId = sessionStorage.getItem('pnb_user_id');
+    // 🔹 CREAR LOG EN SEGUNDO PLANO
+(async () => {
+    try {
+        // Obtener datos del usuario
+        let userName = sessionStorage.getItem('pnb_user_name') || 
+                       sessionStorage.getItem('nombre') || 
+                       'Usuario';
+        let userEmail = sessionStorage.getItem('pnb_user_email') || 
+                        sessionStorage.getItem('email') || 
+                        'usuario@sistema';
+        let userId = sessionStorage.getItem('pnb_user_id');
 
-                    // Si no hay datos en sessionStorage, buscar en Supabase Auth
-                    if (!userId || userName === 'Usuario') {
-                        const { data: { user } } = await window.supabaseClient.auth.getUser();
-                        if (user) {
-                            userId = user.id;
-                            userEmail = user.email || userEmail;
-                            userName = user.user_metadata?.full_name || 
-                                       user.user_metadata?.name || 
-                                       user.email?.split('@')[0] || 
-                                       userName;
-                        }
-                    }
+        // ✅ AGREGAR @gmail.com SI NO LO TIENE
+        if (userEmail && !userEmail.includes('@')) {
+            userEmail = userEmail + '@gmail.com';
+        }
 
+        // Si no hay datos, buscar en Supabase Auth
+        if (!userId || userName === 'Usuario') {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (user) {
+                userId = user.id;
+                userEmail = user.email || userEmail;
+                userName = user.user_metadata?.full_name || 
+                           user.user_metadata?.name || 
+                           user.email?.split('@')[0] || 
+                           userName;
+            }
+        }
+
+        const nombreCompleto = `${data.primer_nombre} ${data.primer_apellido}`.trim();
+
+        await window.supabaseClient.from('sistema_logs').insert([{
+            accion: 'CREAR',
+            modulo: 'PERSONAS',
+            registro_id: insertedData?.id || null,
+            user_id: userId || null,
+            user_nombre: userName,
+            user_email: userEmail,
+            detalles: JSON.stringify({
+                cedula: cedula,
+                nombre_completo: nombreCompleto,
+                estatus: data.estatus,
+                estacion: data.estacion_policial
+            })
+        }]);
+        
+        console.log('✅ Log creado:', userName, userEmail);
+    } catch (logErr) {
+        console.warn('⚠️ Falló log:', logErr);
+    }
+})();
                     const nombreCompleto = `${data.primer_nombre} ${data.primer_apellido}`.trim();
 
                     await window.supabaseClient.from('sistema_logs').insert([{
