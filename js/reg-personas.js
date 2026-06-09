@@ -358,58 +358,69 @@ window.initRegPersonas = function() {
             codeText.textContent = '+XX';
             countryText.textContent = 'País';
 
-            // 🔹 CREAR LOG EN SEGUNDO PLANO CON EMAIL COMPLETO
-            (async () => {
-                try {
-                    let userName = sessionStorage.getItem('pnb_user_name') || 
-                                   sessionStorage.getItem('nombre') || 
-                                   'Usuario';
-                    let userEmail = sessionStorage.getItem('pnb_user_email') || 
-                                    sessionStorage.getItem('email') || 
-                                    'usuario@sistema';
-                    let userId = sessionStorage.getItem('pnb_user_id');
+        // 🔹 CREAR LOG EN SEGUNDO PLANO CON NOMBRE COMPLETO DEL USUARIO
+(async () => {
+    try {
+        // 1. Obtener user_id de sessionStorage
+        let userId = sessionStorage.getItem('pnb_user_id');
+        let userName = 'Usuario';
+        let userEmail = 'usuario@sistema';
 
-                    // ✅ AGREGAR @gmail.com SI NO TIENE DOMINIO
-                    if (userEmail && !userEmail.includes('@')) {
-                        userEmail = userEmail + '@gmail.com';
-                    }
+        // 2. Si tenemos user_id, buscar el nombre completo en perfiles_usuario
+        if (userId) {
+            const { data: perfil } = await window.supabaseClient
+                .from('perfiles_usuario')
+                .select('nombre, email')
+                .eq('user_id', userId)
+                .maybeSingle();
+            
+            if (perfil) {
+                userName = perfil.nombre || userName;
+                userEmail = perfil.email || userEmail;
+            }
+        }
 
-                    // Si no hay datos, buscar en Supabase Auth
-                    if (!userId || userName === 'Usuario') {
-                        const { data: { user } } = await window.supabaseClient.auth.getUser();
-                        if (user) {
-                            userId = user.id;
-                            userEmail = user.email || userEmail;
-                            userName = user.user_metadata?.full_name || 
-                                       user.user_metadata?.name || 
-                                       user.email?.split('@')[0] || 
-                                       userName;
-                        }
-                    }
+        // 3. Si no encontramos en perfiles, intentar con Supabase Auth
+        if (userName === 'Usuario') {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (user) {
+                userId = user.id;
+                userEmail = user.email || userEmail;
+                userName = user.user_metadata?.full_name || 
+                           user.user_metadata?.name || 
+                           user.email?.split('@')[0] || 
+                           'Usuario';
+            }
+        }
 
-                    const nombreCompleto = `${data.primer_nombre} ${data.primer_apellido}`.trim();
+        // 4. Asegurar que el email tenga dominio
+        if (userEmail && !userEmail.includes('@')) {
+            userEmail = userEmail + '@gmail.com';
+        }
 
-                    await window.supabaseClient.from('sistema_logs').insert([{
-                        accion: 'CREAR',
-                        modulo: 'PERSONAS',
-                        registro_id: insertedData?.id || null,
-                        user_id: userId || null,
-                        user_nombre: userName,
-                        user_email: userEmail,
-                        detalles: JSON.stringify({
-                            cedula: cedula,
-                            nombre_completo: nombreCompleto,
-                            estatus: data.estatus,
-                            estacion: data.estacion_policial,
-                            direccion_detencion: data.direccion_detencion
-                        })
-                    }]);
-                    
-                    console.log('✅ Log creado:', userName, userEmail);
-                } catch (logErr) {
-                    console.warn('⚠️ Falló log:', logErr);
-                }
-            })();
+        const nombreCompleto = `${data.primer_nombre} ${data.primer_apellido}`.trim();
+
+        await window.supabaseClient.from('sistema_logs').insert([{
+            accion: 'CREAR',
+            modulo: 'PERSONAS',
+            registro_id: insertedData?.id || null,
+            user_id: userId || null,
+            user_nombre: userName,
+            user_email: userEmail,
+            detalles: JSON.stringify({
+                cedula: cedula,
+                nombre_completo: nombreCompleto,
+                estatus: data.estatus,
+                estacion: data.estacion_policial,
+                direccion_detencion: data.direccion_detencion
+            })
+        }]);
+        
+        console.log('✅ Log creado con usuario:', userName);
+    } catch (logErr) {
+        console.warn('⚠️ Falló log:', logErr);
+    }
+})();
 
         } catch (err) {
             console.error('Error:', err);
