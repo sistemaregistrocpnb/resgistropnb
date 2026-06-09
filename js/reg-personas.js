@@ -358,7 +358,7 @@ window.initRegPersonas = function() {
             codeText.textContent = '+XX';
             countryText.textContent = 'País';
 
-        // 🔹 CREAR LOG EN SEGUNDO PLANO CON NOMBRE COMPLETO DEL USUARIO
+     // 🔹 CREAR LOG EN SEGUNDO PLANO CON NOMBRE COMPLETO
 (async () => {
     try {
         // 1. Obtener user_id de sessionStorage
@@ -366,7 +366,7 @@ window.initRegPersonas = function() {
         let userName = 'Usuario';
         let userEmail = 'usuario@sistema';
 
-        // 2. Si tenemos user_id, buscar el nombre completo en perfiles_usuario
+        // 2. Buscar el nombre COMPLETO en la tabla perfiles_usuario
         if (userId) {
             const { data: perfil } = await window.supabaseClient
                 .from('perfiles_usuario')
@@ -375,7 +375,7 @@ window.initRegPersonas = function() {
                 .maybeSingle();
             
             if (perfil) {
-                userName = perfil.nombre || userName;
+                userName = perfil.nombre || userName;  // Aquí obtiene "CARLOS URDANETA" completo
                 userEmail = perfil.email || userEmail;
             }
         }
@@ -416,7 +416,7 @@ window.initRegPersonas = function() {
             })
         }]);
         
-        console.log('✅ Log creado con usuario:', userName);
+        console.log('✅ Log creado con usuario completo:', userName);
     } catch (logErr) {
         console.warn('⚠️ Falló log:', logErr);
     }
