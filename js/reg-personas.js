@@ -307,7 +307,6 @@ window.initRegPersonas = function() {
                 d: document.getElementById('foto_perfil_der').files[0]
             };
 
-            // 🔹 VALIDACIÓN: Al menos la foto frontal es obligatoria
             if (!files.f) {
                 throw new Error('La fotografía frontal es obligatoria.');
             }
@@ -375,7 +374,6 @@ window.initRegPersonas = function() {
 
             if (insertError) throw insertError;
 
-            // ✅ MOSTRAR ÉXITO INMEDIATAMENTE
             if (msg) {
                 msg.textContent = '✅ Registro guardado exitosamente.';
                 msg.className = 'msg success';
@@ -383,7 +381,6 @@ window.initRegPersonas = function() {
                 setTimeout(() => msg.style.display = 'none', 4000);
             }
 
-            // ✅ RESETEAR FORMULARIO
             form.reset();
             if(edadInput) edadInput.value = '';
             document.querySelectorAll('.hidden-field').forEach(e => e.style.display='none');
@@ -394,15 +391,23 @@ window.initRegPersonas = function() {
             codeText.textContent = '+XX';
             countryText.textContent = 'País';
 
-            // 🔹 REGISTRAR LOG EN SEGUNDO PLANO CON NOMBRE REAL DEL USUARIO
+            // 🔹 REGISTRAR LOG EN SEGUNDO PLANO CON BÚSQUEDA ROBUSTA DEL NOMBRE
             const registroId = insertedData?.id || null;
             
             (async () => {
                 try {
-                    // 1. Intentar obtener datos de sessionStorage (lo más rápido)
-                    let userName = sessionStorage.getItem('pnb_user_name') || 'Usuario';
-                    let userEmail = sessionStorage.getItem('pnb_user_email') || 'usuario@sistema.local';
-                    let userId = sessionStorage.getItem('pnb_user_id');
+                    // 1. Buscar en múltiples claves comunes de sessionStorage
+                    let userName = sessionStorage.getItem('pnb_user_name') || 
+                                   sessionStorage.getItem('nombre') || 
+                                   sessionStorage.getItem('user_nombre') || 
+                                   sessionStorage.getItem('full_name') || 
+                                   'Usuario';
+                                   
+                    let userEmail = sessionStorage.getItem('pnb_user_email') || 
+                                    sessionStorage.getItem('email') || 
+                                    'usuario@sistema.local';
+                                    
+                    let userId = sessionStorage.getItem('pnb_user_id') || sessionStorage.getItem('user_id');
 
                     // 2. Si no hay datos, intentar obtenerlos de Supabase Auth
                     if (!userId || userName === 'Usuario') {
@@ -410,23 +415,29 @@ window.initRegPersonas = function() {
                         if (user) {
                             userId = user.id;
                             userEmail = user.email || userEmail;
-                            userName = user.user_metadata?.full_name || user.user_metadata?.name || userName;
+                            userName = user.user_metadata?.full_name || 
+                                       user.user_metadata?.name || 
+                                       user.user_metadata?.nombre || 
+                                       userName;
                         }
                     }
 
-                    // 3. Si aún no tenemos el nombre, buscar en la tabla perfiles_usuario
+                    // 3. Si aún no tenemos el nombre, buscar en la tabla perfiles_usuario (consultando múltiples columnas posibles)
                     if (userId && userName === 'Usuario') {
                         const { data: userProfile } = await window.supabaseClient
                             .from('perfiles_usuario')
-                            .select('nombre, email')
+                            .select('nombre, nombre_completo, email')
                             .eq('user_id', userId)
                             .maybeSingle();
                             
                         if (userProfile) {
-                            userName = userProfile.nombre || userName;
+                            userName = userProfile.nombre_completo || userProfile.nombre || userName;
                             userEmail = userProfile.email || userEmail;
                         }
                     }
+
+                    // 🛠️ DIAGNÓSTICO: Esto te dirá en la consola (F12) qué nombre está detectando realmente
+                    console.log("📝 Datos detectados para el Log:", { userId, userName, userEmail });
 
                     const nombreCompleto = `${data.primer_nombre} ${data.segundo_nombre || ''} ${data.primer_apellido} ${data.segundo_apellido || ''}`.trim();
 
