@@ -10,35 +10,24 @@ window.initLogsSistema = function() {
     let totalLogs = 0;
     let logsData = [];
 
-    // Verificar permisos
     async function verificarPermisos() {
         try {
             const { data: { user } } = await window.supabaseClient.auth.getUser();
             if (!user) return false;
             const { data: perfil } = await window.supabaseClient
-                .from('perfiles_usuario')
-                .select('nivel')
-                .eq('user_id', user.id)
-                .maybeSingle();
+                .from('perfiles_usuario').select('nivel').eq('user_id', user.id).maybeSingle();
             if (!perfil) return false;
             return perfil.nivel === 'administrador' || perfil.nivel === 'moderador';
         } catch (err) {
-            console.error('Error verificando permisos:', err);
             return false;
         }
     }
 
-    // Cargar logs
     async function cargarLogs(page = 1) {
-        if (tablaContainer) {
-            tablaContainer.innerHTML = '<div class="sin-logs">Cargando logs...</div>';
-        }
+        if (tablaContainer) tablaContainer.innerHTML = '<div class="sin-logs">Cargando logs...</div>';
         try {
-            let query = window.supabaseClient
-                .from('sistema_logs')
-                .select('*', { count: 'exact' });
+            let query = window.supabaseClient.from('sistema_logs').select('*', { count: 'exact' });
 
-            // Filtros
             const fechaDesde = el('log_fecha_desde')?.value;
             const fechaHasta = el('log_fecha_hasta')?.value;
             const accion = el('log_accion')?.value;
@@ -49,16 +38,11 @@ window.initLogsSistema = function() {
             if (fechaHasta) query = query.lte('created_at', new Date(fechaHasta + 'T23:59:59').toISOString());
             if (accion) query = query.eq('accion', accion);
             if (modulo) query = query.eq('modulo', modulo);
-            if (buscarUsuario) {
-                query = query.or(`user_nombre.ilike.%${buscarUsuario}%,user_email.ilike.%${buscarUsuario}%`);
-            }
+            if (buscarUsuario) query = query.or(`user_nombre.ilike.%${buscarUsuario}%,user_email.ilike.%${buscarUsuario}%`);
 
-            // Paginación
             const inicio = (page - 1) * ITEMS_PER_PAGE;
             const fin = inicio + ITEMS_PER_PAGE - 1;
-            const { data, count, error } = await query
-                .order('created_at', { ascending: false })
-                .range(inicio, fin);
+            const { data, count, error } = await query.order('created_at', { ascending: false }).range(inicio, fin);
 
             if (error) throw error;
 
@@ -68,17 +52,13 @@ window.initLogsSistema = function() {
             renderTabla();
         } catch (err) {
             console.error('Error cargando logs:', err);
-            if (tablaContainer) {
-                tablaContainer.innerHTML = '<div class="sin-logs">❌ Error al cargar logs</div>';
-            }
+            if (tablaContainer) tablaContainer.innerHTML = '<div class="sin-logs">❌ Error al cargar logs</div>';
         }
     }
 
     // ✅ FUNCIÓN PARA FORMATEAR LOS DETALLES DE FORMA LEGIBLE
     function formatearDetalles(detalles) {
         if (!detalles) return '-';
-        
-        // Parsear si viene como string, o usar directo si es objeto
         let d = typeof detalles === 'string' ? JSON.parse(detalles) : detalles;
         
         // 🚗 REGLA PARA CONSULTA DE VEHÍCULOS
@@ -88,19 +68,25 @@ window.initLogsSistema = function() {
             return `Consultó <strong>${tipoFormateado}</strong>: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span>`;
         }
 
-        // 🚗 REGLA PARA ELIMINACIÓN DE INCIDENCIA DE VEHÍCULO
+        // 👤 REGLA PARA CONSULTA DE PERSONAS / VINCULADOS
+        if (d.valor_buscado && !d.tipo_busqueda) {
+            const tipoTexto = d.tipo === 'Vinculado' ? ' (Vinculado)' : '';
+            return `Consultó Cédula${tipoTexto}: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span>`;
+        }
+
+        // 🗑️ REGLA PARA ELIMINACIÓN DE INCIDENCIA DE VEHÍCULO
         if (d.identificador && d.descripcion_eliminada) {
             return `Eliminó incidencia del vehículo <strong>${d.identificador}</strong>.<br><em>"${d.descripcion_eliminada}"</em>`;
         }
 
-        // 👤 REGLA PARA CONSULTA DE PERSONAS (Ejemplo base, me dirás si quieres cambiarlo)
-        if (d.valor_buscado && d.modulo_consultado === 'personas') {
-            return `Consultó persona con C.I.: <strong>${d.valor_buscado}</strong>`;
+        // 🗑️ REGLA PARA ELIMINACIÓN DE INCIDENCIA DE PERSONA
+        if (d.cedula && d.descripcion_eliminada) {
+            return `Eliminó incidencia de la persona <strong>${d.cedula}</strong>.<br><em>"${d.descripcion_eliminada}"</em>`;
         }
 
         // 🔄 FALLBACK LIMPIO: Si no hay regla específica, muestra las claves y valores de forma ordenada
         return Object.entries(d)
-            .filter(([key]) => key !== 'estatus') // El estatus ya se muestra en la columna Registro
+            .filter(([key]) => key !== 'estatus')
             .map(([key, value]) => {
                 const keyLimpia = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 return `<strong>${keyLimpia}:</strong> ${value}`;
@@ -110,20 +96,23 @@ window.initLogsSistema = function() {
 
     // ✅ FUNCIÓN PARA OBTENER EL VALOR PRINCIPAL DE LA COLUMNA "REGISTRO"
     function obtenerValorRegistro(log) {
-        // 1. Si hay un estatus en los detalles, lo mostramos como badge (ej: "Procesado", "Verificación")
         if (log.detalles) {
             let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
+            
+            // 1. Si hay un estatus, lo mostramos como badge
             if (d.estatus) {
                 const badgeClass = d.estatus.toLowerCase().includes('procesad') ? 'badge-eliminar' : 
                                    d.estatus.toLowerCase().includes('verificaci') ? 'badge-otros' : 'badge-crear';
                 return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
             }
-            if (d.cedula) return `C.I. ${d.cedula}`;
+            
+            // 2. Si no, mostramos el identificador principal
             if (d.valor_buscado) return d.valor_buscado;
             if (d.identificador) return d.identificador;
+            if (d.cedula) return d.cedula;
         }
         
-        // 2. Si no, mostramos el registro_id pero recortado si es muy largo
+        // 3. Fallback al registro_id recortado
         if (log.registro_id) {
             return `<span style="font-family: monospace; font-size: 0.8rem; color: #64748b;">${log.registro_id.substring(0, 8)}...</span>`;
         }
@@ -131,7 +120,6 @@ window.initLogsSistema = function() {
         return '-';
     }
 
-    // Renderizar tabla
     function renderTabla() {
         if (!tablaContainer) return;
         
@@ -149,8 +137,11 @@ window.initLogsSistema = function() {
                 'LOGIN': 'badge-login',
                 'LOGOUT': 'badge-logout',
                 'CONSULTA_VEHICULO': 'badge-modificar',
+                'CONSULTA_PERSONA': 'badge-modificar',
                 'CREAR_INCIDENCIA_VEHICULO': 'badge-crear',
-                'ELIMINAR_INCIDENCIA_VEHICULO': 'badge-eliminar'
+                'CREAR_INCIDENCIA_PERSONA': 'badge-crear',
+                'ELIMINAR_INCIDENCIA_VEHICULO': 'badge-eliminar',
+                'ELIMINAR_INCIDENCIA_PERSONA': 'badge-eliminar'
             };
             return map[accion] || 'badge-otros';
         };
@@ -191,12 +182,9 @@ window.initLogsSistema = function() {
         html += '</tbody></table>';
         tablaContainer.innerHTML = html;
 
-        if (pagination) {
-            renderPaginacion();
-        }
+        if (pagination) renderPaginacion();
     }
 
-    // Renderizar paginación
     function renderPaginacion() {
         if (!pagination) return;
         const totalPages = Math.ceil(totalLogs / ITEMS_PER_PAGE);
@@ -244,7 +232,6 @@ window.initLogsSistema = function() {
         });
     }
 
-    // Event listeners
     if (btnFiltrar) btnFiltrar.onclick = () => cargarLogs(1);
     if (btnReset) {
         btnReset.onclick = () => {
@@ -257,13 +244,10 @@ window.initLogsSistema = function() {
         };
     }
 
-    // Inicializar
     async function init() {
         const tienePermiso = await verificarPermisos();
         if (!tienePermiso) {
-            if (tablaContainer) {
-                tablaContainer.innerHTML = '<div class="sin-logs">❌ No tiene permisos para ver los logs del sistema</div>';
-            }
+            if (tablaContainer) tablaContainer.innerHTML = '<div class="sin-logs">❌ No tiene permisos para ver los logs del sistema</div>';
             return;
         }
         await cargarLogs(1);
