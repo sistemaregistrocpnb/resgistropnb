@@ -179,7 +179,6 @@ window.initRegPersonas = function() {
                 .maybeSingle();
 
             if (errPersonas) throw errPersonas;
-
             if (dataPersonas) {
                 cedulaStatus.className = 'cedula-status error';
                 cedulaStatus.textContent = '⚠️ Cédula ya registrada en personas';
@@ -194,7 +193,6 @@ window.initRegPersonas = function() {
                 .maybeSingle();
 
             if (errProcesados) throw errProcesados;
-
             if (dataProcesados) {
                 cedulaStatus.className = 'cedula-status error';
                 const delito = dataProcesados.tipo_delito || 'sin especificar';
@@ -309,6 +307,7 @@ window.initRegPersonas = function() {
                 d: document.getElementById('foto_perfil_der').files[0]
             };
 
+            // 🔹 VALIDACIÓN: Al menos la foto frontal es obligatoria
             if (!files.f) {
                 throw new Error('La fotografía frontal es obligatoria.');
             }
@@ -376,6 +375,7 @@ window.initRegPersonas = function() {
 
             if (insertError) throw insertError;
 
+            // ✅ MOSTRAR ÉXITO INMEDIATAMENTE
             if (msg) {
                 msg.textContent = '✅ Registro guardado exitosamente.';
                 msg.className = 'msg success';
@@ -383,6 +383,7 @@ window.initRegPersonas = function() {
                 setTimeout(() => msg.style.display = 'none', 4000);
             }
 
+            // ✅ RESETEAR FORMULARIO
             form.reset();
             if(edadInput) edadInput.value = '';
             document.querySelectorAll('.hidden-field').forEach(e => e.style.display='none');
@@ -393,15 +394,28 @@ window.initRegPersonas = function() {
             codeText.textContent = '+XX';
             countryText.textContent = 'País';
 
+            // 🔹 REGISTRAR LOG EN SEGUNDO PLANO CON NOMBRE REAL DEL USUARIO
             const registroId = insertedData?.id || null;
             
             (async () => {
                 try {
-                    const userId = sessionStorage.getItem('pnb_user_id') || 'unknown';
-                    let userName = 'Usuario';
-                    let userEmail = 'usuario@sistema.local';
+                    // 1. Intentar obtener datos de sessionStorage (lo más rápido)
+                    let userName = sessionStorage.getItem('pnb_user_name') || 'Usuario';
+                    let userEmail = sessionStorage.getItem('pnb_user_email') || 'usuario@sistema.local';
+                    let userId = sessionStorage.getItem('pnb_user_id');
 
-                    if (userId !== 'unknown') {
+                    // 2. Si no hay datos, intentar obtenerlos de Supabase Auth
+                    if (!userId || userName === 'Usuario') {
+                        const { data: { user } } = await window.supabaseClient.auth.getUser();
+                        if (user) {
+                            userId = user.id;
+                            userEmail = user.email || userEmail;
+                            userName = user.user_metadata?.full_name || user.user_metadata?.name || userName;
+                        }
+                    }
+
+                    // 3. Si aún no tenemos el nombre, buscar en la tabla perfiles_usuario
+                    if (userId && userName === 'Usuario') {
                         const { data: userProfile } = await window.supabaseClient
                             .from('perfiles_usuario')
                             .select('nombre, email')
@@ -420,7 +434,7 @@ window.initRegPersonas = function() {
                         accion: 'CREAR',
                         modulo: 'PERSONAS',
                         registro_id: registroId,
-                        user_id: userId,
+                        user_id: userId || null,
                         user_nombre: userName,
                         user_email: userEmail,
                         detalles: JSON.stringify({
