@@ -2,29 +2,21 @@ window.initRegPersonas = function() {
     // ✅ Pequeño retraso para asegurar que el navegador terminó de renderizar el HTML inyectado
     setTimeout(() => {
         const form = document.getElementById('form-reg-personas');
-        const btn = form ? form.querySelector('.btn-submit') : null;
         
-        // ✅ VALIDACIÓN ROBUSTA: Si no existe el formulario, mostrar error en pantalla
         if (!form) {
             console.error('❌ ERROR CRÍTICO: No se encontró el formulario con id="form-reg-personas".');
-            console.error('1. Verifica que el archivo html/reg-personas.html se guardó correctamente.');
-            console.error('2. Limpia la caché del navegador (Ctrl + F5).');
-            
             const appContent = document.getElementById('app-content');
             if (appContent) {
-                appContent.innerHTML = `
-                    <div class="card" style="color: #b91c1c; text-align: center; padding: 40px; border: 2px solid #fca5a5;">
-                        <h3>❌ Error de Carga del Módulo</h3>
-                        <p>No se pudo encontrar el formulario de registro en el HTML.</p>
-                        <p>Por favor, presiona <strong>Ctrl + F5</strong> (o Cmd + Shift + R en Mac) para limpiar la caché y recargar la página.</p>
-                        <p>Si el error persiste, verifica que la etiqueta &lt;form&gt; en <code>reg-personas.html</code> tenga exactamente: <br><code>id="form-reg-personas"</code></p>
-                    </div>`;
+                appContent.innerHTML = `<div class="card" style="color: #b91c1c; text-align: center; padding: 40px; border: 2px solid #fca5a5;"><h3>❌ Error de Carga</h3><p>No se encontró el formulario. Por favor, presiona <strong>Ctrl + F5</strong> para limpiar la caché.</p></div>`;
             }
             return;
         }
+
+        // ✅ Búsqueda robusta del botón (por clase o por tipo)
+        const btn = form.querySelector('.btn-submit') || form.querySelector('button[type="submit"]');
         
         if (!btn) {
-            console.error('❌ ERROR: Se encontró el formulario, pero no el botón con clase ".btn-submit".');
+            console.error('❌ ERROR: No se encontró el botón de enviar. Verifica que tu HTML tenga: <button type="submit" class="btn-submit">');
             return;
         }
 
@@ -458,7 +450,7 @@ window.initRegPersonas = function() {
                 btn.textContent = '✅ Registrar Persona';
             }
         });
-    }, 100); // ✅ Fin del setTimeout de 100ms
+    }, 100);
 };
 
 // ✅ FUNCIÓN REUTILIZABLE PARA REGISTRAR LOGS EN EL SISTEMA
