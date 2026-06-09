@@ -31,22 +31,12 @@ window.initConsultaVehiculos = function() {
     if (el('cv_btn_guardar_incidencia')) el('cv_btn_guardar_incidencia').onclick = () => guardarIncidencia();
     if (el('cv_btn_imprimir_reporte')) el('cv_btn_imprimir_reporte').onclick = () => window.print();
 
-    // Listeners del modal de eliminación
-    if (el('cv_modal_elim_close')) el('cv_modal_elim_close').onclick = () => {
-        el('cv_modal_confirmar_eliminacion').classList.remove('active');
-        window.incidenciaPendienteEliminacionVehiculo = null;
-    };
-    if (el('cv_btn_cancelar_eliminacion')) el('cv_btn_cancelar_eliminacion').onclick = () => {
-        el('cv_modal_confirmar_eliminacion').classList.remove('active');
-        window.incidenciaPendienteEliminacionVehiculo = null;
-    };
-
     function mostrarMensaje(texto, tipo) {
         if (!msg) return;
         msg.textContent = texto;
         msg.className = `msg ${tipo}`;
         msg.style.display = 'block';
-        if (tipo === 'success') setTimeout(() => { if (msg) msg.style.display = 'none'; }, 4000);
+        if (tipo === 'success') setTimeout(() => { if (msg) msg.style.display = 'none'; }, 3000);
     }
 
     async function tienePermisosIncidencia() {
@@ -120,12 +110,14 @@ window.initConsultaVehiculos = function() {
                 return;
             }
 
-            // ✅ REGISTRAR LOG DE CONSULTA EXITOSA
+            // ✅ REGISTRAR LOG DE CONSULTA EXITOSA (AHORA INCLUYE EL ESTATUS)
             if (typeof registrarLog === 'function') {
+                const estatusVehiculo = resultados[0].estatus || 'N/A';
                 await registrarLog('CONSULTA_VEHICULO', 'Consulta Vehículos', null, { 
                     tipo_busqueda: tipoBusqueda, 
                     valor_buscado: valor,
-                    resultados_encontrados: resultados.length 
+                    resultados_encontrados: resultados.length,
+                    estatus: estatusVehiculo // ✅ ESTO HACE QUE SE MUESTRE EN LA COLUMNA REGISTRO/ESTATUS
                 });
             }
 
@@ -185,12 +177,13 @@ window.initConsultaVehiculos = function() {
             await window.cargarIncidenciasVehiculo(identificador, tipoRegistroActual, 1);
             mostrarMensaje('✅ Vehículo seleccionado', 'success');
             
-            // ✅ REGISTRAR LOG DE SELECCIÓN DE TIPO ESPECÍFICO
+            // ✅ REGISTRAR LOG DE SELECCIÓN (TAMBIÉN INCLUYE EL ESTATUS)
             if (typeof registrarLog === 'function') {
                 await registrarLog('CONSULTA_VEHICULO', 'Consulta Vehículos', null, { 
                     tipo_busqueda: tipoBusquedaSelect?.value || 'placa', 
                     valor_buscado: buscarInput?.value.trim().toUpperCase() || '',
-                    tipo_seleccionado: tipo
+                    tipo_seleccionado: tipo,
+                    estatus: vehiculoActual ? vehiculoActual.estatus : 'N/A' // ✅ ESTO HACE QUE SE MUESTRE EN LA COLUMNA REGISTRO/ESTATUS
                 });
             }
         }
@@ -499,7 +492,6 @@ window.initConsultaVehiculos = function() {
         }
     }
 
-    // ✅ FUNCIÓN GLOBAL PARA CARGAR INCIDENCIAS (CON BOTÓN DE ELIMINAR PARA ADMIN)
     window.cargarIncidenciasVehiculo = async function(identificador, tipo, pagina = 1) {
         const section = document.getElementById('cv_incidencias_section');
         if (!section) return;
