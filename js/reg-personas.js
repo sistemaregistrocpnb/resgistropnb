@@ -375,14 +375,57 @@ form.addEventListener('submit', async (e) => {
             observaciones: document.getElementById('p_observaciones')?.value.trim() || null
         };
 
-        const { error } = await window.supabaseClient.from('registro_personas').insert([data]);
+            // 🔹 INSERTAR PERSONA Y OBTENER EL ID PARA EL LOG
+        const { data: insertedData, error } = await window.supabaseClient
+            .from('registro_personas')
+            .insert([data])
+            .select('id')
+            .single();
+
         if (error) throw error;
 
-        if (msg) {
-            msg.textContent = '✅ Registro guardado exitosamente.';
-            msg.className = 'msg success';
-            msg.style.display = 'block';
-            setTimeout(() => msg.style.display = 'none', 4000);
+        // 🔹 REGISTRAR LOG EN EL SISTEMA
+        try {
+            const userId = sessionStorage.getItem('pnb_user_id') || 'unknown';
+            let userName = 'Usuario';
+            let userEmail = 'usuario@sistema.local';
+
+            // Intentamos obtener datos del perfil para un log más detallado
+            if (userId !== 'unknown') {
+                const { data: userProfile } = await window.supabaseClient
+                    .from('perfiles_usuario')
+                    .select('nombre, email')
+                    .eq('user_id', userId)
+                    .maybeSingle();
+                    
+                if (userProfile) {
+                    userName = userProfile.nombre || userName;
+                    userEmail = userProfile.email || userEmail;
+                }
+            }
+
+            const nombreCompleto = `${data.primer_nombre} ${data.segundo_nombre || ''} ${data.primer_apellido} ${data.segundo_apellido || ''}`.trim();
+
+            const logEntry = {
+                accion: 'CREAR',
+                modulo: 'PERSONAS',
+                registro_id: insertedData.id,
+                user_id: userId,
+                user_nombre: userName,
+                user_email: userEmail,
+                detalles: JSON.stringify({
+                    cedula: cedula,
+                    nombre_completo: nombreCompleto,
+                    estatus: data.estatus,
+                    estacion: data.estacion_policial
+                })
+            };
+
+            // Insertamos el log (si falla, no bloqueamos el registro principal)
+            await window.supabaseClient.from('sistema_logs').insert([logEntry]);
+            
+        } catch (logErr) {
+            console.warn('⚠️ El registro se guardó, pero falló la creación del log:', logErr);
         }
 
         // Resetear formulario
