@@ -120,6 +120,15 @@ window.initConsultaVehiculos = function() {
                 return;
             }
 
+            // ✅ REGISTRAR LOG DE CONSULTA EXITOSA
+            if (typeof registrarLog === 'function') {
+                await registrarLog('CONSULTA_VEHICULO', 'Consulta Vehículos', null, { 
+                    tipo_busqueda: tipoBusqueda, 
+                    valor_buscado: valor,
+                    resultados_encontrados: resultados.length 
+                });
+            }
+
             const tiposUnicos = [...new Set(resultados.map(r => r.tipo_registro))];
             if (tiposUnicos.length > 1) {
                 resultadosMultiples = resultados;
@@ -175,6 +184,15 @@ window.initConsultaVehiculos = function() {
             const identificador = vehiculoActual.placa || vehiculoActual.serial_carroceria || vehiculoActual.serial_motor;
             await window.cargarIncidenciasVehiculo(identificador, tipoRegistroActual, 1);
             mostrarMensaje('✅ Vehículo seleccionado', 'success');
+            
+            // ✅ REGISTRAR LOG DE SELECCIÓN DE TIPO ESPECÍFICO
+            if (typeof registrarLog === 'function') {
+                await registrarLog('CONSULTA_VEHICULO', 'Consulta Vehículos', null, { 
+                    tipo_busqueda: tipoBusquedaSelect?.value || 'placa', 
+                    valor_buscado: buscarInput?.value.trim().toUpperCase() || '',
+                    tipo_seleccionado: tipo
+                });
+            }
         }
     };
 
@@ -575,6 +593,15 @@ window.initConsultaVehiculos = function() {
             if (modalIncidencia) modalIncidencia.classList.remove('active');
             mostrarMensaje('✅ Incidencia registrada', 'success');
             await window.cargarIncidenciasVehiculo(identificador, tipoRegistroActual, 1);
+            
+            // ✅ REGISTRAR LOG DE CREACIÓN DE INCIDENCIA
+            if (typeof registrarLog === 'function') {
+                await registrarLog('CREAR_INCIDENCIA_VEHICULO', 'Consulta Vehículos', null, { 
+                    identificador: identificador, 
+                    tipo: tipoRegistroActual,
+                    descripcion: descripcion
+                });
+            }
         } catch (err) {
             mostrarMensaje('❌ Error: ' + err.message, 'error');
         } finally {
@@ -660,8 +687,13 @@ document.getElementById('cv_btn_confirmar_eliminacion').onclick = async () => {
             setTimeout(() => { msgEl.style.display = 'none'; }, 4000);
         }
 
+        // ✅ REGISTRAR LOG DE ELIMINACIÓN DE INCIDENCIA
         if (typeof registrarLog === 'function') {
-            await registrarLog('ELIMINAR_INCIDENCIA_VEHICULO', 'Consulta Vehículos', datos.id, { identificador: datos.identificador, tipo: datos.tipo });
+            await registrarLog('ELIMINAR_INCIDENCIA_VEHICULO', 'Consulta Vehículos', datos.id, { 
+                identificador: datos.identificador, 
+                tipo: datos.tipo,
+                descripcion_eliminada: datos.descripcion 
+            });
         }
 
     } catch (err) {
@@ -678,6 +710,7 @@ if (document.readyState === 'loading') {
     window.initConsultaVehiculos();
 }
 
+// ✅ FUNCIÓN REUTILIZABLE PARA REGISTRAR LOGS EN EL SISTEMA
 async function registrarLog(accion, modulo, registroId = null, detalles = {}) {
     try {
         const { data: { user } } = await window.supabaseClient.auth.getUser();
@@ -686,8 +719,14 @@ async function registrarLog(accion, modulo, registroId = null, detalles = {}) {
             .from('perfiles_usuario').select('nombre, apellido').eq('user_id', user.id).maybeSingle();
         const nombreCompleto = perfil ? `${perfil.nombre || ''} ${perfil.apellido || ''}`.trim() : 'Sistema';
         await window.supabaseClient.from('sistema_logs').insert([{
-            user_id: user.id, user_email: user.email, user_nombre: nombreCompleto,
-            accion: accion, modulo: modulo, registro_id: registroId, detalles: detalles, user_agent: navigator.userAgent
+            user_id: user.id, 
+            user_email: user.email, 
+            user_nombre: nombreCompleto,
+            accion: accion, 
+            modulo: modulo, 
+            registro_id: registroId, 
+            detalles: detalles, 
+            user_agent: navigator.userAgent
         }]);
     } catch (err) {
         // Silencioso para no mostrar errores de logs al usuario final
