@@ -306,7 +306,7 @@ form.addEventListener('submit', async (e) => {
     btn.textContent = '⏳ Guardando...';
     if(msg) msg.style.display='none';
 
-    try {
+      try {
         const bucket = window.supabaseClient.storage.from('fotos_personas');
         const files = {
             f: document.getElementById('foto_frontal').files[0],
@@ -375,60 +375,24 @@ form.addEventListener('submit', async (e) => {
             observaciones: document.getElementById('p_observaciones')?.value.trim() || null
         };
 
-            // 🔹 INSERTAR PERSONA Y OBTENER EL ID PARA EL LOG
-        const { data: insertedData, error } = await window.supabaseClient
+        // 🔹 1. INSERTAR PERSONA (Usamos maybeSingle() que es más seguro que single())
+        const { data: insertedData, error: insertError } = await window.supabaseClient
             .from('registro_personas')
             .insert([data])
             .select('id')
-            .single();
+            .maybeSingle(); 
 
-        if (error) throw error;
+        if (insertError) throw insertError;
 
-        // 🔹 REGISTRAR LOG EN EL SISTEMA
-        try {
-            const userId = sessionStorage.getItem('pnb_user_id') || 'unknown';
-            let userName = 'Usuario';
-            let userEmail = 'usuario@sistema.local';
-
-            // Intentamos obtener datos del perfil para un log más detallado
-            if (userId !== 'unknown') {
-                const { data: userProfile } = await window.supabaseClient
-                    .from('perfiles_usuario')
-                    .select('nombre, email')
-                    .eq('user_id', userId)
-                    .maybeSingle();
-                    
-                if (userProfile) {
-                    userName = userProfile.nombre || userName;
-                    userEmail = userProfile.email || userEmail;
-                }
-            }
-
-            const nombreCompleto = `${data.primer_nombre} ${data.segundo_nombre || ''} ${data.primer_apellido} ${data.segundo_apellido || ''}`.trim();
-
-            const logEntry = {
-                accion: 'CREAR',
-                modulo: 'PERSONAS',
-                registro_id: insertedData.id,
-                user_id: userId,
-                user_nombre: userName,
-                user_email: userEmail,
-                detalles: JSON.stringify({
-                    cedula: cedula,
-                    nombre_completo: nombreCompleto,
-                    estatus: data.estatus,
-                    estacion: data.estacion_policial
-                })
-            };
-
-            // Insertamos el log (si falla, no bloqueamos el registro principal)
-            await window.supabaseClient.from('sistema_logs').insert([logEntry]);
-            
-        } catch (logErr) {
-            console.warn('⚠️ El registro se guardó, pero falló la creación del log:', logErr);
+        // ✅ 2. MOSTRAR ÉXITO INMEDIATAMENTE (Antes de hacer cualquier otra cosa)
+        if (msg) {
+            msg.textContent = '✅ Registro guardado exitosamente.';
+            msg.className = 'msg success';
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 4000);
         }
 
-        // Resetear formulario
+        // 🔹 3. RESETEAR FORMULARIO INMEDIATAMENTE
         form.reset();
         if(edadInput) edadInput.value = '';
         document.querySelectorAll('.hidden-field').forEach(e => e.style.display='none');
@@ -439,6 +403,50 @@ form.addEventListener('submit', async (e) => {
         codeText.textContent = '+XX';
         countryText.textContent = 'País';
 
+        // 🔹 4. REGISTRAR LOG EN SEGUNDO PLANO (Sin bloquear el flujo ni el mensaje de éxito)
+        const registroId = insertedData?.id || null;
+        
+        // Esta función asíncrona corre sola. Si falla, solo imprime en consola, no afecta al usuario.
+        (async () => {
+            try {
+                const userId = sessionStorage.getItem('pnb_user_id') || 'unknown';
+                let userName = 'Usuario';
+                let userEmail = 'usuario@sistema.local';
+
+                if (userId !== 'unknown') {
+                    const { data: userProfile } = await window.supabaseClient
+                        .from('perfiles_usuario')
+                        .select('nombre, email')
+                        .eq('user_id', userId)
+                        .maybeSingle();
+                        
+                    if (userProfile) {
+                        userName = userProfile.nombre || userName;
+                        userEmail = userProfile.email || userEmail;
+                    }
+                }
+
+                const nombreCompleto = `${data.primer_nombre} ${data.segundo_nombre || ''} ${data.primer_apellido} ${data.segundo_apellido || ''}`.trim();
+
+                await window.supabaseClient.from('sistema_logs').insert([{
+                    accion: 'CREAR',
+                    modulo: 'PERSONAS',
+                    registro_id: registroId,
+                    user_id: userId,
+                    user_nombre: userName,
+                    user_email: userEmail,
+                    detalles: JSON.stringify({
+                        cedula: cedula,
+                        nombre_completo: nombreCompleto,
+                        estatus: data.estatus,
+                        estacion: data.estacion_policial
+                    })
+                }]);
+            } catch (logErr) {
+                console.warn('⚠️ El registro se guardó, pero falló la creación del log:', logErr);
+            }
+        })();
+
     } catch (err) {
         console.error('Error:', err);
         let m = 'Error inesperado. Intente nuevamente.';
@@ -446,13 +454,11 @@ form.addEventListener('submit', async (e) => {
         else if (err.message.includes('storage')) m = 'Error subiendo fotografías.';
         else if (err.message.includes('22001') || err.message.includes('too long')) m = 'El número de teléfono es demasiado largo (máx. 20 dígitos).';
         else if (err.message.includes('tlf_numero_check')) m = 'Formato de teléfono inválido.';
-        else m = err.message; // Mostrar el mensaje de error personalizado (ej: "La fotografía frontal es obligatoria")
+        else m = err.message; 
         mostrarError(m);
     } finally {
         btn.disabled = false;
         btn.textContent = '✅ Registrar Persona';
     }
-});
-
     console.log("✅ Módulo reg-personas.js inicializado correctamente");
 };
