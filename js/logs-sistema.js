@@ -83,6 +83,15 @@ window.initLogsSistema = function() {
         if (d.cedula && d.descripcion_eliminada) {
             return `Eliminó incidencia de la persona <strong>${d.cedula}</strong>.<br><em>"${d.descripcion_eliminada}"</em>`;
         }
+            // 🔄 REGLA PARA REINTEGRACIÓN DE PERSONA
+    if (d.cedula && d.estatus && d.estatus.includes('Reintegrado')) {
+        return `Reintegró a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre || 'Nombre no disponible'}) al sistema activo.`;
+    }
+    
+    // 🗑️ REGLA PARA ELIMINACIÓN DE INCIDENCIA DE PERSONA (Ya existía, pero asegúrate de que esté así)
+    if (d.cedula && d.descripcion_eliminada) {
+        return `Eliminó a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre || 'Nombre no disponible'}).<br><em>"${d.descripcion_eliminada}"</em>`;
+    }
 
         // 🔄 FALLBACK LIMPIO: Si no hay regla específica, muestra las claves y valores de forma ordenada
         return Object.entries(d)
@@ -134,6 +143,7 @@ window.initLogsSistema = function() {
                 'CREAR': 'badge-crear',
                 'MODIFICAR': 'badge-modificar',
                 'ELIMINAR': 'badge-eliminar',
+                'REINTEGRAR': 'badge-crear',
                 'LOGIN': 'badge-login',
                 'LOGOUT': 'badge-logout',
                 'CONSULTA_VEHICULO': 'badge-modificar',
