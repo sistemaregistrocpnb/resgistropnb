@@ -38,19 +38,39 @@ window.initElimPersonas = function() {
         img.src = url || '';
         img.style.display = url ? 'block' : 'none';
     };
-    // ✅ NUEVO: Función para registrar en la tabla sistema_logs
+// ✅ CORREGIDO: Función para registrar en la tabla sistema_logs
+// Ahora consulta la tabla perfiles_usuario para obtener el nombre real
 async function registrarLog(accion, modulo, detalles) {
     try {
         const { data: { user } } = await window.supabaseClient.auth.getUser();
+        if (!user) return;
+
+        // 🔍 Consultamos la tabla perfiles_usuario para obtener el nombre real
+        let nombreUsuario = user.email || 'Sistema'; // Fallback por si falla
+        try {
+            const { data: perfil } = await window.supabaseClient
+                .from('perfiles_usuario')
+                .select('nombre, apellido')
+                .eq('user_id', user.id)
+                .maybeSingle();
+            
+            if (perfil) {
+                nombreUsuario = `${perfil.nombre} ${perfil.apellido}`.trim();
+            }
+        } catch (err) {
+            console.warn('No se pudo obtener el perfil del usuario para el log:', err);
+        }
+
         const logEntry = {
-            user_id: user?.id || null,
-            user_nombre: user?.user_metadata?.full_name || user?.email || 'Usuario',
-            user_email: user?.email || 'sistema',
+            user_id: user.id,
+            user_nombre: nombreUsuario,
+            user_email: user.email || 'sistema',
             accion: accion,
             modulo: modulo,
-            detalles: detalles, // Supabase lo guarda como JSONB automáticamente
+            detalles: detalles,
             created_at: new Date().toISOString()
         };
+
         const { error } = await window.supabaseClient.from('sistema_logs').insert([logEntry]);
         if (error) console.error('Error al registrar log:', error);
     } catch (err) {
