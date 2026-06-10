@@ -103,31 +103,38 @@ window.initLogsSistema = function() {
             .join('<br>');
     }
 
-    // ✅ FUNCIÓN PARA OBTENER EL VALOR PRINCIPAL DE LA COLUMNA "REGISTRO"
-    function obtenerValorRegistro(log) {
-        if (log.detalles) {
-            let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
-            
-            // 1. Si hay un estatus, lo mostramos como badge
-            if (d.estatus) {
-                const badgeClass = d.estatus.toLowerCase().includes('procesad') ? 'badge-eliminar' : 
-                                   d.estatus.toLowerCase().includes('verificaci') ? 'badge-otros' : 'badge-crear';
-                return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
+// ✅ FUNCIÓN PARA OBTENER EL VALOR PRINCIPAL DE LA COLUMNA "REGISTRO"
+function obtenerValorRegistro(log) {
+    if (log.detalles) {
+        let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
+        
+        // 🆕 REGLA ESPECIAL: Si es eliminación o reintegración de persona, mostrar badge
+        if (log.modulo === 'PERSONAS') {
+            if (log.accion === 'ELIMINAR') {
+                return `<span class="badge badge-eliminar">ELIMINADO</span>`;
             }
-            
-            // 2. Si no, mostramos el identificador principal
-            if (d.valor_buscado) return d.valor_buscado;
-            if (d.identificador) return d.identificador;
-            if (d.cedula) return d.cedula;
+            if (log.accion === 'REINTEGRAR') {
+                return `<span class="badge badge-crear">REINTEGRADO</span>`;
+            }
         }
         
-        // 3. Fallback al registro_id recortado
-        if (log.registro_id) {
-            return `<span style="font-family: monospace; font-size: 0.8rem; color: #64748b;">${log.registro_id.substring(0, 8)}...</span>`;
+        // 1. Si hay un estatus, lo mostramos como badge
+        if (d.estatus) {
+            const badgeClass = d.estatus.toLowerCase().includes('procesad') ? 'badge-eliminar' :
+                d.estatus.toLowerCase().includes('verificaci') ? 'badge-otros' : 'badge-crear';
+            return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
         }
-        
-        return '-';
+        // 2. Si no, mostramos el identificador principal
+        if (d.valor_buscado) return d.valor_buscado;
+        if (d.identificador) return d.identificador;
+        if (d.cedula) return d.cedula;
     }
+    // 3. Fallback al registro_id recortado
+    if (log.registro_id) {
+        return `<span style="font-family: monospace; font-size: 0.8rem; color: #64748b;">${log.registro_id.substring(0, 8)}...</span>`;
+    }
+    return '-';
+}
 
     function renderTabla() {
         if (!tablaContainer) return;
