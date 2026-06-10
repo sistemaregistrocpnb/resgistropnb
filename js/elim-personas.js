@@ -38,6 +38,25 @@ window.initElimPersonas = function() {
         img.src = url || '';
         img.style.display = url ? 'block' : 'none';
     };
+    // ✅ NUEVO: Función para registrar en la tabla sistema_logs
+async function registrarLog(accion, modulo, detalles) {
+    try {
+        const { data: { user } } = await window.supabaseClient.auth.getUser();
+        const logEntry = {
+            user_id: user?.id || null,
+            user_nombre: user?.user_metadata?.full_name || user?.email || 'Usuario',
+            user_email: user?.email || 'sistema',
+            accion: accion,
+            modulo: modulo,
+            detalles: detalles, // Supabase lo guarda como JSONB automáticamente
+            created_at: new Date().toISOString()
+        };
+        const { error } = await window.supabaseClient.from('sistema_logs').insert([logEntry]);
+        if (error) console.error('Error al registrar log:', error);
+    } catch (err) {
+        console.error('Error en registrarLog:', err);
+    }
+}
 
     // 🔹 Mostrar datos + UI según estado
     function renderUI(data, isArchived) {
@@ -248,6 +267,16 @@ window.initElimPersonas = function() {
                 
             if (delErr) throw new Error('Error eliminando: ' + delErr.message);
             if (!delData || delData.length === 0) throw new Error('No se encontró el registro para eliminar.');
+             // ✅ NUEVO: Registrar la acción en los logs
+        await registrarLog(
+            'ELIMINAR', 
+            'PERSONAS', 
+            { 
+                cedula: currentData.cedula, 
+                nombre: `${currentData.primer_nombre} ${currentData.primer_apellido}`,
+                descripcion_eliminada: "Registro eliminado y movido a archivados."
+            }
+        );
             
             showMsgElim('✅ Persona eliminada y archivada correctamente.', 'success');
             setTimeout(() => { 
@@ -319,6 +348,16 @@ window.initElimPersonas = function() {
                 .from('eliminados')
                 .delete()
                 .eq('id', currentData.id); // currentData.id es el ID de la fila en 'eliminados'
+               // ✅ NUEVO: Registrar la acción en los logs
+        await registrarLog(
+            'REINTEGRAR', 
+            'PERSONAS', 
+            { 
+                cedula: currentData.cedula, 
+                nombre: `${currentData.primer_nombre} ${currentData.primer_apellido}`,
+                estatus: "Reintegrado al sistema activo"
+            }
+        );
             
             showMsgElim('✅ Persona reintegrada al sistema activo.', 'success');
             setTimeout(() => { 
