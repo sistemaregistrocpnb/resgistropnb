@@ -473,19 +473,20 @@ window.initModPersonas = function() {
                         let userEmail = 'usuario@sistema';
 
                         // 2. Buscar el nombre COMPLETO en la tabla perfiles_usuario
-                        if (userId) {
-                            const { data: perfil } = await window.supabaseClient
-                                .from('perfiles_usuario')
-                                .select('nombre, email')
-                                .eq('user_id', userId)
-                                .maybeSingle();
-                            
-                            if (perfil) {
-                                userName = perfil.nombre || userName;
-                                userEmail = perfil.email || userEmail;
-                            }
-                        }
-
+                   // 2. Buscar el nombre COMPLETO en la tabla perfiles_usuario
+if (userId) {
+    const { data: perfil } = await window.supabaseClient
+        .from('perfiles_usuario')
+        .select('nombre, apellido, email') // ✅ AGREGADO: 'apellido'
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (perfil) {
+        // ✅ CONCATENAR NOMBRE Y APELLIDO (evita espacios extra si falta alguno)
+        const nombreCompletoPerfil = [perfil.nombre, perfil.apellido].filter(Boolean).join(' ').trim();
+        userName = nombreCompletoPerfil || userName;  
+        userEmail = perfil.email || userEmail;
+    }
+}
                         // 3. Si no encontramos en perfiles, intentar con Supabase Auth
                         if (userName === 'Usuario') {
                             const { data: { user } } = await window.supabaseClient.auth.getUser();
