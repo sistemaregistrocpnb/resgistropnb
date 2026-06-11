@@ -99,40 +99,45 @@ window.initLogsSistema = function() {
             .join('<br>');
     }
 
-    // ✅ FUNCIÓN PARA OBTENER EL VALOR PRINCIPAL DE LA COLUMNA "REGISTRO"
-    function obtenerValorRegistro(log) {
-        if (log.detalles) {
-            let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
+// ✅ FUNCIÓN PARA OBTENER EL VALOR PRINCIPAL DE LA COLUMNA "REGISTRO / ESTATUS"
+function obtenerValorRegistro(log) {
+    if (log.detalles) {
+        let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
 
-            // ✅ 1. PRIMERO: Si hay un estatus, lo mostramos como badge (PRIORIDAD ALTA)
-            if (d.estatus) {
-                const badgeClass = d.estatus.toLowerCase().includes('procesad') ? 'badge-eliminar' :
-                    d.estatus.toLowerCase().includes('verificaci') ? 'badge-otros' : 'badge-crear';
-                return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
-            }
+        // ✅ 1. PRIORIDAD MÁXIMA: Acciones de ELIMINAR o REINTEGRAR (Vehículos o Personas)
+        if (log.accion === 'ELIMINAR') {
+            return `<span class="badge badge-eliminar">ELIMINADO</span>`;
+        }
+        if (log.accion === 'REINTEGRAR') {
+            return `<span class="badge badge-crear">REINTEGRADO</span>`;
+        }
 
-            // 🚗 2. DESPUÉS: Si es creación de vehículo, mostrar la placa
-            if (log.modulo === 'VEHICULOS' && log.accion === 'CREAR' && d.placa) {
-                return `<span class="badge badge-crear">${d.placa}</span>`;
-            }
+        // ✅ 2. Si hay un estatus, lo mostramos como badge
+        if (d && d.estatus) {
+            const badgeClass = d.estatus.toLowerCase().includes('procesad') ? 'badge-eliminar' :
+                               d.estatus.toLowerCase().includes('verificaci') ? 'badge-otros' : 'badge-crear';
+            return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
+        }
 
-            // 🆕 3. Eliminación o reintegración de persona
-            if (log.modulo === 'PERSONAS') {
-                if (log.accion === 'ELIMINAR') return `<span class="badge badge-eliminar">ELIMINADO</span>`;
-                if (log.accion === 'REINTEGRAR') return `<span class="badge badge-crear">REINTEGRADO</span>`;
-            }
-            
-            // 4. Identificadores principales
+        // 🚗 3. Si es creación de vehículo, mostrar la placa
+        if (log.modulo === 'VEHICULOS' && log.accion === 'CREAR' && d && d.placa) {
+            return `<span class="badge badge-crear">${d.placa}</span>`;
+        }
+        
+        // 4. Identificadores principales
+        if (d) {
             if (d.valor_buscado) return d.valor_buscado;
             if (d.identificador) return d.identificador;
             if (d.cedula) return d.cedula;
         }
-        // 5. Fallback al registro_id recortado
-        if (log.registro_id) {
-            return `<span style="font-family: monospace; font-size: 0.8rem; color: #64748b;">${log.registro_id.substring(0, 8)}...</span>`;
-        }
-        return '-';
     }
+    
+    // 5. Fallback al registro_id recortado
+    if (log.registro_id) {
+        return `<span style="font-family: monospace; font-size: 0.8rem; color: #64748b;">${String(log.registro_id).substring(0, 8)}...</span>`;
+    }
+    return '-';
+}
 
     function renderTabla() {
         if (!tablaContainer) return;
