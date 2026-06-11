@@ -2,6 +2,44 @@ window.initRegVinculado = function() {
     console.log("✅ Módulo reg-vinculado.js cargado correctamente.");
 
     // ==========================================
+    // ✅ NUEVO: FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO
+    // ==========================================
+    async function registrarLog(accion, modulo, detalles) {
+        try {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) return;
+            let nombreUsuario = user.email || 'Sistema';
+            
+            try {
+                const { data: perfil } = await window.supabaseClient
+                    .from('perfiles_usuario')
+                    .select('nombre, apellido, email')
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+                if (perfil) {
+                    nombreUsuario = [perfil.nombre, perfil.apellido].filter(Boolean).join(' ').trim() || nombreUsuario;
+                }
+            } catch (err) {
+                console.warn('No se pudo obtener el perfil del usuario para el log:', err);
+            }
+
+            const logEntry = {
+                user_id: user.id,
+                user_nombre: nombreUsuario,
+                user_email: user.email || 'sistema',
+                accion: accion,
+                modulo: modulo,
+                detalles: detalles,
+                created_at: new Date().toISOString()
+            };
+            const { error } = await window.supabaseClient.from('sistema_logs').insert([logEntry]);
+            if (error) console.error('Error al registrar log:', error);
+        } catch (err) {
+            console.error('Error en registrarLog:', err);
+        }
+    }
+
+    // ==========================================
     // 🔹 1. MAPA DE BANDERAS
     // ==========================================
     const isoMap = {
@@ -143,10 +181,8 @@ window.initRegVinculado = function() {
         const marcaSelect = document.getElementById('pv_v_marca');
         const modeloSelect = document.getElementById('pv_v_modelo');
         const boxCilindro = document.getElementById('pv_box_cilindro');
-
         marcaSelect.innerHTML = '<option value="">Seleccione marca...</option>';
         modeloSelect.innerHTML = '<option value="">Seleccione modelo...</option>';
-
         if (tipo === 'Motocicleta') {
             Object.keys(marcasModelosMoto).sort().forEach(m => marcaSelect.innerHTML += `<option value="${m}">${m}</option>`);
             boxCilindro.style.display = 'block';
@@ -154,12 +190,9 @@ window.initRegVinculado = function() {
             Object.keys(marcasModelosAuto).sort().forEach(m => marcaSelect.innerHTML += `<option value="${m}">${m}</option>`);
             boxCilindro.style.display = 'none';
         }
-        
-       // 🔑 IMPORTANTE: Al cambiar tipo, re-validar placa y seriales con la nueva función
-  if (window.reValidarCamposVehiculoVinc) {
-    window.reValidarCamposVehiculoVinc();
-  }
-};
+        if (window.reValidarCamposVehiculoVinc) window.reValidarCamposVehiculoVinc();
+    };
+
     window.cargarModelosPV = function() {
         const tipo = document.getElementById('pv_v_tipo').value;
         const marca = document.getElementById('pv_v_marca').value;
@@ -211,7 +244,6 @@ window.initRegVinculado = function() {
         const flagImg = document.getElementById('pv_tlf-flag-img');
         const codeText = document.getElementById('pv_tlf-code-text');
         const countryText = document.getElementById('pv_tlf-country-text');
-
         if (optionsBox && nativeSelect && displayBox) {
             optionsBox.innerHTML = '';
             Array.from(nativeSelect.options).forEach(opt => {
@@ -250,151 +282,126 @@ window.initRegVinculado = function() {
         });
     };
 
-// ==========================================
-// 🔹 6. VALIDACIÓN EN TIEMPO REAL (FILTRADA POR TIPO)
-// ==========================================
-
-// Función debounce para evitar consultas excesivas
-function debounce(func, wait) {
-  let timeout;
-  return function(...args) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(this, args), wait);
-  };
-}
-
-// Función principal de verificación de duplicados
-async function verificarDuplicado(inputId, msgId, tablas, columna, tipoVehiculo) {
-  const input = document.getElementById(inputId);
-  const msgEl = document.getElementById(msgId);
-  
-  if (!input || !msgEl) return;
-  
-  const val = input.value.trim().toUpperCase();
-  
-  if (!val || val.length < 5) {
-    input.classList.remove('input-valid', 'input-error');
-    msgEl.textContent = '';
-    msgEl.className = 'status-msg';
-    return;
-  }
-
-  if (tablas.length === 0) {
-    input.classList.remove('input-valid', 'input-error');
-    msgEl.textContent = '⚠️ Seleccione el tipo de vehículo primero';
-    msgEl.className = 'status-msg error';
-    return;
-  }
-
-  msgEl.textContent = '⏳ Verificando...';
-  msgEl.className = 'status-msg';
-
-  try {
-    let found = false;
-    let foundIn = '';
-
-    for (const tabla of tablas) {
-      let query = window.supabaseClient.from(tabla).select('id');
-      
-      // Si es registro_vinculado y no es cédula, filtrar por tipo_vehiculo
-      if (tabla === 'registro_vinculado' && columna !== 'cedula' && tipoVehiculo) {
-        query = query.eq('tipo_vehiculo', tipoVehiculo);
-      }
-      
-      const { data, error } = await query.ilike(columna, val).limit(1);
-      
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        found = true;
-        if (tabla === 'registro_motos') foundIn = 'Motocicletas';
-        else if (tabla === 'registro_automoviles') foundIn = 'Automóviles';
-        else if (tabla === 'registro_vinculado') foundIn = 'Vehículos Vinculados';
-        else if (tabla === 'registro_personas') foundIn = 'Personas Registradas';
-        break;
-      }
+    // ==========================================
+    // 🔹 6. VALIDACIÓN EN TIEMPO REAL
+    // ==========================================
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
     }
 
-    if (found) {
-      input.classList.add('input-error');
-      input.classList.remove('input-valid');
-      msgEl.textContent = `❌ Ya registrado en ${foundIn}`;
-      msgEl.className = 'status-msg error';
-    } else {
-      input.classList.add('input-valid');
-      input.classList.remove('input-error');
-      msgEl.textContent = '✅ Disponible';
-      msgEl.className = 'status-msg valid';
+    async function verificarDuplicado(inputId, msgId, tablas, columna, tipoVehiculo) {
+        const input = document.getElementById(inputId);
+        const msgEl = document.getElementById(msgId);
+        if (!input || !msgEl) return;
+        const val = input.value.trim().toUpperCase();
+        if (!val || val.length < 5) {
+            input.classList.remove('input-valid', 'input-error');
+            msgEl.textContent = '';
+            msgEl.className = 'status-msg';
+            return;
+        }
+        if (tablas.length === 0) {
+            input.classList.remove('input-valid', 'input-error');
+            msgEl.textContent = '⚠️ Seleccione el tipo de vehículo primero';
+            msgEl.className = 'status-msg error';
+            return;
+        }
+        msgEl.textContent = '⏳ Verificando...';
+        msgEl.className = 'status-msg';
+        try {
+            let found = false;
+            let foundIn = '';
+            for (const tabla of tablas) {
+                let query = window.supabaseClient.from(tabla).select('id');
+                if (tabla === 'registro_vinculado' && columna !== 'cedula' && tipoVehiculo) {
+                    query = query.eq('tipo_vehiculo', tipoVehiculo);
+                }
+                const { data, error } = await query.ilike(columna, val).limit(1);
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    found = true;
+                    if (tabla === 'registro_motos') foundIn = 'Motocicletas';
+                    else if (tabla === 'registro_automoviles') foundIn = 'Automóviles';
+                    else if (tabla === 'registro_vinculado') foundIn = 'Vehículos Vinculados';
+                    else if (tabla === 'registro_personas') foundIn = 'Personas Registradas';
+                    break;
+                }
+            }
+            if (found) {
+                input.classList.add('input-error');
+                input.classList.remove('input-valid');
+                msgEl.textContent = `❌ Ya registrado en ${foundIn}`;
+                msgEl.className = 'status-msg error';
+            } else {
+                input.classList.add('input-valid');
+                input.classList.remove('input-error');
+                msgEl.textContent = '✅ Disponible';
+                msgEl.className = 'status-msg valid';
+            }
+        } catch (e) {
+            console.error('Error en validación:', e);
+            msgEl.textContent = '⚠️ Error de conexión';
+            msgEl.className = 'status-msg error';
+        }
     }
-  } catch (e) {
-    console.error('Error en validación:', e);
-    msgEl.textContent = '⚠️ Error de conexión';
-    msgEl.className = 'status-msg error';
-  }
-}
 
-// Función para re-validar campos de vehículo cuando cambia el tipo
-window.reValidarCamposVehiculo = function() {
-  const placa = document.getElementById('pv_v_placa');
-  const serialCarro = document.getElementById('pv_v_serial_carro');
-  const serialMotor = document.getElementById('pv_v_serial_motor');
-  
-  if (placa && placa.value) placa.dispatchEvent(new Event('input'));
-  if (serialCarro && serialCarro.value) serialCarro.dispatchEvent(new Event('input'));
-  if (serialMotor && serialMotor.value) serialMotor.dispatchEvent(new Event('input'));
-};
+    window.reValidarCamposVehiculo = function() {
+        const placa = document.getElementById('pv_v_placa');
+        const serialCarro = document.getElementById('pv_v_serial_carro');
+        const serialMotor = document.getElementById('pv_v_serial_motor');
+        if (placa && placa.value) placa.dispatchEvent(new Event('input'));
+        if (serialCarro && serialCarro.value) serialCarro.dispatchEvent(new Event('input'));
+        if (serialMotor && serialMotor.value) serialMotor.dispatchEvent(new Event('input'));
+    };
 
-// Configuración de los listeners de validación
-const setupValidation = () => {
-  const cedulaInput = document.getElementById('pv_p_cedula');
-  const placaInput = document.getElementById('pv_v_placa');
-  const serialCarroInput = document.getElementById('pv_v_serial_carro');
-  const serialMotorInput = document.getElementById('pv_v_serial_motor');
-  const tipoVehInput = document.getElementById('pv_v_tipo');
+    const setupValidation = () => {
+        const cedulaInput = document.getElementById('pv_p_cedula');
+        const placaInput = document.getElementById('pv_v_placa');
+        const serialCarroInput = document.getElementById('pv_v_serial_carro');
+        const serialMotorInput = document.getElementById('pv_v_serial_motor');
+        const tipoVehInput = document.getElementById('pv_v_tipo');
 
-  // Validación de Cédula (siempre en todas las tablas de personas)
-  if (cedulaInput) {
-    cedulaInput.addEventListener('input', debounce(() => {
-      cedulaInput.value = cedulaInput.value.replace(/\D/g, '').slice(0, 8);
-      const tablas = ['registro_personas', 'registro_vinculado'];
-      verificarDuplicado('pv_p_cedula', 'pv-msg-cedula', tablas, 'cedula', null);
-    }, 600));
-  }
+        if (cedulaInput) {
+            cedulaInput.addEventListener('input', debounce(() => {
+                cedulaInput.value = cedulaInput.value.replace(/\D/g, '').slice(0, 8);
+                const tablas = ['registro_personas', 'registro_vinculado'];
+                verificarDuplicado('pv_p_cedula', 'pv-msg-cedula', tablas, 'cedula', null);
+            }, 600));
+        }
+        if (placaInput) {
+            placaInput.addEventListener('input', debounce(() => {
+                const tipo = tipoVehInput?.value;
+                if (!tipo) {
+                    placaInput.classList.remove('input-valid', 'input-error');
+                    document.getElementById('pv-msg-placa').textContent = '';
+                    return;
+                }
+                const tablas = tipo === 'Motocicleta' ? ['registro_motos', 'registro_vinculado'] : ['registro_automoviles', 'registro_vinculado'];
+                verificarDuplicado('pv_v_placa', 'pv-msg-placa', tablas, 'placa', tipo);
+            }, 600));
+        }
+        if (serialCarroInput) {
+            serialCarroInput.addEventListener('input', debounce(() => {
+                const tipo = tipoVehInput?.value;
+                if (!tipo) return;
+                const tablas = tipo === 'Motocicleta' ? ['registro_motos', 'registro_vinculado'] : ['registro_automoviles', 'registro_vinculado'];
+                verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', tablas, 'serial_carroceria', tipo);
+            }, 600));
+        }
+        if (serialMotorInput) {
+            serialMotorInput.addEventListener('input', debounce(() => {
+                const tipo = tipoVehInput?.value;
+                if (!tipo) return;
+                const tablas = tipo === 'Motocicleta' ? ['registro_motos', 'registro_vinculado'] : ['registro_automoviles', 'registro_vinculado'];
+                verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', tablas, 'serial_motor', tipo);
+            }, 600));
+        }
+    };
 
-  // Validación de Placa
-  if (placaInput) {
-    placaInput.addEventListener('input', debounce(() => {
-      const tipo = tipoVehInput?.value;
-      if (!tipo) {
-        placaInput.classList.remove('input-valid', 'input-error');
-        document.getElementById('pv-msg-placa').textContent = '';
-        return;
-      }
-      const tablas = tipo === 'Motocicleta' ? ['registro_motos', 'registro_vinculado'] : ['registro_automoviles', 'registro_vinculado'];
-      verificarDuplicado('pv_v_placa', 'pv-msg-placa', tablas, 'placa', tipo);
-    }, 600));
-  }
-
-  // Validación de Serial de Carrocería
-  if (serialCarroInput) {
-    serialCarroInput.addEventListener('input', debounce(() => {
-      const tipo = tipoVehInput?.value;
-      if (!tipo) return;
-      const tablas = tipo === 'Motocicleta' ? ['registro_motos', 'registro_vinculado'] : ['registro_automoviles', 'registro_vinculado'];
-      verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', tablas, 'serial_carroceria', tipo);
-    }, 600));
-  }
-
-  // Validación de Serial de Motor
-  if (serialMotorInput) {
-    serialMotorInput.addEventListener('input', debounce(() => {
-      const tipo = tipoVehInput?.value;
-      if (!tipo) return;
-      const tablas = tipo === 'Motocicleta' ? ['registro_motos', 'registro_vinculado'] : ['registro_automoviles', 'registro_vinculado'];
-      verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', tablas, 'serial_motor', tipo);
-    }, 600));
-  }
-};
     // ==========================================
     // 🔹 7. ENVÍO DEL FORMULARIO
     // ==========================================
@@ -402,14 +409,30 @@ const setupValidation = () => {
     const msgForm = document.getElementById('msg-reg-vinculado');
     const btnSubmit = form?.querySelector('.btn-submit');
 
-    function mostrarError(t) { 
-        if(msgForm){msgForm.textContent='❌ '+t; msgForm.className='msg error'; msgForm.style.display='block';} 
+    function mostrarError(t) {
+        if(msgForm){msgForm.textContent='❌ '+t; msgForm.className='msg error'; msgForm.style.display='block';}
     }
 
     if (form && btnSubmit) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // ✅ NUEVO: PERMITIR GUARDAR CON UNA SOLA FOTO (QUITAR REQUIRED DEL HTML)
+            document.querySelectorAll('input[type="file"][id^="pv_foto_"]').forEach(input => {
+                input.removeAttribute('required');
+            });
+
             if (!form.checkValidity()) { form.reportValidity(); return; }
+
+            // ✅ NUEVO: VALIDAR QUE HAYA AL MENOS UNA FOTO DE PERSONA Y UNA DE VEHÍCULO
+            const fotosPersona = ['pv_foto_p_frontal', 'pv_foto_p_izq', 'pv_foto_p_der'];
+            const fotosVehiculo = ['pv_foto_v_frontal', 'pv_foto_v_trasera', 'pv_foto_v_der', 'pv_foto_v_izq'];
+            
+            const hayFotoPersona = fotosPersona.some(id => document.getElementById(id)?.files?.length > 0);
+            const hayFotoVehiculo = fotosVehiculo.some(id => document.getElementById(id)?.files?.length > 0);
+
+            if (!hayFotoPersona) return mostrarError('Debe adjuntar al menos una (1) fotografía de la persona.');
+            if (!hayFotoVehiculo) return mostrarError('Debe adjuntar al menos una (1) fotografía del vehículo.');
 
             const inputsValidar = ['pv_p_cedula', 'pv_v_placa', 'pv_v_serial_carro', 'pv_v_serial_motor'];
             const hasError = inputsValidar.some(id => document.getElementById(id)?.classList.contains('input-error'));
@@ -418,7 +441,8 @@ const setupValidation = () => {
             const cedula = document.getElementById('pv_p_cedula').value.trim();
             if (cedula.length < 7) return mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
 
-            btnSubmit.disabled = true; btnSubmit.textContent = '⏳ Registrando...';
+            btnSubmit.disabled = true; 
+            btnSubmit.textContent = '⏳ Registrando...';
             msgForm.style.display = 'none';
 
             try {
@@ -428,7 +452,7 @@ const setupValidation = () => {
 
                 const uploadFile = async (inputId, suffix) => {
                     const file = document.getElementById(inputId).files[0];
-                    if (!file) return null;
+                    if (!file) return null; // ✅ Retorna null si no hay archivo, haciéndolo opcional
                     const path = `${uid}/${ts}_${suffix}.jpg`;
                     const { error } = await bucket.upload(path, file, { cacheControl: '3600' });
                     if (error) throw error;
@@ -496,6 +520,15 @@ const setupValidation = () => {
                 const { error } = await window.supabaseClient.from('registro_vinculado').insert([data]);
                 if (error) throw error;
 
+                // ✅ NUEVO: REGISTRAR EL LOG DE CREACIÓN DE VÍNCULO
+                await registrarLog('CREAR', 'VINCULADOS', {
+                    cedula: data.cedula,
+                    nombre_completo: `${data.primer_nombre} ${data.primer_apellido}`.trim(),
+                    placa: data.placa,
+                    tipo_vehiculo: data.tipo_vehiculo,
+                    estatus: 'Verificación'
+                });
+
                 msgForm.textContent = '✅ Registro vinculado creado exitosamente.';
                 msgForm.className = 'msg success';
                 msgForm.style.display = 'block';
@@ -513,7 +546,8 @@ const setupValidation = () => {
                 console.error('Error al registrar:', err);
                 mostrarError('❌ Error al registrar: ' + err.message);
             } finally {
-                btnSubmit.disabled = false; btnSubmit.textContent = '✅ Registrar Persona y Vehículo';
+                btnSubmit.disabled = false; 
+                btnSubmit.textContent = '✅ Registrar Persona y Vehículo';
             }
         });
     }
@@ -534,8 +568,7 @@ const setupValidation = () => {
     setupEdad();
     setupValidation();
     initPhoneDropdown();
-
-    // Activar previsualización de fotos
+    
     setupPhotoPreview('pv_foto_p_frontal', 'prev_p_frontal');
     setupPhotoPreview('pv_foto_p_izq', 'prev_p_izq');
     setupPhotoPreview('pv_foto_p_der', 'prev_p_der');
@@ -543,6 +576,6 @@ const setupValidation = () => {
     setupPhotoPreview('pv_foto_v_trasera', 'prev_v_trasera');
     setupPhotoPreview('pv_foto_v_der', 'prev_v_der');
     setupPhotoPreview('pv_foto_v_izq', 'prev_v_izq');
-    
-    console.log("✅ Módulo inicializado. La validación ahora permite que motos y autos compartan seriales.");
+
+    console.log("✅ Módulo inicializado. La validación ahora permite que motos y autos compartan seriales y guarda con 1 foto mínima.");
 };
