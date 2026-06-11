@@ -115,19 +115,35 @@ function obtenerValorRegistro(log) {
     if (log.detalles) {
         let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
 
-        // 🚗 Si es creación de vehículo, mostrar la placa como badge
-if (log.modulo === 'VEHICULOS' && log.accion === 'CREAR' && d.placa) {
-    return `<span class="badge badge-crear">${d.placa}</span>`;
-}
-        // 🆕 REGLA ESPECIAL: Si es eliminación o reintegración de persona, mostrar badge
-        if (log.modulo === 'PERSONAS') {
-            if (log.accion === 'ELIMINAR') {
-                return `<span class="badge badge-eliminar">ELIMINADO</span>`;
-            }
-            if (log.accion === 'REINTEGRAR') {
-                return `<span class="badge badge-crear">REINTEGRADO</span>`;
-            }
+        // ✅ 1. PRIMERO: Si hay un estatus, lo mostramos como badge (PRIORIDAD ALTA)
+        if (d.estatus) {
+            const badgeClass = d.estatus.toLowerCase().includes('procesad') ? 'badge-eliminar' :
+                d.estatus.toLowerCase().includes('verificaci') ? 'badge-otros' : 'badge-crear';
+            return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
         }
+
+        // 🚗 2. DESPUÉS: Si es creación de vehículo, mostrar la placa
+        if (log.modulo === 'VEHICULOS' && log.accion === 'CREAR' && d.placa) {
+            return `<span class="badge badge-crear">${d.placa}</span>`;
+        }
+
+        // 🆕 3. Eliminación o reintegración de persona
+        if (log.modulo === 'PERSONAS') {
+            if (log.accion === 'ELIMINAR') return `<span class="badge badge-eliminar">ELIMINADO</span>`;
+            if (log.accion === 'REINTEGRAR') return `<span class="badge badge-crear">REINTEGRADO</span>`;
+        }
+        
+        // 4. Identificadores principales
+        if (d.valor_buscado) return d.valor_buscado;
+        if (d.identificador) return d.identificador;
+        if (d.cedula) return d.cedula;
+    }
+    // 5. Fallback al registro_id recortado
+    if (log.registro_id) {
+        return `<span style="font-family: monospace; font-size: 0.8rem; color: #64748b;">${log.registro_id.substring(0, 8)}...</span>`;
+    }
+    return '-';
+}
         
         // 1. Si hay un estatus, lo mostramos como badge
         if (d.estatus) {
