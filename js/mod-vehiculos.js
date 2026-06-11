@@ -725,16 +725,16 @@ window.initModVehiculos = function() {
                 
             if (finalError) throw finalError;
             
-            // ✅ NUEVO: REGISTRAR EL LOG DE MODIFICACIÓN
-            await registrarLog('MODIFICAR', 'VEHICULOS', {
-                placa: updateData.placa,
-                marca: updateData.marca,
-                modelo: updateData.modelo,
-                anio: updateData.anio,
-                color: updateData.color,
-                tipo: tipo === 'moto' ? 'Motocicleta' : 'Automóvil',
-                cambios: 'Datos del vehículo actualizados'
-            });
+        await registrarLog('MODIFICAR', 'VEHICULOS', {
+    placa: updateData.placa,
+    marca: updateData.marca,
+    modelo: updateData.modelo,
+    anio: updateData.anio,
+    color: updateData.color,
+    tipo: tipo === 'moto' ? 'Motocicleta' : 'Automóvil',
+    cambios: 'Datos del vehículo actualizados',
+    estatus: updateData.estatus || 'Verificación' // ✅ AGREGADO
+});
             
             mostrarMsg(msgBox, '✅ Vehículo actualizado correctamente.', 'success');
             setTimeout(() => {
