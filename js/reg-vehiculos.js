@@ -78,6 +78,44 @@ window.initRegVehiculos = function() {
     modeloSelect.innerHTML = '<option value="">Seleccione modelo...</option>';
     if (lista[marca]) lista[marca].forEach(mod => modeloSelect.innerHTML += `<option value="${mod}">${mod}</option>`);
   });
+  // ✅ NUEVO: Función para registrar en la tabla sistema_logs
+// Consulta la tabla perfiles_usuario para obtener el nombre real del usuario
+async function registrarLog(accion, modulo, detalles) {
+    try {
+        const { data: { user } } = await window.supabaseClient.auth.getUser();
+        if (!user) return;
+
+        let nombreUsuario = user.email || 'Sistema';
+        try {
+            const { data: perfil } = await window.supabaseClient
+                .from('perfiles_usuario')
+                .select('nombre, apellido')
+                .eq('user_id', user.id)
+                .maybeSingle();
+            
+            if (perfil) {
+                nombreUsuario = `${perfil.nombre} ${perfil.apellido}`.trim();
+            }
+        } catch (err) {
+            console.warn('No se pudo obtener el perfil del usuario para el log:', err);
+        }
+
+        const logEntry = {
+            user_id: user.id,
+            user_nombre: nombreUsuario,
+            user_email: user.email || 'sistema',
+            accion: accion,
+            modulo: modulo,
+            detalles: detalles,
+            created_at: new Date().toISOString()
+        };
+
+        const { error } = await window.supabaseClient.from('sistema_logs').insert([logEntry]);
+        if (error) console.error('Error al registrar log:', error);
+    } catch (err) {
+        console.error('Error en registrarLog:', err);
+    }
+}
 
   // 🔹 3. Selector de Tipo (Moto/Auto)
   window.selectVehicleType = function(type) {
@@ -289,9 +327,26 @@ document.getElementById('v_serial_motor')?.addEventListener('input', validateMot
   data.serial_motor = document.getElementById('v_serial_motor').value.trim() || '';
 }
 
-      const { error } = await window.supabaseClient.from(tablaDestino).insert([data]);
-      if (error) throw error;
+     const { error } = await window.supabaseClient.from(tablaDestino).insert([data]);
+if (error) throw error;
 
+// ✅ NUEVO: Registrar la creación del vehículo en los logs
+await registrarLog(
+    'CREAR', 
+    'VEHICULOS', 
+    { 
+        placa: data.placa,
+        marca: data.marca,
+        modelo: data.modelo,
+        anio: data.anio,
+        color: data.color,
+        tipo: isMoto ? 'Motocicleta' : 'Automóvil',
+        estatus: 'Verificación'
+    }
+);
+
+// ✅ MOSTRAR MENSAJE DE ÉXITO
+msg.textContent = '✅ Vehículo registrado exitosamente.';
       // ✅ MOSTRAR MENSAJE DE ÉXITO
       msg.textContent = '✅ Vehículo registrado exitosamente.';
       msg.className = 'msg success';
