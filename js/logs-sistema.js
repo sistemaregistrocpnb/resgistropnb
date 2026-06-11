@@ -61,46 +61,35 @@ window.initLogsSistema = function() {
         if (!detalles) return '-';
         let d = typeof detalles === 'string' ? JSON.parse(detalles) : detalles;
         
-        // 🚗 REGLA PARA CONSULTA DE VEHÍCULOS
         if (d.tipo_busqueda && d.valor_buscado) {
             const tipoFormateado = d.tipo_busqueda === 'placa' ? 'Placa' : 
                                    d.tipo_busqueda === 'serial_carroceria' ? 'Serial de Carrocería' : 'Serial de Motor';
             return `Consultó <strong>${tipoFormateado}</strong>: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span>`;
         }
 
-        // 👤 REGLA PARA CONSULTA DE PERSONAS / VINCULADOS
         if (d.valor_buscado && !d.tipo_busqueda) {
             const tipoTexto = d.tipo === 'Vinculado' ? ' (Vinculado)' : '';
             return `Consultó Cédula${tipoTexto}: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span>`;
         }
 
-        // 🚗 REGLA PARA CREACIÓN DE VEHÍCULO
-if (d.placa && d.marca && d.modelo) {
-    const tipoTexto = d.tipo === 'Motocicleta' ? '🏍️ Motocicleta' : '🚙 Automóvil';
-    return `Registró ${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.placa}</strong><br>
-    <span style="color:#64748b;">${d.marca} ${d.modelo} (${d.anio}) - ${d.color}</span>`;
-}
+        if (d.placa && d.marca && d.modelo) {
+            const tipoTexto = d.tipo === 'Motocicleta' ? '🏍️ Motocicleta' : '🚙 Automóvil';
+            return `Registró ${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.placa}</strong><br>
+            <span style="color:#64748b;">${d.marca} ${d.modelo} (${d.anio}) - ${d.color}</span>`;
+        }
 
-        // 🗑️ REGLA PARA ELIMINACIÓN DE INCIDENCIA DE VEHÍCULO
         if (d.identificador && d.descripcion_eliminada) {
             return `Eliminó incidencia del vehículo <strong>${d.identificador}</strong>.<br><em>"${d.descripcion_eliminada}"</em>`;
         }
 
-        // 🗑️ REGLA PARA ELIMINACIÓN DE INCIDENCIA DE PERSONA
-        if (d.cedula && d.descripcion_eliminada) {
-            return `Eliminó incidencia de la persona <strong>${d.cedula}</strong>.<br><em>"${d.descripcion_eliminada}"</em>`;
+        if (d.cedula && d.estatus && d.estatus.includes('Reintegrado')) {
+            return `Reintegró a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre || 'Nombre no disponible'}) al sistema activo.`;
         }
-            // 🔄 REGLA PARA REINTEGRACIÓN DE PERSONA
-    if (d.cedula && d.estatus && d.estatus.includes('Reintegrado')) {
-        return `Reintegró a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre || 'Nombre no disponible'}) al sistema activo.`;
-    }
-    
-    // 🗑️ REGLA PARA ELIMINACIÓN DE INCIDENCIA DE PERSONA (Ya existía, pero asegúrate de que esté así)
-    if (d.cedula && d.descripcion_eliminada) {
-        return `Eliminó a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre || 'Nombre no disponible'}).<br><em>"${d.descripcion_eliminada}"</em>`;
-    }
+        
+        if (d.cedula && d.descripcion_eliminada) {
+            return `Eliminó a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre || 'Nombre no disponible'}).<br><em>"${d.descripcion_eliminada}"</em>`;
+        }
 
-        // 🔄 FALLBACK LIMPIO: Si no hay regla específica, muestra las claves y valores de forma ordenada
         return Object.entries(d)
             .filter(([key]) => key !== 'estatus')
             .map(([key, value]) => {
@@ -110,58 +99,40 @@ if (d.placa && d.marca && d.modelo) {
             .join('<br>');
     }
 
-// ✅ FUNCIÓN PARA OBTENER EL VALOR PRINCIPAL DE LA COLUMNA "REGISTRO"
-function obtenerValorRegistro(log) {
-    if (log.detalles) {
-        let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
+    // ✅ FUNCIÓN PARA OBTENER EL VALOR PRINCIPAL DE LA COLUMNA "REGISTRO"
+    function obtenerValorRegistro(log) {
+        if (log.detalles) {
+            let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
 
-        // ✅ 1. PRIMERO: Si hay un estatus, lo mostramos como badge (PRIORIDAD ALTA)
-        if (d.estatus) {
-            const badgeClass = d.estatus.toLowerCase().includes('procesad') ? 'badge-eliminar' :
-                d.estatus.toLowerCase().includes('verificaci') ? 'badge-otros' : 'badge-crear';
-            return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
-        }
+            // ✅ 1. PRIMERO: Si hay un estatus, lo mostramos como badge (PRIORIDAD ALTA)
+            if (d.estatus) {
+                const badgeClass = d.estatus.toLowerCase().includes('procesad') ? 'badge-eliminar' :
+                    d.estatus.toLowerCase().includes('verificaci') ? 'badge-otros' : 'badge-crear';
+                return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
+            }
 
-        // 🚗 2. DESPUÉS: Si es creación de vehículo, mostrar la placa
-        if (log.modulo === 'VEHICULOS' && log.accion === 'CREAR' && d.placa) {
-            return `<span class="badge badge-crear">${d.placa}</span>`;
-        }
+            // 🚗 2. DESPUÉS: Si es creación de vehículo, mostrar la placa
+            if (log.modulo === 'VEHICULOS' && log.accion === 'CREAR' && d.placa) {
+                return `<span class="badge badge-crear">${d.placa}</span>`;
+            }
 
-        // 🆕 3. Eliminación o reintegración de persona
-        if (log.modulo === 'PERSONAS') {
-            if (log.accion === 'ELIMINAR') return `<span class="badge badge-eliminar">ELIMINADO</span>`;
-            if (log.accion === 'REINTEGRAR') return `<span class="badge badge-crear">REINTEGRADO</span>`;
+            // 🆕 3. Eliminación o reintegración de persona
+            if (log.modulo === 'PERSONAS') {
+                if (log.accion === 'ELIMINAR') return `<span class="badge badge-eliminar">ELIMINADO</span>`;
+                if (log.accion === 'REINTEGRAR') return `<span class="badge badge-crear">REINTEGRADO</span>`;
+            }
+            
+            // 4. Identificadores principales
+            if (d.valor_buscado) return d.valor_buscado;
+            if (d.identificador) return d.identificador;
+            if (d.cedula) return d.cedula;
         }
-        
-        // 4. Identificadores principales
-        if (d.valor_buscado) return d.valor_buscado;
-        if (d.identificador) return d.identificador;
-        if (d.cedula) return d.cedula;
-    }
-    // 5. Fallback al registro_id recortado
-    if (log.registro_id) {
-        return `<span style="font-family: monospace; font-size: 0.8rem; color: #64748b;">${log.registro_id.substring(0, 8)}...</span>`;
-    }
-    return '-';
-}
-        
-        // 1. Si hay un estatus, lo mostramos como badge
-        if (d.estatus) {
-            const badgeClass = d.estatus.toLowerCase().includes('procesad') ? 'badge-eliminar' :
-                d.estatus.toLowerCase().includes('verificaci') ? 'badge-otros' : 'badge-crear';
-            return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
+        // 5. Fallback al registro_id recortado
+        if (log.registro_id) {
+            return `<span style="font-family: monospace; font-size: 0.8rem; color: #64748b;">${log.registro_id.substring(0, 8)}...</span>`;
         }
-        // 2. Si no, mostramos el identificador principal
-        if (d.valor_buscado) return d.valor_buscado;
-        if (d.identificador) return d.identificador;
-        if (d.cedula) return d.cedula;
+        return '-';
     }
-    // 3. Fallback al registro_id recortado
-    if (log.registro_id) {
-        return `<span style="font-family: monospace; font-size: 0.8rem; color: #64748b;">${log.registro_id.substring(0, 8)}...</span>`;
-    }
-    return '-';
-}
 
     function renderTabla() {
         if (!tablaContainer) return;
