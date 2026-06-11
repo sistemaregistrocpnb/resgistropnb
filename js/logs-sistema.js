@@ -74,6 +74,13 @@ window.initLogsSistema = function() {
             return `Consultó Cédula${tipoTexto}: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span>`;
         }
 
+        // 🚗 REGLA PARA CREACIÓN DE VEHÍCULO
+if (d.placa && d.marca && d.modelo) {
+    const tipoTexto = d.tipo === 'Motocicleta' ? '🏍️ Motocicleta' : '🚙 Automóvil';
+    return `Registró ${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.placa}</strong><br>
+    <span style="color:#64748b;">${d.marca} ${d.modelo} (${d.anio}) - ${d.color}</span>`;
+}
+
         // 🗑️ REGLA PARA ELIMINACIÓN DE INCIDENCIA DE VEHÍCULO
         if (d.identificador && d.descripcion_eliminada) {
             return `Eliminó incidencia del vehículo <strong>${d.identificador}</strong>.<br><em>"${d.descripcion_eliminada}"</em>`;
@@ -107,7 +114,11 @@ window.initLogsSistema = function() {
 function obtenerValorRegistro(log) {
     if (log.detalles) {
         let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
-        
+
+        // 🚗 Si es creación de vehículo, mostrar la placa como badge
+if (log.modulo === 'VEHICULOS' && log.accion === 'CREAR' && d.placa) {
+    return `<span class="badge badge-crear">${d.placa}</span>`;
+}
         // 🆕 REGLA ESPECIAL: Si es eliminación o reintegración de persona, mostrar badge
         if (log.modulo === 'PERSONAS') {
             if (log.accion === 'ELIMINAR') {
