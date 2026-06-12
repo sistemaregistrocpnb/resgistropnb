@@ -210,11 +210,20 @@ function aplicarPermisos(rol) {
   });
 
     // 🔹 LÓGICA DE CHAT PRIVADO Y PRESENCIA
+// 🔹 LÓGICA DE CHAT PRIVADO Y PRESENCIA (CORREGIDA)
 let chatChannelPresence = null;
 let chatChannelMessages = null;
-let replyingToUserId = null; // Para que el admin sepa a quién responde
+let replyingToUserId = null;
 
 async function iniciarChatPrivado() {
+    // ✅ 1. Obtener la sesión de forma segura dentro de esta función
+    const { data: { session } } = await window.supabaseClient.auth.getSession();
+    if (!session) return; // Si no hay sesión, detener la ejecución
+
+    const currentUserId = session.user.id;
+    const currentUserRole = sessionStorage.getItem('pnb_user_nivel') || 'consultor';
+    const currentUserName = document.getElementById('user-nombre-display').textContent;
+
     const chatBubble = document.getElementById('chat-bubble');
     const chatWindow = document.getElementById('chat-window');
     const chatClose = document.getElementById('chat-close');
@@ -229,11 +238,7 @@ async function iniciarChatPrivado() {
     const replyToName = document.getElementById('reply-to-name');
     const cancelReplyBtn = document.getElementById('cancel-reply');
 
-    const currentUserRole = sessionStorage.getItem('pnb_user_nivel') || 'consultor';
-    const currentUserName = document.getElementById('user-nombre-display').textContent;
-    const currentUserId = session.user.id;
-
-    // 1. PRESENCIA: Todos se registran, pero solo el admin ve la lista
+    // 2. PRESENCIA: Todos se registran, pero solo el admin ve la lista
     chatChannelPresence = window.supabaseClient.channel('sistema-presence', {
         config: { presence: { key: currentUserId } }
     });
@@ -262,6 +267,150 @@ async function iniciarChatPrivado() {
         }
     });
 
+    // 3. TIEMPO REAL: Escuchar nuevos mensajes
+    chatChannelMessages = window.supabaseClient
+        .channel('chat-room-privado')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensajes' }, (payload) => {
+            const nuevoMensaje = payload.new;
+            
+            // Solo mostrar si es para mí, si lo envié yo, o si soy admin
+            const esParaMi = nuevoMensaje.receptor_id === currentUserId || nuevoMensaje.receptor_id === null;
+            const esMio = nuevoMensaje.remitente_id === currentUserId;
+            
+            if (esParaMi || esMio || currentUserRole === 'administrador') {
+                if (chatWindow.style.display === 'none' && !esMio) {
+                    const badge = document.getElementById('chat-notification');
+                    badge.style.display = 'flex';
+                    badge.textContent = parseInt(badge.textContent || 0) + 1;
+                }
+                agregarMensajeAlDOM(nuevoMensaje);
+            }
+        })
+        .subscribe();
+
+    // 4. INTERFAZ: Abrir/Cerrar
+    chatBubble.addEventListener('click', () => {
+        const isVisible = chatWindow.style.display === 'flex';
+        chatWindow.style.display = isVisible ? 'none' : 'flex';
+        document.getElementById('chat-notification').style.display = 'none';
+        document.getElementById('chat-notification').textContent = '0';
+        
+        if (!isVisible) {
+            chatInput.focus();
+            cargarMensajesRecientes();
+        }
+    });
+
+    chatClose.addEventListener('click', () => { chatWindow.style.display = 'none'; });
+
+    // 5. LÓGICA DE RESPUESTA (Solo Admin)
+    cancelReplyBtn.addEventListener('click', () => {
+        replyingToUserId = null;
+        replyIndicator.style.display = 'none';
+        chatInput.placeholder = "Escribe tu mensaje...";
+    });
+
+    // Hacemos la función global temporalmente para que el onclick del HTML funcione
+    window.activarRespuesta = (userId, userName) => {
+        replyingToUserId = userId;
+        replyToName.textContent = userName;
+        replyIndicator.style.display = 'flex';
+        chatInput.placeholder = `Escribe la respuesta para ${userName}...`;
+        chatInput.focus();
+    };
+
+    // 6. ENVIAR MENSAJE
+    async function enviarMensaje() {
+        const texto = chatInput.value.trim();
+        if (!texto) return;
+
+        const mensajeTemp = {
+            remitente_id: currentUserId,
+            nombre_remitente: currentUserName,
+            rol_remitente: currentUserRole,
+            receptor_id: replyingToUserId,
+            mensaje: texto,
+            tipo: currentUserRole === 'administrador' ? 'admin' : 'user',
+            creado_en: new Date().toISOString()
+        };
+        agregarMensajeAlDOM(mensajeTemp);
+        chatInput.value = '';
+        
+        if (replyingToUserId) {
+            replyingToUserId = null;
+            replyIndicator.style.display = 'none';
+            chatInput.placeholder = "Escribe tu mensaje...";
+        }
+
+        const { error } = await window.supabaseClient
+            .from('chat_mensajes')
+            .insert([{ 
+                remitente_id: currentUserId,
+                nombre_remitente: currentUserName,
+                rol_remitente: currentUserRole,
+                receptor_id: replyingToUserId,
+                mensaje: texto,
+                tipo: currentUserRole === 'administrador' ? 'admin' : 'user'
+            }]);
+
+        if (error) console.error('Error al enviar:', error);
+    }
+
+    chatSend.addEventListener('click', enviarMensaje);
+    chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensaje(); });
+
+    // 7. CARGAR HISTORIAL
+    async function cargarMensajesRecientes() {
+        chatMessages.innerHTML = '<div class="chat-message system"><p>Cargando...</p></div>';
+        
+        const { data, error } = await window.supabaseClient
+            .from('chat_mensajes')
+            .select('*')
+            .order('creado_en', { ascending: true })
+            .limit(50);
+
+        chatMessages.innerHTML = '';
+
+        if (error) {
+            chatMessages.innerHTML = '<div class="chat-message system"><p>Error al cargar.</p></div>';
+            return;
+        }
+
+        if (data && data.length > 0) {
+            data.forEach(msg => agregarMensajeAlDOM(msg));
+        } else {
+            chatMessages.innerHTML = '<div class="chat-message system"><p>No hay mensajes. ¡Escribe tu consulta!</p></div>';
+        }
+    }
+
+    // 8. RENDERIZAR MENSAJE EN PANTALLA
+    function agregarMensajeAlDOM(msg) {
+        const div = document.createElement('div');
+        const esMio = msg.remitente_id === currentUserId;
+        const tipoClase = esMio ? (currentUserRole === 'administrador' ? 'admin' : 'user') : msg.tipo;
+        
+        div.className = `chat-message ${tipoClase}`;
+        const hora = new Date(msg.creado_en).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
+        
+        let htmlContent = '';
+        
+        if (msg.rol_remitente === 'administrador' && msg.receptor_id) {
+            htmlContent += `<div class="msg-sender">✉️ Respuesta de Soporte</div>`;
+        } else if (!esMio) {
+            htmlContent += `<div class="msg-sender">${msg.nombre_remitente}</div>`;
+        }
+
+        htmlContent += `<p>${msg.mensaje}</p><span class="msg-meta">${hora}</span>`;
+
+        if (currentUserRole === 'administrador' && msg.rol_remitente !== 'administrador' && !esMio) {
+            htmlContent += `<button class="btn-reply" onclick="activarRespuesta('${msg.remitente_id}', '${msg.nombre_remitente}')" title="Responder">↩️</button>`;
+        }
+
+        div.innerHTML = htmlContent;
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+}
     // 2. TIEMPO REAL: Escuchar nuevos mensajes
     chatChannelMessages = window.supabaseClient
         .channel('chat-room-privado')
