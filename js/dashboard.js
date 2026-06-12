@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const currentUserId = session.user.id;
         const currentUserRole = sessionStorage.getItem('pnb_user_nivel') || 'consultor';
         
-        // Fallback seguro para el nombre: evita "undefined" a toda costa
+        // Fallback seguro para el nombre
         const nombreDOM = document.getElementById('user-nombre-display')?.textContent;
         const currentUserName = (nombreDOM && nombreDOM !== 'Cargando...' && nombreDOM !== 'NOMBRE NO DISPONIBLE') 
             ? nombreDOM 
@@ -216,7 +216,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         chatChannelPresence.on('presence', { event: 'sync' }, () => {
             const state = chatChannelPresence.presenceState();
-            const usuariosEnLinea = Object.values(state);
+            
+            // ✅ CORRECCIÓN CLAVE: .flat() aplana el array de arrays que devuelve Supabase
+            const usuariosEnLinea = Object.values(state).flat();
             
             if (currentUserRole === 'administrador') {
                 adminOnlinePanel.style.display = 'block';
@@ -226,8 +228,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 onlineUsersList.innerHTML = '';
                 usuariosEnLinea.forEach(user => {
                     const li = document.createElement('li');
+                    // Ahora user.nombre y user.rol se leen correctamente
                     const nombreUser = user.nombre ? user.nombre.toUpperCase() : 'USUARIO';
-                    li.textContent = `${nombreUser} (${user.rol})`;
+                    const rolUser = user.rol ? user.rol.toUpperCase() : 'ROL';
+                    li.textContent = `${nombreUser} (${rolUser})`;
                     onlineUsersList.appendChild(li);
                 });
             }
@@ -363,7 +367,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        // 7. RENDERIZAR MENSAJE (CON PROTECCIÓN ANTE "UNDEFINED" Y COMILLAS)
+        // 7. RENDERIZAR MENSAJE
         function agregarMensajeAlDOM(msg) {
             const div = document.createElement('div');
             const esMio = msg.remitente_id === currentUserId;
@@ -375,7 +379,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             let htmlContent = '';
             
-            // ✅ CORRECCIÓN CLAVE: Si el nombre es null/undefined, usa 'USUARIO' o 'TÚ'
             const nombreMostrar = msg.nombre_remitente ? msg.nombre_remitente.toUpperCase() : (esMio ? 'TÚ' : 'USUARIO');
 
             if (msg.rol_remitente === 'administrador' && msg.receptor_id) {
@@ -387,7 +390,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             htmlContent += `<p>${msg.mensaje}</p><span class="msg-meta">${hora}</span>`;
 
             if (currentUserRole === 'administrador' && msg.rol_remitente !== 'administrador' && !esMio) {
-                // ✅ CORRECCIÓN DE SINTAXIS: Escapar comillas simples en el nombre para evitar SyntaxError
                 const nombreSeguro = nombreMostrar.replace(/'/g, "\\'");
                 htmlContent += `<button class="btn-reply" onclick="activarRespuesta('${msg.remitente_id}', '${nombreSeguro}')" title="Responder">↩️</button>`;
             }
