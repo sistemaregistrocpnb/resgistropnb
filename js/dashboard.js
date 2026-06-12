@@ -178,6 +178,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ==========================================
     // 🔹 LÓGICA DE CHAT PRIVADO Y PRESENCIA
     // ==========================================
+    // ==========================================
+    // 🔹 LÓGICA DE CHAT PRIVADO Y PRESENCIA (CORREGIDA)
+    // ==========================================
     let chatChannelPresence = null;
     let chatChannelMessages = null;
     let replyingToUserId = null;
@@ -188,7 +191,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const currentUserId = session.user.id;
         const currentUserRole = sessionStorage.getItem('pnb_user_nivel') || 'consultor';
-        const currentUserName = document.getElementById('user-nombre-display').textContent;
+        // Fallback seguro para el nombre: intenta leer del DOM, si no, usa el email o 'Usuario'
+        const nombreDOM = document.getElementById('user-nombre-display')?.textContent;
+        const currentUserName = (nombreDOM && nombreDOM !== 'Cargando...') ? nombreDOM : (session.user.email?.split('@')[0].toUpperCase() || 'USUARIO');
 
         const chatBubble = document.getElementById('chat-bubble');
         const chatWindow = document.getElementById('chat-window');
@@ -221,7 +226,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 onlineUsersList.innerHTML = '';
                 usuariosEnLinea.forEach(user => {
                     const li = document.createElement('li');
-                    li.textContent = `${user.nombre} (${user.rol})`;
+                    const nombreUser = user.nombre ? user.nombre.toUpperCase() : 'USUARIO';
+                    li.textContent = `${nombreUser} (${user.rol})`;
                     onlineUsersList.appendChild(li);
                 });
             }
@@ -322,7 +328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         chatSend.addEventListener('click', enviarMensaje);
         chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensaje(); });
 
-        // 6. CARGAR HISTORIAL
+        // 6. CARGAR HISTORIAL CON MENSAJE DE BIENVENIDA
         async function cargarMensajesRecientes() {
             chatMessages.innerHTML = '<div class="chat-message system"><p>Cargando...</p></div>';
             
@@ -335,16 +341,56 @@ document.addEventListener('DOMContentLoaded', async () => {
             chatMessages.innerHTML = '';
 
             if (error) {
-                chatMessages.innerHTML = '<div class="chat-message system"><p>Error al cargar.</p></div>';
+                chatMessages.innerHTML = '<div class="chat-message system"><p>Error al cargar el historial.</p></div>';
                 return;
             }
 
             if (data && data.length > 0) {
                 data.forEach(msg => agregarMensajeAlDOM(msg));
             } else {
-                chatMessages.innerHTML = '<div class="chat-message system"><p>No hay mensajes. ¡Escribe tu consulta!</p></div>';
+                // ✅ MENSAJE DE BIENVENIDA CLARO PARA EL USUARIO
+                chatMessages.innerHTML = `
+                    <div class="chat-message system">
+                        <p style="font-size: 0.9rem; font-weight: 600;">👋 ¡Bienvenido al Chat de Soporte OTIC-ZULIA!</p>
+                        <p style="margin-top: 5px; font-size: 0.8rem;">Escribe tu consulta aquí abajo. Un administrador te responderá de forma privada a la brevedad.</p>
+                    </div>
+                `;
             }
         }
+
+        // 7. RENDERIZAR MENSAJE (CON PROTECCIÓN ANTE "UNDEFINED")
+        function agregarMensajeAlDOM(msg) {
+            const div = document.createElement('div');
+            const esMio = msg.remitente_id === currentUserId;
+            const tipoClase = esMio ? (currentUserRole === 'administrador' ? 'admin' : 'user') : (msg.tipo || 'user');
+            
+            div.className = `chat-message ${tipoClase}`;
+            const fecha = msg.creado_en ? new Date(msg.creado_en) : new Date();
+            const hora = fecha.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
+            
+            let htmlContent = '';
+            
+            // ✅ CORRECCIÓN CLAVE: Si el nombre es null/undefined, usa 'USUARIO' o 'TÚ'
+            const nombreMostrar = msg.nombre_remitente ? msg.nombre_remitente.toUpperCase() : (esMio ? 'TÚ' : 'USUARIO');
+
+            if (msg.rol_remitente === 'administrador' && msg.receptor_id) {
+                htmlContent += `<div class="msg-sender">✉️ Respuesta de Soporte</div>`;
+            } else if (!esMio) {
+                htmlContent += `<div class="msg-sender">${nombreMostrar}</div>`;
+            }
+
+            htmlContent += `<p>${msg.mensaje}</p><span class="msg-meta">${hora}</span>`;
+
+            if (currentUserRole === 'administrador' && msg.rol_remitente !== 'administrador' && !esMio) {
+                const nombreSeguro = JSON.stringify(nombreMostrar);
+                htmlContent += `<button class="btn-reply" onclick="activarRespuesta('${msg.remitente_id}', ${nombreSeguro})" title="Responder">↩️</button>`;
+            }
+
+            div.innerHTML = htmlContent;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    }
 
         // 7. RENDERIZAR MENSAJE (Con protección contra comillas en nombres)
         function agregarMensajeAlDOM(msg) {
