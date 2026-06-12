@@ -244,6 +244,109 @@ body {
 }
 .menu-toggle { display: none; background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 5px; margin-right: 10px; cursor: pointer; }
 .loading { text-align: center; padding: 30px; color: #64748b; font-weight: 500; }
+  /* 🔹 CHAT FLOTANTE ESTILOS */
+.chat-bubble {
+    position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px;
+    background: var(--secondary); color: var(--primary); border: none;
+    border-radius: 50%; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.3s ease; z-index: 1000;
+}
+.chat-bubble:hover { transform: scale(1.1); background: #d4af37; }
+
+.chat-badge {
+    position: absolute; top: -5px; right: -5px; background: var(--danger);
+    color: white; font-size: 0.75rem; font-weight: bold; width: 22px; height: 22px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    border: 2px solid white;
+}
+
+.chat-window {
+    position: fixed; bottom: 95px; right: 25px; width: 360px; height: 520px;
+    background: var(--white); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    display: flex; flex-direction: column; z-index: 1000; overflow: hidden;
+    border: 1px solid #e2e8f0;
+}
+
+.chat-header {
+    background: var(--primary); color: white; padding: 15px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.admin-status { font-size: 0.75rem; opacity: 0.9; margin-top: 2px; }
+.chat-close-btn { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
+
+/* Panel de usuarios en línea (Solo Admin) */
+.online-panel {
+    background: #f0fdf4; border-bottom: 1px solid #bbf7d0; padding: 10px 15px;
+    max-height: 130px; overflow-y: auto;
+}
+.online-panel-header { font-size: 0.8rem; font-weight: 700; color: #166534; margin-bottom: 5px; }
+.online-users-list { list-style: none; padding: 0; margin: 0; font-size: 0.8rem; color: #334155; }
+.online-users-list li { padding: 3px 0; display: flex; align-items: center; gap: 6px; }
+.online-users-list li::before { content: '🟢'; font-size: 0.6rem; }
+
+.chat-messages {
+    flex: 1; padding: 15px; overflow-y: auto; background: #f8fafc;
+    display: flex; flex-direction: column; gap: 10px;
+}
+
+.chat-message {
+    max-width: 85%; padding: 10px 14px; border-radius: 12px;
+    font-size: 0.9rem; line-height: 1.4; position: relative;
+}
+.chat-message.user {
+    align-self: flex-end; background: var(--primary); color: white;
+    border-bottom-right-radius: 4px;
+}
+.chat-message.admin {
+    align-self: flex-start; background: #e2e8f0; color: var(--text);
+    border-bottom-left-radius: 4px;
+}
+.chat-message.system {
+    align-self: center; background: #fef3c7; color: #92400e;
+    font-size: 0.8rem; text-align: center; max-width: 90%;
+}
+.msg-meta { font-size: 0.65rem; opacity: 0.7; display: block; margin-top: 4px; text-align: right; }
+.msg-sender { font-size: 0.7rem; font-weight: bold; margin-bottom: 2px; opacity: 0.8; }
+
+/* Botón de responder (Solo Admin) */
+.btn-reply {
+    position: absolute; top: -8px; right: -8px; background: var(--secondary);
+    color: var(--primary); border: none; border-radius: 50%; width: 24px; height: 24px;
+    font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.2s;
+}
+.chat-message:hover .btn-reply { opacity: 1; }
+
+/* Indicador de respuesta en el input */
+.reply-indicator {
+    position: absolute; top: -35px; left: 12px; right: 60px;
+    background: #e0f2fe; color: #0369a1; padding: 6px 10px; border-radius: 6px;
+    font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center;
+    border: 1px solid #bae6fd;
+}
+.cancel-reply-btn { background: none; border: none; color: #0369a1; cursor: pointer; font-weight: bold; }
+
+.chat-input-area {
+    padding: 12px; background: white; border-top: 1px solid #e2e8f0; 
+    display: flex; gap: 8px; position: relative;
+}
+.chat-input-area input {
+    flex: 1; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 20px;
+    outline: none; font-size: 0.9rem;
+}
+.chat-input-area input:focus { border-color: var(--primary); }
+.chat-send-btn {
+    background: var(--secondary); color: var(--primary); border: none;
+    width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: 0.2s;
+}
+.chat-send-btn:hover { background: #d4af37; }
+
+@media (max-width: 600px) {
+    .chat-window { width: 90%; right: 5%; bottom: 95px; height: 60vh; }
+    .chat-bubble { bottom: 15px; right: 15px; width: 55px; height: 55px; }
+}
 </style>
 </head>
 <body>
