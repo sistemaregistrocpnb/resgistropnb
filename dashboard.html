@@ -398,6 +398,50 @@ body {
     </div>
   </main>
 </div>
+  <!-- 🔹 WIDGET DE CHAT PRIVADO Y PRESENCIA -->
+<div id="chat-widget">
+    <button id="chat-bubble" class="chat-bubble" title="Soporte en Línea">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        <span id="chat-notification" class="chat-badge" style="display: none;">0</span>
+    </button>
+
+    <div id="chat-window" class="chat-window" style="display: none;">
+        <div class="chat-header">
+            <div>
+                <strong>💬 Soporte OTIC-ZULIA</strong>
+                <div id="admin-online-indicator" class="admin-status" style="display: none;">
+                    🟢 <span id="online-count">0</span> conectados
+                </div>
+            </div>
+            <button id="chat-close" class="chat-close-btn">✕</button>
+        </div>
+        
+        <!-- Panel SOLO para administradores: Lista de usuarios en línea -->
+        <div id="admin-online-panel" class="online-panel" style="display: none;">
+            <div class="online-panel-header">👥 Usuarios en el sistema:</div>
+            <ul id="online-users-list" class="online-users-list"></ul>
+        </div>
+
+        <div id="chat-messages" class="chat-messages">
+            <div class="chat-message system">
+                <p>Escribe tu consulta. Un administrador te responderá de forma privada.</p>
+            </div>
+        </div>
+        
+        <div class="chat-input-area">
+            <!-- Indicador de respuesta (solo visible para admin) -->
+            <div id="reply-indicator" class="reply-indicator" style="display: none;">
+                <span>✉️ Respondiendo a: <strong id="reply-to-name">Usuario</strong></span>
+                <button id="cancel-reply" class="cancel-reply-btn">✕</button>
+            </div>
+            
+            <input type="text" id="chat-input" placeholder="Escribe tu mensaje..." autocomplete="off">
+            <button id="chat-send" class="chat-send-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+        </div>
+    </div>
+</div>
 <script src="js/config.js"></script>
 <script src="js/dashboard.js"></script>
 </body>
