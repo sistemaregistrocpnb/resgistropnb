@@ -189,7 +189,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const currentUserId = session.user.id;
         const currentUserRole = sessionStorage.getItem('pnb_user_nivel') || 'consultor';
         
-        // Fallback seguro para el nombre
         const nombreDOM = document.getElementById('user-nombre-display')?.textContent;
         const currentUserName = (nombreDOM && nombreDOM !== 'Cargando...' && nombreDOM !== 'NOMBRE NO DISPONIBLE') 
             ? nombreDOM 
@@ -209,16 +208,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         const replyToName = document.getElementById('reply-to-name');
         const cancelReplyBtn = document.getElementById('cancel-reply');
 
-        // 1. PRESENCIA
+        // 1. PRESENCIA (Corregido para evitar duplicados)
         chatChannelPresence = window.supabaseClient.channel('sistema-presence', {
             config: { presence: { key: currentUserId } }
         });
 
         chatChannelPresence.on('presence', { event: 'sync' }, () => {
             const state = chatChannelPresence.presenceState();
+            const usuariosEnLinea = [];
             
-            // ✅ CORRECCIÓN CLAVE: .flat() aplana el array de arrays que devuelve Supabase
-            const usuariosEnLinea = Object.values(state).flat();
+            // ✅ CORRECCIÓN: Agrupamos por ID de usuario (la clave del objeto) para garantizar unicidad
+            for (const [userId, presenceData] of Object.entries(state)) {
+                if (presenceData && presenceData.length > 0) {
+                    // Tomamos el último estado registrado de este usuario
+                    usuariosEnLinea.push({ id: userId, ...presenceData[presenceData.length - 1] });
+                }
+            }
             
             if (currentUserRole === 'administrador') {
                 adminOnlinePanel.style.display = 'block';
@@ -228,7 +233,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 onlineUsersList.innerHTML = '';
                 usuariosEnLinea.forEach(user => {
                     const li = document.createElement('li');
-                    // Ahora user.nombre y user.rol se leen correctamente
                     const nombreUser = user.nombre ? user.nombre.toUpperCase() : 'USUARIO';
                     const rolUser = user.rol ? user.rol.toUpperCase() : 'ROL';
                     li.textContent = `${nombreUser} (${rolUser})`;
@@ -248,6 +252,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             .channel('chat-room-privado')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensajes' }, (payload) => {
                 const nuevoMensaje = payload.new;
+                
+                // ✅ CORRECCIÓN: Evitar duplicados si el mensaje ya fue renderizado por su ID real
+                if (nuevoMensaje.id && document.querySelector(`[data-msg-id="${nuevoMensaje.id}"]`)) {
+                    return; 
+                }
+
                 const esParaMi = nuevoMensaje.receptor_id === currentUserId || nuevoMensaje.receptor_id === null;
                 const esMio = nuevoMensaje.remitente_id === currentUserId;
                 
@@ -298,47 +308,68 @@ document.addEventListener('DOMContentLoaded', async () => {
             chatInput.focus();
         };
 
-        // 5. ENVIAR MENSAJE
+        // 5. ENVIAR MENSAJE (Corregido para evitar duplicados y pérdida de receptor)
         async function enviarMensaje() {
             const texto = chatInput.value.trim();
             if (!texto) return;
 
+            // Generamos un ID temporal para la vista optimista
+            const tempId = 'temp-' + Date.now();
+            const targetReceptor = replyingToUserId; // Guardamos el receptor antes de limpiar la variable
+
             const mensajeTemp = {
+                id: tempId,
                 remitente_id: currentUserId,
                 nombre_remitente: currentUserName,
                 rol_remitente: currentUserRole,
-                receptor_id: replyingToUserId,
+                receptor_id: targetReceptor,
                 mensaje: texto,
                 tipo: currentUserRole === 'administrador' ? 'admin' : 'user',
                 creado_en: new Date().toISOString()
             };
+            
+            // 1. Mostrar inmediatamente (Vista optimista)
             agregarMensajeAlDOM(mensajeTemp);
             chatInput.value = '';
             
-            if (replyingToUserId) {
+            // 2. Limpiar estado de respuesta
+            if (targetReceptor) {
                 replyingToUserId = null;
                 replyIndicator.style.display = 'none';
                 chatInput.placeholder = "Escribe tu mensaje...";
             }
 
-            const { error } = await window.supabaseClient
+            // 3. Guardar en base de datos y obtener el ID real
+            const { data, error } = await window.supabaseClient
                 .from('chat_mensajes')
                 .insert([{ 
                     remitente_id: currentUserId,
                     nombre_remitente: currentUserName,
                     rol_remitente: currentUserRole,
-                    receptor_id: replyingToUserId,
+                    receptor_id: targetReceptor,
                     mensaje: texto,
                     tipo: currentUserRole === 'administrador' ? 'admin' : 'user'
-                }]);
+                }])
+                .select()
+                .single();
 
-            if (error) console.error('Error al enviar:', error);
+            if (error) {
+                console.error('Error al enviar:', error);
+                // Si falla, eliminamos el mensaje temporal
+                const tempDiv = document.querySelector(`[data-msg-id="${tempId}"]`);
+                if (tempDiv) tempDiv.remove();
+            } else if (data) {
+                // Si tiene éxito, eliminamos el mensaje temporal. 
+                // El listener de tiempo real lo dibujará automáticamente con su ID real.
+                const tempDiv = document.querySelector(`[data-msg-id="${tempId}"]`);
+                if (tempDiv) tempDiv.remove();
+            }
         }
 
         if (chatSend) chatSend.addEventListener('click', enviarMensaje);
         if (chatInput) chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensaje(); });
 
-        // 6. CARGAR HISTORIAL CON MENSAJE DE BIENVENIDA
+        // 6. CARGAR HISTORIAL
         async function cargarMensajesRecientes() {
             chatMessages.innerHTML = '<div class="chat-message system"><p>Cargando...</p></div>';
             
@@ -370,6 +401,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 7. RENDERIZAR MENSAJE
         function agregarMensajeAlDOM(msg) {
             const div = document.createElement('div');
+            
+            // ✅ Guardamos el ID real en un atributo de datos para evitar duplicados en el listener
+            if (msg.id && !msg.id.startsWith('temp-')) {
+                div.dataset.msgId = msg.id;
+            }
+            
             const esMio = msg.remitente_id === currentUserId;
             const tipoClase = esMio ? (currentUserRole === 'administrador' ? 'admin' : 'user') : (msg.tipo || 'user');
             
@@ -378,7 +415,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const hora = fecha.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
             
             let htmlContent = '';
-            
             const nombreMostrar = msg.nombre_remitente ? msg.nombre_remitente.toUpperCase() : (esMio ? 'TÚ' : 'USUARIO');
 
             if (msg.rol_remitente === 'administrador' && msg.receptor_id) {
