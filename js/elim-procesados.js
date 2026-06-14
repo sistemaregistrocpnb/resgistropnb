@@ -1,5 +1,40 @@
 window.initElimProcesados = function() {
-    console.log("⚙️ Iniciando módulo elim-procesados.js...");
+    // ==========================================
+    // ✅ NUEVO: FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO
+    // ==========================================
+    async function registrarLog(accion, modulo, detalles) {
+        try {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) return;
+            let nombreUsuario = user.email || 'Sistema';
+            
+            try {
+                const { data: perfil } = await window.supabaseClient
+                    .from('perfiles_usuario')
+                    .select('nombre, apellido, email')
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+                if (perfil) {
+                    nombreUsuario = [perfil.nombre, perfil.apellido].filter(Boolean).join(' ').trim() || nombreUsuario;
+                }
+            } catch (err) {
+                // Silencioso por seguridad
+            }
+
+            const logEntry = {
+                user_id: user.id,
+                user_nombre: nombreUsuario,
+                user_email: user.email || 'sistema',
+                accion: accion,
+                modulo: modulo,
+                detalles: detalles,
+                created_at: new Date().toISOString()
+            };
+            await window.supabaseClient.from('sistema_logs').insert([logEntry]);
+        } catch (err) {
+            // Silencioso por seguridad
+        }
+    }
 
     const buscarInput = document.getElementById('buscar-procesado-elim');
     const buscarBtn = document.getElementById('btn-buscar-procesado-elim');
@@ -11,13 +46,12 @@ window.initElimProcesados = function() {
     const btnEliminar = document.getElementById('btn-eliminar-procesado');
     const btnReintegrar = document.getElementById('btn-reintegrar-procesado');
     const msgElim = document.getElementById('msg-elim-procesado');
-    
     const modal = document.getElementById('elim-modal-procesado');
     const modalTitle = document.getElementById('modal-title-elim');
     const modalText = document.getElementById('modal-text-elim');
     const btnModalYes = document.getElementById('btn-modal-yes-elim');
     const btnModalNo = document.getElementById('btn-modal-no-elim');
-
+    
     let currentData = null;
     let currentId = null;
     let pendingAction = null;
@@ -32,26 +66,25 @@ window.initElimProcesados = function() {
         const nombre = `${orig.primer_nombre || ''} ${orig.primer_apellido || ''}`.trim() || 'No especificado';
         const cedula = orig.cedula || 'N/A';
         const placa = orig.placa || 'N/A';
-        
         let docsCount = 0;
         const camposDocs = ['portada', 'oficio_remision', 'acta_denuncia', 'datos_filiatorios', 'acta_policial', 'derechos_imputado', 'evaluacion_medica', 'identificacion_cedula', 'solicitud_examen_forense', 'resultados_examen_forense', 'asistencia_comdepro', 'remision_estacionamiento', 'planilla_pvr', 'otros_documentos'];
         camposDocs.forEach(campo => { if (data[campo]) docsCount++; });
         ['entrevista', 'cadena_custodia', 'inspecciones_tecnicas'].forEach(campo => {
             if (Array.isArray(data[campo])) docsCount += data[campo].length;
         });
-
+        
         let html = `
-            <div class="data-row"><span class="data-label">🆔 ID Original:</span><span class="data-value">${data.id_original || data.id}</span></div>
-            <div class="data-row"><span class="data-label">📋 Tabla Origen:</span><span class="data-value">${data.tabla_origen || 'N/A'}</span></div>
-            <div class="data-row"><span class="data-label">🔍 Identificador:</span><span class="data-value">${data.identificador_principal || 'N/A'}</span></div>
-            <div class="data-row"><span class="data-label">👤 Nombre:</span><span class="data-value">${nombre}</span></div>
-            <div class="data-row"><span class="data-label">🆔 Cédula:</span><span class="data-value">${cedula}</span></div>
-            <div class="data-row"><span class="data-label">🚗 Placa:</span><span class="data-value">${placa}</span></div>
-            <div class="data-row"><span class="data-label">⚖️ Tipo Delito:</span><span class="data-value">${data.tipo_delito || 'N/A'}</span></div>
-            <div class="data-row"><span class="data-label">📎 Documentos:</span><span class="data-value">${docsCount > 0 ? docsCount + ' archivos' : 'Sin documentos'}</span></div>
+        <div class="data-row"><span class="data-label">🆔 ID Original:</span><span class="data-value">${data.id_original || data.id}</span></div>
+        <div class="data-row"><span class="data-label">📋 Tabla Origen:</span><span class="data-value">${data.tabla_origen || 'N/A'}</span></div>
+        <div class="data-row"><span class="data-label">🔍 Identificador:</span><span class="data-value">${data.identificador_principal || 'N/A'}</span></div>
+        <div class="data-row"><span class="data-label">👤 Nombre:</span><span class="data-value">${nombre}</span></div>
+        <div class="data-row"><span class="data-label">🆔 Cédula:</span><span class="data-value">${cedula}</span></div>
+        <div class="data-row"><span class="data-label">🚗 Placa:</span><span class="data-value">${placa}</span></div>
+        <div class="data-row"><span class="data-label">⚖️ Tipo Delito:</span><span class="data-value">${data.tipo_delito || 'N/A'}</span></div>
+        <div class="data-row"><span class="data-label">📎 Documentos:</span><span class="data-value">${docsCount > 0 ? docsCount + ' archivos' : 'Sin documentos'}</span></div>
         `;
         resumenContainer.innerHTML = html;
-
+        
         if (isArchived) {
             archivedBanner.style.display = 'block';
             archivedNotice.style.display = 'block';
@@ -74,8 +107,10 @@ window.initElimProcesados = function() {
         showMsg(msgBuscar, '🔍 Buscando...', 'success');
         buscarBtn.disabled = true;
         dataContainer.style.display = 'none';
-        hideMsg(msgBuscar); hideMsgElim(); archivedNotice.style.display = 'none';
-
+        hideMsg(msgBuscar); 
+        hideMsgElim(); 
+        archivedNotice.style.display = 'none';
+        
         try {
             // 1. Buscar en activos
             let { data: activo, error: errActivo } = await window.supabaseClient
@@ -85,16 +120,17 @@ window.initElimProcesados = function() {
                 .order('fecha_procesamiento', { ascending: false })
                 .limit(1)
                 .maybeSingle();
-
+                
             if (errActivo) throw errActivo;
             if (activo) {
-                currentData = activo; currentId = activo.id;
+                currentData = activo; 
+                currentId = activo.id;
                 renderUI(activo, false);
                 dataContainer.style.display = 'block';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
-
+            
             // 2. Buscar en eliminados
             let { data: archivado, error: errArch } = await window.supabaseClient
                 .from('eliminados_procesados')
@@ -103,20 +139,20 @@ window.initElimProcesados = function() {
                 .order('eliminado_en', { ascending: false })
                 .limit(1)
                 .maybeSingle();
-
+                
             if (errArch) throw errArch;
             if (archivado) {
-                currentData = archivado; currentId = archivado.id_original || archivado.id;
+                currentData = archivado; 
+                currentId = archivado.id_original || archivado.id;
                 renderUI(archivado, true);
                 dataContainer.style.display = 'block';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
-
+            
             showMsg(msgBuscar, '❌ Procesado no encontrado en el sistema.', 'error');
         } catch (err) {
-            console.error('Error búsqueda:', err);
-            showMsg(msgBuscar, '❌ Error: ' + err.message, 'error');
+            showMsg(msgBuscar, '❌ Error de conexión al buscar.', 'error');
         } finally {
             buscarBtn.disabled = false;
         }
@@ -131,7 +167,10 @@ window.initElimProcesados = function() {
         modal.style.display = 'flex';
     }
 
-    function closeModal() { modal.style.display = 'none'; pendingAction = null; }
+    function closeModal() { 
+        modal.style.display = 'none'; 
+        pendingAction = null; 
+    }
 
     async function ejecutarAccion() {
         if (pendingAction === 'delete') await eliminarRegistro();
@@ -139,17 +178,18 @@ window.initElimProcesados = function() {
         closeModal();
     }
 
+    // ==========================================
     // 🔹 Eliminar (Activa → Eliminados)
+    // ==========================================
     async function eliminarRegistro() {
         btnEliminar.disabled = true;
         btnEliminar.textContent = '⏳ Procesando...';
         hideMsgElim();
-
+        
         try {
             const { data: { user } } = await window.supabaseClient.auth.getUser();
             const eliminadoPor = user?.email || sessionStorage.getItem('pnb_user_email') || 'usuario@sistema';
             
-            // ✅ MAPEO CORREGIDO: Sin 'usuario_registro'
             const dataToArchive = {
                 id_original: currentId,
                 eliminado_por: eliminadoPor,
@@ -162,8 +202,6 @@ window.initElimProcesados = function() {
                 tipo_registro: currentData.tipo_registro || 'procesado',
                 estatus: currentData.estatus || 'activo',
                 fecha_procesamiento: currentData.fecha_procesamiento || currentData.created_at,
-                // ❌ ELIMINADO: usuario_registro: currentData.usuario_registro || eliminadoPor,
-                
                 portada: currentData.portada, oficio_remision: currentData.oficio_remision,
                 acta_denuncia: currentData.acta_denuncia, datos_filiatorios: currentData.datos_filiatorios,
                 acta_policial: currentData.acta_policial, derechos_imputado: currentData.derechos_imputado,
@@ -175,36 +213,47 @@ window.initElimProcesados = function() {
                 inspecciones_tecnicas: currentData.inspecciones_tecnicas,
                 created_at_original: currentData.created_at, updated_at_original: currentData.updated_at
             };
-
+            
             const { error: insErr } = await window.supabaseClient.from('eliminados_procesados').insert([dataToArchive]);
             if (insErr) throw new Error('Error archivando: ' + insErr.message);
-
+            
             const { data: delData, error: delErr } = await window.supabaseClient.from('registro_procesados').delete().eq('id', currentId).select('id');
             if (delErr) throw new Error('Error eliminando: ' + delErr.message);
             
-            if (!delData || delData.length === 0) {
-                console.warn("⚠️ El respaldo se guardó, pero el registro ya no estaba en la tabla activa.");
-            }
-
+            // ✅ NUEVO: REGISTRAR LOG DE ELIMINACIÓN
+            await registrarLog('ELIMINAR', 'PROCESADOS', {
+                identificador: currentData.identificador_principal || currentData.datos_originales?.cedula || 'N/A',
+                tipo_registro: currentData.tipo_registro || 'procesado',
+                tipo_delito: currentData.tipo_delito || 'N/A',
+                estatus: 'Eliminado',
+                accion_detalle: 'Registro procesado eliminado y archivado como respaldo histórico'
+            });
+            
             showMsgElim('✅ Procesado eliminado y archivado correctamente.', 'success');
-            setTimeout(() => { dataContainer.style.display = 'none'; buscarInput.value = ''; hideMsg(msgBuscar); hideMsgElim(); }, 4000);
+            setTimeout(() => { 
+                dataContainer.style.display = 'none'; 
+                buscarInput.value = ''; 
+                hideMsg(msgBuscar); 
+                hideMsgElim(); 
+            }, 4000);
+            
         } catch (err) {
-            console.error('💥 Error crítico:', err);
-            showMsgElim('❌ ' + err.message, 'error');
+            showMsgElim('❌ Error al procesar la solicitud.', 'error');
         } finally {
             btnEliminar.disabled = false;
             btnEliminar.textContent = '🗑️ Eliminar Procesado del Sistema';
         }
     }
 
+    // ==========================================
     // 🔹 Reintegrar (Eliminados → Activa)
+    // ==========================================
     async function reintegrarRegistro() {
         btnReintegrar.disabled = true;
         btnReintegrar.textContent = '⏳ Procesando...';
         hideMsgElim();
-
+        
         try {
-            // ✅ MAPEO CORREGIDO: Sin 'usuario_registro'
             const dataToRestore = {
                 tabla_origen: currentData.tabla_origen,
                 registro_id: currentData.registro_id,
@@ -215,8 +264,6 @@ window.initElimProcesados = function() {
                 tipo_registro: currentData.tipo_registro || 'procesado',
                 estatus: currentData.estatus || 'activo',
                 fecha_procesamiento: currentData.fecha_procesamiento || currentData.created_at_original || new Date().toISOString(),
-                // ❌ ELIMINADO: usuario_registro: currentData.usuario_registro || 'sistema',
-                
                 portada: currentData.portada, oficio_remision: currentData.oficio_remision,
                 acta_denuncia: currentData.acta_denuncia, datos_filiatorios: currentData.datos_filiatorios,
                 acta_policial: currentData.acta_policial, derechos_imputado: currentData.derechos_imputado,
@@ -227,16 +274,30 @@ window.initElimProcesados = function() {
                 entrevista: currentData.entrevista, cadena_custodia: currentData.cadena_custodia,
                 inspecciones_tecnicas: currentData.inspecciones_tecnicas
             };
-
+            
             const { error: insErr } = await window.supabaseClient.from('registro_procesados').insert([dataToRestore]);
             if (insErr) throw new Error('Error restaurando: ' + insErr.message);
-
+            
+            // ✅ NUEVO: REGISTRAR LOG DE REINTEGRACIÓN
+            await registrarLog('REINTEGRAR', 'PROCESADOS', {
+                identificador: currentData.identificador_principal || currentData.datos_originales?.cedula || 'N/A',
+                tipo_registro: currentData.tipo_registro || 'procesado',
+                tipo_delito: currentData.tipo_delito || 'N/A',
+                estatus: 'Procesado',
+                accion_detalle: 'Registro procesado reintegrado al sistema activo desde el respaldo histórico'
+            });
+            
             showMsgElim('✅ Procesado reintegrado al sistema activo. El respaldo histórico se mantiene.', 'success');
-            setTimeout(() => { dataContainer.style.display = 'none'; buscarInput.value = ''; hideMsg(msgBuscar); hideMsgElim(); }, 4000);
+            setTimeout(() => { 
+                dataContainer.style.display = 'none'; 
+                buscarInput.value = ''; 
+                hideMsg(msgBuscar); 
+                hideMsgElim(); 
+            }, 4000);
+            
         } catch (err) {
-            console.error('Error reintegrando:', err);
-            let msg = err.message.includes('23505') || err.message.includes('unique') 
-                ? '❌ Ya existe un registro activo con este ID.' 
+            let msg = err.message.includes('23505') || err.message.includes('unique')
+                ? '❌ <strong>No se puede reintegrar:</strong> Ya existe un registro activo con este identificador.<br><small style="color:#64748b;">Este registro se conserva como historial.</small>'
                 : '❌ ' + err.message;
             showMsgElim(msg, 'error');
         } finally {
@@ -244,28 +305,31 @@ window.initElimProcesados = function() {
             btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo';
         }
     }
+
+    // ==========================================
+    // 🔹 LISTENERS
+    // ==========================================
     buscarBtn.addEventListener('click', buscarProcesado);
     buscarInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); buscarProcesado(); } });
-
+    
     btnEliminar.addEventListener('click', () => {
         if (!currentData) return;
         const identificador = currentData.datos_originales?.cedula || currentData.identificador_principal || 'este registro';
         showModal('⚠️ Confirmar Eliminación', `¿Eliminar el procesado con identificador "${identificador}"? Se moverá a la papelera de archivo.`, 'delete', 'danger');
     });
-
+    
     btnReintegrar.addEventListener('click', () => {
         if (!currentData) return;
         const identificador = currentData.datos_originales?.cedula || currentData.identificador_principal || 'este registro';
         showModal('♻️ Confirmar Reintegración', `¿Reintegrar el procesado con identificador "${identificador}"? Volverá a estar disponible en el sistema activo.`, 'reintegrate', 'success');
     });
-
+    
     btnModalYes.addEventListener('click', ejecutarAccion);
     btnModalNo.addEventListener('click', closeModal);
     modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
-
-    console.log("✅ Módulo elim-procesados.js inicializado correctamente");
 };
 
+// 🚀 AUTO-INICIALIZACIÓN
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.initElimProcesados);
 } else {
