@@ -1,6 +1,6 @@
 window.initElimVinculados = function() {
     // ==========================================
-    // ✅ NUEVO: FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO
+    // ✅ FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO
     // ==========================================
     async function registrarLog(accion, modulo, detalles) {
         try {
@@ -126,7 +126,7 @@ window.initElimVinculados = function() {
     }
 
     // ==========================================
-    // 🔍 BÚSQUEDA MULTI-TABLA
+    // 🔍 BÚSQUEDA MULTI-TABLA (✅ CORREGIDA)
     // ==========================================
     function detectarCoincidencias(reg, val) {
         const campos = [];
@@ -141,7 +141,9 @@ window.initElimVinculados = function() {
     async function buscarEnTodasLasTablas(valor) {
         const resultados = [];
         const val = valor.trim().toUpperCase();
-        const query = `cedula.ilike.${val},placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`;
+        
+        // ✅ CORRECCIÓN CLAVE: Se agregaron los comodines % para que ilike funcione correctamente en Supabase
+        const query = `cedula.ilike.%${val}%,placa.ilike.%${val}%,serial_carroceria.ilike.%${val}%,serial_motor.ilike.%${val}%`;
         
         try {
             // 1. Vinculados Activos
@@ -176,7 +178,7 @@ window.initElimVinculados = function() {
             }
             return resultados;
         } catch (err) {
-            throw err; // Silencioso, el catch externo maneja la UI
+            throw err;
         }
     }
 
@@ -187,7 +189,7 @@ window.initElimVinculados = function() {
         
         if (crossWarning) {
             if (tieneVinculado && resultados.length > 1) {
-                crossWarning.innerHTML = `<strong>⚠️ ALERTA CRUZADA:</strong> Se encontraron múltiples registros. Verifique que no haya duplicidad con vehículos individuales.`;
+                crossWarning.innerHTML = `<strong>⚠️ ALERTA CRUZADA:</strong> Se encontraron múltiples registros. Verifique que no haya duplicidad.`;
                 crossWarning.style.display = 'block';
             } else {
                 crossWarning.style.display = 'none';
@@ -263,7 +265,7 @@ window.initElimVinculados = function() {
                     setTimeout(() => mostrarPanelSeleccion(resultados, val), 300);
                 }
             } catch (err) {
-                showMsg(msgBuscar, '❌ Error de conexión.', 'error');
+                showMsg(msgBuscar, '❌ Error de conexión al buscar.', 'error');
             } finally {
                 buscarBtn.disabled = false;
             }
@@ -382,7 +384,7 @@ window.initElimVinculados = function() {
             const delRes = await window.supabaseClient.from('registro_vinculado').delete().eq('id', currentData.id);
             if (delRes.error) throw delRes.error;
 
-            // ✅ NUEVO: REGISTRAR LOG DE ELIMINACIÓN
+            // ✅ REGISTRAR LOG DE ELIMINACIÓN
             await registrarLog('ELIMINAR', 'VINCULADOS', {
                 cedula: currentData.cedula,
                 nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
@@ -475,7 +477,7 @@ window.initElimVinculados = function() {
             const delRes = await window.supabaseClient.from('eliminados_vinculados').delete().eq('id', currentData.id);
             if (delRes.error) throw delRes.error;
 
-            // ✅ NUEVO: REGISTRAR LOG DE REINTEGRACIÓN
+            // ✅ REGISTRAR LOG DE REINTEGRACIÓN
             await registrarLog('REINTEGRAR', 'VINCULADOS', {
                 cedula: currentData.cedula,
                 nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
