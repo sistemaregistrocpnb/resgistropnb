@@ -102,9 +102,10 @@ window.initLogsSistema = function() {
 // ✅ FUNCIÓN PARA OBTENER EL VALOR PRINCIPAL DE LA COLUMNA "REGISTRO / ESTATUS"
 function obtenerValorRegistro(log) {
     if (log.detalles) {
+        // 🔹 Parseo seguro del JSON
         let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
 
-        // ✅ 1. PRIORIDAD MÁXIMA: Acciones de ELIMINAR o REINTEGRAR (Vehículos o Personas)
+        // ✅ 1. PRIORIDAD MÁXIMA: Acciones de ELIMINAR o REINTEGRAR
         if (log.accion === 'ELIMINAR') {
             return `<span class="badge badge-eliminar">ELIMINADO</span>`;
         }
@@ -112,25 +113,34 @@ function obtenerValorRegistro(log) {
             return `<span class="badge badge-crear">REINTEGRADO</span>`;
         }
 
-        // ✅ 2. Si hay un estatus, lo mostramos como badge
+        // ✅ 2. Si hay un estatus explícito en los detalles, mostrarlo
         if (d && d.estatus) {
-            const badgeClass = d.estatus.toLowerCase().includes('procesad') ? 'badge-eliminar' :
-                               d.estatus.toLowerCase().includes('verificaci') ? 'badge-otros' : 'badge-crear';
-            return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
+            const est = String(d.estatus).trim();
+            const badgeClass = est.toLowerCase().includes('procesad') ? 'badge-eliminar' :
+                               est.toLowerCase().includes('verificaci') ? 'badge-otros' : 'badge-crear';
+            return `<span class="badge ${badgeClass}">${est}</span>`;
         }
 
-        // 🚗 3. Si es creación de vehículo, mostrar la placa
-        if (log.modulo === 'VEHICULOS' && log.accion === 'CREAR' && d && d.placa) {
-            return `<span class="badge badge-crear">${d.placa}</span>`;
+        // ✅ 3. Si es creación de vehículo, mostrar "Verificación" por defecto
+        if (log.modulo === 'VEHICULOS' && log.accion === 'CREAR') {
+            return `<span class="badge badge-otros">Verificación</span>`;
         }
-        
-        // 4. Identificadores principales
+
+        // 4. Identificadores principales (para consultas, etc.)
         if (d) {
             if (d.valor_buscado) return d.valor_buscado;
             if (d.identificador) return d.identificador;
             if (d.cedula) return d.cedula;
+            if (d.placa) return `<span class="badge badge-crear">${d.placa}</span>`;
         }
     }
+    
+    // 5. Fallback al registro_id recortado
+    if (log.registro_id) {
+        return `<span style="font-family: monospace; font-size: 0.8rem; color: #64748b;">${String(log.registro_id).substring(0, 8)}...</span>`;
+    }
+    return '-';
+}
     
     // 5. Fallback al registro_id recortado
     if (log.registro_id) {
