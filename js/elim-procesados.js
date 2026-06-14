@@ -1,6 +1,6 @@
 window.initElimProcesados = function() {
     // ==========================================
-    // ✅ NUEVO: FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO
+    // ✅ FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO (UNA SOLA VEZ)
     // ==========================================
     async function registrarLog(accion, modulo, detalles) {
         try {
@@ -107,12 +107,9 @@ window.initElimProcesados = function() {
         showMsg(msgBuscar, '🔍 Buscando...', 'success');
         buscarBtn.disabled = true;
         dataContainer.style.display = 'none';
-        hideMsg(msgBuscar); 
-        hideMsgElim(); 
-        archivedNotice.style.display = 'none';
+        hideMsg(msgBuscar); hideMsgElim(); archivedNotice.style.display = 'none';
         
         try {
-            // 1. Buscar en activos
             let { data: activo, error: errActivo } = await window.supabaseClient
                 .from('registro_procesados')
                 .select('*')
@@ -123,15 +120,13 @@ window.initElimProcesados = function() {
                 
             if (errActivo) throw errActivo;
             if (activo) {
-                currentData = activo; 
-                currentId = activo.id;
+                currentData = activo; currentId = activo.id;
                 renderUI(activo, false);
                 dataContainer.style.display = 'block';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
             
-            // 2. Buscar en eliminados
             let { data: archivado, error: errArch } = await window.supabaseClient
                 .from('eliminados_procesados')
                 .select('*')
@@ -142,8 +137,7 @@ window.initElimProcesados = function() {
                 
             if (errArch) throw errArch;
             if (archivado) {
-                currentData = archivado; 
-                currentId = archivado.id_original || archivado.id;
+                currentData = archivado; currentId = archivado.id_original || archivado.id;
                 renderUI(archivado, true);
                 dataContainer.style.display = 'block';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -217,7 +211,7 @@ window.initElimProcesados = function() {
             const { error: insErr } = await window.supabaseClient.from('eliminados_procesados').insert([dataToArchive]);
             if (insErr) throw new Error('Error archivando: ' + insErr.message);
             
-            const { data: delData, error: delErr } = await window.supabaseClient.from('registro_procesados').delete().eq('id', currentId).select('id');
+            const { error: delErr } = await window.supabaseClient.from('registro_procesados').delete().eq('id', currentId);
             if (delErr) throw new Error('Error eliminando: ' + delErr.message);
             
             // ✅ REGISTRAR LOG DE ELIMINACIÓN (UNA SOLA VEZ)
@@ -329,7 +323,6 @@ window.initElimProcesados = function() {
     modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 };
 
-// 🚀 AUTO-INICIALIZACIÓN
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.initElimProcesados);
 } else {
