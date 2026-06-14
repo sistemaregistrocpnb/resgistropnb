@@ -1,3 +1,11 @@
+// 🔒 BLOQUEO DE CONSOLA PARA SEGURIDAD
+window.console.log = function() {};
+window.console.warn = function() {};
+window.console.error = function() {};
+window.console.info = function() {};
+window.console.debug = function() {};
+
+
 document.addEventListener('DOMContentLoaded', async () => {
     const userEmailEl = document.getElementById('user-email');
     const userRoleEl = document.getElementById('user-role');
