@@ -349,7 +349,7 @@ window.initConTabla = function() {
                     <td>${denuncia.estacion_policial || 'N/A'}</td>
                     <td>${fecha}</td>
                     <td>${estado}</td>
-                    <td><button class="con-btn-ver" data-index="${index}">👁️ Ver Ficha</button></td>
+                    <td><button class="con-btn-ver" data-index="${index}"> Ver Ficha</button></td>
                 </tr>
             `;
         });
