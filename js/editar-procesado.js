@@ -1,6 +1,41 @@
 window.initEditarProcesado = function() {
-    console.log("⚙️ Iniciando módulo editar-procesado.js...");
-    
+    // ==========================================
+    // ✅ NUEVO: FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO
+    // ==========================================
+    async function registrarLog(accion, modulo, detalles) {
+        try {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) return;
+            let nombreUsuario = user.email || 'Sistema';
+            
+            try {
+                const { data: perfil } = await window.supabaseClient
+                    .from('perfiles_usuario')
+                    .select('nombre, apellido, email')
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+                if (perfil) {
+                    nombreUsuario = [perfil.nombre, perfil.apellido].filter(Boolean).join(' ').trim() || nombreUsuario;
+                }
+            } catch (err) {
+                // Silencioso por seguridad
+            }
+
+            const logEntry = {
+                user_id: user.id,
+                user_nombre: nombreUsuario,
+                user_email: user.email || 'sistema',
+                accion: accion,
+                modulo: modulo,
+                detalles: detalles,
+                created_at: new Date().toISOString()
+            };
+            await window.supabaseClient.from('sistema_logs').insert([logEntry]);
+        } catch (err) {
+            // Silencioso por seguridad
+        }
+    }
+
     const docsUnicos = [
         { id: 'portada', label: '📑 Portada' },
         { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
@@ -17,13 +52,11 @@ window.initEditarProcesado = function() {
         { id: 'planilla_pvr', label: '🚙 Planilla PVR' },
         { id: 'otros_documentos', label: '📎 Otros Documentos' }
     ];
-    
     const docsMultiples = [
         { id: 'entrevista', label: '🎤 Entrevistas', max: 10 },
         { id: 'cadena_custodia', label: '⛓️ Cadena de Custodia', max: 10 },
         { id: 'inspecciones_tecnicas', label: '🔧 Inspecciones Técnicas', max: 10 }
     ];
-    
     let procesadoActual = null;
     const archivosActuales = {};
     const archivosNuevos = {};
@@ -36,13 +69,12 @@ window.initEditarProcesado = function() {
         archivosNuevos[d.id] = null;
         archivosAEliminar[d.id] = false;
     });
-    
     docsMultiples.forEach(d => {
         archivosActuales[d.id] = [];
         archivosMultiplesNuevos[d.id] = [];
         archivosMultiplesEliminados[d.id] = [];
     });
-    
+
     const btnBuscar = document.getElementById('edit_btn_buscar');
     const inputBusqueda = document.getElementById('edit_busqueda_input');
     const msgBusqueda = document.getElementById('edit_msg_busqueda');
@@ -53,20 +85,19 @@ window.initEditarProcesado = function() {
     const contenedorUnicos = document.getElementById('edit-docs-unicos-container');
     const contenedorMultiples = document.getElementById('edit-docs-multiples-container');
     const loadingOverlay = document.getElementById('edit-loading-overlay');
-    
-    // Verificación de elementos críticos
+
+    // Verificación de elementos críticos (Silenciosa)
     if (!btnBuscar || !inputBusqueda) {
-        console.error("❌ No se encontraron los elementos del buscador en el HTML. Verifica los IDs.");
         return;
     }
-    
+
     const mostrarMsg = (el, txt, type) => {
         if (!el) return;
         el.innerHTML = txt;
         el.className = `msg ${type}`;
         el.style.display = 'block';
     };
-    
+
     function generarDocsUnicos() {
         if (!contenedorUnicos) return;
         contenedorUnicos.innerHTML = '';
@@ -75,19 +106,19 @@ window.initEditarProcesado = function() {
             div.className = 'doc-item';
             div.id = `doc-item-${doc.id}`;
             div.innerHTML = `
-                <div class="doc-header">
-                    <label>${doc.label}</label>
-                </div>
-                <div id="current-${doc.id}"></div>
-                <div class="doc-upload-area" id="upload-${doc.id}">
-                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="mostrarNuevoArchivo('${doc.id}', this)">
-                    <div id="status-${doc.id}" class="file-status-container"></div>
-                </div>
+            <div class="doc-header">
+                <label>${doc.label}</label>
+            </div>
+            <div id="current-${doc.id}"></div>
+            <div class="doc-upload-area" id="upload-${doc.id}">
+                <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="mostrarNuevoArchivo('${doc.id}', this)">
+                <div id="status-${doc.id}" class="file-status-container"></div>
+            </div>
             `;
             contenedorUnicos.appendChild(div);
         });
     }
-    
+
     function generarDocsMultiples() {
         if (!contenedorMultiples) return;
         contenedorMultiples.innerHTML = '';
@@ -96,24 +127,24 @@ window.initEditarProcesado = function() {
             div.className = 'doc-item';
             div.id = `doc-item-${doc.id}`;
             div.innerHTML = `
-                <div class="doc-header">
-                    <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Máximo ${doc.max})</span></label>
-                </div>
-                <div id="current-list-${doc.id}" style="margin-top: 10px;"></div>
-                <div class="doc-upload-area active" id="upload-${doc.id}">
-                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
-                    <button type="button" class="btn-add-file" onclick="agregarNuevosMultiples('${doc.id}', ${doc.max})">➕ Agregar más archivos</button>
-                    <div class="file-count" id="count-${doc.id}">0 archivos nuevos</div>
-                    <div class="file-list" id="new-list-${doc.id}"></div>
-                </div>
+            <div class="doc-header">
+                <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Máximo ${doc.max})</span></label>
+            </div>
+            <div id="current-list-${doc.id}" style="margin-top: 10px;"></div>
+            <div class="doc-upload-area active" id="upload-${doc.id}">
+                <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
+                <button type="button" class="btn-add-file" onclick="agregarNuevosMultiples('${doc.id}', ${doc.max})">➕ Agregar más archivos</button>
+                <div class="file-count" id="count-${doc.id}">0 archivos nuevos</div>
+                <div class="file-list" id="new-list-${doc.id}"></div>
+            </div>
             `;
             contenedorMultiples.appendChild(div);
         });
     }
-    
+
     generarDocsUnicos();
     generarDocsMultiples();
-    
+
     window.mostrarNuevoArchivo = function(docId, input) {
         const statusContainer = document.getElementById(`status-${docId}`);
         if (!statusContainer) return;
@@ -121,15 +152,15 @@ window.initEditarProcesado = function() {
             archivosNuevos[docId] = input.files[0];
             archivosAEliminar[docId] = true;
             statusContainer.innerHTML = `
-                <div class="file-loaded">
-                    <span>🔄</span>
-                    <span class="file-name">${input.files[0].name}</span>
-                    <button type="button" class="btn-remove" onclick="cancelarNuevo('${docId}')">❌ Cancelar</button>
-                </div>
+            <div class="file-loaded">
+                <span>🔄</span>
+                <span class="file-name">${input.files[0].name}</span>
+                <button type="button" class="btn-remove" onclick="cancelarNuevo('${docId}')">❌ Cancelar</button>
+            </div>
             `;
         }
     };
-    
+
     window.cancelarNuevo = function(docId) {
         const input = document.getElementById(`file_${docId}`);
         const statusContainer = document.getElementById(`status-${docId}`);
@@ -138,7 +169,7 @@ window.initEditarProcesado = function() {
         archivosNuevos[docId] = null;
         archivosAEliminar[docId] = false;
     };
-    
+
     window.agregarNuevosMultiples = function(campo, max) {
         const input = document.getElementById(`file_${campo}`);
         if (!input || !input.files || input.files.length === 0) return;
@@ -160,7 +191,7 @@ window.initEditarProcesado = function() {
         actualizarListaNuevos(campo, max);
         input.value = '';
     };
-    
+
     function actualizarListaNuevos(campo, max) {
         const list = document.getElementById(`new-list-${campo}`);
         const count = document.getElementById(`count-${campo}`);
@@ -170,25 +201,25 @@ window.initEditarProcesado = function() {
             const item = document.createElement('div');
             item.className = 'file-item-multiple';
             item.innerHTML = `
-                <span>🆕 ${file.name}</span>
-                <div class="file-actions">
-                    <button type="button" onclick="quitarNuevoMultiple('${campo}', ${index})">❌</button>
-                </div>
+            <span>🆕 ${file.name}</span>
+            <div class="file-actions">
+                <button type="button" onclick="quitarNuevoMultiple('${campo}', ${index})">❌</button>
+            </div>
             `;
             list.appendChild(item);
         });
         count.textContent = `${archivosMultiplesNuevos[campo].length} archivos nuevos por subir`;
     }
-    
+
     window.quitarNuevoMultiple = function(campo, index) {
         archivosMultiplesNuevos[campo].splice(index, 1);
         actualizarListaNuevos(campo, docsMultiples.find(d => d.id === campo).max);
     };
-    
+
     window.verArchivo = function(url) {
         window.open(url, '_blank');
     };
-    
+
     window.reemplazarArchivo = function(docId) {
         const area = document.getElementById(`upload-${docId}`);
         if (area) {
@@ -197,7 +228,7 @@ window.initEditarProcesado = function() {
             if (input) input.click();
         }
     };
-    
+
     window.eliminarArchivoActual = function(docId) {
         if (!confirm('¿Está seguro de eliminar este archivo? Se borrará permanentemente.')) return;
         archivosAEliminar[docId] = true;
@@ -205,7 +236,7 @@ window.initEditarProcesado = function() {
         const currentDiv = document.getElementById(`current-${docId}`);
         if (currentDiv) currentDiv.innerHTML = '<p style="color: #dc2626; font-size: 0.85rem; margin-top: 10px;">🗑️ Archivo marcado para eliminar (se guardará al actualizar)</p>';
     };
-    
+
     window.eliminarArchivoMultipleActual = function(campo, index) {
         if (!confirm('¿Está seguro de eliminar este archivo?')) return;
         const url = archivosActuales[campo][index];
@@ -213,7 +244,7 @@ window.initEditarProcesado = function() {
         archivosActuales[campo].splice(index, 1);
         renderizarArchivosMultiplesActuales(campo);
     };
-    
+
     function renderizarArchivosMultiplesActuales(campo) {
         const listDiv = document.getElementById(`current-list-${campo}`);
         if (!listDiv) return;
@@ -226,44 +257,39 @@ window.initEditarProcesado = function() {
             const item = document.createElement('div');
             item.className = 'file-item-multiple';
             item.innerHTML = `
-                <span>📄 Archivo ${index + 1}</span>
-                <div class="file-actions">
-                    <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
-                    <button type="button" onclick="eliminarArchivoMultipleActual('${campo}', ${index})">❌</button>
-                </div>
+            <span>📄 Archivo ${index + 1}</span>
+            <div class="file-actions">
+                <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
+                <button type="button" onclick="eliminarArchivoMultipleActual('${campo}', ${index})">❌</button>
+            </div>
             `;
             listDiv.appendChild(item);
         });
     }
-    
+
     async function cargarProcesado(valor) {
         const val = valor.trim().toUpperCase();
-        
         const { data: dataColumnas, error: errColumnas } = await window.supabaseClient
             .from('registro_procesados')
             .select('*')
             .or(`identificador_principal.eq.${val},cedula.eq.${val}`)
             .order('fecha_procesamiento', { ascending: false })
             .limit(5);
-        
         if (!errColumnas && dataColumnas && dataColumnas.length > 0) {
             return dataColumnas;
         }
-        
         const { data: dataJson, error: errJson } = await window.supabaseClient
             .from('registro_procesados')
             .select('*')
             .or(`datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
             .order('fecha_procesamiento', { ascending: false })
             .limit(5);
-        
         if (!errJson && dataJson && dataJson.length > 0) {
             return dataJson;
         }
-        
         return [];
     }
-    
+
     function mostrarDatosProcesado(proc) {
         const data = proc.datos_originales || {};
         let html = '';
@@ -281,7 +307,7 @@ window.initEditarProcesado = function() {
         datosContenido.innerHTML = html;
         datosPanel.style.display = 'block';
     }
-    
+
     function cargarArchivosEnForm(proc) {
         docsUnicos.forEach(d => {
             archivosActuales[d.id] = null;
@@ -293,7 +319,6 @@ window.initEditarProcesado = function() {
             archivosMultiplesNuevos[d.id] = [];
             archivosMultiplesEliminados[d.id] = [];
         });
-        
         document.getElementById('edit_procesado_id').value = proc.id;
         document.getElementById('edit_tabla_origen').value = proc.tabla_origen;
         document.getElementById('edit_registro_id').value = proc.registro_id;
@@ -307,17 +332,17 @@ window.initEditarProcesado = function() {
                 archivosActuales[doc.id] = url;
                 const fileName = url.split('/').pop();
                 currentDiv.innerHTML = `
-                    <div class="doc-current">
-                        <div class="file-info">
-                            <span>📄</span>
-                            <span>${fileName}</span>
-                        </div>
-                        <div class="actions">
-                            <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
-                            <button type="button" class="btn-replace" onclick="reemplazarArchivo('${doc.id}')">🔄 Reemplazar</button>
-                            <button type="button" class="btn-delete" onclick="eliminarArchivoActual('${doc.id}')">🗑️ Eliminar</button>
-                        </div>
+                <div class="doc-current">
+                    <div class="file-info">
+                        <span>📄</span>
+                        <span>${fileName}</span>
                     </div>
+                    <div class="actions">
+                        <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
+                        <button type="button" class="btn-replace" onclick="reemplazarArchivo('${doc.id}')">🔄 Reemplazar</button>
+                        <button type="button" class="btn-delete" onclick="eliminarArchivoActual('${doc.id}')">🗑️ Eliminar</button>
+                    </div>
+                </div>
                 `;
             } else {
                 currentDiv.innerHTML = '<p style="color: #64748b; font-size: 0.85rem; margin-top: 10px;">Sin archivo</p>';
@@ -331,9 +356,8 @@ window.initEditarProcesado = function() {
             actualizarListaNuevos(doc.id, doc.max);
         });
     }
-    
+
     btnBuscar.addEventListener('click', async () => {
-        console.log("🔍 Botón de buscar presionado");
         const val = inputBusqueda.value.trim();
         if (val.length < 3) {
             return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 3 caracteres.', 'error');
@@ -342,7 +366,6 @@ window.initEditarProcesado = function() {
         btnBuscar.disabled = true;
         form.style.display = 'none';
         datosPanel.style.display = 'none';
-        
         try {
             const resultados = await cargarProcesado(val);
             if (resultados.length === 0) {
@@ -356,20 +379,19 @@ window.initEditarProcesado = function() {
                 window.scrollTo({ top: datosPanel.offsetTop - 20, behavior: 'smooth' });
             }
         } catch (err) {
-            console.error('Error en búsqueda:', err);
-            mostrarMsg(msgBusqueda, '❌ Error: ' + err.message, 'error');
+            mostrarMsg(msgBusqueda, '❌ Error de conexión al buscar.', 'error');
         } finally {
             btnBuscar.disabled = false;
         }
     });
-    
+
     inputBusqueda.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') { 
-            e.preventDefault(); 
-            btnBuscar.click(); 
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            btnBuscar.click();
         }
     });
-    
+
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -380,7 +402,6 @@ window.initEditarProcesado = function() {
             if (!tipoDelito) {
                 return mostrarMsg(msgForm, '⚠️ El tipo de delito es obligatorio.', 'error');
             }
-            
             if (loadingOverlay) loadingOverlay.classList.add('active');
             const btnSubmit = form.querySelector('.btn-submit');
             btnSubmit.disabled = true;
@@ -391,7 +412,6 @@ window.initEditarProcesado = function() {
                 const bucket = window.supabaseClient.storage.from('procesados_documentos');
                 const uid = sessionStorage.getItem('pnb_user_id') || 'user';
                 const ts = Date.now();
-                
                 const dataToUpdate = {
                     tipo_delito: tipoDelito,
                     observaciones: document.getElementById('edit_observaciones').value.trim() || null
@@ -401,23 +421,21 @@ window.initEditarProcesado = function() {
                     const urlActual = archivosActuales[doc.id];
                     const archivoNuevo = archivosNuevos[doc.id];
                     const marcadoEliminar = archivosAEliminar[doc.id];
-                    
                     if (archivoNuevo) {
                         const path = `${uid}/${ts}_${doc.id}.pdf`;
                         const { error } = await bucket.upload(path, archivoNuevo, { contentType: 'application/pdf' });
                         if (error) throw new Error(`Error subiendo ${doc.id}: ${error.message}`);
                         const newUrl = bucket.getPublicUrl(path).data.publicUrl;
                         dataToUpdate[doc.id] = newUrl;
-                        
                         if (urlActual) {
                             const oldPath = urlActual.split('/procesados_documentos/')[1];
-                            if (oldPath) await bucket.remove([oldPath]).catch(e => console.warn('No se pudo borrar archivo viejo:', e));
+                            if (oldPath) await bucket.remove([oldPath]);
                         }
                     } else if (marcadoEliminar) {
                         dataToUpdate[doc.id] = null;
                         if (urlActual) {
                             const oldPath = urlActual.split('/procesados_documentos/')[1];
-                            if (oldPath) await bucket.remove([oldPath]).catch(e => console.warn('No se pudo borrar archivo viejo:', e));
+                            if (oldPath) await bucket.remove([oldPath]);
                         }
                     }
                 }
@@ -426,7 +444,6 @@ window.initEditarProcesado = function() {
                     const urlsActuales = archivosActuales[doc.id] || [];
                     const archivosNuevosCampo = archivosMultiplesNuevos[doc.id] || [];
                     const urlsEliminadas = archivosMultiplesEliminados[doc.id] || [];
-                    
                     if (archivosNuevosCampo.length > 0 || urlsEliminadas.length > 0) {
                         const nuevasUrls = [];
                         for (let i = 0; i < archivosNuevosCampo.length; i++) {
@@ -435,12 +452,10 @@ window.initEditarProcesado = function() {
                             if (error) throw new Error(`Error subiendo ${doc.id}[${i}]: ${error.message}`);
                             nuevasUrls.push(bucket.getPublicUrl(path).data.publicUrl);
                         }
-                        
                         for (const oldUrl of urlsEliminadas) {
                             const oldPath = oldUrl.split('/procesados_documentos/')[1];
-                            if (oldPath) await bucket.remove([oldPath]).catch(e => console.warn('No se pudo borrar:', e));
+                            if (oldPath) await bucket.remove([oldPath]);
                         }
-                        
                         const finales = [...urlsActuales, ...nuevasUrls];
                         dataToUpdate[doc.id] = finales;
                     }
@@ -465,11 +480,18 @@ window.initEditarProcesado = function() {
                     .from('registro_procesados')
                     .update(dataToUpdate)
                     .eq('id', procesadoActual.id);
-                    
                 if (updErr) throw new Error(`Error al actualizar: ${updErr.message}`);
                 
-                mostrarMsg(msgForm, '✅ Cambios guardados exitosamente.', 'success');
+                // ✅ NUEVO: REGISTRAR LOG DE MODIFICACIÓN
+                await registrarLog('MODIFICAR', 'PROCESADOS', {
+                    identificador: procesadoActual.identificador_principal,
+                    tipo_registro: procesadoActual.tipo_registro,
+                    tipo_delito: tipoDelito,
+                    estatus: 'Procesado',
+                    cambios: 'Datos del registro procesado actualizados'
+                });
                 
+                mostrarMsg(msgForm, '✅ Cambios guardados exitosamente.', 'success');
                 setTimeout(() => {
                     form.style.display = 'none';
                     datosPanel.style.display = 'none';
@@ -479,9 +501,7 @@ window.initEditarProcesado = function() {
                     form.reset();
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 3000);
-                
             } catch (err) {
-                console.error('Error al actualizar:', err);
                 mostrarMsg(msgForm, '❌ Error: ' + err.message, 'error');
             } finally {
                 if (loadingOverlay) loadingOverlay.classList.remove('active');
@@ -490,8 +510,6 @@ window.initEditarProcesado = function() {
             }
         });
     }
-    
-    console.log("✅ Módulo editar-procesado.js inicializado y listo correctamente");
 };
 
 // 🚀 AUTO-INICIALIZACIÓN: Se ejecuta automáticamente cuando el HTML está listo
