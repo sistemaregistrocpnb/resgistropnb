@@ -1,6 +1,6 @@
 window.initModVinculado = function() {
     // ==========================================
-    // ✅ NUEVO: FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO
+    // ✅ FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO
     // ==========================================
     async function registrarLog(accion, modulo, detalles) {
         try {
@@ -30,10 +30,7 @@ window.initModVinculado = function() {
                 detalles: detalles,
                 created_at: new Date().toISOString()
             };
-            const { error } = await window.supabaseClient.from('sistema_logs').insert([logEntry]);
-            if (error) {
-                // Silencioso por seguridad
-            }
+            await window.supabaseClient.from('sistema_logs').insert([logEntry]);
         } catch (err) {
             // Silencioso por seguridad
         }
@@ -637,8 +634,7 @@ window.initModVinculado = function() {
             if (cedula.length < 7) return mostrarMsg(msgBox, 'La cédula debe tener entre 7 y 8 dígitos.', 'error');
             
             const btnSubmit = form.querySelector('.btn-submit');
-            btnSubmit.disabled = true; 
-            btnSubmit.textContent = '⏳ Guardando...';
+            btnSubmit.disabled = true; btnSubmit.textContent = '⏳ Guardando...';
             msgBox.style.display = 'none';
             
             try {
@@ -709,12 +705,13 @@ window.initModVinculado = function() {
                 const { error } = await window.supabaseClient.from('registro_vinculado').update(data).eq('id', currentData.id);
                 if (error) throw error;
                 
-                // ✅ NUEVO: REGISTRAR EL LOG DE MODIFICACIÓN
+                // ✅ NUEVO: REGISTRAR LOG DE MODIFICACIÓN CON ESTATUS
                 await registrarLog('MODIFICAR', 'VINCULADOS', {
                     cedula: data.cedula,
                     nombre_completo: `${data.primer_nombre} ${data.primer_apellido}`.trim(),
                     placa: data.placa,
                     tipo_vehiculo: data.tipo_vehiculo,
+                    estatus: currentData.estatus || 'Verificación',
                     cambios: 'Datos del registro vinculado actualizados'
                 });
                 
@@ -738,8 +735,7 @@ window.initModVinculado = function() {
                 mostrarMsg(msgBox, msg, 'error');
             } finally {
                 const btnSubmit = form.querySelector('.btn-submit');
-                btnSubmit.disabled = false; 
-                btnSubmit.textContent = '💾 Guardar Cambios';
+                btnSubmit.disabled = false; btnSubmit.textContent = '💾 Guardar Cambios';
             }
         });
     }
