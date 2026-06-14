@@ -1,6 +1,6 @@
 window.initElimProcesados = function() {
     // ==========================================
-    // ✅ FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO (UNA SOLA VEZ)
+    // ✅ FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO
     // ==========================================
     async function registrarLog(accion, modulo, detalles) {
         try {
@@ -224,13 +224,12 @@ window.initElimProcesados = function() {
             });
             
             showMsgElim('✅ Procesado eliminado y archivado correctamente.', 'success');
-            setTimeout(() => { 
-                dataContainer.style.display = 'none'; 
-                buscarInput.value = ''; 
-                hideMsg(msgBuscar); 
-                hideMsgElim(); 
+            setTimeout(() => {
+                dataContainer.style.display = 'none';
+                buscarInput.value = '';
+                hideMsg(msgBuscar);
+                hideMsgElim();
             }, 4000);
-            
         } catch (err) {
             showMsgElim('❌ Error al procesar la solicitud.', 'error');
         } finally {
@@ -282,13 +281,12 @@ window.initElimProcesados = function() {
             });
             
             showMsgElim('✅ Procesado reintegrado al sistema activo. El respaldo histórico se mantiene.', 'success');
-            setTimeout(() => { 
-                dataContainer.style.display = 'none'; 
-                buscarInput.value = ''; 
-                hideMsg(msgBuscar); 
-                hideMsgElim(); 
+            setTimeout(() => {
+                dataContainer.style.display = 'none';
+                buscarInput.value = '';
+                hideMsg(msgBuscar);
+                hideMsgElim();
             }, 4000);
-            
         } catch (err) {
             let msg = err.message.includes('23505') || err.message.includes('unique')
                 ? '❌ <strong>No se puede reintegrar:</strong> Ya existe un registro activo con este identificador.<br><small style="color:#64748b;">Este registro se conserva como historial.</small>'
@@ -321,10 +319,7 @@ window.initElimProcesados = function() {
     btnModalYes.addEventListener('click', ejecutarAccion);
     btnModalNo.addEventListener('click', closeModal);
     modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+    
+    // ✅ NOTA: Se eliminó la auto-inicialización del final para evitar que dashboard.js 
+    // y este archivo ejecuten la función dos veces, lo que causaba el log duplicado.
 };
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', window.initElimProcesados);
-} else {
-    window.initElimProcesados();
-}
