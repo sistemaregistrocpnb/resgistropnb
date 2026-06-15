@@ -49,12 +49,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (err) {
             console.error("Error al cargar perfil:", err);
         }
-
-        // 4. Aplicar restricciones de menú según rol
-        const rolActual = (sessionStorage.getItem('pnb_user_nivel') || 'consultor').toLowerCase();
-        userRoleEl.textContent = rolActual;
-        aplicarPermisos(rolActual);
-        // 4. Aplicar restricciones de menú según rol
 const rolActual = (sessionStorage.getItem('pnb_user_nivel') || 'consultor').toLowerCase();
 userRoleEl.textContent = rolActual;
 aplicarPermisos(rolActual);
