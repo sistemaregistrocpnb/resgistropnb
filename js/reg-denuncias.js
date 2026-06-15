@@ -13,11 +13,10 @@ window.initRegDenuncias = function() {
         
         if (!form || !btn) {
             if (intentos < 10) {
-                console.warn(`⚠️ Formulario no encontrado aún. Reintentando en 100ms... (intento ${intentos + 1}/10)`);
                 setTimeout(() => iniciarModulo(intentos + 1), 100);
                 return;
             } else {
-                console.error("❌ ERROR CRÍTICO: No se encontró el formulario después de 10 intentos.");
+                console.error("❌ ERROR CRÍTICO: No se encontró el formulario.");
                 return;
             }
         }
@@ -30,6 +29,31 @@ window.initRegDenuncias = function() {
                 year: 'numeric', month: '2-digit', day: '2-digit',
                 hour: '2-digit', minute: '2-digit', second: '2-digit'
             });
+        }
+
+        // Función para calcular y mostrar el próximo número de denuncia
+        async function actualizarProximoNumero() {
+            const inputNum = document.getElementById('d_numero_denuncia');
+            if (!inputNum || !window.supabaseClient) return;
+            inputNum.value = 'Calculando...';
+            
+            const { data: ultimaDenuncia } = await window.supabaseClient
+                .from('denuncias')
+                .select('numero_denuncia')
+                .order('numero_denuncia', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            
+            let proximo = 'CPNB-00000001';
+            if (ultimaDenuncia && ultimaDenuncia.numero_denuncia) {
+                const partes = ultimaDenuncia.numero_denuncia.split('-');
+                if (partes.length === 2) {
+                    const num = parseInt(partes[1], 10) + 1;
+                    proximo = `CPNB-${num.toString().padStart(8, '0')}`;
+                }
+            }
+            inputNum.value = proximo;
+            return proximo;
         }
 
         const docsUnicos = [
@@ -165,7 +189,7 @@ window.initRegDenuncias = function() {
             let agregados = 0;
             for (const file of input.files) {
                 if (agregados >= disponibles) {
-                    alert(`⚠️ Se omitieron archivos excedentes. Máximo ${max} permitidos en total.`);
+                    alert(`⚠️ Se omitieron archivos excedentes. Máximo ${max} permitidos.`);
                     break;
                 }
                 if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
@@ -247,6 +271,9 @@ window.initRegDenuncias = function() {
             });
         }
 
+        // Cargar el próximo número al iniciar
+        actualizarProximoNumero();
+
         // ==========================================
         // ENVÍO DEL FORMULARIO
         // ==========================================
@@ -262,7 +289,7 @@ window.initRegDenuncias = function() {
                 return;
             }
 
-            // Validar documentos únicos
+            // Validar documentos
             for (const doc of docsUnicos) {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                 if (radio && radio.value === 'si' && !archivosUnicos[doc.id]) {
@@ -270,7 +297,6 @@ window.initRegDenuncias = function() {
                     return;
                 }
             }
-            // Validar documentos múltiples
             for (const doc of docsMultiples) {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                 if (radio && radio.value === 'si' && (!archivosMultiples[doc.id] || archivosMultiples[doc.id].length === 0)) {
@@ -292,6 +318,24 @@ window.initRegDenuncias = function() {
                 const uid = user.id;
                 const ts = Date.now();
                 
+                // 1. CALCULAR EL SIGUIENTE NÚMERO DE DENUNCIA (Re-verificar por si acaso)
+                const { data: ultimaDenuncia } = await window.supabaseClient
+                    .from('denuncias')
+                    .select('numero_denuncia')
+                    .order('numero_denuncia', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                let nuevoNumeroDenuncia = 'CPNB-00000001';
+                if (ultimaDenuncia && ultimaDenuncia.numero_denuncia) {
+                    const partes = ultimaDenuncia.numero_denuncia.split('-');
+                    if (partes.length === 2) {
+                        const num = parseInt(partes[1], 10) + 1;
+                        nuevoNumeroDenuncia = `CPNB-${num.toString().padStart(8, '0')}`;
+                    }
+                }
+
+                // 2. Subir documentos únicos
                 const docsUnicosUrls = {};
                 for (const doc of docsUnicos) {
                     const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
@@ -305,6 +349,7 @@ window.initRegDenuncias = function() {
                     }
                 }
 
+                // 3. Subir documentos múltiples
                 const docsMultiplesUrls = {};
                 for (const doc of docsMultiples) {
                     const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
@@ -325,7 +370,9 @@ window.initRegDenuncias = function() {
                 const tlfPais = document.getElementById('d_tlf_pais')?.value;
                 const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '');
                 
+                // 4. Preparar datos (AHORA INCLUYE numero_denuncia, cedula y motivo_denuncia)
                 const data = {
+                    numero_denuncia: nuevoNumeroDenuncia, // ✅ CAMPO AGREGADO
                     estacion_policial: document.getElementById('d_estacion')?.value,
                     primer_nombre: document.getElementById('d_nombre1')?.value.trim(),
                     segundo_nombre: document.getElementById('d_nombre2')?.value.trim() || null,
@@ -352,10 +399,10 @@ window.initRegDenuncias = function() {
                 if (error) throw error;
 
                 if (msg) {
-                    msg.textContent = '✅ Denuncia registrada exitosamente.';
+                    msg.textContent = `✅ Denuncia registrada exitosamente. N°: ${nuevoNumeroDenuncia}`;
                     msg.className = 'msg success';
                     msg.style.display = 'block';
-                    setTimeout(() => msg.style.display = 'none', 4000);
+                    setTimeout(() => msg.style.display = 'none', 5000);
                 }
 
                 // Resetear formulario y UI
@@ -365,15 +412,16 @@ window.initRegDenuncias = function() {
                     fechaInput.value = ahora.toLocaleString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 }
                 
-                // Forzar reset de UI de documentos (form.reset() no dispara onchange)
                 docsUnicos.forEach(d => toggleDocField(d.id, false));
                 docsMultiples.forEach(d => toggleDocField(d.id, false));
                 
-                // Resetear teléfono
                 if (nativeSelect) nativeSelect.value = '';
                 if (flagImg) flagImg.src = 'https://flagcdn.com/w20/xx.png';
                 if (codeText) codeText.textContent = '+XX';
                 if (countryText) countryText.textContent = 'País';
+                
+                // Actualizar el próximo número para el siguiente registro
+                actualizarProximoNumero();
 
             } catch (err) {
                 console.error('Error:', err);
