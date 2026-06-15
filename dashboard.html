@@ -373,102 +373,108 @@ body {
       <div class="user-fullname" id="user-nombre-display">Cargando...</div>
     </div>
     <nav class="menu">
-      <div class="menu-item">
+    <!-- CONSULTA -->
+    <div class="menu-item">
         <button class="menu-btn" data-toggle="submenu-consulta">
-          <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-          Consulta <span class="arrow">▼</span>
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            Consulta <span class="arrow">▼</span>
         </button>
         <div class="submenu" id="submenu-consulta">
-          <a href="#" class="submenu-item" data-accion="consultar" data-src="html/consulta-personas.html" ...>👤 Personas</a>
-          <a href="#" class="submenu-item" data-accion="consultar" data-src="html/consulta-vehiculos.html" ...>🚗 Vehículos</a>
-
+            <a href="#" class="submenu-item" data-accion="consultar" data-src="html/consulta-personas.html" data-js="js/consulta-personas.js" data-init="initConsultaPersonas">👤 Personas</a>
+            <a href="#" class="submenu-item" data-accion="consultar" data-src="html/consulta-vehiculos.html" data-js="js/consulta-vehiculos.js" data-init="initConsultaVehiculos">🚗 Vehículos</a>
         </div>
-      </div>
-      <div class="menu-item">
+    </div>
+
+    <!-- REGISTRO DE PERSONAS -->
+    <div class="menu-item">
         <button class="menu-btn" data-toggle="submenu-reg-personas">
-          <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-          Registro de Personas <span class="arrow">▼</span>
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            Registro de Personas <span class="arrow">▼</span>
         </button>
         <div class="submenu" id="submenu-reg-personas">
-          <a href="#" class="submenu-item" data-src="html/reg-personas.html" data-js="js/reg-personas.js" data-init="initRegPersonas">📝 Registrar</a>
-          <a href="#" class="submenu-item" data-src="html/mod-personas.html" data-js="js/mod-personas.js" data-init="initModPersonas">✏️ Modificar</a>
-          <a href="#" class="submenu-item danger" data-src="html/elim-personas.html" data-js="js/elim-personas.js" data-init="initElimPersonas">🗑️ Eliminar</a>
+            <a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-personas.html" data-js="js/reg-personas.js" data-init="initRegPersonas">📝 Registrar</a>
+            <a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-personas.html" data-js="js/mod-personas.js" data-init="initModPersonas">✏️ Modificar</a>
+            <a href="#" class="submenu-item danger" data-accion="eliminar" data-src="html/elim-personas.html" data-js="js/elim-personas.js" data-init="initElimPersonas">️ Eliminar</a>
         </div>
-      </div>
-      <div class="menu-item">
+    </div>
+
+    <!-- REGISTRO DE VEHÍCULOS -->
+    <div class="menu-item">
         <button class="menu-btn" data-toggle="submenu-reg-vehiculos">
-          <svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
-          Registro de Vehículos <span class="arrow">▼</span>
+            <svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
+            Registro de Vehículos <span class="arrow">▼</span>
         </button>
         <div class="submenu" id="submenu-reg-vehiculos">
-          <a href="#" class="submenu-item" data-src="html/reg-vehiculos.html" data-js="js/reg-vehiculos.js" data-init="initRegVehiculos">📝 Registrar</a>
-          <a href="#" class="submenu-item" data-src="html/mod-vehiculos.html" data-js="js/mod-vehiculos.js" data-init="initModVehiculos">✏️ Modificar</a>
-          <a href="#" class="submenu-item danger" data-src="html/elim-vehiculos.html" data-js="js/elim-vehiculos.js" data-init="initElimVehiculos">🗑️ Eliminar</a>
+            <a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-vehiculos.html" data-js="js/reg-vehiculos.js" data-init="initRegVehiculos"> Registrar</a>
+            <a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-vehiculos.html" data-js="js/mod-vehiculos.js" data-init="initModVehiculos">✏️ Modificar</a>
+            <a href="#" class="submenu-item danger" data-accion="eliminar" data-src="html/elim-vehiculos.html" data-js="js/elim-vehiculos.js" data-init="initElimVehiculos">🗑️ Eliminar</a>
         </div>
-      </div>
-     <div class="menu-item">
-  <button class="menu-btn" data-toggle="submenu-pv">
-    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-    Personas con Vehículos <span class="arrow">▼</span>
-  </button>
-  <div class="submenu" id="submenu-pv">
-    <a href="#" class="submenu-item" data-src="html/reg-vinculado.html" data-js="js/reg-vinculado.js" data-init="initRegVinculado">📝 Registrar</a>
-    <a href="#" class="submenu-item" data-src="html/mod-vinculado.html" data-js="js/mod-vinculado.js" data-init="initModVinculado">✏️ Modificar</a>
-    <!-- ✅ LÍNEA CORREGIDA PARA EL NUEVO MÓDULO -->
-    <a href="#" class="submenu-item danger" data-src="html/elim-vinculados.html" data-js="js/elim-vinculados.js" data-init="initElimVinculados">🗑️ Eliminar</a>
-  </div>
-</div>
-      <div class="menu-item">
+    </div>
+
+    <!-- PERSONAS CON VEHÍCULOS -->
+    <div class="menu-item">
+        <button class="menu-btn" data-toggle="submenu-pv">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+            Personas con Vehículos <span class="arrow">▼</span>
+        </button>
+        <div class="submenu" id="submenu-pv">
+            <a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-vinculado.html" data-js="js/reg-vinculado.js" data-init="initRegVinculado">📝 Registrar</a>
+            <a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-vinculado.html" data-js="js/mod-vinculado.js" data-init="initModVinculado">✏️ Modificar</a>
+            <a href="#" class="submenu-item danger" data-accion="eliminar" data-src="html/elim-vinculados.html" data-js="js/elim-vinculados.js" data-init="initElimVinculados">🗑️ Eliminar</a>
+        </div>
+    </div>
+
+    <!-- PROCESAR -->
+    <div class="menu-item">
         <button class="menu-btn" data-toggle="submenu-procesar">
-          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-          Procesar <span class="arrow">▼</span>
+            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+            Procesar <span class="arrow">▼</span>
         </button>
         <div class="submenu" id="submenu-procesar">
-          <a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-procesados.html" ...>📝 Registrar</a>
-<a href="#" class="submenu-item" data-accion="modificar" data-src="html/editar-procesado.html" ...>✏️ Modificar</a>
-<a href="#" class="submenu-item" data-accion="eliminar" data-src="html/eliminar-procesados.html" ...>🗑️ Eliminar</a>
+            <a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-procesados.html" data-js="js/reg-procesados.js" data-init="initRegProcesados">📝 Registrar</a>
+            <a href="#" class="submenu-item" data-accion="modificar" data-src="html/editar-procesado.html" data-js="js/editar-procesado.js" data-init="initModProcesados">✏️ Modificar</a>
+            <a href="#" class="submenu-item danger" data-accion="eliminar" data-src="html/eliminar-procesados.html" data-js="js/elim-procesados.js" data-init="initElimProcesados">️ Eliminar</a>
         </div>
-      </div>
-      
-     <!-- ✅ MENÚ: DENUNCIAS -->
-<div class="menu-item">
-    <button class="menu-btn" data-toggle="submenu-denuncias">
-        <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-        Denuncias <span class="arrow">▼</span>
-    </button>
-    <div class="submenu" id="submenu-denuncias">
-        <a href="#" class="submenu-item" data-accion="consultar" data-src="html/con-tabla.html" ...>🔍 Consultar</a>
-<a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-denuncias.html" ...>📝 Registrar</a>
-<a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-denuncias.html" ...>✏️ Modificar</a>
-<a href="#" class="submenu-item" data-accion="eliminar" data-src="html/eli-denuncias.html" ...>🗑️ Eliminar</a>
     </div>
-</div>
-<!-- ✅ FIN MENÚ DENUNCIAS -->
 
-      <div class="menu-item" id="menu-historial">
+    <!-- DENUNCIAS -->
+    <div class="menu-item">
+        <button class="menu-btn" data-toggle="submenu-denuncias">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+            Denuncias <span class="arrow">▼</span>
+        </button>
+        <div class="submenu" id="submenu-denuncias">
+            <a href="#" class="submenu-item" data-accion="consultar" data-src="html/con-tabla.html" data-js="js/con-tabla.js" data-init="initConsultaDenuncias"> Consultar</a>
+            <a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-denuncias.html" data-js="js/reg-denuncias.js" data-init="initRegDenuncias">📝 Registrar</a>
+            <a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-denuncias.html" data-js="js/mod-denuncias.js" data-init="initModDenuncias">✏️ Modificar</a>
+            <a href="#" class="submenu-item danger" data-accion="eliminar" data-src="html/eli-denuncias.html" data-js="js/eli-denuncias.js" data-init="initElimDenuncias">🗑️ Eliminar</a>
+        </div>
+    </div>
+
+    <!-- HISTORIAL Y GESTIÓN (Sin cambios) -->
+    <div class="menu-item" id="menu-historial">
         <button class="menu-btn" data-toggle="submenu-historial">
-          <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
-          Historial <span class="arrow">▼</span>
+            <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+            Historial <span class="arrow">▼</span>
         </button>
         <div class="submenu" id="submenu-historial">
-          <a href="#" class="submenu-item" data-src="html/historial.html" data-js="js/historial.js" data-init="initHistorial">Ver Historial</a>
+            <a href="#" class="submenu-item" data-src="html/historial.html" data-js="js/historial.js" data-init="initHistorial">Ver Historial</a>
         </div>
-      </div>
-      <!-- ✅ MENÚ GESTIÓN DE USUARIOS CON SUBMENÚ -->
-<div class="menu-item" id="menu-gestion-usuarios">
-  <button class="menu-btn" data-toggle="submenu-gestion-usuarios">
-    <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-    Gestión de Usuarios <span class="arrow">▼</span>
-  </button>
-  <div class="submenu" id="submenu-gestion-usuarios">
-    <a href="#" class="submenu-item" data-src="html/crear-usuario.html" data-js="js/crear-usuario.js" data-init="initCrearUsuario">👤➕ Crear Usuario Nuevo</a>
-    <a href="#" class="submenu-item" data-src="html/mod-usuario.html" data-js="js/mod-usuario.js" data-init="initModUsuario">✏️ Modificar y Desbloquear</a>
-    <a href="#" class="submenu-item danger" data-src="html/elim-usuario.html" data-js="js/elim-usuario.js" data-init="initElimUsuario">️🗑️ Eliminar Usuario</a>
-    <a href="#" class="submenu-item" data-src="html/logs-sistema.html" data-js="js/logs-sistema.js" data-init="initLogsSistema">📋 Logs del Sistema</a>
-  </div>
-</div>
-<!-- ✅ FIN MENÚ GESTIÓN DE USUARIOS -->
-    </nav>
+    </div>
+
+    <div class="menu-item" id="menu-gestion-usuarios">
+        <button class="menu-btn" data-toggle="submenu-gestion-usuarios">
+            <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            Gestión de Usuarios <span class="arrow">▼</span>
+        </button>
+        <div class="submenu" id="submenu-gestion-usuarios">
+            <a href="#" class="submenu-item" data-src="html/crear-usuario.html" data-js="js/crear-usuario.js" data-init="initCrearUsuario">👤➕ Crear Usuario Nuevo</a>
+            <a href="#" class="submenu-item" data-src="html/mod-usuario.html" data-js="js/mod-usuario.js" data-init="initModUsuario">✏️ Modificar y Desbloquear</a>
+            <a href="#" class="submenu-item danger" data-src="html/elim-usuario.html" data-js="js/elim-usuario.js" data-init="initElimUsuario">🗑️ Eliminar Usuario</a>
+            <a href="#" class="submenu-item" data-src="html/logs-sistema.html" data-js="js/logs-sistema.js" data-init="initLogsSistema">📋 Logs del Sistema</a>
+        </div>
+    </div>
+</nav>
   </aside>
   <main id="app-content" class="main-content">
     <div class="card welcome-card">
