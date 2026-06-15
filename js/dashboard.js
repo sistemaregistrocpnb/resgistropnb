@@ -1,3 +1,10 @@
+// 🔒 BLOQUEO DE CONSOLA PARA SEGURIDAD (Mantenido según solicitud)
+window.console.log = function() {};
+window.console.warn = function() {};
+window.console.error = function() {};
+window.console.info = function() {};
+window.console.debug = function() {};
+
 document.addEventListener('DOMContentLoaded', async () => {
 const userEmailEl = document.getElementById('user-email');
 const userRoleEl = document.getElementById('user-role');
@@ -26,7 +33,6 @@ const { data: perfil, error } = await window.supabaseClient
 .single();
 
 if (error || !perfil) {
-console.warn("Perfil no encontrado. Usando modo de respaldo.");
 const nombreFallback = session.user.email.split('@')[0];
 document.getElementById('user-nombre-display').textContent = nombreFallback.toUpperCase();
 document.getElementById('user-jerarquia-display').textContent = 'NO ASIGNADA';
@@ -44,7 +50,7 @@ document.getElementById('user-foto').src = `https://ui-avatars.com/api/?name=${e
 }
 }
 } catch (err) {
-console.error("Error al cargar perfil:", err);
+// Error silencioso por el bloqueo de consola
 }
 
 // 4. Aplicar restricciones de menú según rol
@@ -60,63 +66,49 @@ iniciarReloj();
 
 // 7. Iniciar Chat Privado
 iniciarChatPrivado();
-
-// ✅ LEVANTAR EL ESCUDO: Indicar que el JS ya cargó y aplicó permisos
-document.body.classList.add('js-ready');
 }
 
-// 🔒 Matriz de permisos estricta y dinámica
+// 🔒 Matriz de permisos basada en "Desbloqueo" (Remove display:none)
 function aplicarPermisos(rol) {
-// 1. Resetear: Mostrar todo por defecto
-document.querySelectorAll('.menu-item').forEach(item => item.style.display = 'block');
-document.querySelectorAll('.submenu-item').forEach(item => item.style.display = 'block');
-document.getElementById('menu-historial')?.style.removeProperty('display');
-document.getElementById('menu-gestion-usuarios')?.style.removeProperty('display');
+// Funciones auxiliares para mostrar/ocultar
+const show = (el) => { if(el) el.style.removeProperty('display'); };
+const hide = (el) => { if(el) el.style.setProperty('display', 'none', 'important'); };
 
-// 2. Aplicar reglas según el rol
-if (rol === 'consultor') {
-// El consultor SOLO ve el menú de Consulta
-document.querySelectorAll('.menu-item').forEach(item => {
-const btn = item.querySelector('.menu-btn');
-if (btn && btn.dataset.toggle !== 'submenu-consulta') {
-item.style.setProperty('display', 'none', 'important');
-}
-});
+// 1. ESTADO BASE: Todo lo sensible está oculto por defecto en el HTML.
+// No necesitamos ocultar nada aquí, solo mostrar lo permitido.
+
+if (rol === 'administrador') {
+// El admin ve TODO. Mostramos los menús y botones ocultos por defecto.
+show(document.getElementById('menu-historial'));
+show(document.getElementById('menu-gestion-usuarios'));
+show(document.getElementById('submenu-reg-personas'));
+show(document.getElementById('submenu-reg-vehiculos'));
+show(document.getElementById('submenu-pv'));
+show(document.getElementById('submenu-procesar'));
+show(document.getElementById('submenu-denuncias'));
+
+// Mostrar botones de Modificar y Eliminar
+document.querySelectorAll('.submenu-item[data-accion="modificar"], .submenu-item[data-accion="eliminar"]').forEach(btn => show(btn));
+// Mostrar botón de Consultar en Procesar y Denuncias
+document.querySelectorAll('#submenu-procesar .submenu-item[data-accion="consultar"], #submenu-denuncias .submenu-item[data-accion="consultar"]').forEach(btn => show(btn));
 } 
 else if (rol === 'moderador') {
-// Ocultar menús de alto nivel
-document.getElementById('menu-historial')?.style.setProperty('display', 'none', 'important');
-document.getElementById('menu-gestion-usuarios')?.style.setProperty('display', 'none', 'important');
+// El moderador ve los submenús de registro, pero NO historial ni gestión.
+show(document.getElementById('submenu-reg-personas'));
+show(document.getElementById('submenu-reg-vehiculos'));
+show(document.getElementById('submenu-pv'));
+show(document.getElementById('submenu-procesar'));
+show(document.getElementById('submenu-denuncias'));
 
-// Aplicar reglas a cada botón individual
-document.querySelectorAll('.submenu-item').forEach(item => {
-const accion = item.getAttribute('data-accion');
-const parentSubmenu = item.closest('.submenu');
-const parentId = parentSubmenu ? parentSubmenu.id : '';
-
-// REGLA A: El moderador NUNCA puede ver Modificar ni Eliminar
-if (accion === 'modificar' || accion === 'eliminar') {
-item.style.setProperty('display', 'none', 'important');
-return;
-}
-
-// REGLA B: En Procesar y Denuncias, el moderador NO puede Consultar
-if ((parentId === 'submenu-procesar' || parentId === 'submenu-denuncias') && accion === 'consultar') {
-item.style.setProperty('display', 'none', 'important');
-}
-});
+// Los botones de Modificar y Eliminar permanecen ocultos (style="display: none !important;" en HTML)
+// El botón de Consultar en Procesar y Denuncias permanece oculto (style="display: none !important;" en HTML)
 } 
-else if (rol === 'administrador') {
-// El administrador ve todo
+else if (rol === 'consultor') {
+// El consultor solo ve Consulta. El resto ya está oculto por defecto en el HTML.
+// No necesitamos hacer nada, el HTML ya los tiene ocultos.
 } 
 else {
-// Rol desconocido: Solo consulta
-document.querySelectorAll('.menu-item').forEach(item => {
-const btn = item.querySelector('.menu-btn');
-if (btn && btn.dataset.toggle !== 'submenu-consulta') {
-item.style.setProperty('display', 'none', 'important');
-}
-});
+// Rol desconocido: Solo consulta (comportamiento por defecto del HTML)
 }
 }
 
@@ -139,8 +131,7 @@ window[initFnName]();
 document.head.appendChild(script);
 }
 } catch (err) {
-console.error(err);
-appContent.innerHTML = `<div class="card"><div class="placeholder error"> Error al cargar: ${err.message}</div></div>`;
+appContent.innerHTML = `<div class="card"><div class="placeholder error">❌ Error al cargar: ${err.message}</div></div>`;
 }
 }
 
@@ -367,7 +358,6 @@ tipo: currentUserRole === 'administrador' ? 'admin' : 'user'
 .single();
 
 if (error) {
-console.error('Error al enviar:', error);
 const tempDiv = document.querySelector(`[data-msg-id="${tempId}"]`);
 if (tempDiv) tempDiv.remove();
 } else if (data) {
