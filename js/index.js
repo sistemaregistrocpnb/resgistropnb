@@ -110,28 +110,50 @@ const perfil = perfiles && perfiles.length > 0 ? perfiles[0] : null;
                 return;
             }
 
-            const nivel = perfil.nivel || 'usuario';
+           // ==========================================
+// ✅ PASO 3: Login exitoso
+// ==========================================
+// Usamos el 'nivel' que ya obtuvimos en el PASO 1
+const nivel = perfil.nivel || 'usuario';
 
-            if (perfil.intentos_fallidos > 0) {
-                await window.supabaseClient
-                    .from('perfiles_usuario')
-                    .update({ intentos_fallidos: 0, bloqueado: false, fecha_bloqueo: null })
-                    .eq('user_id', auth.user.id);
-            }
+// Resetear contador de intentos al iniciar sesión correctamente
+if (perfil.intentos_fallidos > 0) {
+    await window.supabaseClient
+        .from('perfiles_usuario')
+        .update({ intentos_fallidos: 0, bloqueado: false, fecha_bloqueo: null })
+        .eq('user_id', auth.user.id);
+}
 
-            sessionStorage.setItem('pnb_user_id', auth.user.id);
-            sessionStorage.setItem('pnb_user_email', auth.user.email);
-            sessionStorage.setItem('pnb_user_nivel', nivel);
-            
-            mostrarMensaje(
-                '✅ <strong>Acceso concedido.</strong><br>' +
-                '<span style="font-size:0.85rem;">Bienvenido al sistema. Redirigiendo al panel principal...</span>',
-                'exito'
-            );
-            
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 1500);
+// ✅ REGISTRO DE LOG: Inicio de sesión exitoso
+await window.supabaseClient
+    .from('sistema_logs')
+    .insert([{
+        user_id: auth.user.id,
+        user_nombre: `${perfil.nombre || ''} ${perfil.apellido || ''}`.trim(),
+        user_email: auth.user.email,
+        accion: 'LOGIN',
+        modulo: 'AUTENTICACION',
+        detalles: {
+            nivel: nivel,
+            ip: window.location.hostname,
+            user_agent: navigator.userAgent.substring(0, 100)
+        }
+    }]);
+
+// Guardar sesión
+sessionStorage.setItem('pnb_user_id', auth.user.id);
+sessionStorage.setItem('pnb_user_email', auth.user.email);
+sessionStorage.setItem('pnb_user_nivel', nivel);
+
+mostrarMensaje(
+    '✅ <strong>Acceso concedido.</strong><br>' +
+    '<span style="font-size:0.85rem;">Bienvenido al sistema. Redirigiendo al panel principal...</span>',
+    'exito'
+);
+
+setTimeout(() => {
+    window.location.href = 'dashboard.html';
+}, 1500);
 
         } catch (err) {
             console.error('Error de acceso:', err);
