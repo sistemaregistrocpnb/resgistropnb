@@ -234,49 +234,114 @@ async function iniciarChatPrivado() {
 
     let usuariosEnLinea = [];
 
-// 1. PRESENCIA CON DETECCIÓN DE SESIONES DUPLICADAS
+// ✅ Generar ID único de sesión para esta pestaña
+const sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+sessionStorage.setItem('pnb_session_id', sessionId);
+
+// 1. PRESENCIA CON DETECCIÓN DE SESIONES DUPLICADAS (CORREGIDA)
 chatChannelPresence = window.supabaseClient.channel('sistema-presencia-global', {
-    config: { presence: { key: currentUserId } }
+    config: { presence: { key: currentUserId + '_' + sessionId } } // ✅ Clave única por sesión
 });
 
 chatChannelPresence.on('presence', { event: 'sync' }, () => {
     const state = chatChannelPresence.presenceState();
     const usuariosEnLinea = [];
+    let sesionesDelMismoUsuario = 0;
+    let miSesionTimestamp = 0;
+    let sesionMasRecienteTimestamp = 0;
 
-    for (const [userId, presenceData] of Object.entries(state)) {
+    // Recorrer todas las presencias
+    for (const [clave, presenceData] of Object.entries(state)) {
         if (presenceData && presenceData.length > 0) {
-            // ✅ DETECTAR SESIONES DUPLICADAS
-            // Si hay más de 1 presencia para el mismo user_id, es duplicado
-            if (presenceData.length > 1) {
-                // Mantener solo la sesión más reciente (la última)
-                const sesionMasReciente = presenceData[presenceData.length - 1];
-                const miSesion = presenceData.find(p => p.timestamp && p.user_id === currentUserId);
-                
-                // Si mi sesión no es la más reciente, cerrarla
-                if (miSesion && miSesion !== sesionMasReciente) {
-                    console.warn('Sesión duplicada detectada. Cerrando sesión anterior...');
-                    
-                    // Mostrar alerta al usuario
-                    alert('⚠️ Se ha detectado otra sesión activa con su usuario.\n\nEsta sesión será cerrada por seguridad.\n\nSolo se permite una sesión activa por usuario.');
-                    
-                    // Cerrar sesión
-                    window.supabaseClient.auth.signOut();
-                    sessionStorage.clear();
-                    window.location.href = 'index.html';
-                    return;
+            const presence = presenceData[0]; // Tomar la primera presencia
+            
+            // Si es el mismo user_id, contar cuántas sesiones tiene
+            if (presence.user_id === currentUserId) {
+                sesionesDelMismoUsuario++;
+                if (presence.sessionId === sessionId) {
+                    miSesionTimestamp = presence.timestamp || 0;
+                }
+                if ((presence.timestamp || 0) > sesionMasRecienteTimestamp) {
+                    sesionMasRecienteTimestamp = presence.timestamp || 0;
                 }
             }
             
-            usuariosEnLinea.push({ id: userId, ...presenceData[presenceData.length - 1] });
+            usuariosEnLinea.push({ 
+                id: presence.user_id, 
+                nombre: presence.nombre,
+                rol: presence.rol,
+                sessionId: presence.sessionId
+            });
         }
     }
 
+    // ✅ SOLO cerrar sesión si hay 2+ sesiones del MISMO usuario Y la mía NO es la más reciente
+    // Y dar 3 segundos de gracia para evitar falsos positivos al recargar
+    if (sesionesDelMismoUsuario > 1 && miSesionTimestamp < sesionMasRecienteTimestamp) {
+        // Esperar 3 segundos para confirmar que la otra sesión sigue activa
+        setTimeout(() => {
+            const stateActual = chatChannelPresence.presenceState();
+            let sesionesConfirmadas = 0;
+            let miSesionSigueSiendoVieja = true;
+            let timestampMasReciente = 0;
+            let miTimestamp = 0;
+            
+            for (const [clave, presenceData] of Object.entries(stateActual)) {
+                if (presenceData && presenceData.length > 0) {
+                    const presence = presenceData[0];
+                    if (presence.user_id === currentUserId) {
+                        sesionesConfirmadas++;
+                        if (presence.sessionId === sessionId) {
+                            miTimestamp = presence.timestamp || 0;
+                        }
+                        if ((presence.timestamp || 0) > timestampMasReciente) {
+                            timestampMasReciente = presence.timestamp || 0;
+                        }
+                    }
+                }
+            }
+            
+            if (miTimestamp < timestampMasReciente) {
+                miSesionSigueSiendoVieja = true;
+            } else {
+                miSesionSigueSiendoVieja = false;
+            }
+            
+            // Si después de 3 segundos sigue habiendo otra sesión más reciente, cerrar
+            if (sesionesConfirmadas > 1 && miSesionSigueSiendoVieja) {
+                console.warn('⚠️ Sesión duplicada confirmada. Cerrando esta sesión...');
+                
+                // Desuscribirse primero para no causar más eventos
+                chatChannelPresence.untrack();
+                chatChannelPresence.unsubscribe();
+                
+                alert('⚠️ Se ha detectado otra sesión activa con su usuario en otra ventana o dispositivo.\n\nEsta sesión será cerrada por seguridad.\n\nSolo se permite una sesión activa por usuario.');
+                
+                window.supabaseClient.auth.signOut();
+                sessionStorage.clear();
+                window.location.href = 'index.html';
+            }
+        }, 3000); // ✅ 3 segundos de gracia
+    }
+
+    // Mostrar panel de usuarios (solo admin)
     if (currentUserRole === 'administrador') {
+        // Filtrar usuarios únicos (por user_id, no por sessionId)
+        const usuariosUnicos = [];
+        const userIdsVistos = new Set();
+        
+        usuariosEnLinea.forEach(u => {
+            if (!userIdsVistos.has(u.id)) {
+                userIdsVistos.add(u.id);
+                usuariosUnicos.push(u);
+            }
+        });
+        
         adminOnlinePanel.style.display = 'block';
         adminOnlineIndicator.style.display = 'block';
-        onlineCountSpan.textContent = usuariosEnLinea.length;
+        onlineCountSpan.textContent = usuariosUnicos.length;
         onlineUsersList.innerHTML = '';
-        usuariosEnLinea.forEach(user => {
+        usuariosUnicos.forEach(user => {
             const li = document.createElement('li');
             const nombreUser = user.nombre ? user.nombre.toUpperCase() : 'USUARIO';
             const rolUser = user.rol ? user.rol.toUpperCase() : 'ROL';
@@ -292,7 +357,8 @@ await chatChannelPresence.subscribe(async (status) => {
             nombre: currentUserName, 
             rol: currentUserRole,
             user_id: currentUserId,
-            timestamp: Date.now() // ✅ Agregar timestamp para detectar la sesión más reciente
+            sessionId: sessionId, // ✅ Identificador único de esta sesión
+            timestamp: Date.now()
         });
     }
 });
