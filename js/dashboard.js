@@ -177,14 +177,17 @@ btnLogout.addEventListener('click', async () => {
 });
 
 // ==========================================
-// 🔹 LÓGICA DE CHAT PRIVADO, PRESENCIA Y PAGINACIÓN
+//  LÓGICA DE CHAT PRIVADO, PRESENCIA Y PAGINACIÓN (CORREGIDO - SIN DUPLICADOS)
 // ==========================================
 let chatChannelPresence = null;
 let chatChannelMessages = null;
 let replyingToUserId = null;
-let activeChatUserId = null; // ID del usuario con el que chatea el admin (null = general)
-let currentChatPage = 1; // Página actual del panel de usuarios
-const USERS_PER_PAGE = 5; // Usuarios por página
+let activeChatUserId = null;
+let currentChatPage = 1;
+const USERS_PER_PAGE = 5;
+
+// ✅ NUEVO: Mapa para rastrear mensajes temporales y evitar duplicados
+const pendingMessages = new Map(); // tempId -> { mensaje, receptor_id }
 
 async function iniciarChatPrivado() {
     const { data: { session } } = await window.supabaseClient.auth.getSession();
@@ -197,7 +200,6 @@ async function iniciarChatPrivado() {
         ? nombreDOM
         : (session.user.email?.split('@')[0].toUpperCase() || 'USUARIO');
 
-    // ✅ 1. DEFINIR TODOS LOS ELEMENTOS DEL DOM AQUÍ PARA EVITAR ERRORES
     const chatBubble = document.getElementById('chat-bubble');
     const chatWindow = document.getElementById('chat-window');
     const chatClose = document.getElementById('chat-close');
@@ -208,21 +210,18 @@ async function iniciarChatPrivado() {
     const adminOnlineIndicator = document.getElementById('admin-online-indicator');
     const onlineCountSpan = document.getElementById('online-count');
     const onlineUsersList = document.getElementById('online-users-list');
-    
-    // Elementos nuevos para paginación y chat individual
     const usersPagination = document.getElementById('users-pagination');
     const onlineUsersCount = document.getElementById('online-users-count');
     const activeChatIndicator = document.getElementById('active-chat-indicator');
     const activeChatUserName = document.getElementById('active-chat-user-name');
     const backToGeneralBtn = document.getElementById('back-to-general');
-    
     const replyIndicator = document.getElementById('reply-indicator');
     const replyToName = document.getElementById('reply-to-name');
-    const cancelReplyBtn = document.getElementById('cancel-reply'); // ✅ ESTA ERA LA QUE FALTABA
+    const cancelReplyBtn = document.getElementById('cancel-reply');
 
     let usuariosEnLinea = [];
 
-    // 2. PRESENCIA (Usuarios conectados)
+    // 1. PRESENCIA
     chatChannelPresence = window.supabaseClient.channel('sistema-presence', {
         config: { presence: { key: currentUserId } }
     });
@@ -237,7 +236,6 @@ async function iniciarChatPrivado() {
             }
         }
 
-        // Solo el admin ve el panel y la paginación
         if (currentUserRole === 'administrador') {
             adminOnlinePanel.style.display = 'block';
             adminOnlineIndicator.style.display = 'block';
@@ -253,7 +251,7 @@ async function iniciarChatPrivado() {
         }
     });
 
-    // 3. FUNCIÓN PARA RENDERIZAR USUARIOS CON PAGINACIÓN
+    // 2. Renderizar usuarios con paginación
     function renderizarUsuariosEnLinea() {
         if (!onlineUsersList || !usersPagination) return;
 
@@ -290,11 +288,10 @@ async function iniciarChatPrivado() {
                 <button class="btn-chat-user" data-user-id="${user.id}" data-user-name="${nombreUser}" 
                     style="background: ${isActive ? '#1e40af' : '#10b981'}; color: white; border: none; 
                     padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">
-                    ${isActive ? '💬 Activo' : '💬 Chat'}
+                    ${isActive ? ' Activo' : '💬 Chat'}
                 </button>
             `;
 
-            // Evento para iniciar chat individual
             const btnChat = li.querySelector('.btn-chat-user');
             btnChat.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -304,7 +301,6 @@ async function iniciarChatPrivado() {
             onlineUsersList.appendChild(li);
         });
 
-        // Renderizar botones de paginación
         usersPagination.innerHTML = '';
         if (totalPages > 1) {
             const crearBtn = (texto, disabled, onClick) => {
@@ -330,7 +326,6 @@ async function iniciarChatPrivado() {
         }
     }
 
-    // 4. INICIAR CHAT INDIVIDUAL
     function iniciarChatIndividual(userId, userName) {
         activeChatUserId = userId;
         if(activeChatUserName) activeChatUserName.textContent = userName;
@@ -341,7 +336,6 @@ async function iniciarChatPrivado() {
         cargarMensajesIndividuales(userId);
     }
 
-    // 5. VOLVER AL CHAT GENERAL (O LISTA)
     if (backToGeneralBtn) {
         backToGeneralBtn.addEventListener('click', () => {
             activeChatUserId = null;
@@ -352,31 +346,60 @@ async function iniciarChatPrivado() {
         });
     }
 
-    // 6. TIEMPO REAL MENSAJES
+    // 3. TIEMPO REAL MENSAJES (CORREGIDO - SIN DUPLICADOS)
     chatChannelMessages = window.supabaseClient
         .channel('chat-room-privado')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensajes' }, (payload) => {
             const nuevoMensaje = payload.new;
 
+            // ✅ VERIFICACIÓN 1: Si ya existe en el DOM por ID real, no agregar
             if (nuevoMensaje.id && document.querySelector(`[data-msg-id="${nuevoMensaje.id}"]`)) {
                 return;
             }
 
-            // Lógica de visibilidad:
-            // 1. Es mío -> Lo veo.
-            // 2. Es para mí (receptor_id == mi ID) -> Lo veo.
-            // 3. Soy Admin -> Veo todo (para poder moderar y ver solicitudes de usuarios).
-            // 4. Si es mensaje de usuario (receptor_id null o admin) y no soy admin -> Solo veo si soy el remitente.
-            
+            // ✅ VERIFICACIÓN 2: Si es un mensaje que acabo de enviar (vista optimista), reemplazarlo
+            let mensajeTempReemplazado = false;
+            for (const [tempId, pendingData] of pendingMessages.entries()) {
+                if (pendingData.mensaje === nuevoMensaje.mensaje && 
+                    pendingData.receptor_id === nuevoMensaje.receptor_id &&
+                    nuevoMensaje.remitente_id === currentUserId) {
+                    
+                    // Eliminar el mensaje temporal del DOM
+                    const tempDiv = document.querySelector(`[data-msg-id="${tempId}"]`);
+                    if (tempDiv) {
+                        tempDiv.remove();
+                        mensajeTempReemplazado = true;
+                    }
+                    
+                    // Eliminar del mapa de pendientes
+                    pendingMessages.delete(tempId);
+                    break;
+                }
+            }
+
+            // ✅ VERIFICACIÓN 3: Si no fue reemplazado, verificar si ya existe por contenido (doble check)
+            if (!mensajeTempReemplazado) {
+                const mensajesExistentes = chatMessages.querySelectorAll('.chat-message');
+                for (const msgDiv of mensajesExistentes) {
+                    const msgText = msgDiv.querySelector('p')?.textContent;
+                    const msgMeta = msgDiv.querySelector('.msg-meta')?.textContent;
+                    
+                    // Si encontramos un mensaje con el mismo texto y hora aproximada, no agregar
+                    if (msgText === nuevoMensaje.mensaje) {
+                        const horaMsg = nuevoMensaje.creado_en ? new Date(nuevoMensaje.creado_en).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' }) : '';
+                        if (msgMeta === horaMsg) {
+                            return; // Ya existe, no agregar
+                        }
+                    }
+                }
+            }
+
+            // Lógica de visibilidad
             const esMio = nuevoMensaje.remitente_id === currentUserId;
             const esParaMi = nuevoMensaje.receptor_id === currentUserId;
             const soyAdmin = currentUserRole === 'administrador';
             
-            // Los mensajes con receptor_id null son "Solicitudes al Admin". Solo los ve el Admin y el que lo envió.
-            const esSolicitudAdmin = !nuevoMensaje.receptor_id && nuevoMensaje.remitente_id !== currentUserId;
-            
             if (esMio || esParaMi || soyAdmin) {
-                // Si soy usuario y no es mío ni para mí, no lo muestro (a menos que sea broadcast, pero aquí usamos null para admin)
                 if (!soyAdmin && !esMio && !esParaMi) return;
 
                 if (chatWindow.style.display === 'none' && !esMio) {
@@ -387,15 +410,14 @@ async function iniciarChatPrivado() {
                     }
                 }
                 
-                // Si estoy viendo el chat individual con este usuario, o es general, lo muestro
                 if (!activeChatUserId || nuevoMensaje.remitente_id === activeChatUserId || nuevoMensaje.receptor_id === activeChatUserId || soyAdmin) {
-                     agregarMensajeAlDOM(nuevoMensaje);
+                    agregarMensajeAlDOM(nuevoMensaje);
                 }
             }
         })
         .subscribe();
 
-    // 7. INTERFAZ (Abrir/Cerrar chat)
+    // 4. INTERFAZ
     if (chatBubble) {
         chatBubble.addEventListener('click', () => {
             const isVisible = chatWindow.style.display === 'flex';
@@ -417,7 +439,6 @@ async function iniciarChatPrivado() {
         chatClose.addEventListener('click', () => { chatWindow.style.display = 'none'; });
     }
 
-    // 8. LÓGICA DE RESPUESTA RÁPIDA
     if (cancelReplyBtn) {
         cancelReplyBtn.addEventListener('click', () => {
             replyingToUserId = null;
@@ -434,22 +455,24 @@ async function iniciarChatPrivado() {
         chatInput.focus();
     };
 
-    // 9. ENVIAR MENSAJE
+    // 5. ENVIAR MENSAJE (CORREGIDO - SIN DUPLICADOS)
     async function enviarMensaje() {
         const texto = chatInput.value.trim();
         if (!texto) return;
 
         const tempId = 'temp-' + Date.now();
         
-        // Lógica de destino:
-        // Si estoy respondiendo a alguien específico -> Ese usuario.
-        // Si soy Admin y estoy en un chat individual -> Ese usuario.
-        // Si soy Usuario -> Siempre va al Admin (receptor_id = null o ID de admin si se supiera, usaremos null para "Soporte")
         let targetReceptor = replyingToUserId;
         if (!targetReceptor && activeChatUserId && currentUserRole === 'administrador') {
             targetReceptor = activeChatUserId;
         }
-        // Si es usuario y no hay target, se queda null (llega al admin por RLS)
+
+        // ✅ Guardar en el mapa de pendientes ANTES de mostrar
+        pendingMessages.set(tempId, {
+            mensaje: texto,
+            receptor_id: targetReceptor,
+            timestamp: Date.now()
+        });
 
         const mensajeTemp = {
             id: tempId,
@@ -462,6 +485,7 @@ async function iniciarChatPrivado() {
             creado_en: new Date().toISOString()
         };
 
+        // Mostrar inmediatamente
         agregarMensajeAlDOM(mensajeTemp);
         chatInput.value = '';
 
@@ -471,6 +495,7 @@ async function iniciarChatPrivado() {
             chatInput.placeholder = activeChatUserId ? `Escribe un mensaje para ${activeChatUserName.textContent}...` : 'Escribe tu mensaje...';
         }
 
+        // Enviar a Supabase
         const { data, error } = await window.supabaseClient
             .from('chat_mensajes')
             .insert([{
@@ -485,22 +510,22 @@ async function iniciarChatPrivado() {
             .single();
 
         if (error) {
+            // Si falla, eliminar el temporal
             const tempDiv = document.querySelector(`[data-msg-id="${tempId}"]`);
             if (tempDiv) tempDiv.remove();
-        } else if (data) {
-            const tempDiv = document.querySelector(`[data-msg-id="${tempId}"]`);
-            if (tempDiv) tempDiv.remove();
+            pendingMessages.delete(tempId);
+            console.error('Error al enviar mensaje:', error);
         }
+        // ✅ Si tiene éxito, NO eliminar aquí. El listener de tiempo real se encargará de reemplazarlo.
     }
 
     if (chatSend) chatSend.addEventListener('click', enviarMensaje);
     if (chatInput) chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensaje(); });
 
-    // 10. CARGAR MENSAJES INDIVIDUALES (Admin <-> Usuario)
+    // 6. CARGAR MENSAJES INDIVIDUALES
     async function cargarMensajesIndividuales(userId) {
         chatMessages.innerHTML = '<div class="chat-message system"><p>Cargando conversación...</p></div>';
 
-        // Traer mensajes entre yo y el usuario seleccionado
         const { data, error } = await window.supabaseClient
             .from('chat_mensajes')
             .select('*')
@@ -522,12 +547,10 @@ async function iniciarChatPrivado() {
         }
     }
 
-    // 11. CARGAR HISTORIAL GENERAL (Para Admin)
+    // 7. CARGAR HISTORIAL GENERAL
     async function cargarMensajesRecientes() {
         chatMessages.innerHTML = '<div class="chat-message system"><p>Cargando...</p></div>';
 
-        // Si soy admin, veo los mensajes generales (receptor null) o todos los de usuarios esperando respuesta
-        // Si soy usuario, veo mis mensajes (remitente o receptor)
         let query = window.supabaseClient.from('chat_mensajes').select('*').order('creado_en', { ascending: true }).limit(50);
         
         if (currentUserRole !== 'administrador') {
@@ -545,16 +568,18 @@ async function iniciarChatPrivado() {
         if (data && data.length > 0) {
             data.forEach(msg => agregarMensajeAlDOM(msg));
         } else {
-            chatMessages.innerHTML = `<div class="chat-message system"><p>👋 No hay mensajes recientes.</p></div>`;
+            chatMessages.innerHTML = `<div class="chat-message system"><p> No hay mensajes recientes.</p></div>`;
         }
     }
 
-    // 12. RENDERIZAR MENSAJE EN PANTALLA
+    // 8. RENDERIZAR MENSAJE
     function agregarMensajeAlDOM(msg) {
         const div = document.createElement('div');
 
         if (msg.id && !msg.id.startsWith('temp-')) {
             div.dataset.msgId = msg.id;
+        } else if (msg.id && msg.id.startsWith('temp-')) {
+            div.dataset.msgId = msg.id; // También marcar temporales para poder encontrarlos
         }
 
         const esMio = msg.remitente_id === currentUserId;
@@ -567,8 +592,7 @@ async function iniciarChatPrivado() {
         let htmlContent = '';
         const nombreMostrar = msg.nombre_remitente ? msg.nombre_remitente.toUpperCase() : (esMio ? 'TÚ' : 'USUARIO');
 
-        // Indicador de privado
-        if (msg.receptor_id && msg.receptor_id !== 'general') {
+        if (msg.receptor_id && !msg.receptor_id.startsWith('temp-')) {
             htmlContent += `<div class="msg-sender" style="font-size: 0.65rem; color: #f59e0b;">🔒 Privado</div>`;
         }
 
