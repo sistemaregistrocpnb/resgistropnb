@@ -167,11 +167,11 @@ setInterval(actualizar, 1000);
 }
 
 btnLogout.addEventListener('click', async () => {
-    // ✅ AGREGAR ESTO: Llama a utils.js para calcular el tiempo ANTES de borrar la sesión
+    // ✅ REGISTRAR LOGOUT ANTES DE CERRAR SESIÓN
     if (typeof window.registrarLogout === 'function') {
         await window.registrarLogout();
     }
-
+    
     await window.supabaseClient.auth.signOut();
     sessionStorage.clear();
     window.location.href = 'index.html';
