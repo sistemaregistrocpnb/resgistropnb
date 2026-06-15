@@ -101,10 +101,50 @@ btn.textContent = 'Iniciar Sesión';
 return;
 }
 // ==========================================
-// ✅ PASO 3: Login exitoso
+// ✅ PASO 3: Login exitoso - Verificar sesión duplicada
 // ==========================================
 const nivel = perfil.nivel || 'usuario';
 const nombreCompleto = `${perfil.nombre || ''} ${perfil.apellido || ''}`.trim().toUpperCase() || auth.user.email.split('@')[0].toUpperCase();
+
+// 🔒 Verificar si ya hay una sesión activa usando presencia de Supabase
+const canalVerificacion = window.supabaseClient.channel(`verificar-sesion-${auth.user.id}`, {
+    config: { presence: { key: auth.user.id } }
+});
+
+let sesionDuplicada = false;
+
+await new Promise((resolve) => {
+    canalVerificacion.on('presence', { event: 'sync' }, () => {
+        const estado = canalVerificacion.presenceState();
+        // Si hay presencia activa para este user_id, es sesión duplicada
+        if (estado[auth.user.id] && estado[auth.user.id].length > 0) {
+            sesionDuplicada = true;
+        }
+        resolve();
+    });
+    
+    canalVerificacion.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+            // Esperar un momento para que se sincronice la presencia
+            setTimeout(() => resolve(), 1500);
+        }
+    });
+});
+
+await canalVerificacion.unsubscribe();
+
+if (sesionDuplicada) {
+    // Cerrar la sesión recién creada
+    await window.supabaseClient.auth.signOut();
+    mostrarMensaje(
+        '🚫 <strong>Sesión Activa Detectada</strong><br>' +
+        '<span style="font-size:0.85rem;">Este usuario ya está conectado en otra ventana o dispositivo.<br><br>Por seguridad, no se permiten múltiples sesiones simultáneas del mismo usuario.<br><br>📞 Si cree que esto es un error, contacte al administrador del sistema.</span>',
+        'error'
+    );
+    btn.disabled = false;
+    btn.textContent = 'Iniciar Sesión';
+    return;
+}
 
 // Resetear contador de intentos al iniciar sesión correctamente
 if (perfil.intentos_fallidos > 0) {
