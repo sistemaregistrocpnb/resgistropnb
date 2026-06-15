@@ -167,34 +167,14 @@ setInterval(actualizar, 1000);
 }
 
 btnLogout.addEventListener('click', async () => {
-    // ✅ REGISTRO DE LOG: Cierre de sesión
-    const userId = sessionStorage.getItem('pnb_user_id');
-    const userEmail = sessionStorage.getItem('pnb_user_email');
-    const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
-    
-    if (userId) {
-        try {
-            await window.supabaseClient
-                .from('sistema_logs')
-                .insert([{
-                    user_id: userId,
-                    user_nombre: userNombre,
-                    user_email: userEmail,
-                    accion: 'LOGOUT',
-                    modulo: 'AUTENTICACION',
-                    detalles: {
-                        sesion_duracion: 'No registrada',
-                        ip: window.location.hostname
-                    }
-                }]);
-        } catch (err) {
-            // Si falla el log, continuamos con el logout de todos modos
-        }
-    }
-    
-    await window.supabaseClient.auth.signOut();
-    sessionStorage.clear();
-    window.location.href = 'index.html';
+// ✅ REGISTRAR LOG DE LOGOUT (antes de limpiar la sesión)
+if (typeof window.registrarLogout === 'function') {
+await window.registrarLogout();
+}
+
+await window.supabaseClient.auth.signOut();
+sessionStorage.clear();
+window.location.href = 'index.html';
 });
 
 let chatChannelPresence = null;
