@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ==========================================
-    // 🔹 LÓGICA DE CHAT Y PRESENCIA (CORREGIDA Y LIMPIA)
+    // 🔹 LÓGICA DE CHAT PRIVADO, PRESENCIA Y PAGINACIÓN
     // ==========================================
     async function iniciarChatPrivado() {
         const { data: { session } } = await window.supabaseClient.auth.getSession();
@@ -183,11 +183,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         const adminOnlineIndicator = document.getElementById('admin-online-indicator');
         const onlineCountSpan = document.getElementById('online-count');
         const onlineUsersList = document.getElementById('online-users-list');
+        
+        // Elementos nuevos para paginación y chat individual
+        const usersPagination = document.getElementById('users-pagination');
+        const onlineUsersCount = document.getElementById('online-users-count');
+        const activeChatIndicator = document.getElementById('active-chat-indicator');
+        const activeChatUserName = document.getElementById('active-chat-user-name');
+        const backToGeneralBtn = document.getElementById('back-to-general');
+        
         const replyIndicator = document.getElementById('reply-indicator');
         const replyToName = document.getElementById('reply-to-name');
         const cancelReplyBtn = document.getElementById('cancel-reply');
 
+        let usuariosEnLinea = [];
         let replyingToUserId = null;
+        let activeChatUserId = null;
+        let currentChatPage = 1;
+        const USERS_PER_PAGE = 5;
 
         // ✅ Canal de presencia con clave única: user_id + sessionId
         window.chatChannelPresence = window.supabaseClient.channel('sistema-presencia-global', {
@@ -196,7 +208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         window.chatChannelPresence.on('presence', { event: 'sync' }, () => {
             const state = window.chatChannelPresence.presenceState();
-            const usuariosEnLinea = [];
+            usuariosEnLinea = [];
 
             for (const [clave, presenceData] of Object.entries(state)) {
                 if (presenceData && presenceData.length > 0) {
@@ -205,7 +217,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             if (currentUserRole === 'administrador' && adminOnlinePanel) {
-                // Filtrar usuarios únicos (por user_id)
                 const usuariosUnicos = [];
                 const userIdsVistos = new Set();
                 usuariosEnLinea.forEach(u => {
@@ -218,12 +229,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 adminOnlinePanel.style.display = 'block';
                 adminOnlineIndicator.style.display = 'block';
                 onlineCountSpan.textContent = usuariosUnicos.length;
-                onlineUsersList.innerHTML = '';
-                usuariosUnicos.forEach(user => {
-                    const li = document.createElement('li');
-                    li.textContent = `${user.nombre ? user.nombre.toUpperCase() : 'USUARIO'} (${user.rol ? user.rol.toUpperCase() : 'ROL'})`;
-                    onlineUsersList.appendChild(li);
-                });
+                if(onlineUsersCount) onlineUsersCount.textContent = `(${usuariosUnicos.length} conectados)`;
+                renderizarUsuariosEnLinea();
             }
         });
 
@@ -239,7 +246,100 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Lógica de mensajes (simplificada para evitar duplicados)
+        function renderizarUsuariosEnLinea() {
+            if (!onlineUsersList || !usersPagination) return;
+
+            const totalPages = Math.ceil(usuariosEnLinea.length / USERS_PER_PAGE);
+            if (currentChatPage > totalPages && totalPages > 0) currentChatPage = totalPages;
+            if (totalPages === 0) currentChatPage = 1;
+
+            const inicio = (currentChatPage - 1) * USERS_PER_PAGE;
+            const fin = inicio + USERS_PER_PAGE;
+            const usuariosPagina = usuariosEnLinea.slice(inicio, fin);
+
+            onlineUsersList.innerHTML = '';
+            usuariosPagina.forEach(user => {
+                const li = document.createElement('li');
+                li.style.cssText = 'cursor: pointer; padding: 6px 8px; border-radius: 6px; transition: background 0.2s; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;';
+                
+                const nombreUser = user.nombre ? user.nombre.toUpperCase() : 'USUARIO';
+                const rolUser = user.rol ? user.rol.toUpperCase() : 'ROL';
+                const isActive = activeChatUserId === user.id;
+
+                if (isActive) {
+                    li.style.background = '#dbeafe';
+                    li.style.border = '1px solid #93c5fd';
+                } else {
+                    li.style.background = 'transparent';
+                    li.style.border = '1px solid transparent';
+                }
+
+                li.innerHTML = `
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 0.8rem; color: #1e293b;">${nombreUser}</div>
+                        <div style="font-size: 0.7rem; color: #64748b;">${rolUser}</div>
+                    </div>
+                    <button class="btn-chat-user" data-user-id="${user.id}" data-user-name="${nombreUser}" 
+                        style="background: ${isActive ? '#1e40af' : '#10b981'}; color: white; border: none; 
+                        padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">
+                        ${isActive ? '💬 Activo' : '💬 Chat'}
+                    </button>
+                `;
+
+                const btnChat = li.querySelector('.btn-chat-user');
+                btnChat.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    iniciarChatIndividual(user.id, nombreUser);
+                });
+
+                onlineUsersList.appendChild(li);
+            });
+
+            usersPagination.innerHTML = '';
+            if (totalPages > 1) {
+                const crearBtn = (texto, disabled, onClick) => {
+                    const btn = document.createElement('button');
+                    btn.textContent = texto;
+                    btn.disabled = disabled;
+                    btn.style.cssText = `background: white; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 4px; cursor: ${disabled ? 'default' : 'pointer'}; font-size: 0.7rem; color: ${disabled ? '#ccc' : '#166534'};`;
+                    if (!disabled) btn.onclick = onClick;
+                    return btn;
+                };
+
+                usersPagination.appendChild(crearBtn('◀', currentChatPage === 1, () => { currentChatPage--; renderizarUsuariosEnLinea(); }));
+                
+                for (let i = 1; i <= totalPages; i++) {
+                    const btn = document.createElement('button');
+                    btn.textContent = i;
+                    btn.style.cssText = `background: ${i === currentChatPage ? '#10b981' : 'white'}; color: ${i === currentChatPage ? 'white' : '#166534'}; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; font-weight: bold;`;
+                    btn.onclick = () => { currentChatPage = i; renderizarUsuariosEnLinea(); };
+                    usersPagination.appendChild(btn);
+                }
+
+                usersPagination.appendChild(crearBtn('▶', currentChatPage === totalPages, () => { currentChatPage++; renderizarUsuariosEnLinea(); }));
+            }
+        }
+
+        function iniciarChatIndividual(userId, userName) {
+            activeChatUserId = userId;
+            if(activeChatUserName) activeChatUserName.textContent = userName;
+            if(activeChatIndicator) activeChatIndicator.style.display = 'flex';
+            
+            chatInput.placeholder = `Escribe un mensaje para ${userName}...`;
+            renderizarUsuariosEnLinea();
+            cargarMensajesIndividuales(userId);
+        }
+
+        if (backToGeneralBtn) {
+            backToGeneralBtn.addEventListener('click', () => {
+                activeChatUserId = null;
+                if(activeChatIndicator) activeChatIndicator.style.display = 'none';
+                chatInput.placeholder = 'Escribe tu mensaje...';
+                renderizarUsuariosEnLinea();
+                cargarMensajesRecientes();
+            });
+        }
+
         window.chatChannelMessages = window.supabaseClient.channel('chat-room-privado')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensajes' }, (payload) => {
                 const nuevoMensaje = payload.new;
@@ -268,7 +368,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('chat-notification').textContent = '0';
                 if (!isVisible && chatInput) {
                     chatInput.focus();
-                    cargarMensajesRecientes();
+                    if (activeChatUserId) {
+                        cargarMensajesIndividuales(activeChatUserId);
+                    } else {
+                        cargarMensajesRecientes();
+                    }
                 }
             });
         }
@@ -279,7 +383,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             cancelReplyBtn.addEventListener('click', () => {
                 replyingToUserId = null;
                 replyIndicator.style.display = 'none';
-                chatInput.placeholder = 'Escribe tu mensaje...';
+                chatInput.placeholder = activeChatUserId ? `Escribe un mensaje para ${activeChatUserName.textContent}...` : 'Escribe tu mensaje...';
             });
         }
 
@@ -296,7 +400,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!texto) return;
 
             const tempId = 'temp-' + Date.now();
-            const targetReceptor = replyingToUserId;
+            const targetReceptor = replyingToUserId || (currentUserRole === 'administrador' ? activeChatUserId : null);
 
             const mensajeTemp = {
                 id: tempId, remitente_id: currentUserId, nombre_remitente: currentUserName,
@@ -309,7 +413,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (targetReceptor) {
                 replyingToUserId = null;
                 replyIndicator.style.display = 'none';
-                chatInput.placeholder = 'Escribe tu mensaje...';
+                chatInput.placeholder = activeChatUserId ? `Escribe un mensaje para ${activeChatUserName.textContent}...` : 'Escribe tu mensaje...';
             }
 
             const { error } = await window.supabaseClient.from('chat_mensajes').insert([{
@@ -325,6 +429,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (chatSend) chatSend.addEventListener('click', enviarMensaje);
         if (chatInput) chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensaje(); });
+
+        async function cargarMensajesIndividuales(userId) {
+            if (!chatMessages) return;
+            chatMessages.innerHTML = '<div class="chat-message system"><p>Cargando conversación...</p></div>';
+            
+            const { data, error } = await window.supabaseClient.from('chat_mensajes').select('*')
+                .or(`and(remitente_id.eq.${currentUserId},receptor_id.eq.${userId}),and(remitente_id.eq.${userId},receptor_id.eq.${currentUserId})`)
+                .order('creado_en', { ascending: true }).limit(50);
+
+            chatMessages.innerHTML = '';
+            if (error) {
+                chatMessages.innerHTML = '<div class="chat-message system"><p>Error al cargar.</p></div>';
+                return;
+            }
+            if (data && data.length > 0) data.forEach(msg => agregarMensajeAlDOM(msg));
+            else chatMessages.innerHTML = `<div class="chat-message system"><p>💬 Inicio de conversación privada</p></div>`;
+        }
 
         async function cargarMensajesRecientes() {
             if (!chatMessages) return;
@@ -383,7 +504,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // ✅ Limpiar presencia si el usuario cierra la pestaña
     window.addEventListener('beforeunload', () => {
         if (window.chatChannelPresence) {
             try { window.chatChannelPresence.untrack(); } catch (e) {}
