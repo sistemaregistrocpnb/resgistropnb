@@ -166,7 +166,7 @@ actualizar();
 setInterval(actualizar, 1000);
 }
 btnLogout.addEventListener('click', async () => {
-    // ✅ REGISTRAR LOGOUT ANTES DE CERRAR SESIÓN
+    // ✅ REGISTRAR LOGOUT ANTES DE CERRAR SESIÓN (calcula duración)
     if (typeof window.registrarLogout === 'function') {
         await window.registrarLogout();
     }
