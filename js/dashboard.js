@@ -54,6 +54,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const rolActual = (sessionStorage.getItem('pnb_user_nivel') || 'consultor').toLowerCase();
         userRoleEl.textContent = rolActual;
         aplicarPermisos(rolActual);
+        // 4. Aplicar restricciones de menú según rol
+const rolActual = (sessionStorage.getItem('pnb_user_nivel') || 'consultor').toLowerCase();
+userRoleEl.textContent = rolActual;
+aplicarPermisos(rolActual);
+
+// ✅ AGREGAR ESTA LÍNEA: Indicar que el JS ya cargó y aplicó permisos
+document.body.classList.add('js-ready');
 
         // 5. Configurar eventos del menú
         configurarMenu();
