@@ -167,14 +167,14 @@ setInterval(actualizar, 1000);
 }
 
 btnLogout.addEventListener('click', async () => {
-// ✅ REGISTRAR LOG DE LOGOUT (antes de limpiar la sesión)
-if (typeof window.registrarLogout === 'function') {
-await window.registrarLogout();
-}
+    // ✅ AGREGAR ESTO: Llama a utils.js para calcular el tiempo ANTES de borrar la sesión
+    if (typeof window.registrarLogout === 'function') {
+        await window.registrarLogout();
+    }
 
-await window.supabaseClient.auth.signOut();
-sessionStorage.clear();
-window.location.href = 'index.html';
+    await window.supabaseClient.auth.signOut();
+    sessionStorage.clear();
+    window.location.href = 'index.html';
 });
 
 let chatChannelPresence = null;
