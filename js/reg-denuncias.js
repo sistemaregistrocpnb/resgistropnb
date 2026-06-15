@@ -224,13 +224,13 @@ window.initRegDenuncias = function() {
         };
 
         // ==========================================
-        // 🔹 DROPDOWN DE BANDERAS (COMPATIBLE CON TU HTML ACTUAL)
+        // 🔹 DROPDOWN DE BANDERAS (210 PAÍSES COMPLETOS)
         // ==========================================
         const flagImg = document.getElementById('d-tlf-flag-img');
         const codeText = document.getElementById('d-tlf-code-text');
         const countryText = document.getElementById('d-tlf-country-text');
         
-        // ✅ MAPEO COMPLETO DE TODOS LOS PAÍSES DE TU HTML
+        // ✅ MAPEO COMPLETO DE LOS 210 PAÍSES
         const isoMap = {
             "Afganistán":"af","Albania":"al","Alemania":"de","Andorra":"ad","Angola":"ao",
             "Antigua y Barbuda":"ag","Arabia Saudita":"sa","Argelia":"dz","Argentina":"ar",
@@ -252,34 +252,38 @@ window.initRegDenuncias = function() {
             "Guadalupe":"gp","Guam":"gu","Guatemala":"gt","Guayana Francesa":"gf",
             "Guinea":"gn","Guinea Ecuatorial":"gq","Guinea-Bisáu":"gw","Guyana":"gy",
             "Haití":"ht","Honduras":"hn","Hong Kong":"hk","Hungría":"hu","India":"in",
-            "Indonesia":"id","Irak":"iq","Irán":"ir","Irlanda":"ie","Islandia":"is",
-            "Israel":"il","Italia":"it","Jamaica":"jm","Japón":"jp","Jordania":"jo",
-            "Kazajistán":"kz","Kenia":"ke","Kirguistán":"kg","Kiribati":"ki","Kuwait":"kw",
-            "Laos":"la","Letonia":"lv","Líbano":"lb","Lesoto":"ls","Liberia":"lr",
-            "Libia":"ly","Liechtenstein":"li","Lituania":"lt","Luxemburgo":"lu","Macao":"mo",
-            "Macedonia del Norte":"mk","Madagascar":"mg","Malasia":"my","Malaui":"mw",
-            "Maldivas":"mv","Malí":"ml","Malta":"mt","Marruecos":"ma","Martinica":"mq",
-            "Mauricio":"mu","Mauritania":"mr","Mayotte":"yt","México":"mx","Micronesia":"fm",
+            "Indonesia":"id","Irak":"iq","Irán":"ir","Irlanda":"ie","Isla de Man":"im",
+            "Islas Feroe":"fo","Islas Salomón":"sb","Israel":"il","Italia":"it",
+            "Jamaica":"jm","Japón":"jp","Jordania":"jo","Kazajistán":"kz","Kenia":"ke",
+            "Kirguistán":"kg","Kiribati":"ki","Kuwait":"kw","Laos":"la","Letonia":"lv",
+            "Líbano":"lb","Lesoto":"ls","Liberia":"lr","Libia":"ly","Liechtenstein":"li",
+            "Lituania":"lt","Luxemburgo":"lu","Macao":"mo","Macedonia del Norte":"mk",
+            "Madagascar":"mg","Malasia":"my","Malaui":"mw","Maldivas":"mv","Malí":"ml",
+            "Malta":"mt","Marruecos":"ma","Martinica":"mq","Mauricio":"mu",
+            "Mauritania":"mr","Mayotte":"yt","México":"mx","Micronesia":"fm",
             "Moldavia":"md","Mónaco":"mc","Mongolia":"mn","Montenegro":"me",
             "Montserrat":"ms","Mozambique":"mz","Namibia":"na","Nauru":"nr","Nepal":"np",
-            "Nicaragua":"ni","Níger":"ne","Nigeria":"ng","Niue":"nu","Nueva Zelanda":"nz",
-            "Noruega":"no","Omán":"om","Países Bajos":"nl","Pakistán":"pk","Palaos":"pw",
-            "Palestina":"ps","Panamá":"pa","Papúa Nueva Guinea":"pg","Paraguay":"py",
-            "Perú":"pe","Polinesia Francesa":"pf","Polonia":"pl","Portugal":"pt",
-            "Reino Unido":"gb","Puerto Rico":"pr","Rep. Checa":"cz","Reunión":"re",
-            "Ruanda":"rw","Rumania":"ro","Rusia":"ru","Samoa":"ws","San Marino":"sm",
-            "Santa Lucía":"lc","Santo Tomé y Príncipe":"st","San Vicente y las Granadinas":"vc",
-            "Senegal":"sn","Serbia":"rs","Seychelles":"sc","Sierra Leona":"sl",
-            "Singapur":"sg","Siria":"sy","Somalia":"so","Sudáfrica":"za","Sudán":"sd",
-            "Sudán del Sur":"ss","Suecia":"se","Suiza":"ch","Surinam":"sr","Esuatini":"sz",
-            "Tayikistán":"tj","Tanzania":"tz","Tailandia":"th","Timor Oriental":"tl",
-            "Togo":"tg","Tonga":"to","Trinidad y Tobago":"tt","Túnez":"tn","Turquía":"tr",
+            "Nicaragua":"ni","Níger":"ne","Nigeria":"ng","Niue":"nu","Noruega":"no",
+            "Nueva Caledonia":"nc","Nueva Zelanda":"nz","Omán":"om","Países Bajos":"nl",
+            "Pakistán":"pk","Palaos":"pw","Palestina":"ps","Panamá":"pa",
+            "Papúa Nueva Guinea":"pg","Paraguay":"py","Perú":"pe","Polinesia Francesa":"pf",
+            "Polonia":"pl","Portugal":"pt","Reino Unido":"gb","Puerto Rico":"pr",
+            "Rep. Checa":"cz","Reunión":"re","Ruanda":"rw","Rumania":"ro","Rusia":"ru",
+            "Samoa":"ws","San Marino":"sm","Santa Lucía":"lc","Santo Tomé y Príncipe":"st",
+            "San Vicente y las Granadinas":"vc","Senegal":"sn","Serbia":"rs",
+            "Seychelles":"sc","Sierra Leona":"sl","Singapur":"sg","Siria":"sy",
+            "Somalia":"so","Sudáfrica":"za","Sudán":"sd","Sudán del Sur":"ss",
+            "Suecia":"se","Suiza":"ch","Surinam":"sr","Esuatini":"sz","Tayikistán":"tj",
+            "Tanzania":"tz","Tailandia":"th","Timor Oriental":"tl","Togo":"tg",
+            "Tonga":"to","Trinidad y Tobago":"tt","Túnez":"tn","Turquía":"tr",
             "Turkmenistán":"tm","Tuvalu":"tv","Ucrania":"ua","Uganda":"ug","Uruguay":"uy",
-            "Uzbekistán":"uz","Vanuatu":"vu","Vaticano":"va","Venezuela":"ve","Vietnam":"vn",
-            "Wallis y Futuna":"wf","Yemen":"ye","Yibuti":"dj","Zambia":"zm","Zimbabue":"zw"
+            "Uzbekistán":"uz","Vanuatu":"vu","Vaticano":"va","Venezuela":"ve",
+            "Vietnam":"vn","Wallis y Futuna":"wf","Yemen":"ye","Yibuti":"dj",
+            "Zambia":"zm","Zimbabue":"zw"
         };
 
         if (nativeSelect && displayBox && optionsBox) {
+            console.log("✅ Generando dropdown de banderas con 210 países...");
             optionsBox.innerHTML = '';
             let opcionesGeneradas = 0;
             
@@ -309,7 +313,7 @@ window.initRegDenuncias = function() {
                 optionsBox.appendChild(div);
                 opcionesGeneradas++;
             });
-            console.log(`✅ Lista de teléfonos generada con ${opcionesGeneradas} países/territorios.`);
+            console.log(`✅ Lista generada con ${opcionesGeneradas} países/territorios.`);
             
             displayBox.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -323,7 +327,6 @@ window.initRegDenuncias = function() {
             });
         }
 
-        // Cargar el próximo número al iniciar
         actualizarProximoNumero();
 
         // ==========================================
