@@ -1,9 +1,11 @@
-// js/utils.js - Funciones utilitarias para el sistema
+// ==========================================
+// 🔧 UTILS.JS - Funciones Utilitarias del Sistema
+// ==========================================
 
 /**
  * Registra una acción en el sistema de logs
- * @param {string} accion - Tipo de acción (CREAR, MODIFICAR, ELIMINAR, CONSULTA_PERSONA, etc.)
- * @param {string} modulo - Módulo donde ocurre la acción (PERSONAS, VEHICULOS, etc.)
+ * @param {string} accion - Tipo de acción (LOGIN, LOGOUT, CREAR, MODIFICAR, ELIMINAR, etc.)
+ * @param {string} modulo - Módulo donde ocurre la acción (AUTENTICACION, PERSONAS, VEHICULOS, etc.)
  * @param {object} detalles - Objeto con detalles de la acción
  * @param {string} registroId - ID del registro afectado (opcional)
  */
@@ -12,7 +14,10 @@ window.registrarLog = async function(accion, modulo, detalles = {}, registroId =
     const userEmail = sessionStorage.getItem('pnb_user_email');
     const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
     
-    if (!userId) return;
+    if (!userId) {
+        console.warn('No se puede registrar log: usuario no autenticado');
+        return;
+    }
     
     try {
         await window.supabaseClient
@@ -28,5 +33,104 @@ window.registrarLog = async function(accion, modulo, detalles = {}, registroId =
             }]);
     } catch (err) {
         console.error('Error al registrar log:', err);
+    }
+};
+
+/**
+ * Registra el inicio de sesión
+ * @param {string} userNombre - Nombre completo del usuario
+ * @param {string} userEmail - Email del usuario
+ * @param {string} userId - ID del usuario
+ * @param {string} nivel - Nivel de acceso (administrador, moderador, consultor)
+ */
+window.registrarLogin = async function(userNombre, userEmail, userId, nivel) {
+    const horaInicio = Date.now();
+    sessionStorage.setItem('pnb_login_time', horaInicio.toString());
+    
+    await window.supabaseClient
+        .from('sistema_logs')
+        .insert([{
+            user_id: userId,
+            user_nombre: userNombre,
+            user_email: userEmail,
+            accion: 'LOGIN',
+            modulo: 'AUTENTICACION',
+            detalles: {
+                nivel: nivel,
+                ip: window.location.hostname,
+                user_agent: navigator.userAgent.substring(0, 100),
+                hora_inicio: new Date().toISOString()
+            }
+        }]);
+};
+
+/**
+ * Registra el cierre de sesión y calcula la duración
+ */
+window.registrarLogout = async function() {
+    const userId = sessionStorage.getItem('pnb_user_id');
+    const userEmail = sessionStorage.getItem('pnb_user_email');
+    const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
+    const loginTime = sessionStorage.getItem('pnb_login_time');
+    
+    if (!userId) return;
+    
+    // Calcular duración de la sesión
+    let duracionTexto = 'No registrada';
+    let duracionSegundos = 0;
+    
+    if (loginTime) {
+        const inicio = parseInt(loginTime);
+        const fin = Date.now();
+        duracionSegundos = Math.floor((fin - inicio) / 1000);
+        
+        const horas = Math.floor(duracionSegundos / 3600);
+        const minutos = Math.floor((duracionSegundos % 3600) / 60);
+        const segundos = duracionSegundos % 60;
+        
+        if (horas > 0) {
+            duracionTexto = `${horas}h ${minutos}m ${segundos}s`;
+        } else if (minutos > 0) {
+            duracionTexto = `${minutos}m ${segundos}s`;
+        } else {
+            duracionTexto = `${segundos}s`;
+        }
+    }
+    
+    await window.supabaseClient
+        .from('sistema_logs')
+        .insert([{
+            user_id: userId,
+            user_nombre: userNombre,
+            user_email: userEmail,
+            accion: 'LOGOUT',
+            modulo: 'AUTENTICACION',
+            detalles: {
+                sesion_duracion: duracionTexto,
+                sesion_duracion_segundos: duracionSegundos,
+                ip: window.location.hostname,
+                hora_cierre: new Date().toISOString()
+            }
+        }]);
+};
+
+/**
+ * Formatea la duración en segundos a texto legible
+ * @param {number} segundos - Duración en segundos
+ * @returns {string} Duración formateada (ej: "2h 15m 30s")
+ */
+window.formatearDuracion = function(segundos) {
+    if (!segundos || segundos < 0) return 'No registrada';
+    
+    const horas = Math.floor(segundos / 3600);
+    const minutos = Math.floor((segundos % 3600) / 60);
+    const segs = segundos % 60;
+    
+    if (horas > 0) {
+        return `${horas}h ${minutos}m ${segs}s`;
+    } else if (minutos > 0) {
+        return `${minutos}m ${segs}s`;
+    } else {
+        return `${segs}s`;
     }
 };
