@@ -51,112 +51,101 @@ if (tablaContainer) tablaContainer.innerHTML = '<div class="sin-logs">❌ Error 
 }
 }
 
-// ✅ FUNCIÓN PARA FORMATEAR LOS DETALLES DE FORMA LEGIBLE
 function formatearDetalles(detalles) {
-if (!detalles) return '-';
-let d = typeof detalles === 'string' ? JSON.parse(detalles) : detalles;
+    if (!detalles) return '-';
+    let d = typeof detalles === 'string' ? JSON.parse(detalles) : detalles;
 
-// ✅ LOGIN: Mostrar detalles de inicio de sesión
-if (d.nivel && d.hora_inicio) {
-return `Nivel: <strong>${d.nivel.toUpperCase()}</strong><br>
-IP: ${d.ip || 'No registrada'}<br>
-Hora: ${new Date(d.hora_inicio).toLocaleString('es-VE')}`;
+    // ✅ LOGIN: Mostrar nivel, IP y hora
+    if (d.nivel && d.hora_inicio) {
+        return `Nivel: <strong style="color:#7e22ce;">${d.nivel.toUpperCase()}</strong><br>
+                IP: ${d.ip || 'No registrada'}<br>
+                Hora: ${new Date(d.hora_inicio).toLocaleString('es-VE')}`;
+    }
+
+    // ✅ LOGOUT: Mostrar duración de la sesión
+    if (d.sesion_duracion || d.sesion_duracion_segundos !== undefined) {
+        let duracion = d.sesion_duracion;
+        if (!duracion && d.sesion_duracion_segundos) {
+            duracion = window.formatearDuracion ? window.formatearDuracion(d.sesion_duracion_segundos) : d.sesion_duracion_segundos + 's';
+        }
+        return `Duración de sesión: <strong style="color:var(--primary); font-size:1.1rem;">${duracion || 'No registrada'}</strong><br>
+                IP: ${d.ip || 'No registrada'}<br>
+                Cierre: ${d.hora_cierre ? new Date(d.hora_cierre).toLocaleString('es-VE') : 'No registrado'}`;
+    }
+
+    // Resto del código original (consultas, registros, etc.)
+    if (d.tipo_busqueda && d.valor_buscado) {
+        const tipoFormateado = d.tipo_busqueda === 'placa' ? 'Placa' :
+                               d.tipo_busqueda === 'serial_carroceria' ? 'Serial de Carrocería' : 'Serial de Motor';
+        return `Consultó <strong>${tipoFormateado}</strong>: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span>`;
+    }
+    if (d.valor_buscado && !d.tipo_busqueda) {
+        const tipoTexto = d.tipo === 'Vinculado' ? ' (Vinculado)' : '';
+        return `Consultó Cédula${tipoTexto}: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span>`;
+    }
+    if (d.placa && d.marca && d.modelo) {
+        const tipoTexto = d.tipo === 'Motocicleta' ? '🏍️ Motocicleta' : '🚙 Automóvil';
+        return `Registró ${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.placa}</strong><br>
+                <span style="color:#64748b;">${d.marca} ${d.modelo} (${d.anio}) - ${d.color}</span>`;
+    }
+    if (d.identificador && d.descripcion_eliminada) {
+        return `Eliminó incidencia del vehículo <strong>${d.identificador}</strong>.<br><em>"${d.descripcion_eliminada}"</em>`;
+    }
+    if (d.cedula && d.estatus && d.estatus.includes('Reintegrado')) {
+        return `Reintegró a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre || 'Nombre no disponible'}) al sistema activo.`;
+    }
+    if (d.cedula && d.descripcion_eliminada) {
+        return `Eliminó a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre || 'Nombre no disponible'}).<br><em>"${d.descripcion_eliminada}"</em>`;
+    }
+
+    return Object.entries(d)
+        .filter(([key]) => key !== 'estatus')
+        .map(([key, value]) => {
+            const keyLimpia = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            return `<strong>${keyLimpia}:</strong> ${value}`;
+        })
+        .join('<br>');
 }
 
-// ✅ LOGOUT: Mostrar duración de la sesión
-if (d.sesion_duracion) {
-const duracion = d.sesion_duracion_segundos 
-? window.formatearDuracion(d.sesion_duracion_segundos) 
-: d.sesion_duracion;
-return `Duración de sesión: <strong style="color:var(--primary); font-size:1.1rem;">${duracion}</strong><br>
-IP: ${d.ip || 'No registrada'}<br>
-Cierre: ${d.hora_cierre ? new Date(d.hora_cierre).toLocaleString('es-VE') : 'No registrado'}`;
-}
-
-// Consultas de vehículos
-if (d.tipo_busqueda && d.valor_buscado) {
-const tipoFormateado = d.tipo_busqueda === 'placa' ? 'Placa' :
-d.tipo_busqueda === 'serial_carroceria' ? 'Serial de Carrocería' : 'Serial de Motor';
-return `Consultó <strong>${tipoFormateado}</strong>: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span>`;
-}
-
-// Consultas de personas
-if (d.valor_buscado && !d.tipo_busqueda) {
-const tipoTexto = d.tipo === 'Vinculado' ? ' (Vinculado)' : '';
-return `Consultó Cédula${tipoTexto}: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span>`;
-}
-
-// Registro de vehículos
-if (d.placa && d.marca && d.modelo) {
-const tipoTexto = d.tipo === 'Motocicleta' ? '🏍️ Motocicleta' : '🚙 Automóvil';
-return `Registró ${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.placa}</strong><br>
-<span style="color:#64748b;">${d.marca} ${d.modelo} (${d.anio}) - ${d.color}</span>`;
-}
-
-// Eliminación de incidencias
-if (d.identificador && d.descripcion_eliminada) {
-return `Eliminó incidencia del vehículo <strong>${d.identificador}</strong>.<br><em>"${d.descripcion_eliminada}"</em>`;
-}
-
-// Reintegración de personas
-if (d.cedula && d.estatus && d.estatus.includes('Reintegrado')) {
-return `Reintegró a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre || 'Nombre no disponible'}) al sistema activo.`;
-}
-
-// Eliminación de personas
-if (d.cedula && d.descripcion_eliminada) {
-return `Eliminó a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre || 'Nombre no disponible'}).<br><em>"${d.descripcion_eliminada}"</em>`;
-}
-
-// Fallback genérico
-return Object.entries(d)
-.filter(([key]) => key !== 'estatus')
-.map(([key, value]) => {
-const keyLimpia = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-return `<strong>${keyLimpia}:</strong> ${value}`;
-})
-.join('<br>');
-}
-
-// ✅ FUNCIÓN PARA OBTENER EL VALOR PRINCIPAL DE LA COLUMNA "REGISTRO"
 function obtenerValorRegistro(log) {
-// ✅ LOGIN: Mostrar "Sesión iniciada"
-if (log.accion === 'LOGIN') {
-return `<span class="badge badge-login">✅ Sesión iniciada</span>`;
-}
+    // ✅ 1. PRIMERO: LOGIN - Mostrar "Sesión iniciada" con el nivel
+    if (log.accion === 'LOGIN') {
+        let nivelTexto = 'Usuario';
+        if (log.detalles) {
+            let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
+            if (d.nivel) nivelTexto = d.nivel.toUpperCase();
+        }
+        return `<span class="badge badge-login">✅ Sesión iniciada</span><br><small style="color:#7e22ce; font-weight:700;">Nivel: ${nivelTexto}</small>`;
+    }
 
-// ✅ LOGOUT: Mostrar "Sesión cerrada"
-if (log.accion === 'LOGOUT') {
-return `<span class="badge badge-logout">🚪 Sesión cerrada</span>`;
-}
+    // ✅ 2. LOGOUT - Mostrar "Sesión cerrada"
+    if (log.accion === 'LOGOUT') {
+        return `<span class="badge badge-logout">🚪 Sesión cerrada</span>`;
+    }
 
-if (log.detalles) {
-let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
-// Estatus
-if (d.estatus) {
-const badgeClass = d.estatus.toLowerCase().includes('procesad') ? 'badge-eliminar' :
-d.estatus.toLowerCase().includes('verificaci') ? 'badge-otros' : 'badge-crear';
-return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
-}
-// Vehículos
-if (log.modulo === 'VEHICULOS' && log.accion === 'CREAR' && d.placa) {
-return `<span class="badge badge-crear">${d.placa}</span>`;
-}
-// Personas
-if (log.modulo === 'PERSONAS') {
-if (log.accion === 'ELIMINAR') return `<span class="badge badge-eliminar">ELIMINADO</span>`;
-if (log.accion === 'REINTEGRAR') return `<span class="badge badge-crear">REINTEGRADO</span>`;
-}
-// Identificadores
-if (d.valor_buscado) return d.valor_buscado;
-if (d.identificador) return d.identificador;
-if (d.cedula) return d.cedula;
-}
-// Fallback
-if (log.registro_id) {
-return `<span style="font-family: monospace; font-size: 0.8rem; color: #64748b;">${log.registro_id.substring(0, 8)}...</span>`;
-}
-return '-';
+    // Resto del código original...
+    if (log.detalles) {
+        let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
+        if (d.estatus) {
+            const badgeClass = d.estatus.toLowerCase().includes('procesad') ? 'badge-eliminar' :
+                               d.estatus.toLowerCase().includes('verificaci') ? 'badge-otros' : 'badge-crear';
+            return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
+        }
+        if (log.modulo === 'VEHICULOS' && log.accion === 'CREAR' && d.placa) {
+            return `<span class="badge badge-crear">${d.placa}</span>`;
+        }
+        if (log.modulo === 'PERSONAS') {
+            if (log.accion === 'ELIMINAR') return `<span class="badge badge-eliminar">ELIMINADO</span>`;
+            if (log.accion === 'REINTEGRAR') return `<span class="badge badge-crear">REINTEGRADO</span>`;
+        }
+        if (d.valor_buscado) return d.valor_buscado;
+        if (d.identificador) return d.identificador;
+        if (d.cedula) return d.cedula;
+    }
+    if (log.registro_id) {
+        return `<span style="font-family: monospace; font-size: 0.8rem; color: #64748b;">${log.registro_id.substring(0, 8)}...</span>`;
+    }
+    return '-';
 }
 
 function renderTabla() {
