@@ -16,7 +16,6 @@
 --sidebar-width: 280px; --header-height: 60px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-/* 🔹 BODY: Altura fija, sin scroll global */
 body {
 background: var(--bg);
 color: var(--text);
@@ -87,7 +86,6 @@ z-index: 90;
 display: flex;
 flex-direction: column;
 }
-/* ✅ PERFIL DE USUARIO EN SIDEBAR ACTUALIZADO */
 .sidebar-profile {
 text-align: center;
 padding: 25px 15px 20px;
@@ -105,7 +103,6 @@ margin-bottom: 12px;
 background: #e2e8f0;
 box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
-/* ✅ JERARQUÍA: TEXTO BLANCO, CENTRADO, JUSTO DEBAJO DE LA FOTO */
 .user-jerarquia {
 display: block;
 width: 100%;
@@ -128,7 +125,6 @@ text-transform: uppercase;
 line-height: 1.3;
 letter-spacing: 0.5px;
 }
-/* 🔹 Menú Lateral */
 .menu { flex: 1; padding: 10px 0; }
 .menu-item { border-bottom: 1px solid #f1f1f1; }
 .menu-btn {
@@ -140,14 +136,12 @@ gap: 12px; text-align: left; transition: 0.2s;
 .menu-btn svg { flex-shrink: 0; width: 18px; height: 18px; fill: currentColor; }
 .menu-btn .arrow { margin-left: auto; transition: transform 0.2s; font-size: 0.8rem; opacity: 0.7; }
 .menu-btn:hover, .menu-btn.active { background: var(--beige-light); color: var(--primary); border-left: 3px solid var(--secondary); }
-/* 🔹 Submenús */
 .submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; background: #fafafa; border-left: 3px solid var(--primary); }
 .submenu.show { max-height: 500px; }
 .submenu-item { padding: 10px 20px 10px 52px; font-size: 0.85rem; color: #4a5568; cursor: pointer; display: block; text-decoration: none; transition: 0.2s; }
 .submenu-item:hover { background: var(--beige-light); color: var(--primary); padding-left: 56px; }
 .submenu-item.danger { color: var(--danger); }
 .submenu-item.danger:hover { background: #fef2f2; }
-/* 🔹 Contenido Principal */
 .main-content {
 flex: 1;
 margin-left: var(--sidebar-width);
@@ -157,7 +151,6 @@ overflow-x: hidden;
 display: flex;
 flex-direction: column;
 }
-/* ✅ TARJETA BLANCA RESTAURADA */
 .card {
 background: var(--white);
 border-radius: 10px;
@@ -171,7 +164,6 @@ margin-bottom: 15px;
 padding-bottom: 10px;
 border-bottom: 2px solid var(--beige-border);
 }
-/* 🔹 Vista de Bienvenida: "TODO JUSTO" */
 .welcome-card {
 flex: 1;
 display: flex;
@@ -196,7 +188,6 @@ overflow: hidden;
 .welcome-desc { font-size: 1.2rem; color: #334155; max-width: 750px; margin: 0 auto 15px; line-height: 1.6; }
 .feature-badges { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .feature-badge { background: #f1f5f9; color: #475569; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; border: 1px solid #e2e8f0; }
-/* 🔹 Sección Inferior (Fija al fondo) */
 .welcome-bottom {
 display: flex;
 flex-direction: column;
@@ -205,7 +196,6 @@ margin-top: auto;
 flex-shrink: 0;
 width: 100%;
 }
-/* 🔹 Copyright */
 .copyright-wrapper {
 width: 100%;
 background: #fff;
@@ -219,7 +209,6 @@ line-height: 1.4;
 }
 .copyright-wrapper strong { color: var(--primary); font-weight: 700; }
 .copyright-wrapper .phone-numbers { color: var(--secondary); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.3px; }
-/* 🔹 Marquesina (Sin scroll horizontal) */
 .marquee-wrapper {
 width: 100%;
 overflow: hidden;
@@ -248,7 +237,6 @@ text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
 0% { transform: translateX(0); }
 100% { transform: translateX(-100%); }
 }
-/* 🔹 Responsive */
 @media (max-width: 900px) {
 .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
 .sidebar.open { transform: translateX(0); }
@@ -265,7 +253,6 @@ text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
 }
 .menu-toggle { display: none; background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 5px; margin-right: 10px; cursor: pointer; }
 .loading { text-align: center; padding: 30px; color: #64748b; font-weight: 500; }
-/* 🔹 CHAT FLOTANTE ESTILOS */
 .chat-bubble {
 position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px;
 background: var(--secondary); color: var(--primary); border: none;
@@ -292,7 +279,6 @@ display: flex; justify-content: space-between; align-items: center;
 }
 .admin-status { font-size: 0.75rem; opacity: 0.9; margin-top: 2px; }
 .chat-close-btn { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
-/* Panel de usuarios en línea (Solo Admin) */
 .online-panel {
 background: #f0fdf4; border-bottom: 1px solid #bbf7d0; padding: 10px 15px;
 max-height: 130px; overflow-y: auto;
@@ -323,7 +309,6 @@ font-size: 0.8rem; text-align: center; max-width: 90%;
 }
 .msg-meta { font-size: 0.65rem; opacity: 0.7; display: block; margin-top: 4px; text-align: right; }
 .msg-sender { font-size: 0.7rem; font-weight: bold; margin-bottom: 2px; opacity: 0.8; }
-/* Botón de responder (Solo Admin) */
 .btn-reply {
 position: absolute; top: -8px; right: -8px; background: var(--secondary);
 color: var(--primary); border: none; border-radius: 50%; width: 24px; height: 24px;
@@ -331,7 +316,6 @@ font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; justify-
 box-shadow: 0 2px 4px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.2s;
 }
 .chat-message:hover .btn-reply { opacity: 1; }
-/* Indicador de respuesta en el input */
 .reply-indicator {
 position: absolute; top: -35px; left: 12px; right: 60px;
 background: #e0f2fe; color: #0369a1; padding: 6px 10px; border-radius: 6px;
@@ -364,7 +348,7 @@ display: flex; align-items: center; justify-content: center; transition: 0.2s;
 <nav class="navbar">
 <div style="display: flex; align-items: center;">
 <button class="menu-toggle" id="menuToggle">☰</button>
-<h2>🚔 Sistema de Verificación y Registro Policial del CPNB - CCPE ZULIA</h2>
+<h2> Sistema de Verificación y Registro Policial del CPNB - CCPE ZULIA</h2>
 </div>
 <div class="user-info">
 <span id="live-clock" class="clock-badge">--:--:--</span>
@@ -375,10 +359,8 @@ display: flex; align-items: center; justify-content: center; transition: 0.2s;
 </nav>
 <div class="dashboard-wrapper">
 <aside class="sidebar" id="sidebar">
-<!-- ✅ PERFIL DE USUARIO ACTUALIZADO -->
 <div class="sidebar-profile">
 <img src="https://ui-avatars.com/api/?name=Usuario&background=002b5c&color=fff" alt="Foto de Usuario" class="user-avatar" id="user-foto">
-<!-- ✅ JERARQUÍA JUSTO DEBAJO DE LA FOTO, CENTRADA Y EN BLANCO -->
 <div class="user-jerarquia" id="user-jerarquia-display">---</div>
 <div class="user-fullname" id="user-nombre-display">Cargando...</div>
 </div>
@@ -415,9 +397,9 @@ Registro de Personas <span class="arrow">▼</span>
 Registro de Vehículos <span class="arrow">▼</span>
 </button>
 <div class="submenu" id="submenu-reg-vehiculos">
-<a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-vehiculos.html" data-js="js/reg-vehiculos.js" data-init="initRegVehiculos"> Registrar</a>
+<a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-vehiculos.html" data-js="js/reg-vehiculos.js" data-init="initRegVehiculos">📝 Registrar</a>
 <a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-vehiculos.html" data-js="js/mod-vehiculos.js" data-init="initModVehiculos">✏️ Modificar</a>
-<a href="#" class="submenu-item danger" data-accion="eliminar" data-src="html/elim-vehiculos.html" data-js="js/elim-vehiculos.js" data-init="initElimVehiculos">️ Eliminar</a>
+<a href="#" class="submenu-item danger" data-accion="eliminar" data-src="html/elim-vehiculos.html" data-js="js/elim-vehiculos.js" data-init="initElimVehiculos">🗑️ Eliminar</a>
 </div>
 </div>
 
@@ -455,9 +437,9 @@ Denuncias <span class="arrow">▼</span>
 </button>
 <div class="submenu" id="submenu-denuncias">
 <a href="#" class="submenu-item" data-accion="consultar" data-src="html/con-tabla.html" data-js="js/con-tabla.js" data-init="initConsultaDenuncias">🔍 Consultar</a>
-<a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-denuncias.html" data-js="js/reg-denuncias.js" data-init="initRegDenuncias">📝 Registrar</a>
+<a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-denuncias.html" data-js="js/reg-denuncias.js" data-init="initRegDenuncias"> Registrar</a>
 <a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-denuncias.html" data-js="js/mod-denuncias.js" data-init="initModDenuncias">✏️ Modificar</a>
-<a href="#" class="submenu-item danger" data-accion="eliminar" data-src="html/eli-denuncias.html" data-js="js/eli-denuncias.js" data-init="initElimDenuncias">🗑️ Eliminar</a>
+<a href="#" class="submenu-item danger" data-accion="eliminar" data-src="html/eli-denuncias.html" data-js="js/eli-denuncias.js" data-init="initElimDenuncias">️ Eliminar</a>
 </div>
 </div>
 
@@ -529,14 +511,13 @@ Para gestión de usuarios y soporte comuníquese con los números:<br>
 <div id="chat-window" class="chat-window" style="display: none;">
 <div class="chat-header">
 <div>
-<strong>💬 Soporte OTIC-ZULIA</strong>
+<strong> Soporte OTIC-ZULIA</strong>
 <div id="admin-online-indicator" class="admin-status" style="display: none;">
 🟢 <span id="online-count">0</span> conectados
 </div>
 </div>
 <button id="chat-close" class="chat-close-btn">✕</button>
 </div>
-<!-- Panel SOLO para administradores: Lista de usuarios en línea -->
 <div id="admin-online-panel" class="online-panel" style="display: none;">
 <div class="online-panel-header">👥 Usuarios en el sistema:</div>
 <ul id="online-users-list" class="online-users-list"></ul>
@@ -547,7 +528,6 @@ Para gestión de usuarios y soporte comuníquese con los números:<br>
 </div>
 </div>
 <div class="chat-input-area">
-<!-- Indicador de respuesta (solo visible para admin) -->
 <div id="reply-indicator" class="reply-indicator" style="display: none;">
 <span>✉️ Respondiendo a: <strong id="reply-to-name">Usuario</strong></span>
 <button id="cancel-reply" class="cancel-reply-btn">✕</button>
