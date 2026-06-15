@@ -6,7 +6,297 @@
 <title>Panel Principal - PNB</title>
 <link rel="icon" type="image/x-icon" href="img/LOGO-PNB.ico">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet"><!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Principal - PNB</title>
+<link rel="icon" type="image/x-icon" href="img/LOGO-PNB.ico">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+--primary: #002b5c; --primary-dark: #001f44; --secondary: #c5a028;
+--beige-light: #f5f3e8; --beige-border: #d4c9a8;
+--bg: #f4f7fa; --text: #222; --white: #fff; --danger: #dc2626;
+--sidebar-width: 280px; --header-height: 60px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+body { background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+.navbar { background: var(--primary); color: var(--white); padding: 0 20px; height: var(--header-height); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.15); position: fixed; top: 0; left: 0; right: 0; z-index: 100; flex-shrink: 0; }
+.navbar h2 { font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+.user-info { display: flex; align-items: center; gap: 12px; font-size: 0.82rem; }
+.badge { background: var(--secondary); color: var(--primary); padding: 4px 10px; border-radius: 12px; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; }
+.clock-badge { background: rgba(255,255,255,0.12); padding: 3px 8px; border-radius: 6px; font-family: 'Consolas', monospace; letter-spacing: 0.5px; }
+.btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.6); color: var(--white); padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+.btn-logout:hover { background: rgba(255,255,255,0.15); }
+.dashboard-wrapper { display: flex; margin-top: var(--header-height); height: calc(100vh - var(--header-height)); overflow: hidden; }
+.sidebar { width: var(--sidebar-width); background: var(--white); border-right: 1px solid #e2e8f0; position: fixed; top: var(--header-height); bottom: 0; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.05); z-index: 90; display: flex; flex-direction: column; }
+.sidebar-profile { text-align: center; padding: 25px 15px 20px; border-bottom: 1px solid #e2e8f0; background: #fafbfc; flex-shrink: 0; }
+.user-avatar { width: 130px; height: 130px; border-radius: 12px; object-fit: cover; border: 3px solid var(--secondary); margin-bottom: 12px; background: #e2e8f0; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+.user-jerarquia { display: block; width: 100%; text-align: center; background: var(--primary); color: #ffffff; padding: 6px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+.user-fullname { font-size: 1.1rem; font-weight: 800; color: var(--primary); text-transform: uppercase; line-height: 1.3; letter-spacing: 0.5px; }
+.menu { flex: 1; padding: 10px 0; }
+.menu-item { border-bottom: 1px solid #f1f1f1; }
+.menu-btn { width: 100%; padding: 14px 20px; background: none; border: none; font-size: 0.95rem; font-weight: 500; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: flex-start; gap: 12px; text-align: left; transition: 0.2s; }
+.menu-btn svg { flex-shrink: 0; width: 18px; height: 18px; fill: currentColor; }
+.menu-btn .arrow { margin-left: auto; transition: transform 0.2s; font-size: 0.8rem; opacity: 0.7; }
+.menu-btn:hover, .menu-btn.active { background: var(--beige-light); color: var(--primary); border-left: 3px solid var(--secondary); }
+.submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; background: #fafafa; border-left: 3px solid var(--primary); }
+.submenu.show { max-height: 500px; }
+.submenu-item { padding: 10px 20px 10px 52px; font-size: 0.85rem; color: #4a5568; cursor: pointer; display: block; text-decoration: none; transition: 0.2s; }
+.submenu-item:hover { background: var(--beige-light); color: var(--primary); padding-left: 56px; }
+.submenu-item.danger { color: var(--danger); }
+.submenu-item.danger:hover { background: #fef2f2; }
+.main-content { flex: 1; margin-left: var(--sidebar-width); padding: 20px; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; }
+.card { background: var(--white); border-radius: 10px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+.card h3 { color: var(--primary); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--beige-border); }
+.welcome-card { flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 25px; margin-bottom: 0; height: 100%; box-sizing: border-box; }
+.welcome-center { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; overflow: hidden; }
+.welcome-logo { max-width: 300px; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
+.welcome-card h3 { color: var(--primary); margin-bottom: 10px; border: none; padding: 0; font-size: 1.5rem; }
+.welcome-desc { font-size: 1.2rem; color: #334155; max-width: 750px; margin: 0 auto 15px; line-height: 1.6; }
+.feature-badges { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.feature-badge { background: #f1f5f9; color: #475569; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; border: 1px solid #e2e8f0; }
+.welcome-bottom { display: flex; flex-direction: column; gap: 10px; margin-top: auto; flex-shrink: 0; width: 100%; }
+.copyright-wrapper { width: 100%; background: #fff; border: 1px solid var(--beige-border); border-radius: 8px; padding: 10px 20px; text-align: center; font-size: 0.8rem; color: var(--text); line-height: 1.4; }
+.copyright-wrapper strong { color: var(--primary); font-weight: 700; }
+.copyright-wrapper .phone-numbers { color: var(--secondary); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.3px; }
+.marquee-wrapper { width: 100%; overflow: hidden; background: linear-gradient(135deg, #002b5c 0%, #001f44 100%); border-radius: 8px; border-top: 3px solid var(--secondary); border-bottom: 3px solid var(--secondary); padding: 10px 0; position: relative; }
+.marquee-inner { display: inline-block; white-space: nowrap; animation: scrollMarquee 25s linear infinite; padding-left: 100%; }
+.marquee-text { color: #fff; font-size: 0.95rem; font-weight: 700; letter-spacing: 1px; font-family: 'Playfair Display', Georgia, serif; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); }
+@keyframes scrollMarquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+@media (max-width: 900px) { .sidebar { transform: translateX(-100%); transition: transform 0.3s; } .sidebar.open { transform: translateX(0); } .main-content { margin-left: 0; } .menu-toggle { display: block !important; } .clock-badge { display: none; } }
+@media (max-width: 600px) { .marquee-text { font-size: 0.8rem; } .copyright-wrapper { font-size: 0.7rem; padding: 8px 10px; } .welcome-desc { font-size: 0.85rem; } .welcome-card { padding: 15px; } .user-avatar { width: 100px; height: 100px; } }
+.menu-toggle { display: none; background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 5px; margin-right: 10px; cursor: pointer; }
+.loading { text-align: center; padding: 30px; color: #64748b; font-weight: 500; }
+.chat-bubble { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; background: var(--secondary); color: var(--primary); border: none; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; transition: transform 0.3s ease; z-index: 1000; }
+.chat-bubble:hover { transform: scale(1.1); background: #d4af37; }
+.chat-badge { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; font-size: 0.75rem; font-weight: bold; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; }
+.chat-window { position: fixed; bottom: 95px; right: 25px; width: 360px; height: 520px; background: var(--white); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; z-index: 1000; overflow: hidden; border: 1px solid #e2e8f0; }
+.chat-header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+.admin-status { font-size: 0.75rem; opacity: 0.9; margin-top: 2px; }
+.chat-close-btn { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
+.online-panel { background: #f0fdf4; border-bottom: 1px solid #bbf7d0; padding: 10px 15px; max-height: 130px; overflow-y: auto; }
+.online-panel-header { font-size: 0.8rem; font-weight: 700; color: #166534; margin-bottom: 5px; }
+.online-users-list { list-style: none; padding: 0; margin: 0; font-size: 0.8rem; color: #334155; }
+.online-users-list li { padding: 3px 0; display: flex; align-items: center; gap: 6px; }
+.online-users-list li::before { content: '🟢'; font-size: 0.6rem; }
+.chat-messages { flex: 1; padding: 15px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 10px; }
+.chat-message { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 0.9rem; line-height: 1.4; position: relative; }
+.chat-message.user { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 4px; }
+.chat-message.admin { align-self: flex-start; background: #e2e8f0; color: var(--text); border-bottom-left-radius: 4px; }
+.chat-message.system { align-self: center; background: #fef3c7; color: #92400e; font-size: 0.8rem; text-align: center; max-width: 90%; }
+.msg-meta { font-size: 0.65rem; opacity: 0.7; display: block; margin-top: 4px; text-align: right; }
+.msg-sender { font-size: 0.7rem; font-weight: bold; margin-bottom: 2px; opacity: 0.8; }
+.btn-reply { position: absolute; top: -8px; right: -8px; background: var(--secondary); color: var(--primary); border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.2s; }
+.chat-message:hover .btn-reply { opacity: 1; }
+.reply-indicator { position: absolute; top: -35px; left: 12px; right: 60px; background: #e0f2fe; color: #0369a1; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid #bae6fd; }
+.cancel-reply-btn { background: none; border: none; color: #0369a1; cursor: pointer; font-weight: bold; }
+.chat-input-area { padding: 12px; background: white; border-top: 1px solid #e2e8f0; display: flex; gap: 8px; position: relative; }
+.chat-input-area input { flex: 1; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 20px; outline: none; font-size: 0.9rem; }
+.chat-input-area input:focus { border-color: var(--primary); }
+.chat-send-btn { background: var(--secondary); color: var(--primary); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+.chat-send-btn:hover { background: #d4af37; }
+@media (max-width: 600px) { .chat-window { width: 90%; right: 5%; bottom: 95px; height: 60vh; } .chat-bubble { bottom: 15px; right: 15px; width: 55px; height: 55px; } }
+</style>
+</head>
+<body>
+<nav class="navbar">
+<div style="display: flex; align-items: center;">
+<button class="menu-toggle" id="menuToggle">☰</button>
+<h2>🚔 Sistema de Verificación y Registro Policial del CPNB - CCPE ZULIA</h2>
+</div>
+<div class="user-info">
+<span id="live-clock" class="clock-badge">--:--:--</span>
+<span id="user-email">Cargando...</span>
+<span id="user-role" class="badge">---</span>
+<button id="btn-logout" class="btn-logout">Cerrar Sesión</button>
+</div>
+</nav>
+<div class="dashboard-wrapper">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-profile">
+<img src="https://ui-avatars.com/api/?name=Usuario&background=002b5c&color=fff" alt="Foto de Usuario" class="user-avatar" id="user-foto">
+<div class="user-jerarquia" id="user-jerarquia-display">---</div>
+<div class="user-fullname" id="user-nombre-display">Cargando...</div>
+</div>
+<nav class="menu">
+
+<div class="menu-item">
+<button class="menu-btn" data-toggle="submenu-consulta">
+<svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+Consulta <span class="arrow">▼</span>
+</button>
+<div class="submenu" id="submenu-consulta">
+<a href="#" class="submenu-item" data-accion="consultar" data-src="html/consulta-personas.html" data-js="js/consulta-personas.js" data-init="initConsultaPersonas">👤 Personas</a>
+<a href="#" class="submenu-item" data-accion="consultar" data-src="html/consulta-vehiculos.html" data-js="js/consulta-vehiculos.js" data-init="initConsultaVehiculos">🚗 Vehículos</a>
+</div>
+</div>
+
+<div class="menu-item" id="menu-reg-personas" style="display: none !important;">
+<button class="menu-btn" data-toggle="submenu-reg-personas">
+<svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+Registro de Personas <span class="arrow">▼</span>
+</button>
+<div class="submenu" id="submenu-reg-personas">
+<a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-personas.html" data-js="js/reg-personas.js" data-init="initRegPersonas">📝 Registrar</a>
+<a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-personas.html" data-js="js/mod-personas.js" data-init="initModPersonas" style="display: none !important;">✏️ Modificar</a>
+<a href="#" class="submenu-item" data-accion="eliminar" data-src="html/elim-personas.html" data-js="js/elim-personas.js" data-init="initElimPersonas" style="display: none !important;">🗑️ Eliminar</a>
+</div>
+</div>
+
+<div class="menu-item" id="menu-reg-vehiculos" style="display: none !important;">
+<button class="menu-btn" data-toggle="submenu-reg-vehiculos">
+<svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
+Registro de Vehículos <span class="arrow">▼</span>
+</button>
+<div class="submenu" id="submenu-reg-vehiculos">
+<a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-vehiculos.html" data-js="js/reg-vehiculos.js" data-init="initRegVehiculos"> Registrar</a>
+<a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-vehiculos.html" data-js="js/mod-vehiculos.js" data-init="initModVehiculos" style="display: none !important;">✏️ Modificar</a>
+<a href="#" class="submenu-item" data-accion="eliminar" data-src="html/elim-vehiculos.html" data-js="js/elim-vehiculos.js" data-init="initElimVehiculos" style="display: none !important;">🗑️ Eliminar</a>
+</div>
+</div>
+
+<div class="menu-item" id="menu-pv" style="display: none !important;">
+<button class="menu-btn" data-toggle="submenu-pv">
+<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+Personas con Vehículos <span class="arrow">▼</span>
+</button>
+<div class="submenu" id="submenu-pv">
+<a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-vinculado.html" data-js="js/reg-vinculado.js" data-init="initRegVinculado">📝 Registrar</a>
+<a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-vinculado.html" data-js="js/mod-vinculado.js" data-init="initModVinculado" style="display: none !important;">✏️ Modificar</a>
+<a href="#" class="submenu-item" data-accion="eliminar" data-src="html/elim-vinculados.html" data-js="js/elim-vinculados.js" data-init="initElimVinculados" style="display: none !important;">🗑️ Eliminar</a>
+</div>
+</div>
+
+<div class="menu-item" id="menu-procesar" style="display: none !important;">
+<button class="menu-btn" data-toggle="submenu-procesar">
+<svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+Procesar <span class="arrow">▼</span>
+</button>
+<div class="submenu" id="submenu-procesar">
+<a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-procesados.html" data-js="js/reg-procesados.js" data-init="initRegProcesados">📝 Registrar</a>
+<a href="#" class="submenu-item" data-accion="modificar" data-src="html/editar-procesado.html" data-js="js/editar-procesado.js" data-init="initModProcesados" style="display: none !important;">️ Modificar</a>
+<a href="#" class="submenu-item" data-accion="consultar" data-src="html/con-procesados.html" style="display: none !important;">🔍 Consultar</a>
+<a href="#" class="submenu-item" data-accion="eliminar" data-src="html/eliminar-procesados.html" data-js="js/elim-procesados.js" data-init="initElimProcesados" style="display: none !important;">🗑️ Eliminar</a>
+</div>
+</div>
+
+<div class="menu-item" id="menu-denuncias" style="display: none !important;">
+<button class="menu-btn" data-toggle="submenu-denuncias">
+<svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+Denuncias <span class="arrow">▼</span>
+</button>
+<div class="submenu" id="submenu-denuncias">
+<a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-denuncias.html" data-js="js/reg-denuncias.js" data-init="initRegDenuncias">📝 Registrar</a>
+<a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-denuncias.html" data-js="js/mod-denuncias.js" data-init="initModDenuncias" style="display: none !important;">✏️ Modificar</a>
+<a href="#" class="submenu-item" data-accion="consultar" data-src="html/con-tabla.html" data-js="js/con-tabla.js" data-init="initConsultaDenuncias" style="display: none !important;">🔍 Consultar</a>
+<a href="#" class="submenu-item" data-accion="eliminar" data-src="html/eli-denuncias.html" data-js="js/eli-denuncias.js" data-init="initElimDenuncias" style="display: none !important;">🗑️ Eliminar</a>
+</div>
+</div>
+
+<div class="menu-item" id="menu-historial" style="display: none !important;">
+<button class="menu-btn" data-toggle="submenu-historial">
+<svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+Historial <span class="arrow">▼</span>
+</button>
+<div class="submenu" id="submenu-historial">
+<a href="#" class="submenu-item" data-src="html/historial.html" data-js="js/historial.js" data-init="initHistorial">Ver Historial</a>
+</div>
+</div>
+
+<div class="menu-item" id="menu-gestion-usuarios" style="display: none !important;">
+<button class="menu-btn" data-toggle="submenu-gestion-usuarios">
+<svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+Gestión de Usuarios <span class="arrow">▼</span>
+</button>
+<div class="submenu" id="submenu-gestion-usuarios">
+<a href="#" class="submenu-item" data-src="html/crear-usuario.html" data-js="js/crear-usuario.js" data-init="initCrearUsuario">👤➕ Crear Usuario Nuevo</a>
+<a href="#" class="submenu-item" data-src="html/mod-usuario.html" data-js="js/mod-usuario.js" data-init="initModUsuario">✏️ Modificar y Desbloquear</a>
+<a href="#" class="submenu-item" data-src="html/elim-usuario.html" data-js="js/elim-usuario.js" data-init="initElimUsuario">🗑️ Eliminar Usuario</a>
+<a href="#" class="submenu-item" data-src="html/logs-sistema.html" data-js="js/logs-sistema.js" data-init="initLogsSistema">📋 Logs del Sistema</a>
+</div>
+</div>
+
+</nav>
+</aside>
+<main id="app-content" class="main-content">
+<div class="card welcome-card">
+<div class="welcome-center">
+<img src="img/logosistema.png" alt="Logo PNB" class="welcome-logo">
+<h3>👋 Bienvenido al Sistema de Verificación y Registro Policial</h3>
+<p class="welcome-desc">
+Plataforma integral desarrollada para el <strong>Cuerpo de Policía Nacional Bolivariana (CPNB) - Centro de Coordinación Policial Estadal (CCPE) Zulia</strong>.
+Este sistema permite gestionar, consultar, modificar y archivar registros de personas y vehículos de manera segura, centralizada y auditada.
+</p>
+<div class="feature-badges">
+<span class="feature-badge">🔐 Acceso Seguro y Auditado</span>
+<span class="feature-badge">📊 Gestión en Tiempo Real</span>
+<span class="feature-badge">💾 Respaldo Automatizado</span>
+<span class="feature-badge">📱 Interfaz Adaptativa</span>
+</div>
+</div>
+<div class="welcome-bottom">
+<div class="marquee-wrapper">
+<div class="marquee-inner">
+<div class="marquee-text">
+¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp;     ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp;    ¡Proteger, defender y servir a nuestro pueblo! &nbsp;&nbsp;&nbsp;  ¡Proteger, defender y servir a nuestro pueblo!
+</div>
+</div>
+</div>
+<div class="copyright-wrapper">
+© 2026 <strong>OTIC-ZULIA PNB</strong> | Sistema Oficial<br>
+Para gestión de usuarios y soporte comuníquese con los números:<br>
+<span class="phone-numbers">📞 0412-6812206 / 04246962840</span>
+</div>
+</div>
+</div>
+</main>
+</div>
+<div id="chat-widget">
+<button id="chat-bubble" class="chat-bubble" title="Soporte en Línea">
+<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+<span id="chat-notification" class="chat-badge" style="display: none;">0</span>
+</button>
+<div id="chat-window" class="chat-window" style="display: none;">
+<div class="chat-header">
+<div>
+<strong>💬 Soporte OTIC-ZULIA</strong>
+<div id="admin-online-indicator" class="admin-status" style="display: none;">
+ <span id="online-count">0</span> conectados
+</div>
+</div>
+<button id="chat-close" class="chat-close-btn">✕</button>
+</div>
+<div id="admin-online-panel" class="online-panel" style="display: none;">
+<div class="online-panel-header">👥 Usuarios en el sistema:</div>
+<ul id="online-users-list" class="online-users-list"></ul>
+</div>
+<div id="chat-messages" class="chat-messages">
+<div class="chat-message system">
+<p>Escribe tu consulta. Un administrador te responderá de forma privada.</p>
+</div>
+</div>
+<div class="chat-input-area">
+<div id="reply-indicator" class="reply-indicator" style="display: none;">
+<span>✉️ Respondiendo a: <strong id="reply-to-name">Usuario</strong></span>
+<button id="cancel-reply" class="cancel-reply-btn"></button>
+</div>
+<input type="text" id="chat-input" placeholder="Escribe tu mensaje..." autocomplete="off">
+<button id="chat-send" class="chat-send-btn">
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+</button>
+</div>
+</div>
+</div>
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>
+
 <style>
 :root {
 --primary: #002b5c; --primary-dark: #001f44; --secondary: #c5a028;
