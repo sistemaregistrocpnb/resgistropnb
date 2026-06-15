@@ -166,13 +166,13 @@ actualizar();
 setInterval(actualizar, 1000);
 }
 btnLogout.addEventListener('click', async () => {
-    // ✅ 1. Desuscribirse del canal de presencia PRIMERO
+    // ✅ 1. Remover presencia ANTES de cerrar sesión
     if (chatChannelPresence) {
         try {
             await chatChannelPresence.untrack();
             await chatChannelPresence.unsubscribe();
         } catch (err) {
-            console.warn('Error al desuscribirse de presencia:', err);
+            // Ignorar errores al desuscribirse
         }
     }
     
@@ -185,6 +185,17 @@ btnLogout.addEventListener('click', async () => {
     await window.supabaseClient.auth.signOut();
     sessionStorage.clear();
     window.location.href = 'index.html';
+});
+
+// ✅ Limpiar presencia si el usuario cierra la pestaña
+window.addEventListener('beforeunload', () => {
+    if (chatChannelPresence) {
+        try {
+            chatChannelPresence.untrack();
+        } catch (e) {
+            // Ignorar errores
+        }
+    }
 });
 
 // ✅ Cerrar sesión limpiamente si el usuario cierra la pestaña
