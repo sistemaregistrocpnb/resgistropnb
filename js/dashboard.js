@@ -171,9 +171,22 @@ btnLogout.addEventListener('click', async () => {
         await window.registrarLogout();
     }
     
+    // ✅ Desuscribirse del canal de presencia antes de cerrar
+    if (chatChannelPresence) {
+        await chatChannelPresence.untrack();
+        await chatChannelPresence.unsubscribe();
+    }
+    
     await window.supabaseClient.auth.signOut();
     sessionStorage.clear();
     window.location.href = 'index.html';
+});
+
+// ✅ CERRAR SESIÓN SI EL USUARIO CIERRA LA VENTANA O RECARGA
+window.addEventListener('beforeunload', async () => {
+    if (chatChannelPresence) {
+        await chatChannelPresence.untrack();
+    }
 });
 
 // ==========================================
@@ -221,35 +234,68 @@ async function iniciarChatPrivado() {
 
     let usuariosEnLinea = [];
 
-    // 1. PRESENCIA
-    chatChannelPresence = window.supabaseClient.channel('sistema-presence', {
-        config: { presence: { key: currentUserId } }
-    });
+// 1. PRESENCIA CON DETECCIÓN DE SESIONES DUPLICADAS
+chatChannelPresence = window.supabaseClient.channel('sistema-presencia-global', {
+    config: { presence: { key: currentUserId } }
+});
 
-    chatChannelPresence.on('presence', { event: 'sync' }, () => {
-        const state = chatChannelPresence.presenceState();
-        usuariosEnLinea = [];
+chatChannelPresence.on('presence', { event: 'sync' }, () => {
+    const state = chatChannelPresence.presenceState();
+    const usuariosEnLinea = [];
 
-        for (const [userId, presenceData] of Object.entries(state)) {
-            if (presenceData && presenceData.length > 0) {
-                usuariosEnLinea.push({ id: userId, ...presenceData[presenceData.length - 1] });
+    for (const [userId, presenceData] of Object.entries(state)) {
+        if (presenceData && presenceData.length > 0) {
+            // ✅ DETECTAR SESIONES DUPLICADAS
+            // Si hay más de 1 presencia para el mismo user_id, es duplicado
+            if (presenceData.length > 1) {
+                // Mantener solo la sesión más reciente (la última)
+                const sesionMasReciente = presenceData[presenceData.length - 1];
+                const miSesion = presenceData.find(p => p.timestamp && p.user_id === currentUserId);
+                
+                // Si mi sesión no es la más reciente, cerrarla
+                if (miSesion && miSesion !== sesionMasReciente) {
+                    console.warn('Sesión duplicada detectada. Cerrando sesión anterior...');
+                    
+                    // Mostrar alerta al usuario
+                    alert('⚠️ Se ha detectado otra sesión activa con su usuario.\n\nEsta sesión será cerrada por seguridad.\n\nSolo se permite una sesión activa por usuario.');
+                    
+                    // Cerrar sesión
+                    window.supabaseClient.auth.signOut();
+                    sessionStorage.clear();
+                    window.location.href = 'index.html';
+                    return;
+                }
             }
+            
+            usuariosEnLinea.push({ id: userId, ...presenceData[presenceData.length - 1] });
         }
+    }
 
-        if (currentUserRole === 'administrador') {
-            adminOnlinePanel.style.display = 'block';
-            adminOnlineIndicator.style.display = 'block';
-            onlineCountSpan.textContent = usuariosEnLinea.length;
-            if(onlineUsersCount) onlineUsersCount.textContent = `(${usuariosEnLinea.length} conectados)`;
-            renderizarUsuariosEnLinea();
-        }
-    });
+    if (currentUserRole === 'administrador') {
+        adminOnlinePanel.style.display = 'block';
+        adminOnlineIndicator.style.display = 'block';
+        onlineCountSpan.textContent = usuariosEnLinea.length;
+        onlineUsersList.innerHTML = '';
+        usuariosEnLinea.forEach(user => {
+            const li = document.createElement('li');
+            const nombreUser = user.nombre ? user.nombre.toUpperCase() : 'USUARIO';
+            const rolUser = user.rol ? user.rol.toUpperCase() : 'ROL';
+            li.textContent = `${nombreUser} (${rolUser})`;
+            onlineUsersList.appendChild(li);
+        });
+    }
+});
 
-    await chatChannelPresence.subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-            await chatChannelPresence.track({ nombre: currentUserName, rol: currentUserRole });
-        }
-    });
+await chatChannelPresence.subscribe(async (status) => {
+    if (status === 'SUBSCRIBED') {
+        await chatChannelPresence.track({ 
+            nombre: currentUserName, 
+            rol: currentUserRole,
+            user_id: currentUserId,
+            timestamp: Date.now() // ✅ Agregar timestamp para detectar la sesión más reciente
+        });
+    }
+});
 
     // 2. Renderizar usuarios con paginación
     function renderizarUsuariosEnLinea() {
