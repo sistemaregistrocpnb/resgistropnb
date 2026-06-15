@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         sessionStorage.setItem('pnb_session_id', sessionId);
 
-        // Elementos del DOM (declarados UNA sola vez)
+        // Elementos del DOM
         const chatBubble = document.getElementById('chat-bubble');
         const chatWindow = document.getElementById('chat-window');
         const chatClose = document.getElementById('chat-close');
@@ -432,7 +432,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         async function cargarMensajesIndividuales(userId) {
             if (!chatMessages) return;
-            chatMessages.innerHTML = '<div class="chat-message system"><p>Cargando conversación...</p></div>';
+            chatMessages.innerHTML = '<div class="chat-message system"><p>Cargando...</p></div>';
             
             const { data, error } = await window.supabaseClient.from('chat_mensajes').select('*')
                 .or(`and(remitente_id.eq.${currentUserId},receptor_id.eq.${userId}),and(remitente_id.eq.${userId},receptor_id.eq.${currentUserId})`)
@@ -440,11 +440,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             chatMessages.innerHTML = '';
             if (error) {
-                chatMessages.innerHTML = '<div class="chat-message system"><p>Error al cargar.</p></div>';
+                chatMessages.innerHTML = '<div class="chat-message system"><p>Error al cargar el historial.</p></div>';
                 return;
             }
-            if (data && data.length > 0) data.forEach(msg => agregarMensajeAlDOM(msg));
-            else chatMessages.innerHTML = `<div class="chat-message system"><p>💬 Inicio de conversación privada</p></div>`;
+            if (data && data.length > 0) {
+                data.forEach(msg => agregarMensajeAlDOM(msg));
+            } else {
+                chatMessages.innerHTML = `
+                <div class="chat-message system">
+                    <p style="font-size: 0.9rem; font-weight: 600;">💬 Inicio de conversación privada</p>
+                    <p style="margin-top: 5px; font-size: 0.8rem;">Escribe tu mensaje aquí. Solo tú y el usuario podrán ver esta conversación.</p>
+                </div>
+                `;
+            }
         }
 
         async function cargarMensajesRecientes() {
@@ -459,11 +467,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { data, error } = await query;
             chatMessages.innerHTML = '';
             if (error) {
-                chatMessages.innerHTML = '<div class="chat-message system"><p>Error al cargar.</p></div>';
+                chatMessages.innerHTML = '<div class="chat-message system"><p>Error al cargar el historial.</p></div>';
                 return;
             }
-            if (data && data.length > 0) data.forEach(msg => agregarMensajeAlDOM(msg));
-            else chatMessages.innerHTML = `<div class="chat-message system"><p>👋 No hay mensajes recientes.</p></div>`;
+            if (data && data.length > 0) {
+                data.forEach(msg => agregarMensajeAlDOM(msg));
+            } else {
+                // ✅ MENSAJE ORIGINAL RESTAURADO EXACTAMENTE COMO ESTABA
+                chatMessages.innerHTML = `
+                <div class="chat-message system">
+                    <p style="font-size: 0.9rem; font-weight: 600;">👋 ¡Bienvenido al Chat de Soporte OTIC-ZULIA!</p>
+                    <p style="margin-top: 5px; font-size: 0.8rem;">Escribe tu consulta aquí abajo. Un administrador te responderá de forma privada a la brevedad.</p>
+                </div>
+                `;
+            }
         }
 
         function agregarMensajeAlDOM(msg) {
