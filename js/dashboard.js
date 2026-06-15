@@ -165,7 +165,6 @@ clockEl.textContent = ahora.toLocaleString('es-VE', opciones).replace(',', '');
 actualizar();
 setInterval(actualizar, 1000);
 }
-
 btnLogout.addEventListener('click', async () => {
     // ✅ REGISTRAR LOGOUT ANTES DE CERRAR SESIÓN
     if (typeof window.registrarLogout === 'function') {
