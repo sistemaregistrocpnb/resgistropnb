@@ -27,13 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
         msgBox.style.display = 'none';
 
         try {
-            // ==========================================
-            // 🔍 PASO 1: Verificar si el correo existe, su estado y su nivel
-            // ==========================================
+     
             const { data: perfil, error: perfilErr } = await window.supabaseClient
                 .from('perfiles_usuario')
-                .select('user_id, email, bloqueado, intentos_fallidos, fecha_bloqueo, nivel') // ✅ Agregamos 'nivel' aquí
-                .eq('email', email)
+                .select('user_id, email, bloqueado, intentos_fallidos, fecha_bloqueo, nivel') 
                 .maybeSingle();
 
             if (perfilErr) {
@@ -41,7 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Error de conexión con la base de datos. Verifique las políticas RLS.');
             }
 
-            // ❌ CASO 1: El correo NO está registrado
             if (!perfil) {
                 mostrarMensaje(
                     '📭 <strong>Correo no registrado.</strong><br>' +
@@ -53,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // 🔒 CASO 2: La cuenta está bloqueada
             if (perfil.bloqueado === true) {
                 const fechaBloqueo = perfil.fecha_bloqueo 
                     ? new Date(perfil.fecha_bloqueo).toLocaleString('es-VE', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -69,25 +64,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // ==========================================
-            // 🔐 PASO 2: Intentar autenticación con Supabase Auth
-            // ==========================================
             const { data: auth, error: authErr } = await window.supabaseClient.auth.signInWithPassword({
                 email, password
             });
 
             if (authErr) {
-                // ❌ Contraseña incorrecta
+            
                 const intentosActuales = (perfil.intentos_fallidos || 0) + 1;
                 const intentosRestantes = MAX_INTENTOS - intentosActuales;
 
-                // Actualizar contador de intentos
                 await window.supabaseClient
                     .from('perfiles_usuario')
                     .update({ intentos_fallidos: intentosActuales })
                     .eq('user_id', perfil.user_id);
 
-                // 🔒 CASO 3: Se agotaron los 3 intentos → BLOQUEAR
                 if (intentosRestantes <= 0) {
                     await window.supabaseClient
                         .from('perfiles_usuario')
@@ -100,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         'error'
                     );
                 } 
-                // ⚠️ CASO 4: Todavía tiene intentos disponibles
+                    
                 else {
                     const advertencia = intentosRestantes === 1 
                         ? '⚠️ <strong>ADVERTENCIA:</strong> Le queda 1 intento antes del bloqueo.' 
@@ -117,13 +107,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // ==========================================
-            // ✅ PASO 3: Login exitoso
-            // ==========================================
-            // Usamos el 'nivel' que ya obtuvimos en el PASO 1
             const nivel = perfil.nivel || 'usuario';
 
-            // Resetear contador de intentos al iniciar sesión correctamente
             if (perfil.intentos_fallidos > 0) {
                 await window.supabaseClient
                     .from('perfiles_usuario')
@@ -131,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     .eq('user_id', auth.user.id);
             }
 
-            // Guardar sesión
             sessionStorage.setItem('pnb_user_id', auth.user.id);
             sessionStorage.setItem('pnb_user_email', auth.user.email);
             sessionStorage.setItem('pnb_user_nivel', nivel);
