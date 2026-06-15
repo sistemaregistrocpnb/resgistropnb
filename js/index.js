@@ -103,8 +103,8 @@ return;
 // ==========================================
 // ✅ PASO 3: Login exitoso
 // ==========================================
-// Usamos el 'nivel' que ya obtuvimos en el PASO 1
 const nivel = perfil.nivel || 'usuario';
+const nombreCompleto = `${perfil.nombre || ''} ${perfil.apellido || ''}`.trim().toUpperCase() || auth.user.email.split('@')[0].toUpperCase();
 
 // Resetear contador de intentos al iniciar sesión correctamente
 if (perfil.intentos_fallidos > 0) {
@@ -114,16 +114,13 @@ if (perfil.intentos_fallidos > 0) {
         .eq('user_id', auth.user.id);
 }
 
-// Guardar sesión
-sessionStorage.setItem('pnb_user_id', auth.user.id);
-sessionStorage.setItem('pnb_user_email', auth.user.email);
-sessionStorage.setItem('pnb_user_nivel', nivel);
+// ✅ GUARDAR HORA DE INICIO DE SESIÓN (para calcular duración en el logout)
+sessionStorage.setItem('pnb_login_time', Date.now().toString());
 
-sessionStorage.setItem('pnb_login_time', Date.now().toString()); // Guarda la hora exacta
+// ✅ REGISTRAR EL LOGIN EN LA TABLA sistema_logs
 if (typeof window.registrarLogin === 'function') {
-    await window.registrarLogin(nombreCompleto, auth.user.email, auth.user.id, nivel); // Llama a utils.js
+    await window.registrarLogin(nombreCompleto, auth.user.email, auth.user.id, nivel);
 }
-
 
 // Guardar sesión
 sessionStorage.setItem('pnb_user_id', auth.user.id);
