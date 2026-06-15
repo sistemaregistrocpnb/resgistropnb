@@ -805,4 +805,12 @@ await chatChannelPresence.subscribe(async (status) => {
 }
 
 initDashboard();
+    // ✅ Limpiar presencia si el usuario cierra la pestaña o recarga
+window.addEventListener('beforeunload', () => {
+    if (chatChannelPresence) {
+        try {
+            chatChannelPresence.untrack();
+        } catch (e) {}
+    }
+});
 });
