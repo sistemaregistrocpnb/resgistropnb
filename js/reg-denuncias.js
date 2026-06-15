@@ -11,7 +11,8 @@ window.initRegDenuncias = function() {
         const nativeSelect = document.getElementById('d_tlf_pais');
         const displayBox = document.querySelector('.phone-display');
         const optionsBox = document.querySelector('.phone-options');
-        
+        const searchInput = document.querySelector('.phone-search-input');
+
         if (!form || !btn) {
             if (intentos < 10) {
                 setTimeout(() => iniciarModulo(intentos + 1), 100);
@@ -21,8 +22,9 @@ window.initRegDenuncias = function() {
                 return;
             }
         }
+
         console.log("✅ Formulario encontrado. Configurando módulo...");
-        
+
         // Configurar fecha actual
         const fechaInput = document.getElementById('d_fecha_hora');
         if (fechaInput) {
@@ -37,8 +39,8 @@ window.initRegDenuncias = function() {
         async function actualizarProximoNumero() {
             const inputNum = document.getElementById('d_numero_denuncia');
             if (!inputNum || !window.supabaseClient) return;
-            inputNum.value = 'Calculando...';
             
+            inputNum.value = 'Calculando...';
             try {
                 const { data: ultimaDenuncia } = await window.supabaseClient
                     .from('denuncias')
@@ -68,65 +70,64 @@ window.initRegDenuncias = function() {
             { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
             { id: 'medida_proteccion', label: '🛡️ Medida de Protección' }
         ];
-        
         const docsMultiples = [
             { id: 'acta_entrevista', label: '🎤 Acta de Entrevista', max: 10 },
             { id: 'datos_filiatorios', label: '👤 Datos Filiatorios', max: 10 },
             { id: 'evidencias', label: '🔍 Evidencias', max: 10 },
             { id: 'solicitud_senamecf', label: '🏥 Solicitud SENAMECF', max: 10 }
         ];
-        
+
         const archivosUnicos = {};
         const archivosMultiples = {};
         docsUnicos.forEach(d => archivosUnicos[d.id] = null);
         docsMultiples.forEach(d => archivosMultiples[d.id] = []);
-        
+
         // Limpiar contenedores antes de generar
         const contenedorUnicos = document.getElementById('docs-unicos-container');
         const contenedorMultiples = document.getElementById('docs-multiples-container');
         if (contenedorUnicos) contenedorUnicos.innerHTML = '';
         if (contenedorMultiples) contenedorMultiples.innerHTML = '';
-        
+
         // Generar UI Documentos Únicos
         if (contenedorUnicos) {
             docsUnicos.forEach(doc => {
                 const div = document.createElement('div');
                 div.className = 'doc-item';
                 div.innerHTML = `
-                <div class="doc-header">
-                    <label>${doc.label}</label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                    <div class="doc-header">
+                        <label>${doc.label}</label>
+                        <div class="doc-si-no">
+                            <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
+                            <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                        </div>
                     </div>
-                </div>
-                <div class="doc-upload-area" id="upload-${doc.id}">
-                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="cargarDocUnico('${doc.id}', this)">
-                    <div id="status-${doc.id}"></div>
-                </div>`;
+                    <div class="doc-upload-area" id="upload-${doc.id}">
+                        <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="cargarDocUnico('${doc.id}', this)">
+                        <div id="status-${doc.id}"></div>
+                    </div>`;
                 contenedorUnicos.appendChild(div);
             });
         }
-        
+
         // Generar UI Documentos Múltiples
         if (contenedorMultiples) {
             docsMultiples.forEach(doc => {
                 const div = document.createElement('div');
                 div.className = 'doc-item';
                 div.innerHTML = `
-                <div class="doc-header">
-                    <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Máximo ${doc.max})</span></label>
-                    <div class="doc-si-no">
-                        <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
-                        <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                    <div class="doc-header">
+                        <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Máximo ${doc.max})</span></label>
+                        <div class="doc-si-no">
+                            <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
+                            <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                        </div>
                     </div>
-                </div>
-                <div class="doc-upload-area" id="upload-${doc.id}">
-                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
-                    <button type="button" class="btn-add-file" onclick="agregarMultiples('${doc.id}', ${doc.max})">➕ Agregar archivos</button>
-                    <div class="file-count" id="count-${doc.id}">0 archivos cargados</div>
-                    <div id="list-${doc.id}" style="margin-top: 8px;"></div>
-                </div>`;
+                    <div class="doc-upload-area" id="upload-${doc.id}">
+                        <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
+                        <button type="button" class="btn-add-file" onclick="agregarMultiples('${doc.id}', ${doc.max})">➕ Agregar archivos</button>
+                        <div class="file-count" id="count-${doc.id}">0 archivos cargados</div>
+                        <div id="list-${doc.id}" style="margin-top: 8px;"></div>
+                    </div>`;
                 contenedorMultiples.appendChild(div);
             });
         }
@@ -166,11 +167,11 @@ window.initRegDenuncias = function() {
                 if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
                     archivosUnicos[docId] = file;
                     statusDiv.innerHTML = `
-                    <div class="file-loaded">
-                        <span>✅</span>
-                        <span class="file-name">${file.name}</span>
-                        <button type="button" class="btn-remove" onclick="quitarDocUnico('${docId}')">❌ Quitar</button>
-                    </div>`;
+                        <div class="file-loaded">
+                            <span>✅</span>
+                            <span class="file-name">${file.name}</span>
+                            <button type="button" class="btn-remove" onclick="quitarDocUnico('${docId}')">❌ Quitar</button>
+                        </div>`;
                 } else {
                     alert('⚠️ Por favor, seleccione un archivo con extensión .PDF válido.');
                     input.value = '';
@@ -189,15 +190,15 @@ window.initRegDenuncias = function() {
         window.agregarMultiples = function(docId, max) {
             const input = document.getElementById(`file_${docId}`);
             if (!input || !input.files || input.files.length === 0) return;
-            
+
             const actuales = archivosMultiples[docId].length;
             const disponibles = max - actuales;
-            
+
             if (disponibles <= 0) {
                 alert(`⚠️ Ya has alcanzado el máximo de ${max} archivos permitidos.`);
                 return;
             }
-            
+
             let agregados = 0;
             for (const file of input.files) {
                 if (agregados >= disponibles) {
@@ -219,16 +220,16 @@ window.initRegDenuncias = function() {
             const listDiv = document.getElementById(`list-${docId}`);
             const countDiv = document.getElementById(`count-${docId}`);
             if (!listDiv || !countDiv) return;
-            
+
             listDiv.innerHTML = '';
             archivosMultiples[docId].forEach((file, index) => {
                 const item = document.createElement('div');
                 item.className = 'file-item-multiple';
                 item.innerHTML = `
-                <span>📄 ${file.name}</span>
-                <div class="file-actions">
-                    <button type="button" onclick="quitarMultiple('${docId}', ${index}, ${max})">❌</button>
-                </div>`;
+                    <span>📄 ${file.name}</span>
+                    <div class="file-actions">
+                        <button type="button" onclick="quitarMultiple('${docId}', ${index}, ${max})">❌</button>
+                    </div>`;
                 listDiv.appendChild(item);
             });
             countDiv.textContent = `${archivosMultiples[docId].length} de ${max} archivos`;
@@ -300,40 +301,83 @@ window.initRegDenuncias = function() {
 
         if (nativeSelect && displayBox && optionsBox) {
             console.log("✅ Generando dropdown de banderas...");
-            optionsBox.innerHTML = '';
-            let opcionesGeneradas = 0;
             
-            Array.from(nativeSelect.options).forEach(opt => {
-                if (!opt.value) return;
+            // Función para renderizar opciones
+            function renderOptions(filterText = '') {
+                optionsBox.innerHTML = '';
                 
-                // Buscar ISO en el mapa completo
-                let iso = isoMap[opt.text] || 'xx';
+                // Añadir input de búsqueda si no existe
+                if (!optionsBox.querySelector('.phone-search-input')) {
+                    const searchInput = document.createElement('input');
+                    searchInput.type = 'text';
+                    searchInput.className = 'phone-search-input';
+                    searchInput.placeholder = 'Buscar país...';
+                    searchInput.addEventListener('input', (e) => {
+                        e.stopPropagation();
+                        renderOptions(e.target.value.toLowerCase());
+                    });
+                    optionsBox.appendChild(searchInput);
+                }
                 
-                const div = document.createElement('div');
-                div.className = 'phone-option';
-                
-                // ✅ onerror garantiza que NUNCA se vea un icono de imagen rota
-                div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;" onerror="this.src='https://flagcdn.com/w20/xx.png'"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.85rem;">${opt.text}</span>`;
-                
-                div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:0.15s;';
-                div.onmouseenter = () => div.style.background = '#f8fafc';
-                div.onmouseleave = () => div.style.background = '';
-                
-                div.addEventListener('click', () => {
-                    nativeSelect.value = opt.value;
-                    flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
-                    codeText.textContent = opt.value;
-                    countryText.textContent = opt.text;
-                    optionsBox.style.display = 'none';
+                let opcionesGeneradas = 0;
+                Array.from(nativeSelect.options).forEach(opt => {
+                    if (!opt.value) return;
+                    
+                    // Filtrar por texto de búsqueda
+                    if (filterText && !opt.text.toLowerCase().includes(filterText) && !opt.value.includes(filterText)) {
+                        return;
+                    }
+                    
+                    // Buscar ISO en el mapa completo
+                    let iso = isoMap[opt.text] || 'xx';
+                    
+                    const div = document.createElement('div');
+                    div.className = 'phone-option';
+                    // ✅ onerror garantiza que NUNCA se vea un icono de imagen rota
+                    div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;" onerror="this.src='https://flagcdn.com/w20/xx.png'"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.85rem;">${opt.text}</span>`;
+                    div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:0.15s;';
+                    div.onmouseenter = () => div.style.background = '#f8fafc';
+                    div.onmouseleave = () => div.style.background = '';
+                    
+                    div.addEventListener('click', () => {
+                        nativeSelect.value = opt.value;
+                        flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
+                        codeText.textContent = opt.value;
+                        countryText.textContent = opt.text;
+                        optionsBox.style.display = 'none';
+                        // Limpiar búsqueda
+                        const search = optionsBox.querySelector('.phone-search-input');
+                        if (search) search.value = '';
+                    });
+                    
+                    optionsBox.appendChild(div);
+                    opcionesGeneradas++;
                 });
-                optionsBox.appendChild(div);
-                opcionesGeneradas++;
-            });
-            console.log(`✅ Lista generada con ${opcionesGeneradas} países/territorios.`);
+                
+                if (opcionesGeneradas === 0 && filterText) {
+                    const noResult = document.createElement('div');
+                    noResult.className = 'phone-option';
+                    noResult.textContent = 'No se encontraron países';
+                    noResult.style.color = '#94a3b8';
+                    noResult.style.cursor = 'default';
+                    optionsBox.appendChild(noResult);
+                }
+            }
+            
+            // Renderizar inicial
+            renderOptions();
             
             displayBox.addEventListener('click', (e) => {
                 e.stopPropagation();
-                optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block';
+                const isHidden = optionsBox.style.display === 'none' || optionsBox.style.display === '';
+                optionsBox.style.display = isHidden ? 'block' : 'none';
+                if (isHidden) {
+                    const search = optionsBox.querySelector('.phone-search-input');
+                    if (search) {
+                        search.value = '';
+                        search.focus();
+                    }
+                }
             });
             
             document.addEventListener('click', (e) => {
@@ -351,11 +395,12 @@ window.initRegDenuncias = function() {
         // ==========================================
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
             }
-            
+
             if (!window.supabaseClient) {
                 alert("❌ Error: Cliente de Supabase no inicializado.");
                 return;
@@ -369,6 +414,7 @@ window.initRegDenuncias = function() {
                     return;
                 }
             }
+
             // Validar documentos múltiples
             for (const doc of docsMultiples) {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
@@ -386,11 +432,12 @@ window.initRegDenuncias = function() {
             try {
                 const bucket = window.supabaseClient.storage.from('denuncias_documentos');
                 const { data: { user } } = await window.supabaseClient.auth.getUser();
+                
                 if (!user) throw new Error('Debe iniciar sesión para registrar una denuncia.');
                 
                 const uid = user.id;
                 const ts = Date.now();
-                
+
                 // Recalcular número justo antes de guardar para evitar duplicados
                 const { data: ultimaDenuncia } = await window.supabaseClient
                     .from('denuncias')
@@ -398,7 +445,7 @@ window.initRegDenuncias = function() {
                     .order('numero_denuncia', { ascending: false })
                     .limit(1)
                     .maybeSingle();
-
+                
                 let nuevoNumeroDenuncia = 'CPNB-00000001';
                 if (ultimaDenuncia && ultimaDenuncia.numero_denuncia) {
                     const partes = ultimaDenuncia.numero_denuncia.split('-');
@@ -442,7 +489,7 @@ window.initRegDenuncias = function() {
 
                 const tlfPais = document.getElementById('d_tlf_pais')?.value;
                 const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '');
-                
+
                 // Preparar datos completos
                 const data = {
                     numero_denuncia: nuevoNumeroDenuncia,
@@ -511,10 +558,10 @@ window.initRegDenuncias = function() {
                 if (loadingOverlay) loadingOverlay.classList.remove('active');
             }
         });
-        
+
         console.log("✅ Módulo reg-denuncias.js inicializado correctamente");
     }
-    
+
     iniciarModulo();
 };
 
