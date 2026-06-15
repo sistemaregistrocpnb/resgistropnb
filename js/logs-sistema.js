@@ -10,18 +10,19 @@ window.initLogsSistema = function() {
     let totalLogs = 0;
     let logsData = [];
 
-    async function verificarPermisos() {
-        try {
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            if (!user) return false;
-            const { data: perfil } = await window.supabaseClient
-                .from('perfiles_usuario').select('nivel').eq('user_id', user.id).maybeSingle();
-            if (!perfil) return false;
-            return perfil.nivel === 'administrador' || perfil.nivel === 'moderador';
-        } catch (err) {
-            return false;
-        }
+async function verificarPermisos() {
+    try {
+        const { data: { user } } = await window.supabaseClient.auth.getUser();
+        if (!user) return false;
+        const { data: perfil } = await window.supabaseClient
+            .from('perfiles_usuario').select('nivel').eq('user_id', user.id).maybeSingle();
+        if (!perfil) return false;
+        // ✅ CORRECCIÓN: Solo administradores pueden ver los logs
+        return perfil.nivel === 'administrador';
+    } catch (err) {
+        return false;
     }
+}
 
     async function cargarLogs(page = 1) {
         if (tablaContainer) tablaContainer.innerHTML = '<div class="sin-logs">Cargando logs...</div>';
