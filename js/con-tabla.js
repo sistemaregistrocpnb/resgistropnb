@@ -280,7 +280,7 @@ window.initConTabla = function() {
                 <td>${denuncia.estacion_policial || 'N/A'}</td>
                 <td>${fecha}</td>
                 <td>${estado}</td>
-                <td><button class="con-btn-ver" data-index="${index}">👁️ Ver Ficha</button></td>
+                <td><button class="con-btn-ver" data-index="${index}">Ver Ficha</button></td>
             </tr>`;
         });
         
@@ -393,7 +393,7 @@ window.initConTabla = function() {
         if (!hayDocsMultiples) docsMultiplesHtml += '<li style="color: #94a3b8;">Sin documentos</li>';
         docsMultiplesHtml += '</ul>';
         
-        const logoUrl = './img/logo-cpnb.png';
+        const logoUrl = './img/LOGO-PNB.png';
         
         if (fichaContent) {
             fichaContent.innerHTML = `${avisoEliminada}
