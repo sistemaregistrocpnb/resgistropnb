@@ -1,572 +1,464 @@
-window.initRegDenuncias = function() {
-    console.log("⚙️ Iniciando módulo reg-denuncias.js...");
-    
-    function iniciarModulo(intentos = 0) {
-        const form = document.getElementById('form-reg-denuncias');
-        const btn = form?.querySelector('.btn-submit');
-        const msg = document.getElementById('msg-reg-denuncias');
-        const loadingOverlay = document.getElementById('loading-overlay');
-        
-        // Elementos del teléfono
-        const nativeSelect = document.getElementById('d_tlf_pais');
-        const displayBox = document.querySelector('.phone-display');
-        const optionsBox = document.querySelector('.phone-options');
-        const searchInput = document.querySelector('.phone-search-input');
+<style>
+:root { --primary: #002b5c; --secondary: #c5a028; --beige-border: #d4c9a8; }
+.registro-form fieldset { border: 1px solid var(--beige-border); border-radius: 8px; padding: 16px; margin-bottom: 18px; background: #fafbfc; }
+.registro-form legend { font-weight: 600; color: var(--primary); font-size: 0.95rem; padding: 0 8px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.registro-form label { font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; display: block; }
+.registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; box-sizing: border-box; }
+.registro-form input:focus, .registro-form select:focus, .registro-form textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,43,92,0.1); }
+.btn-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 15px; font-size: 1rem; }
+.btn-submit:hover { background: var(--secondary); }
+.btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+.msg { padding: 10px; margin-top: 12px; border-radius: 5px; text-align: center; display: none; }
+.msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 
-        if (!form || !btn) {
-            if (intentos < 10) {
-                setTimeout(() => iniciarModulo(intentos + 1), 100);
-                return;
-            } else {
-                console.error("❌ ERROR CRÍTICO: No se encontró el formulario.");
-                return;
-            }
-        }
-
-        console.log("✅ Formulario encontrado. Configurando módulo...");
-
-        // Configurar fecha actual
-        const fechaInput = document.getElementById('d_fecha_hora');
-        if (fechaInput) {
-            const ahora = new Date();
-            fechaInput.value = ahora.toLocaleString('es-VE', {
-                year: 'numeric', month: '2-digit', day: '2-digit',
-                hour: '2-digit', minute: '2-digit', second: '2-digit'
-            });
-        }
-
-        // Función para calcular el próximo número de denuncia
-        async function actualizarProximoNumero() {
-            const inputNum = document.getElementById('d_numero_denuncia');
-            if (!inputNum || !window.supabaseClient) return;
-            
-            inputNum.value = 'Calculando...';
-            try {
-                const { data: ultimaDenuncia } = await window.supabaseClient
-                    .from('denuncias')
-                    .select('numero_denuncia')
-                    .order('numero_denuncia', { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
-                
-                let proximo = 'CPNB-00000001';
-                if (ultimaDenuncia && ultimaDenuncia.numero_denuncia) {
-                    const partes = ultimaDenuncia.numero_denuncia.split('-');
-                    if (partes.length === 2) {
-                        const num = parseInt(partes[1], 10) + 1;
-                        proximo = `CPNB-${num.toString().padStart(8, '0')}`;
-                    }
-                }
-                inputNum.value = proximo;
-            } catch (e) {
-                console.error("Error calculando número:", e);
-                inputNum.value = 'Error';
-            }
-        }
-
-        // Configuración de documentos
-        const docsUnicos = [
-            { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
-            { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
-            { id: 'medida_proteccion', label: '🛡️ Medida de Protección' }
-        ];
-        const docsMultiples = [
-            { id: 'acta_entrevista', label: '🎤 Acta de Entrevista', max: 10 },
-            { id: 'datos_filiatorios', label: '👤 Datos Filiatorios', max: 10 },
-            { id: 'evidencias', label: '🔍 Evidencias', max: 10 },
-            { id: 'solicitud_senamecf', label: '🏥 Solicitud SENAMECF', max: 10 }
-        ];
-
-        const archivosUnicos = {};
-        const archivosMultiples = {};
-        docsUnicos.forEach(d => archivosUnicos[d.id] = null);
-        docsMultiples.forEach(d => archivosMultiples[d.id] = []);
-
-        // Limpiar contenedores antes de generar
-        const contenedorUnicos = document.getElementById('docs-unicos-container');
-        const contenedorMultiples = document.getElementById('docs-multiples-container');
-        if (contenedorUnicos) contenedorUnicos.innerHTML = '';
-        if (contenedorMultiples) contenedorMultiples.innerHTML = '';
-
-        // Generar UI Documentos Únicos
-        if (contenedorUnicos) {
-            docsUnicos.forEach(doc => {
-                const div = document.createElement('div');
-                div.className = 'doc-item';
-                div.innerHTML = `
-                    <div class="doc-header">
-                        <label>${doc.label}</label>
-                        <div class="doc-si-no">
-                            <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
-                            <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
-                        </div>
-                    </div>
-                    <div class="doc-upload-area" id="upload-${doc.id}">
-                        <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="cargarDocUnico('${doc.id}', this)">
-                        <div id="status-${doc.id}"></div>
-                    </div>`;
-                contenedorUnicos.appendChild(div);
-            });
-        }
-
-        // Generar UI Documentos Múltiples
-        if (contenedorMultiples) {
-            docsMultiples.forEach(doc => {
-                const div = document.createElement('div');
-                div.className = 'doc-item';
-                div.innerHTML = `
-                    <div class="doc-header">
-                        <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Máximo ${doc.max})</span></label>
-                        <div class="doc-si-no">
-                            <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
-                            <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
-                        </div>
-                    </div>
-                    <div class="doc-upload-area" id="upload-${doc.id}">
-                        <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
-                        <button type="button" class="btn-add-file" onclick="agregarMultiples('${doc.id}', ${doc.max})">➕ Agregar archivos</button>
-                        <div class="file-count" id="count-${doc.id}">0 archivos cargados</div>
-                        <div id="list-${doc.id}" style="margin-top: 8px;"></div>
-                    </div>`;
-                contenedorMultiples.appendChild(div);
-            });
-        }
-
-        // ==========================================
-        // FUNCIONES GLOBALES DE UI
-        // ==========================================
-        window.toggleDocField = function(campo, mostrar) {
-            const area = document.getElementById(`upload-${campo}`);
-            if (area) {
-                if (mostrar) {
-                    area.classList.add('active');
-                } else {
-                    area.classList.remove('active');
-                    // Limpiar datos si se oculta
-                    if (archivosUnicos[campo] !== undefined) {
-                        archivosUnicos[campo] = null;
-                        const status = document.getElementById(`status-${campo}`);
-                        if (status) status.innerHTML = '';
-                        const fileInput = document.getElementById(`file_${campo}`);
-                        if (fileInput) fileInput.value = '';
-                    }
-                    if (archivosMultiples[campo] !== undefined) {
-                        archivosMultiples[campo] = [];
-                        const docMax = docsMultiples.find(d => d.id === campo)?.max || 10;
-                        actualizarListaMultiples(campo, docMax);
-                    }
-                }
-            }
-        };
-
-        window.cargarDocUnico = function(docId, input) {
-            const statusDiv = document.getElementById(`status-${docId}`);
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
-                // Validación robusta de PDF
-                if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-                    archivosUnicos[docId] = file;
-                    statusDiv.innerHTML = `
-                        <div class="file-loaded">
-                            <span>✅</span>
-                            <span class="file-name">${file.name}</span>
-                            <button type="button" class="btn-remove" onclick="quitarDocUnico('${docId}')">❌ Quitar</button>
-                        </div>`;
-                } else {
-                    alert('⚠️ Por favor, seleccione un archivo con extensión .PDF válido.');
-                    input.value = '';
-                }
-            }
-        };
-
-        window.quitarDocUnico = function(docId) {
-            archivosUnicos[docId] = null;
-            const statusDiv = document.getElementById(`status-${docId}`);
-            if (statusDiv) statusDiv.innerHTML = '';
-            const fileInput = document.getElementById(`file_${docId}`);
-            if (fileInput) fileInput.value = '';
-        };
-
-        window.agregarMultiples = function(docId, max) {
-            const input = document.getElementById(`file_${docId}`);
-            if (!input || !input.files || input.files.length === 0) return;
-
-            const actuales = archivosMultiples[docId].length;
-            const disponibles = max - actuales;
-
-            if (disponibles <= 0) {
-                alert(`⚠️ Ya has alcanzado el máximo de ${max} archivos permitidos.`);
-                return;
-            }
-
-            let agregados = 0;
-            for (const file of input.files) {
-                if (agregados >= disponibles) {
-                    alert(`⚠️ Se omitieron archivos excedentes. Máximo ${max} permitidos.`);
-                    break;
-                }
-                if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-                    archivosMultiples[docId].push(file);
-                    agregados++;
-                } else {
-                    alert(`⚠️ El archivo "${file.name}" no es un PDF válido y fue omitido.`);
-                }
-            }
-            actualizarListaMultiples(docId, max);
-            input.value = '';
-        };
-
-        function actualizarListaMultiples(docId, max) {
-            const listDiv = document.getElementById(`list-${docId}`);
-            const countDiv = document.getElementById(`count-${docId}`);
-            if (!listDiv || !countDiv) return;
-
-            listDiv.innerHTML = '';
-            archivosMultiples[docId].forEach((file, index) => {
-                const item = document.createElement('div');
-                item.className = 'file-item-multiple';
-                item.innerHTML = `
-                    <span>📄 ${file.name}</span>
-                    <div class="file-actions">
-                        <button type="button" onclick="quitarMultiple('${docId}', ${index}, ${max})">❌</button>
-                    </div>`;
-                listDiv.appendChild(item);
-            });
-            countDiv.textContent = `${archivosMultiples[docId].length} de ${max} archivos`;
-        }
-
-        window.quitarMultiple = function(docId, index, max) {
-            archivosMultiples[docId].splice(index, 1);
-            actualizarListaMultiples(docId, max);
-        };
-
-        // ==========================================
-        // 🔹 DROPDOWN DE BANDERAS (COMPLETO Y CORREGIDO)
-        // ==========================================
-        const flagImg = document.getElementById('d-tlf-flag-img');
-        const codeText = document.getElementById('d-tlf-code-text');
-        const countryText = document.getElementById('d-tlf-country-text');
-        
-        // ✅ MAPEO COMPLETO DE TODOS LOS PAÍSES DEL HTML
-        const isoMap = {
-            "Afganistán":"af","Albania":"al","Alemania":"de","Andorra":"ad","Angola":"ao",
-            "Antigua y Barbuda":"ag","Arabia Saudita":"sa","Argelia":"dz","Argentina":"ar",
-            "Armenia":"am","Aruba":"aw","Australia":"au","Austria":"at","Azerbaiyán":"az",
-            "Bahamas":"bs","Baréin":"bh","Bangladés":"bd","Barbados":"bb","Bélgica":"be",
-            "Belice":"bz","Benín":"bj","Bermudas":"bm","Bielorrusia":"by","Birmania":"mm",
-            "Bolivia":"bo","Bosnia y Herzegovina":"ba","Botsuana":"bw","Brasil":"br",
-            "Brunéi":"bn","Bulgaria":"bg","Burkina Faso":"bf","Burundi":"bi","Bután":"bt",
-            "Cabo Verde":"cv","Camboya":"kh","Camerún":"cm","Canadá":"ca","Catar":"qa",
-            "Rep. Centroafricana":"cf","Chad":"td","Chile":"cl","China":"cn","Chipre":"cy",
-            "Colombia":"co","Comoras":"km","Congo":"cg","Corea del Norte":"kp",
-            "Corea del Sur":"kr","Costa de Marfil":"ci","Costa Rica":"cr","Croacia":"hr",
-            "Cuba":"cu","Curazao":"cw","Dinamarca":"dk","Dominica":"dm","Ecuador":"ec",
-            "Egipto":"eg","El Salvador":"sv","Emiratos Árabes":"ae","Eritrea":"er",
-            "Eslovaquia":"sk","Eslovenia":"si","España":"es","Estados Unidos":"us",
-            "Estonia":"ee","Etiopía":"et","Filipinas":"ph","Finlandia":"fi","Fiyi":"fj",
-            "Francia":"fr","Gabón":"ga","Gambia":"gm","Georgia":"ge","Ghana":"gh",
-            "Gibraltar":"gi","Granada":"gd","Grecia":"gr","Groenlandia":"gl",
-            "Guadalupe":"gp","Guam":"gu","Guatemala":"gt","Guayana Francesa":"gf",
-            "Guinea":"gn","Guinea Ecuatorial":"gq","Guinea-Bisáu":"gw","Guyana":"gy",
-            "Haití":"ht","Honduras":"hn","Hong Kong":"hk","Hungría":"hu","India":"in",
-            "Indonesia":"id","Irak":"iq","Irán":"ir","Irlanda":"ie","Isla de Man":"im",
-            "Islas Feroe":"fo","Islas Salomón":"sb","Israel":"il","Italia":"it",
-            "Jamaica":"jm","Japón":"jp","Jordania":"jo","Kazajistán":"kz","Kenia":"ke",
-            "Kirguistán":"kg","Kiribati":"ki","Kuwait":"kw","Laos":"la","Letonia":"lv",
-            "Líbano":"lb","Lesoto":"ls","Liberia":"lr","Libia":"ly","Liechtenstein":"li",
-            "Lituania":"lt","Luxemburgo":"lu","Macao":"mo","Macedonia del Norte":"mk",
-            "Madagascar":"mg","Malasia":"my","Malaui":"mw","Maldivas":"mv","Malí":"ml",
-            "Malta":"mt","Marruecos":"ma","Martinica":"mq","Mauricio":"mu",
-            "Mauritania":"mr","Mayotte":"yt","México":"mx","Micronesia":"fm",
-            "Moldavia":"md","Mónaco":"mc","Mongolia":"mn","Montenegro":"me",
-            "Montserrat":"ms","Mozambique":"mz","Namibia":"na","Nauru":"nr","Nepal":"np",
-            "Nicaragua":"ni","Níger":"ne","Nigeria":"ng","Niue":"nu","Noruega":"no",
-            "Nueva Caledonia":"nc","Nueva Zelanda":"nz","Omán":"om","Países Bajos":"nl",
-            "Pakistán":"pk","Palaos":"pw","Palestina":"ps","Panamá":"pa",
-            "Papúa Nueva Guinea":"pg","Paraguay":"py","Perú":"pe","Polinesia Francesa":"pf",
-            "Polonia":"pl","Portugal":"pt","Reino Unido":"gb","Puerto Rico":"pr",
-            "Rep. Checa":"cz","Reunión":"re","Ruanda":"rw","Rumania":"ro","Rusia":"ru",
-            "Samoa":"ws","San Marino":"sm","Santa Lucía":"lc","Santo Tomé y Príncipe":"st",
-            "San Vicente y las Granadinas":"vc","Senegal":"sn","Serbia":"rs",
-            "Seychelles":"sc","Sierra Leona":"sl","Singapur":"sg","Siria":"sy",
-            "Somalia":"so","Sudáfrica":"za","Sudán":"sd","Sudán del Sur":"ss",
-            "Suecia":"se","Suiza":"ch","Surinam":"sr","Esuatini":"sz","Tayikistán":"tj",
-            "Tanzania":"tz","Tailandia":"th","Timor Oriental":"tl","Togo":"tg",
-            "Tonga":"to","Trinidad y Tobago":"tt","Túnez":"tn","Turquía":"tr",
-            "Turkmenistán":"tm","Tuvalu":"tv","Ucrania":"ua","Uganda":"ug","Uruguay":"uy",
-            "Uzbekistán":"uz","Vanuatu":"vu","Vaticano":"va","Venezuela":"ve",
-            "Vietnam":"vn","Wallis y Futuna":"wf","Yemen":"ye","Yibuti":"dj",
-            "Zambia":"zm","Zimbabue":"zw"
-        };
-
-        if (nativeSelect && displayBox && optionsBox) {
-            console.log("✅ Generando dropdown de banderas...");
-            
-            // Función para renderizar opciones
-            function renderOptions(filterText = '') {
-                optionsBox.innerHTML = '';
-                
-                // Añadir input de búsqueda si no existe
-                if (!optionsBox.querySelector('.phone-search-input')) {
-                    const searchInput = document.createElement('input');
-                    searchInput.type = 'text';
-                    searchInput.className = 'phone-search-input';
-                    searchInput.placeholder = 'Buscar país...';
-                    searchInput.addEventListener('input', (e) => {
-                        e.stopPropagation();
-                        renderOptions(e.target.value.toLowerCase());
-                    });
-                    optionsBox.appendChild(searchInput);
-                }
-                
-                let opcionesGeneradas = 0;
-                Array.from(nativeSelect.options).forEach(opt => {
-                    if (!opt.value) return;
-                    
-                    // Filtrar por texto de búsqueda
-                    if (filterText && !opt.text.toLowerCase().includes(filterText) && !opt.value.includes(filterText)) {
-                        return;
-                    }
-                    
-                    // Buscar ISO en el mapa completo
-                    let iso = isoMap[opt.text] || 'xx';
-                    
-                    const div = document.createElement('div');
-                    div.className = 'phone-option';
-                    // ✅ onerror garantiza que NUNCA se vea un icono de imagen rota
-                    div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;" onerror="this.src='https://flagcdn.com/w20/xx.png'"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.85rem;">${opt.text}</span>`;
-                    div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:0.15s;';
-                    div.onmouseenter = () => div.style.background = '#f8fafc';
-                    div.onmouseleave = () => div.style.background = '';
-                    
-                    div.addEventListener('click', () => {
-                        nativeSelect.value = opt.value;
-                        flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
-                        codeText.textContent = opt.value;
-                        countryText.textContent = opt.text;
-                        optionsBox.style.display = 'none';
-                        // Limpiar búsqueda
-                        const search = optionsBox.querySelector('.phone-search-input');
-                        if (search) search.value = '';
-                    });
-                    
-                    optionsBox.appendChild(div);
-                    opcionesGeneradas++;
-                });
-                
-                if (opcionesGeneradas === 0 && filterText) {
-                    const noResult = document.createElement('div');
-                    noResult.className = 'phone-option';
-                    noResult.textContent = 'No se encontraron países';
-                    noResult.style.color = '#94a3b8';
-                    noResult.style.cursor = 'default';
-                    optionsBox.appendChild(noResult);
-                }
-            }
-            
-            // Renderizar inicial
-            renderOptions();
-            
-            displayBox.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const isHidden = optionsBox.style.display === 'none' || optionsBox.style.display === '';
-                optionsBox.style.display = isHidden ? 'block' : 'none';
-                if (isHidden) {
-                    const search = optionsBox.querySelector('.phone-search-input');
-                    if (search) {
-                        search.value = '';
-                        search.focus();
-                    }
-                }
-            });
-            
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.phone-dropdown-wrapper')) {
-                    optionsBox.style.display = 'none';
-                }
-            });
-        }
-
-        // Cargar el próximo número al iniciar
-        actualizarProximoNumero();
-
-        // ==========================================
-        // ENVÍO DEL FORMULARIO
-        // ==========================================
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            if (!form.checkValidity()) {
-                form.reportValidity();
-                return;
-            }
-
-            if (!window.supabaseClient) {
-                alert("❌ Error: Cliente de Supabase no inicializado.");
-                return;
-            }
-
-            // Validar documentos únicos
-            for (const doc of docsUnicos) {
-                const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-                if (radio && radio.value === 'si' && !archivosUnicos[doc.id]) {
-                    if (msg) { msg.textContent = `⚠️ Debe subir un PDF para: ${doc.label}`; msg.className = 'msg error'; msg.style.display = 'block'; }
-                    return;
-                }
-            }
-
-            // Validar documentos múltiples
-            for (const doc of docsMultiples) {
-                const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-                if (radio && radio.value === 'si' && (!archivosMultiples[doc.id] || archivosMultiples[doc.id].length === 0)) {
-                    if (msg) { msg.textContent = `⚠️ Debe subir al menos un PDF para: ${doc.label}`; msg.className = 'msg error'; msg.style.display = 'block'; }
-                    return;
-                }
-            }
-
-            btn.disabled = true;
-            btn.textContent = '⏳ Registrando...';
-            if (msg) msg.style.display = 'none';
-            if (loadingOverlay) loadingOverlay.classList.add('active');
-
-            try {
-                const bucket = window.supabaseClient.storage.from('denuncias_documentos');
-                const { data: { user } } = await window.supabaseClient.auth.getUser();
-                
-                if (!user) throw new Error('Debe iniciar sesión para registrar una denuncia.');
-                
-                const uid = user.id;
-                const ts = Date.now();
-
-                // Recalcular número justo antes de guardar para evitar duplicados
-                const { data: ultimaDenuncia } = await window.supabaseClient
-                    .from('denuncias')
-                    .select('numero_denuncia')
-                    .order('numero_denuncia', { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
-                
-                let nuevoNumeroDenuncia = 'CPNB-00000001';
-                if (ultimaDenuncia && ultimaDenuncia.numero_denuncia) {
-                    const partes = ultimaDenuncia.numero_denuncia.split('-');
-                    if (partes.length === 2) {
-                        const num = parseInt(partes[1], 10) + 1;
-                        nuevoNumeroDenuncia = `CPNB-${num.toString().padStart(8, '0')}`;
-                    }
-                }
-
-                // Subir documentos únicos
-                const docsUnicosUrls = {};
-                for (const doc of docsUnicos) {
-                    const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-                    if (radio && radio.value === 'si' && archivosUnicos[doc.id]) {
-                        const path = `${uid}/${ts}_${doc.id}.pdf`;
-                        const { error } = await bucket.upload(path, archivosUnicos[doc.id], { contentType: 'application/pdf' });
-                        if (error) throw new Error(`Error subiendo ${doc.label}: ${error.message}`);
-                        docsUnicosUrls[doc.id] = bucket.getPublicUrl(path).data.publicUrl;
-                    } else {
-                        docsUnicosUrls[doc.id] = null;
-                    }
-                }
-
-                // Subir documentos múltiples
-                const docsMultiplesUrls = {};
-                for (const doc of docsMultiples) {
-                    const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-                    if (radio && radio.value === 'si' && archivosMultiples[doc.id] && archivosMultiples[doc.id].length > 0) {
-                        const urls = [];
-                        for (let i = 0; i < archivosMultiples[doc.id].length; i++) {
-                            const path = `${uid}/${ts}_${doc.id}_${i}.pdf`;
-                            const { error } = await bucket.upload(path, archivosMultiples[doc.id][i], { contentType: 'application/pdf' });
-                            if (error) throw new Error(`Error subiendo ${doc.label}[${i}]: ${error.message}`);
-                            urls.push(bucket.getPublicUrl(path).data.publicUrl);
-                        }
-                        docsMultiplesUrls[doc.id] = urls;
-                    } else {
-                        docsMultiplesUrls[doc.id] = null;
-                    }
-                }
-
-                const tlfPais = document.getElementById('d_tlf_pais')?.value;
-                const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '');
-
-                // Preparar datos completos
-                const data = {
-                    numero_denuncia: nuevoNumeroDenuncia,
-                    estacion_policial: document.getElementById('d_estacion')?.value,
-                    primer_nombre: document.getElementById('d_nombre1')?.value.trim(),
-                    segundo_nombre: document.getElementById('d_nombre2')?.value.trim() || null,
-                    primer_apellido: document.getElementById('d_apellido1')?.value.trim(),
-                    segundo_apellido: document.getElementById('d_apellido2')?.value.trim() || null,
-                    cedula: document.getElementById('d_cedula')?.value.trim() || null,
-                    tlf_pais: tlfPais || null,
-                    tlf_numero: tlfNum || null,
-                    direccion: document.getElementById('d_direccion')?.value.trim() || null,
-                    motivo_denuncia: document.getElementById('d_motivo')?.value.trim() || null,
-                    oficio_remision: docsUnicosUrls.oficio_remision,
-                    acta_denuncia: docsUnicosUrls.acta_denuncia,
-                    medida_proteccion: docsUnicosUrls.medida_proteccion,
-                    acta_entrevista: docsMultiplesUrls.acta_entrevista,
-                    datos_filiatorios: docsMultiplesUrls.datos_filiatorios,
-                    evidencias: docsMultiplesUrls.evidencias,
-                    solicitud_senamecf: docsMultiplesUrls.solicitud_senamecf,
-                    observaciones: document.getElementById('d_observaciones')?.value.trim() || null,
-                    registrado_por: uid,
-                    email_registrante: user.email
-                };
-
-                const { error } = await window.supabaseClient.from('denuncias').insert([data]);
-                if (error) throw error;
-
-                if (msg) {
-                    msg.textContent = `✅ Denuncia registrada exitosamente. N°: ${nuevoNumeroDenuncia}`;
-                    msg.className = 'msg success';
-                    msg.style.display = 'block';
-                    setTimeout(() => msg.style.display = 'none', 5000);
-                }
-
-                // Resetear formulario y UI
-                form.reset();
-                if (fechaInput) {
-                    const ahora = new Date();
-                    fechaInput.value = ahora.toLocaleString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                }
-                
-                // Forzar reset de UI de documentos
-                docsUnicos.forEach(d => toggleDocField(d.id, false));
-                docsMultiples.forEach(d => toggleDocField(d.id, false));
-                
-                // Resetear teléfono
-                if (nativeSelect) nativeSelect.value = '';
-                if (flagImg) flagImg.src = 'https://flagcdn.com/w20/xx.png';
-                if (codeText) codeText.textContent = '+XX';
-                if (countryText) countryText.textContent = 'País';
-                
-                // Actualizar el próximo número para el siguiente registro
-                actualizarProximoNumero();
-
-            } catch (err) {
-                console.error('Error:', err);
-                if (msg) {
-                    msg.textContent = '❌ ' + err.message;
-                    msg.className = 'msg error';
-                    msg.style.display = 'block';
-                }
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '✅ Registrar Denuncia';
-                if (loadingOverlay) loadingOverlay.classList.remove('active');
-            }
-        });
-
-        console.log("✅ Módulo reg-denuncias.js inicializado correctamente");
-    }
-
-    iniciarModulo();
-};
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', window.initRegDenuncias);
-} else {
-    window.initRegDenuncias();
+/* Dropdown de banderas MEJORADO */
+.phone-dropdown-wrapper { position: relative; width: 100%; z-index: 100 !important; }
+.phone-options { 
+    max-height: 350px !important; 
+    overflow-y: auto !important; 
+    position: absolute !important; 
+    top: 100% !important; 
+    left: 0 !important; 
+    right: 0 !important; 
+    background: #fff !important; 
+    border: 2px solid var(--beige-border) !important; 
+    border-radius: 0 0 8px 8px !important; 
+    z-index: 9999 !important; 
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important; 
+    display: none; 
+    margin-top: 2px; 
 }
+.phone-search-input { 
+    width: 100%; 
+    padding: 10px; 
+    border: none; 
+    border-bottom: 2px solid var(--beige-border); 
+    font-size: 0.9rem; 
+    outline: none; 
+    box-sizing: border-box; 
+    position: sticky; 
+    top: 0; 
+    background: white; 
+    z-index: 10; 
+}
+.phone-option { 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    padding: 10px 12px; 
+    cursor: pointer; 
+    border-bottom: 1px solid #f1f5f9; 
+    transition: background 0.15s; 
+}
+.phone-option:hover { background: #f0f4f8; }
+.phone-option img { width: 20px; height: 14px; object-fit: contain; border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+.phone-option .code { font-weight: 600; min-width: 35px; color: #334155; }
+.phone-option .country { color: #475569; font-size: 0.85rem; }
+
+.phone-display { 
+    border: 1.5px solid var(--beige-border); 
+    border-radius: 5px; 
+    padding: 9px 10px; 
+    background: #fff; 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    cursor: pointer; 
+    font-size: 0.9rem; 
+    user-select: none; 
+    height: 42px; 
+    box-sizing: border-box; 
+}
+
+/* Scrollbar personalizada */
+.phone-options::-webkit-scrollbar { width: 8px; }
+.phone-options::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+.phone-options::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
+.phone-options::-webkit-scrollbar-thumb:hover { background: var(--secondary); }
+
+/* Documentos y Selectores Sí/No */
+.doc-item { background: #fff; border: 1px solid var(--beige-border); border-radius: 6px; padding: 12px; margin-bottom: 10px; }
+.doc-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.doc-header label { font-weight: 600; color: var(--primary); margin: 0; flex: 1; }
+.doc-si-no { display: flex; gap: 4px; }
+.doc-si-no label { display: flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 500; font-size: 0.85rem; padding: 6px 14px; border: 1px solid var(--beige-border); border-radius: 4px; transition: all 0.2s; background: #fff; color: var(--primary); }
+.doc-si-no input[type="radio"] { display: none; }
+.doc-si-no label:has(input:checked) { background: var(--primary); color: white; border-color: var(--primary); }
+.doc-upload-area { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--beige-border); display: none; }
+.doc-upload-area.active { display: block; }
+.doc-upload-area input[type="file"] { margin-bottom: 8px; padding: 8px; background: #f8fafc; border-radius: 4px; width: 100%; border: 1px solid var(--beige-border); }
+.file-loaded { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #dcfce7; border: 1px solid #86efac; border-radius: 6px; margin-top: 8px; font-size: 0.85rem; color: #15803d; font-weight: 600; }
+.file-loaded .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #166534; }
+.file-loaded .btn-remove { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.75rem; font-weight: 600; margin-left: auto; }
+.btn-add-file { padding: 6px 14px; background: var(--secondary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-top: 6px; font-weight: 600; }
+.file-count { font-size: 0.75rem; color: #64748b; margin-top: 4px; font-weight: 600; }
+.file-item-multiple { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #f8fafc; border-radius: 4px; margin-bottom: 4px; font-size: 0.85rem; border: 1px solid #e2e8f0; }
+.file-item-multiple .file-actions { display: flex; gap: 4px; }
+.file-item-multiple button { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.75rem; }
+
+/* Loading Overlay */
+.loading-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255, 255, 255, 0.9); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 9999; backdrop-filter: blur(4px); }
+.loading-overlay.active { display: flex; }
+.spinner { width: 50px; height: 50px; border: 5px solid #e2e8f0; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.loading-text { font-size: 1.1rem; font-weight: 600; color: var(--primary); text-align: center; }
+
+/* Asegurar que los contenedores padres no corten el dropdown */
+fieldset, .registro-form, .card, .form-grid { overflow: visible !important; }
+@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+</style>
+
+<div class="card">
+    <h3>📝 Registro de Denuncias</h3>
+    <form id="form-reg-denuncias" class="registro-form" novalidate>
+        <!-- Número de Denuncia -->
+        <fieldset>
+            <legend>🔖 Identificación de la Denuncia</legend>
+            <div class="form-grid">
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Número de Denuncia</label>
+                    <input type="text" id="d_numero_denuncia" readonly style="background: #f1f5f9; cursor: not-allowed; font-weight: bold; color: var(--primary); font-size: 1.1rem; letter-spacing: 1px;">
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>📅 Fecha y Estación</legend>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Fecha y Hora</label>
+                    <input type="text" id="d_fecha_hora" readonly style="background: #f1f5f9; cursor: not-allowed;">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Estación Policial <span style="color:#ef4444;">*</span></label>
+                    <select id="d_estacion" required>
+                        <option value="">Seleccione estación...</option>
+                        <option value="EPM MARACAIBO">EPM MARACAIBO</option>
+                        <option value="EPM SAN FRANCISCO">EPM SAN FRANCISCO</option>
+                        <option value="EPM LA CAÑADA">EPM LA CAÑADA</option>
+                        <option value="EPP CRISTO DE ARANZA">EPP CRISTO DE ARANZA</option>
+                        <option value="EPP LUIS HURTADO">EPP LUIS HURTADO</option>
+                        <option value="EPP DAGNINO">EPP DAGNINO</option>
+                        <option value="EPP OLEGARIO VILLALOBOS">EPP OLEGARIO VILLALOBOS</option>
+                        <option value="EPP CHIQUINQUIRA">EPP CHIQUINQUIRA</option>
+                        <option value="EPP FRANCISCO EUGENIO">EPP FRANCISCO EUGENIO</option>
+                        <option value="EPP CARACCIOLO">EPP CARACCIOLO</option>
+                        <option value="EPP IDELFONSO">EPP IDELFONSO</option>
+                        <option value="EPP VENANCIO PULGAR">EPP VENANCIO PULGAR</option>
+                        <option value="EPP COQUIVACOA-ZAPARA">EPP COQUIVACOA-ZAPARA</option>
+                        <option value="EPP RAUL LEONI">EPP RAUL LEONI</option>
+                        <option value="EPP ANTONIO BORJAS ROMERO">EPP ANTONIO BORJAS ROMERO</option>
+                        <option value="EPP JUANA DE AVILA">EPP JUANA DE AVILA</option>
+                        <option value="EPP SAN ISIDRO">EPP SAN ISIDRO</option>
+                        <option value="EPP CASIQUE MARA">EPP CASIQUE MARA</option>
+                        <option value="EPP BOLIVAR">EPP BOLIVAR</option>
+                        <option value="EPP EL BAJO">EPP EL BAJO</option>
+                        <option value="EPP DOMITILA">EPP DOMITILA</option>
+                        <option value="EPP CORTIJOS">EPP CORTIJOS</option>
+                        <option value="EPP MARCIAL HERNANDEZ">EPP MARCIAL HERNANDEZ</option>
+                        <option value="EPP POTRERITO">EPP POTRERITO</option>
+                        <option value="EPP ANDRES BELLO">EPP ANDRES BELLO</option>
+                        <option value="EPP SANTA LUCIA">EPP SANTA LUCIA</option>
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>👤 Datos del Denunciante</legend>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Cédula de Identidad <span style="color:#ef4444;">*</span></label>
+                    <input type="text" id="d_cedula" required placeholder="Ej: V-12345678" pattern="[VEve]-?[0-9]{6,9}" title="Formato: V-12345678 o E-12345678">
+                </div>
+                <div class="form-group">
+                    <label>Primer Nombre <span style="color:#ef4444;">*</span></label>
+                    <input type="text" id="d_nombre1" required>
+                </div>
+                <div class="form-group">
+                    <label>Segundo Nombre</label>
+                    <input type="text" id="d_nombre2">
+                </div>
+                <div class="form-group">
+                    <label>Primer Apellido <span style="color:#ef4444;">*</span></label>
+                    <input type="text" id="d_apellido1" required>
+                </div>
+                <div class="form-group">
+                    <label>Segundo Apellido</label>
+                    <input type="text" id="d_apellido2">
+                </div>
+            </div>
+            
+            <div class="form-grid" style="margin-top: 14px;">
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Teléfono <span style="color:#64748b; font-weight:400;">(Opcional)</span></label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <div class="phone-dropdown-wrapper" style="width: 210px; flex-shrink: 0;">
+                            <select id="d_tlf_pais" style="position: absolute; opacity: 0; pointer-events: none; width: 100%; height: 100%; z-index: 1;">
+                                <option value="">--</option>
+                                <option value="+93">Afganistán</option>
+                                <option value="+355">Albania</option>
+                                <option value="+49">Alemania</option>
+                                <option value="+376">Andorra</option>
+                                <option value="+244">Angola</option>
+                                <option value="+1268">Antigua y Barbuda</option>
+                                <option value="+966">Arabia Saudita</option>
+                                <option value="+213">Argelia</option>
+                                <option value="+54">Argentina</option>
+                                <option value="+374">Armenia</option>
+                                <option value="+297">Aruba</option>
+                                <option value="+61">Australia</option>
+                                <option value="+43">Austria</option>
+                                <option value="+994">Azerbaiyán</option>
+                                <option value="+1242">Bahamas</option>
+                                <option value="+973">Baréin</option>
+                                <option value="+880">Bangladés</option>
+                                <option value="+1246">Barbados</option>
+                                <option value="+32">Bélgica</option>
+                                <option value="+501">Belice</option>
+                                <option value="+229">Benín</option>
+                                <option value="+1441">Bermudas</option>
+                                <option value="+375">Bielorrusia</option>
+                                <option value="+95">Birmania</option>
+                                <option value="+591">Bolivia</option>
+                                <option value="+387">Bosnia y Herzegovina</option>
+                                <option value="+267">Botsuana</option>
+                                <option value="+55">Brasil</option>
+                                <option value="+673">Brunéi</option>
+                                <option value="+359">Bulgaria</option>
+                                <option value="+226">Burkina Faso</option>
+                                <option value="+257">Burundi</option>
+                                <option value="+975">Bután</option>
+                                <option value="+238">Cabo Verde</option>
+                                <option value="+855">Camboya</option>
+                                <option value="+237">Camerún</option>
+                                <option value="+1">Canadá</option>
+                                <option value="+974">Catar</option>
+                                <option value="+236">Rep. Centroafricana</option>
+                                <option value="+235">Chad</option>
+                                <option value="+56">Chile</option>
+                                <option value="+86">China</option>
+                                <option value="+357">Chipre</option>
+                                <option value="+57">Colombia</option>
+                                <option value="+269">Comoras</option>
+                                <option value="+242">Congo</option>
+                                <option value="+850">Corea del Norte</option>
+                                <option value="+82">Corea del Sur</option>
+                                <option value="+225">Costa de Marfil</option>
+                                <option value="+506">Costa Rica</option>
+                                <option value="+385">Croacia</option>
+                                <option value="+53">Cuba</option>
+                                <option value="+599">Curazao</option>
+                                <option value="+45">Dinamarca</option>
+                                <option value="+1767">Dominica</option>
+                                <option value="+593">Ecuador</option>
+                                <option value="+20">Egipto</option>
+                                <option value="+503">El Salvador</option>
+                                <option value="+971">Emiratos Árabes</option>
+                                <option value="+291">Eritrea</option>
+                                <option value="+421">Eslovaquia</option>
+                                <option value="+386">Eslovenia</option>
+                                <option value="+34">España</option>
+                                <option value="+1">Estados Unidos</option>
+                                <option value="+372">Estonia</option>
+                                <option value="+251">Etiopía</option>
+                                <option value="+63">Filipinas</option>
+                                <option value="+358">Finlandia</option>
+                                <option value="+679">Fiyi</option>
+                                <option value="+33">Francia</option>
+                                <option value="+241">Gabón</option>
+                                <option value="+220">Gambia</option>
+                                <option value="+995">Georgia</option>
+                                <option value="+233">Ghana</option>
+                                <option value="+350">Gibraltar</option>
+                                <option value="+1473">Granada</option>
+                                <option value="+30">Grecia</option>
+                                <option value="+299">Groenlandia</option>
+                                <option value="+590">Guadalupe</option>
+                                <option value="+1671">Guam</option>
+                                <option value="+502">Guatemala</option>
+                                <option value="+594">Guayana Francesa</option>
+                                <option value="+224">Guinea</option>
+                                <option value="+240">Guinea Ecuatorial</option>
+                                <option value="+245">Guinea-Bisáu</option>
+                                <option value="+592">Guyana</option>
+                                <option value="+509">Haití</option>
+                                <option value="+504">Honduras</option>
+                                <option value="+852">Hong Kong</option>
+                                <option value="+36">Hungría</option>
+                                <option value="+91">India</option>
+                                <option value="+62">Indonesia</option>
+                                <option value="+964">Irak</option>
+                                <option value="+98">Irán</option>
+                                <option value="+353">Irlanda</option>
+                                <option value="+44">Isla de Man</option>
+                                <option value="+298">Islas Feroe</option>
+                                <option value="+677">Islas Salomón</option>
+                                <option value="+972">Israel</option>
+                                <option value="+39">Italia</option>
+                                <option value="+1876">Jamaica</option>
+                                <option value="+81">Japón</option>
+                                <option value="+962">Jordania</option>
+                                <option value="+7">Kazajistán</option>
+                                <option value="+254">Kenia</option>
+                                <option value="+996">Kirguistán</option>
+                                <option value="+686">Kiribati</option>
+                                <option value="+965">Kuwait</option>
+                                <option value="+856">Laos</option>
+                                <option value="+371">Letonia</option>
+                                <option value="+961">Líbano</option>
+                                <option value="+266">Lesoto</option>
+                                <option value="+231">Liberia</option>
+                                <option value="+218">Libia</option>
+                                <option value="+423">Liechtenstein</option>
+                                <option value="+370">Lituania</option>
+                                <option value="+352">Luxemburgo</option>
+                                <option value="+853">Macao</option>
+                                <option value="+389">Macedonia del Norte</option>
+                                <option value="+261">Madagascar</option>
+                                <option value="+60">Malasia</option>
+                                <option value="+265">Malaui</option>
+                                <option value="+960">Maldivas</option>
+                                <option value="+223">Malí</option>
+                                <option value="+356">Malta</option>
+                                <option value="+212">Marruecos</option>
+                                <option value="+596">Martinica</option>
+                                <option value="+230">Mauricio</option>
+                                <option value="+222">Mauritania</option>
+                                <option value="+262">Mayotte</option>
+                                <option value="+52">México</option>
+                                <option value="+691">Micronesia</option>
+                                <option value="+373">Moldavia</option>
+                                <option value="+377">Mónaco</option>
+                                <option value="+976">Mongolia</option>
+                                <option value="+382">Montenegro</option>
+                                <option value="+1664">Montserrat</option>
+                                <option value="+258">Mozambique</option>
+                                <option value="+264">Namibia</option>
+                                <option value="+674">Nauru</option>
+                                <option value="+977">Nepal</option>
+                                <option value="+505">Nicaragua</option>
+                                <option value="+227">Níger</option>
+                                <option value="+234">Nigeria</option>
+                                <option value="+683">Niue</option>
+                                <option value="+47">Noruega</option>
+                                <option value="+687">Nueva Caledonia</option>
+                                <option value="+64">Nueva Zelanda</option>
+                                <option value="+968">Omán</option>
+                                <option value="+31">Países Bajos</option>
+                                <option value="+92">Pakistán</option>
+                                <option value="+680">Palaos</option>
+                                <option value="+970">Palestina</option>
+                                <option value="+507">Panamá</option>
+                                <option value="+675">Papúa Nueva Guinea</option>
+                                <option value="+595">Paraguay</option>
+                                <option value="+51">Perú</option>
+                                <option value="+689">Polinesia Francesa</option>
+                                <option value="+48">Polonia</option>
+                                <option value="+351">Portugal</option>
+                                <option value="+1">Puerto Rico</option>
+                                <option value="+420">Rep. Checa</option>
+                                <option value="+262">Reunión</option>
+                                <option value="+250">Ruanda</option>
+                                <option value="+40">Rumania</option>
+                                <option value="+7">Rusia</option>
+                                <option value="+685">Samoa</option>
+                                <option value="+378">San Marino</option>
+                                <option value="+1758">Santa Lucía</option>
+                                <option value="+239">Santo Tomé y Príncipe</option>
+                                <option value="+1784">San Vicente y las Granadinas</option>
+                                <option value="+221">Senegal</option>
+                                <option value="+381">Serbia</option>
+                                <option value="+248">Seychelles</option>
+                                <option value="+232">Sierra Leona</option>
+                                <option value="+65">Singapur</option>
+                                <option value="+963">Siria</option>
+                                <option value="+252">Somalia</option>
+                                <option value="+27">Sudáfrica</option>
+                                <option value="+249">Sudán</option>
+                                <option value="+211">Sudán del Sur</option>
+                                <option value="+46">Suecia</option>
+                                <option value="+41">Suiza</option>
+                                <option value="+597">Surinam</option>
+                                <option value="+268">Esuatini</option>
+                                <option value="+992">Tayikistán</option>
+                                <option value="+255">Tanzania</option>
+                                <option value="+66">Tailandia</option>
+                                <option value="+670">Timor Oriental</option>
+                                <option value="+228">Togo</option>
+                                <option value="+676">Tonga</option>
+                                <option value="+1868">Trinidad y Tobago</option>
+                                <option value="+216">Túnez</option>
+                                <option value="+90">Turquía</option>
+                                <option value="+993">Turkmenistán</option>
+                                <option value="+688">Tuvalu</option>
+                                <option value="+380">Ucrania</option>
+                                <option value="+256">Uganda</option>
+                                <option value="+598">Uruguay</option>
+                                <option value="+998">Uzbekistán</option>
+                                <option value="+678">Vanuatu</option>
+                                <option value="+379">Vaticano</option>
+                                <option value="+58">Venezuela</option>
+                                <option value="+84">Vietnam</option>
+                                <option value="+681">Wallis y Futuna</option>
+                                <option value="+967">Yemen</option>
+                                <option value="+253">Yibuti</option>
+                                <option value="+260">Zambia</option>
+                                <option value="+263">Zimbabue</option>
+                            </select>
+                            <div class="phone-display">
+                                <img id="d-tlf-flag-img" src="https://flagcdn.com/w20/xx.png" style="width: 18px; height: 13px; object-fit: contain; border-radius: 2px;">
+                                <span id="d-tlf-code-text" style="font-weight: 600; min-width: 30px;">+XX</span>
+                                <span style="color: #cbd5e1;">|</span>
+                                <span id="d-tlf-country-text" style="color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.8rem;">País</span>
+                                <span style="margin-left: auto; font-size: 0.5rem; color: #94a3b8;">▼</span>
+                            </div>
+                            <div class="phone-options" style="display: none;"></div>
+                        </div>
+                        <input type="text" id="d_tlf_num" placeholder="Ej: 4141234567" style="flex: 1; min-width: 120px;">
+                    </div>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Dirección</label>
+                    <input type="text" id="d_direccion" placeholder="Dirección completa">
+                </div>
+            </div>
+        </fieldset>
+
+        <!-- Motivo de la Denuncia -->
+        <fieldset>
+            <legend>📌 Motivo de la Denuncia</legend>
+            <div class="form-group">
+                <label>Motivo <span style="color:#ef4444;">*</span></label>
+                <textarea id="d_motivo" rows="3" required placeholder="Describa brevemente el motivo principal de la denuncia..."></textarea>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>📄 Documentos Únicos (PDF)</legend>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Seleccione "Sí" para habilitar la carga.</p>
+            <div id="docs-unicos-container"></div>
+        </fieldset>
+
+        <fieldset>
+            <legend>📁 Documentos Múltiples (PDF)</legend>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Seleccione "Sí" para habilitar la carga (Máximo 10 archivos).</p>
+            <div id="docs-multiples-container"></div>
+        </fieldset>
+
+        <fieldset>
+            <legend>📝 Observaciones</legend>
+            <textarea id="d_observaciones" rows="4" placeholder="Detalles adicionales de la denuncia..."></textarea>
+        </fieldset>
+
+        <button type="submit" class="btn-submit">✅ Registrar Denuncia</button>
+        <div id="msg-reg-denuncias" class="msg"></div>
+    </form>
+</div>
+
+<div id="loading-overlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">⏳ Registrando denuncia...</div>
+</div>
