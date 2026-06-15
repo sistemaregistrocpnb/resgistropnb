@@ -75,44 +75,42 @@ document.getElementById('menu-gestion-usuarios')?.style.removeProperty('display'
 
 // 2. Aplicar reglas según el rol
 if (rol === 'consultor') {
-// El consultor SOLO ve el menú de Consulta. Ocultamos todos los demás menús principales.
+// El consultor SOLO ve el menú de Consulta
 document.querySelectorAll('.menu-item').forEach(item => {
 const btn = item.querySelector('.menu-btn');
-// Si el botón no controla el submenú de consulta, lo ocultamos
 if (btn && btn.dataset.toggle !== 'submenu-consulta') {
 item.style.setProperty('display', 'none', 'important');
 }
 });
 } 
 else if (rol === 'moderador') {
-// Ocultar menús de alto nivel (Historial y Gestión)
+// Ocultar menús de alto nivel
 document.getElementById('menu-historial')?.style.setProperty('display', 'none', 'important');
 document.getElementById('menu-gestion-usuarios')?.style.setProperty('display', 'none', 'important');
 
 // Aplicar reglas a cada botón individual
 document.querySelectorAll('.submenu-item').forEach(item => {
 const accion = item.getAttribute('data-accion');
-// Identificar a qué submenú pertenece este botón (su padre)
 const parentSubmenu = item.closest('.submenu');
 const parentId = parentSubmenu ? parentSubmenu.id : '';
 
-// REGLA A: El moderador NUNCA puede ver Modificar ni Eliminar en ningún lado
+// REGLA A: El moderador NUNCA puede ver Modificar ni Eliminar
 if (accion === 'modificar' || accion === 'eliminar') {
 item.style.setProperty('display', 'none', 'important');
-return; // Salimos de esta iteración
+return;
 }
 
-// REGLA B: En Procesar y Denuncias, el moderador NO puede Consultar (solo en Personas y Vehículos)
+// REGLA B: En Procesar y Denuncias, el moderador NO puede Consultar
 if ((parentId === 'submenu-procesar' || parentId === 'submenu-denuncias') && accion === 'consultar') {
 item.style.setProperty('display', 'none', 'important');
 }
 });
 } 
 else if (rol === 'administrador') {
-// El administrador ve todo, no hacemos nada (ya está todo visible por defecto)
+// El administrador ve todo
 } 
 else {
-// Rol desconocido o por defecto: Solo consulta (por seguridad)
+// Rol desconocido: Solo consulta
 document.querySelectorAll('.menu-item').forEach(item => {
 const btn = item.querySelector('.menu-btn');
 if (btn && btn.dataset.toggle !== 'submenu-consulta') {
@@ -142,7 +140,7 @@ document.head.appendChild(script);
 }
 } catch (err) {
 console.error(err);
-appContent.innerHTML = `<div class="card"><div class="placeholder error">❌ Error al cargar: ${err.message}</div></div>`;
+appContent.innerHTML = `<div class="card"><div class="placeholder error"> Error al cargar: ${err.message}</div></div>`;
 }
 }
 
@@ -181,7 +179,7 @@ sidebar.classList.remove('open');
 }
 }
 
-// ⏰ Reloj en tiempo real
+//  Reloj en tiempo real
 function iniciarReloj() {
 const clockEl = document.getElementById('live-clock');
 if (!clockEl) return;
@@ -201,7 +199,7 @@ window.location.href = 'index.html';
 });
 
 // ==========================================
-//  LÓGICA DE CHAT PRIVADO Y PRESENCIA
+// 🔹 LÓGICA DE CHAT PRIVADO Y PRESENCIA
 // ==========================================
 let chatChannelPresence = null;
 let chatChannelMessages = null;
@@ -232,7 +230,7 @@ const replyIndicator = document.getElementById('reply-indicator');
 const replyToName = document.getElementById('reply-to-name');
 const cancelReplyBtn = document.getElementById('cancel-reply');
 
-// 1. PRESENCIA (Corregido para evitar duplicados)
+// 1. PRESENCIA
 chatChannelPresence = window.supabaseClient.channel('sistema-presence', {
 config: { presence: { key: currentUserId } }
 });
@@ -241,10 +239,8 @@ chatChannelPresence.on('presence', { event: 'sync' }, () => {
 const state = chatChannelPresence.presenceState();
 const usuariosEnLinea = [];
 
-// ✅ CORRECCIÓN: Agrupamos por ID de usuario (la clave del objeto) para garantizar unicidad
 for (const [userId, presenceData] of Object.entries(state)) {
 if (presenceData && presenceData.length > 0) {
-// Tomamos el último estado registrado de este usuario
 usuariosEnLinea.push({ id: userId, ...presenceData[presenceData.length - 1] });
 }
 }
@@ -276,7 +272,6 @@ chatChannelMessages = window.supabaseClient
 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensajes' }, (payload) => {
 const nuevoMensaje = payload.new;
 
-// ✅ CORRECCIÓN: Evitar duplicados si el mensaje ya fue renderizado por su ID real
 if (nuevoMensaje.id && document.querySelector(`[data-msg-id="${nuevoMensaje.id}"]`)) {
 return;
 }
@@ -330,14 +325,13 @@ chatInput.placeholder = `Escribe la respuesta para ${userName}...`;
 chatInput.focus();
 };
 
-// 5. ENVIAR MENSAJE (Corregido para evitar duplicados y pérdida de receptor)
+// 5. ENVIAR MENSAJE
 async function enviarMensaje() {
 const texto = chatInput.value.trim();
 if (!texto) return;
 
-// Generamos un ID temporal para la vista optimista
 const tempId = 'temp-' + Date.now();
-const targetReceptor = replyingToUserId; // Guardamos el receptor antes de limpiar la variable
+const targetReceptor = replyingToUserId;
 
 const mensajeTemp = {
 id: tempId,
@@ -350,18 +344,15 @@ tipo: currentUserRole === 'administrador' ? 'admin' : 'user',
 creado_en: new Date().toISOString()
 };
 
-// 1. Mostrar inmediatamente (Vista optimista)
 agregarMensajeAlDOM(mensajeTemp);
 chatInput.value = '';
 
-// 2. Limpiar estado de respuesta
 if (targetReceptor) {
 replyingToUserId = null;
 replyIndicator.style.display = 'none';
 chatInput.placeholder = "Escribe tu mensaje...";
 }
 
-// 3. Guardar en base de datos y obtener el ID real
 const { data, error } = await window.supabaseClient
 .from('chat_mensajes')
 .insert([{
@@ -377,12 +368,9 @@ tipo: currentUserRole === 'administrador' ? 'admin' : 'user'
 
 if (error) {
 console.error('Error al enviar:', error);
-// Si falla, eliminamos el mensaje temporal
 const tempDiv = document.querySelector(`[data-msg-id="${tempId}"]`);
 if (tempDiv) tempDiv.remove();
 } else if (data) {
-// Si tiene éxito, eliminamos el mensaje temporal.
-// El listener de tiempo real lo dibujará automáticamente con su ID real.
 const tempDiv = document.querySelector(`[data-msg-id="${tempId}"]`);
 if (tempDiv) tempDiv.remove();
 }
@@ -413,7 +401,7 @@ data.forEach(msg => agregarMensajeAlDOM(msg));
 } else {
 chatMessages.innerHTML = `
 <div class="chat-message system">
-<p style="font-size: 0.9rem; font-weight: 600;"> ¡Bienvenido al Chat de Soporte OTIC-ZULIA!</p>
+<p style="font-size: 0.9rem; font-weight: 600;">👋 ¡Bienvenido al Chat de Soporte OTIC-ZULIA!</p>
 <p style="margin-top: 5px; font-size: 0.8rem;">Escribe tu consulta aquí abajo. Un administrador te responderá de forma privada a la brevedad.</p>
 </div>
 `;
@@ -424,7 +412,6 @@ chatMessages.innerHTML = `
 function agregarMensajeAlDOM(msg) {
 const div = document.createElement('div');
 
-// ✅ Guardamos el ID real en un atributo de datos para evitar duplicados en el listener
 if (msg.id && !msg.id.startsWith('temp-')) {
 div.dataset.msgId = msg.id;
 }
