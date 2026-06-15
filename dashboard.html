@@ -348,19 +348,17 @@ body {
     .chat-window { width: 90%; right: 5%; bottom: 95px; height: 60vh; }
     .chat-bubble { bottom: 15px; right: 15px; width: 55px; height: 55px; }
 }
-  /* 🔒 OCULTAR MENÚS SENSIBLES POR DEFECTO (hasta que JS confirme el rol) */
+ /* 🔒 ESCUDO ANTI-FLASH: Oculta todo lo sensible hasta que el JS confirme el rol */
 body:not(.js-ready) #menu-historial,
 body:not(.js-ready) #menu-gestion-usuarios {
     display: none !important;
 }
 
-/* Ocultar botones de modificar/eliminar por defecto */
 body:not(.js-ready) .submenu-item[data-accion="modificar"],
 body:not(.js-ready) .submenu-item[data-accion="eliminar"] {
     display: none !important;
 }
 
-/* Ocultar submenús de registro completos por defecto */
 body:not(.js-ready) #submenu-reg-personas,
 body:not(.js-ready) #submenu-reg-vehiculos,
 body:not(.js-ready) #submenu-pv,
