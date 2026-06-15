@@ -115,7 +115,7 @@ body { background: var(--bg); color: var(--text); height: 100vh; overflow: hidde
 <div class="user-fullname" id="user-nombre-display">Cargando...</div>
 </div>
 <nav class="menu">
-<!-- CONSULTA (Visible por defecto) -->
+<!-- CONSULTA (Visible por defecto para todos) -->
 <div class="menu-item">
 <button class="menu-btn" data-toggle="submenu-consulta">
 <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
@@ -128,12 +128,12 @@ Consulta <span class="arrow">▼</span>
 </div>
 
 <!-- REGISTRO DE PERSONAS (Submenú oculto por defecto) -->
-<div class="menu-item">
+<div class="menu-item" id="menu-reg-personas" style="display: none !important;">
 <button class="menu-btn" data-toggle="submenu-reg-personas">
 <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
 Registro de Personas <span class="arrow">▼</span>
 </button>
-<div class="submenu" id="submenu-reg-personas" style="display: none !important;">
+<div class="submenu" id="submenu-reg-personas">
 <a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-personas.html" data-js="js/reg-personas.js" data-init="initRegPersonas">📝 Registrar</a>
 <a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-personas.html" data-js="js/mod-personas.js" data-init="initModPersonas" style="display: none !important;">✏️ Modificar</a>
 <a href="#" class="submenu-item danger" data-accion="eliminar" data-src="html/elim-personas.html" data-js="js/elim-personas.js" data-init="initElimPersonas" style="display: none !important;">🗑️ Eliminar</a>
@@ -141,25 +141,25 @@ Registro de Personas <span class="arrow">▼</span>
 </div>
 
 <!-- REGISTRO DE VEHÍCULOS (Submenú oculto por defecto) -->
-<div class="menu-item">
+<div class="menu-item" id="menu-reg-vehiculos" style="display: none !important;">
 <button class="menu-btn" data-toggle="submenu-reg-vehiculos">
 <svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
 Registro de Vehículos <span class="arrow">▼</span>
 </button>
-<div class="submenu" id="submenu-reg-vehiculos" style="display: none !important;">
-<a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-vehiculos.html" data-js="js/reg-vehiculos.js" data-init="initRegVehiculos">📝 Registrar</a>
-<a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-vehiculos.html" data-js="js/mod-vehiculos.js" data-init="initModVehiculos" style="display: none !important;">✏️ Modificar</a>
+<div class="submenu" id="submenu-reg-vehiculos">
+<a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-vehiculos.html" data-js="js/reg-vehiculos.js" data-init="initRegVehiculos"> Registrar</a>
+<a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-vehiculos.html" data-js="js/mod-vehiculos.js" data-init="initModVehiculos" style="display: none !important;">️ Modificar</a>
 <a href="#" class="submenu-item danger" data-accion="eliminar" data-src="html/elim-vehiculos.html" data-js="js/elim-vehiculos.js" data-init="initElimVehiculos" style="display: none !important;">🗑️ Eliminar</a>
 </div>
 </div>
 
 <!-- PERSONAS CON VEHÍCULOS (Submenú oculto por defecto) -->
-<div class="menu-item">
+<div class="menu-item" id="menu-pv" style="display: none !important;">
 <button class="menu-btn" data-toggle="submenu-pv">
 <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
 Personas con Vehículos <span class="arrow">▼</span>
 </button>
-<div class="submenu" id="submenu-pv" style="display: none !important;">
+<div class="submenu" id="submenu-pv">
 <a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-vinculado.html" data-js="js/reg-vinculado.js" data-init="initRegVinculado">📝 Registrar</a>
 <a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-vinculado.html" data-js="js/mod-vinculado.js" data-init="initModVinculado" style="display: none !important;">✏️ Modificar</a>
 <a href="#" class="submenu-item danger" data-accion="eliminar" data-src="html/elim-vinculados.html" data-js="js/elim-vinculados.js" data-init="initElimVinculados" style="display: none !important;">️ Eliminar</a>
@@ -167,29 +167,29 @@ Personas con Vehículos <span class="arrow">▼</span>
 </div>
 
 <!-- PROCESAR (Submenú oculto por defecto) -->
-<div class="menu-item">
+<div class="menu-item" id="menu-procesar" style="display: none !important;">
 <button class="menu-btn" data-toggle="submenu-procesar">
 <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
 Procesar <span class="arrow">▼</span>
 </button>
-<div class="submenu" id="submenu-procesar" style="display: none !important;">
-<a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-procesados.html" data-js="js/reg-procesados.js" data-init="initRegProcesados"> Registrar</a>
+<div class="submenu" id="submenu-procesar">
+<a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-procesados.html" data-js="js/reg-procesados.js" data-init="initRegProcesados">📝 Registrar</a>
 <a href="#" class="submenu-item" data-accion="modificar" data-src="html/editar-procesado.html" data-js="js/editar-procesado.js" data-init="initModProcesados" style="display: none !important;">✏️ Modificar</a>
-<a href="#" class="submenu-item" data-accion="consultar" data-src="html/con-procesados.html" style="display: none !important;"> Consultar</a>
+<a href="#" class="submenu-item" data-accion="consultar" data-src="html/con-procesados.html" style="display: none !important;">🔍 Consultar</a>
 <a href="#" class="submenu-item danger" data-accion="eliminar" data-src="html/eliminar-procesados.html" data-js="js/elim-procesados.js" data-init="initElimProcesados" style="display: none !important;">🗑️ Eliminar</a>
 </div>
 </div>
 
 <!-- DENUNCIAS (Submenú oculto por defecto) -->
-<div class="menu-item">
+<div class="menu-item" id="menu-denuncias" style="display: none !important;">
 <button class="menu-btn" data-toggle="submenu-denuncias">
 <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
 Denuncias <span class="arrow">▼</span>
 </button>
-<div class="submenu" id="submenu-denuncias" style="display: none !important;">
+<div class="submenu" id="submenu-denuncias">
 <a href="#" class="submenu-item" data-accion="registrar" data-src="html/reg-denuncias.html" data-js="js/reg-denuncias.js" data-init="initRegDenuncias">📝 Registrar</a>
-<a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-denuncias.html" data-js="js/mod-denuncias.js" data-init="initModDenuncias" style="display: none !important;">️ Modificar</a>
-<a href="#" class="submenu-item" data-accion="consultar" data-src="html/con-tabla.html" data-js="js/con-tabla.js" data-init="initConsultaDenuncias" style="display: none !important;"> Consultar</a>
+<a href="#" class="submenu-item" data-accion="modificar" data-src="html/mod-denuncias.html" data-js="js/mod-denuncias.js" data-init="initModDenuncias" style="display: none !important;">✏️ Modificar</a>
+<a href="#" class="submenu-item" data-accion="consultar" data-src="html/con-tabla.html" data-js="js/con-tabla.js" data-init="initConsultaDenuncias" style="display: none !important;">🔍 Consultar</a>
 <a href="#" class="submenu-item danger" data-accion="eliminar" data-src="html/eli-denuncias.html" data-js="js/eli-denuncias.js" data-init="initElimDenuncias" style="display: none !important;">🗑️ Eliminar</a>
 </div>
 </div>
@@ -214,7 +214,7 @@ Gestión de Usuarios <span class="arrow">▼</span>
 <div class="submenu" id="submenu-gestion-usuarios">
 <a href="#" class="submenu-item" data-src="html/crear-usuario.html" data-js="js/crear-usuario.js" data-init="initCrearUsuario">👤➕ Crear Usuario Nuevo</a>
 <a href="#" class="submenu-item" data-src="html/mod-usuario.html" data-js="js/mod-usuario.js" data-init="initModUsuario">✏️ Modificar y Desbloquear</a>
-<a href="#" class="submenu-item danger" data-src="html/elim-usuario.html" data-js="js/elim-usuario.js" data-init="initElimUsuario">🗑️ Eliminar Usuario</a>
+<a href="#" class="submenu-item danger" data-src="html/elim-usuario.html" data-js="js/elim-usuario.js" data-init="initElimUsuario">️ Eliminar Usuario</a>
 <a href="#" class="submenu-item" data-src="html/logs-sistema.html" data-js="js/logs-sistema.js" data-init="initLogsSistema">📋 Logs del Sistema</a>
 </div>
 </div>
@@ -253,7 +253,6 @@ Para gestión de usuarios y soporte comuníquese con los números:<br>
 </div>
 </main>
 </div>
-<!--  WIDGET DE CHAT PRIVADO Y PRESENCIA -->
 <div id="chat-widget">
 <button id="chat-bubble" class="chat-bubble" title="Soporte en Línea">
 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
@@ -262,7 +261,7 @@ Para gestión de usuarios y soporte comuníquese con los números:<br>
 <div id="chat-window" class="chat-window" style="display: none;">
 <div class="chat-header">
 <div>
-<strong>💬 Soporte OTIC-ZULIA</strong>
+<strong> Soporte OTIC-ZULIA</strong>
 <div id="admin-online-indicator" class="admin-status" style="display: none;">
 🟢 <span id="online-count">0</span> conectados
 </div>
