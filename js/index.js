@@ -114,10 +114,10 @@ if (perfil.intentos_fallidos > 0) {
         .eq('user_id', auth.user.id);
 }
 
-// ✅ GUARDAR HORA DE INICIO DE SESIÓN (para calcular duración en el logout)
+// ✅ GUARDAR HORA DE INICIO (para calcular duración al cerrar sesión)
 sessionStorage.setItem('pnb_login_time', Date.now().toString());
 
-// ✅ REGISTRAR EL LOGIN EN LA TABLA sistema_logs
+// ✅ REGISTRAR EL LOGIN EN sistema_logs (con nombre y nivel)
 if (typeof window.registrarLogin === 'function') {
     await window.registrarLogin(nombreCompleto, auth.user.email, auth.user.id, nivel);
 }
@@ -126,7 +126,7 @@ if (typeof window.registrarLogin === 'function') {
 sessionStorage.setItem('pnb_user_id', auth.user.id);
 sessionStorage.setItem('pnb_user_email', auth.user.email);
 sessionStorage.setItem('pnb_user_nivel', nivel);
-
+    
 mostrarMensaje(
 '✅ <strong>Acceso concedido.</strong><br>' +
 '<span style="font-size:0.85rem;">Bienvenido al sistema. Redirigiendo al panel principal...</span>',
