@@ -65,41 +65,57 @@ document.addEventListener('DOMContentLoaded', async () => {
         iniciarChatPrivado();
     }
 
-  // 🔒 Matriz de permisos estricta basada en atributos
+// 🔒 Matriz de permisos estricta y dinámica
 function aplicarPermisos(rol) {
-    // 1. Primero, mostrar todo por defecto
+    // 1. Resetear: Mostrar todo por defecto
     document.querySelectorAll('.menu-item').forEach(item => item.style.display = 'block');
     document.querySelectorAll('.submenu-item').forEach(item => item.style.display = 'block');
-    
-    // Ocultar menús de alto nivel por defecto para roles bajos
-    document.getElementById('menu-historial')?.style.setProperty('display', 'none', 'important');
-    document.getElementById('menu-gestion-usuarios')?.style.setProperty('display', 'none', 'important');
+    document.getElementById('menu-historial')?.style.removeProperty('display');
+    document.getElementById('menu-gestion-usuarios')?.style.removeProperty('display');
 
     // 2. Aplicar reglas según el rol
-    if (rol === 'administrador') {
-        // El admin ve todo, incluso historial y gestión
-        document.getElementById('menu-historial')?.style.removeProperty('display');
-        document.getElementById('menu-gestion-usuarios')?.style.removeProperty('display');
-        
-    } else if (rol === 'moderador') {
-        // El moderador SOLO puede REGISTRAR. 
-        // Ocultamos Consultar, Modificar y Eliminar en TODOS los menús.
-        document.querySelectorAll('.submenu-item').forEach(item => {
-            const accion = item.getAttribute('data-accion');
-            if (accion !== 'registrar') {
+    if (rol === 'consultor') {
+        // El consultor SOLO ve el menú de Consulta. Ocultamos todos los demás menús principales.
+        document.querySelectorAll('.menu-item').forEach(item => {
+            const btn = item.querySelector('.menu-btn');
+            // Si el botón no controla el submenú de consulta, lo ocultamos
+            if (btn && btn.dataset.toggle !== 'submenu-consulta') {
                 item.style.setProperty('display', 'none', 'important');
             }
         });
-
-    } else if (rol === 'consultor') {
-        // El consultor SOLO puede CONSULTAR.
-        // Ocultamos menús de registro completos
-        document.getElementById('menu-reg-personas')?.style.setProperty('display', 'none', 'important'); // Si les pones ID a los divs
-        document.getElementById('menu-reg-vehiculos')?.style.setProperty('display', 'none', 'important');
+    } 
+    else if (rol === 'moderador') {
+        // Ocultar menús de alto nivel (Historial y Gestión)
+        document.getElementById('menu-historial')?.style.setProperty('display', 'none', 'important');
+        document.getElementById('menu-gestion-usuarios')?.style.setProperty('display', 'none', 'important');
         
+        // Aplicar reglas a cada botón individual
         document.querySelectorAll('.submenu-item').forEach(item => {
             const accion = item.getAttribute('data-accion');
-            if (accion !== 'consultar') {
+            // Identificar a qué submenú pertenece este botón (su padre)
+            const parentSubmenu = item.closest('.submenu');
+            const parentId = parentSubmenu ? parentSubmenu.id : '';
+            
+            // REGLA A: El moderador NUNCA puede ver Modificar ni Eliminar en ningún lado
+            if (accion === 'modificar' || accion === 'eliminar') {
+                item.style.setProperty('display', 'none', 'important');
+                return; // Salimos de esta iteración
+            }
+            
+            // REGLA B: En Procesar y Denuncias, el moderador NO puede Consultar (solo en Personas y Vehículos)
+            if ((parentId === 'submenu-procesar' || parentId === 'submenu-denuncias') && accion === 'consultar') {
+                item.style.setProperty('display', 'none', 'important');
+            }
+        });
+    } 
+    else if (rol === 'administrador') {
+        // El administrador ve todo, no hacemos nada (ya está todo visible por defecto)
+    } 
+    else {
+        // Rol desconocido o por defecto: Solo consulta (por seguridad)
+        document.querySelectorAll('.menu-item').forEach(item => {
+            const btn = item.querySelector('.menu-btn');
+            if (btn && btn.dataset.toggle !== 'submenu-consulta') {
                 item.style.setProperty('display', 'none', 'important');
             }
         });
