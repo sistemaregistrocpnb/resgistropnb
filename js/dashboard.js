@@ -235,9 +235,60 @@ async function iniciarChatPrivado() {
     const currentUserId = session.user.id;
     const currentUserRole = sessionStorage.getItem('pnb_user_nivel') || 'consultor';
     const nombreDOM = document.getElementById('user-nombre-display')?.textContent;
-    const currentUserName = (nombreDOM && nombreDOM !== 'Cargando...' && nombreDOM !== 'NOMBRE NO DISPONIBLE')
-        ? nombreDOM
-        : (session.user.email?.split('@')[0].toUpperCase() || 'USUARIO');
+  const currentUserName = (nombreDOM && nombreDOM !== 'Cargando...' && nombreDOM !== 'NOMBRE NO DISPONIBLE')
+    ? nombreDOM
+    : (session.user.email?.split('@')[0].toUpperCase() || 'USUARIO');
+
+// ✅ Generar ID único de sesión para esta pestaña específica
+const sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+sessionStorage.setItem('pnb_session_id', sessionId);
+
+const chatBubble = document.getElementById('chat-bubble');
+// ... (mantén el resto de las constantes igual)
+
+// ✅ 1. PRESENCIA CON CLAVE ÚNICA POR PESTAÑA (user_id + sessionId)
+chatChannelPresence = window.supabaseClient.channel('sistema-presencia-global', {
+    config: { presence: { key: currentUserId + '_' + sessionId } }
+});
+
+chatChannelPresence.on('presence', { event: 'sync' }, () => {
+    const state = chatChannelPresence.presenceState();
+    const usuariosEnLinea = [];
+
+    for (const [userId, presenceData] of Object.entries(state)) {
+        if (presenceData && presenceData.length > 0) {
+            usuariosEnLinea.push({ id: userId, ...presenceData[presenceData.length - 1] });
+        }
+    }
+
+    if (currentUserRole === 'administrador') {
+        adminOnlinePanel.style.display = 'block';
+        adminOnlineIndicator.style.display = 'block';
+        onlineCountSpan.textContent = usuariosEnLinea.length;
+        onlineUsersList.innerHTML = '';
+        usuariosEnLinea.forEach(user => {
+            const li = document.createElement('li');
+            const nombreUser = user.nombre ? user.nombre.toUpperCase() : 'USUARIO';
+            const rolUser = user.rol ? user.rol.toUpperCase() : 'ROL';
+            li.textContent = `${nombreUser} (${rolUser})`;
+            onlineUsersList.appendChild(li);
+        });
+    }
+});
+
+await chatChannelPresence.subscribe(async (status) => {
+    if (status === 'SUBSCRIBED') {
+        await chatChannelPresence.track({ 
+            nombre: currentUserName, 
+            rol: currentUserRole,
+            user_id: currentUserId,
+            sessionId: sessionId, // ✅ Enviamos el ID de sesión
+            timestamp: Date.now()
+        });
+    }
+});
+
+// ... (el resto del código del chat sigue igual hasta el final del archivo)
 
     const chatBubble = document.getElementById('chat-bubble');
     const chatWindow = document.getElementById('chat-window');
