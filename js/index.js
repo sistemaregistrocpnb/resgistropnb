@@ -105,8 +105,8 @@ return;
 // ==========================================
 const nivel = perfil.nivel || 'usuario';
 const nombreCompleto = `${perfil.nombre || ''} ${perfil.apellido || ''}`.trim().toUpperCase() || email.split('@')[0].toUpperCase();
+  // ✅ AGREGAR ESTAS DOS LÍNEAS AQUÍ:
 
-// Resetear contador de intentos al iniciar sesión correctamente
 if (perfil.intentos_fallidos > 0) {
 await window.supabaseClient
 .from('perfiles_usuario')
@@ -114,10 +114,11 @@ await window.supabaseClient
 .eq('user_id', auth.user.id);
 }
 
-// ✅ REGISTRAR LOG DE LOGIN
+sessionStorage.setItem('pnb_login_time', Date.now().toString()); // Guarda la hora exacta
 if (typeof window.registrarLogin === 'function') {
-await window.registrarLogin(nombreCompleto, auth.user.email, auth.user.id, nivel);
+    await window.registrarLogin(nombreCompleto, auth.user.email, auth.user.id, nivel); // Llama a utils.js
 }
+
 
 // Guardar sesión
 sessionStorage.setItem('pnb_user_id', auth.user.id);
