@@ -223,61 +223,62 @@ window.initRegDenuncias = function() {
             actualizarListaMultiples(docId, max);
         };
 
-        // ==========================================
-        // 🔹 DROPDOWN DE BANDERAS (LÓGICA MEJORADA)
-        // ==========================================
-        const flagImg = document.getElementById('d-tlf-flag-img');
-        const codeText = document.getElementById('d-tlf-code-text');
-        const countryText = document.getElementById('d-tlf-country-text');
-        
-        if (nativeSelect && displayBox && optionsBox) {
-            optionsBox.innerHTML = '';
-            let opcionesGeneradas = 0;
-            
-            Array.from(nativeSelect.options).forEach(opt => {
-                if (!opt.value) return;
-                
-                // ✅ NUEVO: Leer directamente el atributo data-iso para precisión del 100%
-                let iso = opt.getAttribute('data-iso');
-                
-                // Fallback de seguridad por si algún option no tiene el atributo
-                if (!iso) {
-                    iso = opt.value.replace('+','').toLowerCase();
-                    if (!iso || iso.length !== 2) iso = 'xx'; 
-                }
+// ==========================================
+// 🔹 DROPDOWN DE BANDERAS (LÓGICA MEJORADA Y 100% PRECISA)
+// ==========================================
+const flagImg = document.getElementById('d-tlf-flag-img');
+const codeText = document.getElementById('d-tlf-code-text');
+const countryText = document.getElementById('d-tlf-country-text');
 
-                const div = document.createElement('div');
-                div.className = 'phone-option';
-                // ✅ NUEVO: onerror para mostrar bandera genérica si falla la carga de la imagen
-                div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;" onerror="this.src='https://flagcdn.com/w20/xx.png'"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.85rem;">${opt.text}</span>`;
-                div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:0.15s;';
-                div.onmouseenter = () => div.style.background = '#f8fafc';
-                div.onmouseleave = () => div.style.background = '';
-                div.addEventListener('click', () => {
-                    nativeSelect.value = opt.value;
-                    flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
-                    codeText.textContent = opt.value;
-                    countryText.textContent = opt.text;
-                    optionsBox.style.display = 'none';
-                });
-                optionsBox.appendChild(div);
-                opcionesGeneradas++;
-            });
-            console.log(`✅ Lista de teléfonos generada con ${opcionesGeneradas} países.`);
-            
-            displayBox.addEventListener('click', (e) => {
-                e.stopPropagation();
-                optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block';
-            });
-            
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.phone-dropdown-wrapper')) {
-                    optionsBox.style.display = 'none';
-                }
-            });
+if (nativeSelect && displayBox && optionsBox) {
+    optionsBox.innerHTML = '';
+    let opcionesGeneradas = 0;
+    
+    Array.from(nativeSelect.options).forEach(opt => {
+        if (!opt.value) return;
+        
+        // ✅ LEER DIRECTAMENTE EL ATRIBUTO data-iso DEL HTML (Precisión del 100%)
+        let iso = opt.getAttribute('data-iso');
+        
+        // Fallback de seguridad extremo (por si acaso algún option no lo tuviera)
+        if (!iso) {
+            iso = opt.value.replace('+','').toLowerCase();
+            if (iso.length !== 2) iso = 'xx'; 
         }
 
-        actualizarProximoNumero();
+        const div = document.createElement('div');
+        div.className = 'phone-option';
+        
+        // ✅ onerror garantiza que NUNCA se vea un icono de imagen rota
+        div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;" onerror="this.src='https://flagcdn.com/w20/xx.png'"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.85rem;">${opt.text}</span>`;
+        
+        div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:0.15s;';
+        div.onmouseenter = () => div.style.background = '#f8fafc';
+        div.onmouseleave = () => div.style.background = '';
+        
+        div.addEventListener('click', () => {
+            nativeSelect.value = opt.value;
+            flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
+            codeText.textContent = opt.value;
+            countryText.textContent = opt.text;
+            optionsBox.style.display = 'none';
+        });
+        optionsBox.appendChild(div);
+        opcionesGeneradas++;
+    });
+    console.log(`✅ Lista de teléfonos generada con ${opcionesGeneradas} países/territorios.`);
+    
+    displayBox.addEventListener('click', (e) => {
+        e.stopPropagation();
+        optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block';
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.phone-dropdown-wrapper')) {
+            optionsBox.style.display = 'none';
+        }
+    });
+}
 
         // ==========================================
         // ENVÍO DEL FORMULARIO
