@@ -166,20 +166,35 @@ actualizar();
 setInterval(actualizar, 1000);
 }
 btnLogout.addEventListener('click', async () => {
-    // ✅ REGISTRAR LOGOUT ANTES DE CERRAR SESIÓN (calcula duración)
+    // ✅ 1. Desuscribirse del canal de presencia PRIMERO
+    if (chatChannelPresence) {
+        try {
+            await chatChannelPresence.untrack();
+            await chatChannelPresence.unsubscribe();
+        } catch (err) {
+            console.warn('Error al desuscribirse de presencia:', err);
+        }
+    }
+    
+    // ✅ 2. Registrar LOGOUT (calcula duración)
     if (typeof window.registrarLogout === 'function') {
         await window.registrarLogout();
     }
     
-    // ✅ Desuscribirse del canal de presencia antes de cerrar
-    if (chatChannelPresence) {
-        await chatChannelPresence.untrack();
-        await chatChannelPresence.unsubscribe();
-    }
-    
+    // ✅ 3. Cerrar sesión y limpiar
     await window.supabaseClient.auth.signOut();
     sessionStorage.clear();
     window.location.href = 'index.html';
+});
+
+// ✅ Cerrar sesión limpiamente si el usuario cierra la pestaña
+window.addEventListener('beforeunload', () => {
+    if (chatChannelPresence) {
+        // untrack es asíncrono pero beforeunload no espera, así que usamos send
+        try {
+            chatChannelPresence.untrack();
+        } catch (e) {}
+    }
 });
 
 // ✅ CERRAR SESIÓN SI EL USUARIO CIERRA LA VENTANA O RECARGA
