@@ -1,4 +1,4 @@
-// 🔒 BLOQUEO DE CONSOLA PARA SEGURIDAD (Mantenido según solicitud)
+// 🔒 BLOQUEO DE CONSOLA PARA SEGURIDAD
 window.console.log = function() {};
 window.console.warn = function() {};
 window.console.error = function() {};
@@ -14,17 +14,14 @@ const sidebar = document.getElementById('sidebar');
 const appContent = document.getElementById('app-content');
 
 async function initDashboard() {
-// 1. Verificar sesión
 const { data: { session } } = await window.supabaseClient.auth.getSession();
 if (!session) {
 window.location.href = 'index.html';
 return;
 }
 
-// 2. Mostrar email en el navbar
 userEmailEl.textContent = session.user.email;
 
-// 3. Cargar datos del perfil
 try {
 const { data: perfil, error } = await window.supabaseClient
 .from('perfiles_usuario')
@@ -50,71 +47,65 @@ document.getElementById('user-foto').src = `https://ui-avatars.com/api/?name=${e
 }
 }
 } catch (err) {
-// Error silencioso por el bloqueo de consola
+// Error silencioso
 }
 
-// 4. Aplicar restricciones de menú según rol
 const rolActual = (sessionStorage.getItem('pnb_user_nivel') || 'consultor').toLowerCase();
 userRoleEl.textContent = rolActual;
 aplicarPermisos(rolActual);
 
-// 5. Configurar eventos del menú
 configurarMenu();
-
-// 6. Iniciar reloj
 iniciarReloj();
-
-// 7. Iniciar Chat Privado
 iniciarChatPrivado();
 }
 
-// 🔒 Matriz de permisos basada en "Desbloqueo" (Remove display:none)
+// 🔒 Matriz de permisos basada en DESBLOQUEO SELECTIVO
+// ✅ CORRECCIÓN: Usar elemento.style.display = '' para quitar el !important inline
 function aplicarPermisos(rol) {
-// Funciones auxiliares para mostrar/ocultar
-const show = (el) => { if(el) el.style.removeProperty('display'); };
-const hide = (el) => { if(el) el.style.setProperty('display', 'none', 'important'); };
-
-// 1. ESTADO BASE: Todo lo sensible está oculto por defecto en el HTML.
-// No necesitamos ocultar nada aquí, solo mostrar lo permitido.
+// Función auxiliar para mostrar elementos (quita el display: none !important inline)
+const mostrar = (elemento) => {
+if (elemento) {
+elemento.style.display = ''; // ✅ Esto elimina completamente el estilo inline, incluyendo !important
+}
+};
 
 if (rol === 'administrador') {
-// El admin ve TODO. Mostramos los menús y botones ocultos por defecto.
-show(document.getElementById('menu-historial'));
-show(document.getElementById('menu-gestion-usuarios'));
-show(document.getElementById('submenu-reg-personas'));
-show(document.getElementById('submenu-reg-vehiculos'));
-show(document.getElementById('submenu-pv'));
-show(document.getElementById('submenu-procesar'));
-show(document.getElementById('submenu-denuncias'));
+// El admin ve TODO: mostrar todos los menús y botones ocultos
+mostrar(document.getElementById('menu-historial'));
+mostrar(document.getElementById('menu-gestion-usuarios'));
+mostrar(document.getElementById('menu-reg-personas'));
+mostrar(document.getElementById('menu-reg-vehiculos'));
+mostrar(document.getElementById('menu-pv'));
+mostrar(document.getElementById('menu-procesar'));
+mostrar(document.getElementById('menu-denuncias'));
 
-// Mostrar botones de Modificar y Eliminar
-document.querySelectorAll('.submenu-item[data-accion="modificar"], .submenu-item[data-accion="eliminar"]').forEach(btn => show(btn));
-// Mostrar botón de Consultar en Procesar y Denuncias
-document.querySelectorAll('#submenu-procesar .submenu-item[data-accion="consultar"], #submenu-denuncias .submenu-item[data-accion="consultar"]').forEach(btn => show(btn));
+// Mostrar TODOS los botones de Modificar, Eliminar y Consultar (en Procesar/Denuncias)
+document.querySelectorAll('.submenu-item[data-accion="modificar"]').forEach(btn => mostrar(btn));
+document.querySelectorAll('.submenu-item[data-accion="eliminar"]').forEach(btn => mostrar(btn));
+document.querySelectorAll('.submenu-item[data-accion="consultar"]').forEach(btn => mostrar(btn));
 } 
 else if (rol === 'moderador') {
-// El moderador ve los submenús de registro, pero NO historial ni gestión.
-show(document.getElementById('submenu-reg-personas'));
-show(document.getElementById('submenu-reg-vehiculos'));
-show(document.getElementById('submenu-pv'));
-show(document.getElementById('submenu-procesar'));
-show(document.getElementById('submenu-denuncias'));
+// El moderador ve los menús de registro pero NO historial ni gestión
+mostrar(document.getElementById('menu-reg-personas'));
+mostrar(document.getElementById('menu-reg-vehiculos'));
+mostrar(document.getElementById('menu-pv'));
+mostrar(document.getElementById('menu-procesar'));
+mostrar(document.getElementById('menu-denuncias'));
 
-// Los botones de Modificar y Eliminar permanecen ocultos (style="display: none !important;" en HTML)
-// El botón de Consultar en Procesar y Denuncias permanece oculto (style="display: none !important;" en HTML)
+// Los botones de Modificar, Eliminar y Consultar (en Procesar/Denuncias) permanecen ocultos
+// porque tienen style="display: none !important;" en el HTML y NO los mostramos aquí
 } 
 else if (rol === 'consultor') {
-// El consultor solo ve Consulta. El resto ya está oculto por defecto en el HTML.
-// No necesitamos hacer nada, el HTML ya los tiene ocultos.
+// El consultor solo ve Consulta. Todo lo demás ya está oculto por defecto en el HTML.
+// No necesitamos hacer nada.
 } 
 else {
-// Rol desconocido: Solo consulta (comportamiento por defecto del HTML)
+// Rol desconocido: Solo consulta (comportamiento por defecto)
 }
 }
 
-// 🔹 MOTOR DE CARGA DINÁMICA
 async function cargarModulo(htmlPath, jsPath, initFnName) {
-appContent.innerHTML = '<div class="loading">⏳ Cargando módulo...</div>';
+appContent.innerHTML = '<div class="loading"> Cargando módulo...</div>';
 try {
 const res = await fetch(htmlPath + '?v=' + Date.now());
 if (!res.ok) throw new Error('Archivo no encontrado');
@@ -170,7 +161,6 @@ sidebar.classList.remove('open');
 }
 }
 
-//  Reloj en tiempo real
 function iniciarReloj() {
 const clockEl = document.getElementById('live-clock');
 if (!clockEl) return;
@@ -189,9 +179,6 @@ sessionStorage.clear();
 window.location.href = 'index.html';
 });
 
-// ==========================================
-// 🔹 LÓGICA DE CHAT PRIVADO Y PRESENCIA
-// ==========================================
 let chatChannelPresence = null;
 let chatChannelMessages = null;
 let replyingToUserId = null;
@@ -221,7 +208,6 @@ const replyIndicator = document.getElementById('reply-indicator');
 const replyToName = document.getElementById('reply-to-name');
 const cancelReplyBtn = document.getElementById('cancel-reply');
 
-// 1. PRESENCIA
 chatChannelPresence = window.supabaseClient.channel('sistema-presence', {
 config: { presence: { key: currentUserId } }
 });
@@ -257,7 +243,6 @@ await chatChannelPresence.track({ nombre: currentUserName, rol: currentUserRole 
 }
 });
 
-// 2. TIEMPO REAL MENSAJES
 chatChannelMessages = window.supabaseClient
 .channel('chat-room-privado')
 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensajes' }, (payload) => {
@@ -281,7 +266,6 @@ agregarMensajeAlDOM(nuevoMensaje);
 })
 .subscribe();
 
-// 3. INTERFAZ
 if (chatBubble) {
 chatBubble.addEventListener('click', () => {
 const isVisible = chatWindow.style.display === 'flex';
@@ -299,7 +283,6 @@ if (chatClose) {
 chatClose.addEventListener('click', () => { chatWindow.style.display = 'none'; });
 }
 
-// 4. LÓGICA DE RESPUESTA
 if (cancelReplyBtn) {
 cancelReplyBtn.addEventListener('click', () => {
 replyingToUserId = null;
@@ -316,7 +299,6 @@ chatInput.placeholder = `Escribe la respuesta para ${userName}...`;
 chatInput.focus();
 };
 
-// 5. ENVIAR MENSAJE
 async function enviarMensaje() {
 const texto = chatInput.value.trim();
 if (!texto) return;
@@ -369,7 +351,6 @@ if (tempDiv) tempDiv.remove();
 if (chatSend) chatSend.addEventListener('click', enviarMensaje);
 if (chatInput) chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensaje(); });
 
-// 6. CARGAR HISTORIAL
 async function cargarMensajesRecientes() {
 chatMessages.innerHTML = '<div class="chat-message system"><p>Cargando...</p></div>';
 
@@ -398,7 +379,6 @@ chatMessages.innerHTML = `
 }
 }
 
-// 7. RENDERIZAR MENSAJE
 function agregarMensajeAlDOM(msg) {
 const div = document.createElement('div');
 
@@ -435,6 +415,5 @@ chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 }
 
-// Inicializar el dashboard
 initDashboard();
 });
