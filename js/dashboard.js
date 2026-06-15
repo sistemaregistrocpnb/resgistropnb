@@ -1,10 +1,3 @@
-// 🔒 BLOQUEO DE CONSOLA PARA SEGURIDAD
-window.console.log = function() {};
-window.console.warn = function() {};
-window.console.error = function() {};
-window.console.info = function() {};
-window.console.debug = function() {};
-
 
 document.addEventListener('DOMContentLoaded', async () => {
     const userEmailEl = document.getElementById('user-email');
@@ -72,39 +65,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         iniciarChatPrivado();
     }
 
-    // 🔒 Matriz de permisos estricta
-    function aplicarPermisos(rol) {
-        document.querySelectorAll('.menu-item').forEach(item => item.style.display = 'block');
-        document.querySelectorAll('.submenu-item').forEach(item => item.style.display = 'block');
+  // 🔒 Matriz de permisos estricta basada en atributos
+function aplicarPermisos(rol) {
+    // 1. Primero, mostrar todo por defecto
+    document.querySelectorAll('.menu-item').forEach(item => item.style.display = 'block');
+    document.querySelectorAll('.submenu-item').forEach(item => item.style.display = 'block');
+    
+    // Ocultar menús de alto nivel por defecto para roles bajos
+    document.getElementById('menu-historial')?.style.setProperty('display', 'none', 'important');
+    document.getElementById('menu-gestion-usuarios')?.style.setProperty('display', 'none', 'important');
+
+    // 2. Aplicar reglas según el rol
+    if (rol === 'administrador') {
+        // El admin ve todo, incluso historial y gestión
         document.getElementById('menu-historial')?.style.removeProperty('display');
         document.getElementById('menu-gestion-usuarios')?.style.removeProperty('display');
+        
+    } else if (rol === 'moderador') {
+        // El moderador SOLO puede REGISTRAR. 
+        // Ocultamos Consultar, Modificar y Eliminar en TODOS los menús.
+        document.querySelectorAll('.submenu-item').forEach(item => {
+            const accion = item.getAttribute('data-accion');
+            if (accion !== 'registrar') {
+                item.style.setProperty('display', 'none', 'important');
+            }
+        });
 
-        if (rol === 'consultor') {
-            document.querySelectorAll('.menu-item').forEach(item => {
-                if (!item.querySelector('[data-toggle="submenu-consulta"]')) {
-                    item.style.display = 'none';
-                }
-            });
-        } else if (rol === 'moderador') {
-            document.getElementById('menu-historial')?.style.setProperty('display', 'none', 'important');
-            document.getElementById('menu-gestion-usuarios')?.style.setProperty('display', 'none', 'important');
-            document.querySelectorAll('.submenu-item').forEach(item => {
-                const src = item.dataset.src || '';
-                if (src.includes('mod-') || src.includes('elim-')) {
-                    item.style.setProperty('display', 'none', 'important');
-                }
-            });
-        } else if (rol === 'administrador') {
-            // Ve todo
-        } else {
-            document.querySelectorAll('.menu-item').forEach(item => {
-                if (!item.querySelector('[data-toggle="submenu-consulta"]')) {
-                    item.style.display = 'none';
-                }
-            });
-        }
+    } else if (rol === 'consultor') {
+        // El consultor SOLO puede CONSULTAR.
+        // Ocultamos menús de registro completos
+        document.getElementById('menu-reg-personas')?.style.setProperty('display', 'none', 'important'); // Si les pones ID a los divs
+        document.getElementById('menu-reg-vehiculos')?.style.setProperty('display', 'none', 'important');
+        
+        document.querySelectorAll('.submenu-item').forEach(item => {
+            const accion = item.getAttribute('data-accion');
+            if (accion !== 'consultar') {
+                item.style.setProperty('display', 'none', 'important');
+            }
+        });
     }
-
+}
     // 🔹 MOTOR DE CARGA DINÁMICA
     async function cargarModulo(htmlPath, jsPath, initFnName) {
         appContent.innerHTML = '<div class="loading">⏳ Cargando módulo...</div>';
