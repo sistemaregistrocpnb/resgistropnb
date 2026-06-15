@@ -73,7 +73,7 @@ function formatearDetalles(detalles) {
                 Cierre: ${d.hora_cierre ? new Date(d.hora_cierre).toLocaleString('es-VE') : 'No registrado'}`;
     }
 
-    // Resto del código original (consultas, registros, etc.)
+    // Resto del código original...
     if (d.tipo_busqueda && d.valor_buscado) {
         const tipoFormateado = d.tipo_busqueda === 'placa' ? 'Placa' :
                                d.tipo_busqueda === 'serial_carroceria' ? 'Serial de Carrocería' : 'Serial de Motor';
@@ -108,7 +108,7 @@ function formatearDetalles(detalles) {
 }
 
 function obtenerValorRegistro(log) {
-    // ✅ 1. PRIMERO: LOGIN - Mostrar "Sesión iniciada" con el nivel
+    // ✅ LOGIN: Mostrar "Sesión iniciada" con el nivel
     if (log.accion === 'LOGIN') {
         let nivelTexto = 'Usuario';
         if (log.detalles) {
@@ -118,9 +118,9 @@ function obtenerValorRegistro(log) {
         return `<span class="badge badge-login">✅ Sesión iniciada</span><br><small style="color:#7e22ce; font-weight:700;">Nivel: ${nivelTexto}</small>`;
     }
 
-    // ✅ 2. LOGOUT - Mostrar "Sesión cerrada"
+    // ✅ LOGOUT: Mostrar "Sesión cerrada"
     if (log.accion === 'LOGOUT') {
-        return `<span class="badge badge-logout">🚪 Sesión cerrada</span>`;
+        return `<span class="badge badge-logout"> Sesión cerrada</span>`;
     }
 
     // Resto del código original...
@@ -147,7 +147,6 @@ function obtenerValorRegistro(log) {
     }
     return '-';
 }
-
 function renderTabla() {
 if (!tablaContainer) return;
 if (logsData.length === 0) {
