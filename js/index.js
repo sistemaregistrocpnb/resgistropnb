@@ -37,11 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (perfilErr) throw new Error('Error de conexión con la base de datos.');
 
-            // 📭 Caso: Correo no registrado
             if (!perfil) {
                 mostrarMensaje(
                     '📭 <strong>Correo no registrado.</strong><br>' +
-                    '<span style="font-size:0.85rem;">El correo ingresado no se encuentra en nuestro sistema. Verifique que sea correcto o contacte a soporte.</span>',
+                    '<span style="font-size:0.85rem;">El correo ingresado no se encuentra en nuestro sistema. Verifique que sea correcto.</span>',
                     'error'
                 );
                 btn.disabled = false;
@@ -49,7 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // 🚫 Caso: Cuenta ya bloqueada
             if (perfil.bloqueado === true) {
                 const fechaBloqueo = perfil.fecha_bloqueo 
                     ? new Date(perfil.fecha_bloqueo).toLocaleString('es-VE', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) 
@@ -66,57 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // ==========================================
-            // 🔐 PASO 2: Autenticación con Supabase
+            // 🛡️ PASO 2: VERIFICAR SESIÓN ACTIVA (ANTES DE VALIDAR CONTRASEÑA)
             // ==========================================
-            const { data: auth, error: authErr } = await window.supabaseClient.auth.signInWithPassword({ email, password });
-            
-            if (authErr) {
-                const intentosActuales = (perfil.intentos_fallidos || 0) + 1;
-                
-                await window.supabaseClient
-                    .from('perfiles_usuario')
-                    .update({ intentos_fallidos: intentosActuales })
-                    .eq('user_id', perfil.user_id);
-
-                const intentosRestantes = MAX_INTENTOS - intentosActuales;
-
-                // 🚫 Caso: Se acabaron los intentos → BLOQUEAR
-                if (intentosRestantes <= 0) {
-                    await window.supabaseClient
-                        .from('perfiles_usuario')
-                        .update({ bloqueado: true, intentos_fallidos: 0, fecha_bloqueo: new Date().toISOString() })
-                        .eq('user_id', perfil.user_id);
-                    
-                    mostrarMensaje(
-                        '🚫 <strong>Usted ha sido bloqueado</strong><br>' +
-                        '<span style="font-size:0.85rem;">Ha excedido el número máximo de intentos de acceso (3).<br><br>📞 Comuníquese con el Administrador del Sistema para solicitar el desbloqueo.</span>',
-                        'error'
-                    );
-                } 
-                // ⚠️ Caso: Aún tiene intentos disponibles
-                else {
-                    const advertencia = intentosRestantes === 1 
-                        ? '⚠️ <strong>ADVERTENCIA:</strong> Le queda <strong>1 intento</strong> antes del bloqueo.' 
-                        : `Le quedan <strong>${intentosRestantes} intentos</strong> disponibles.`;
-                    
-                    mostrarMensaje(
-                        '❌ <strong>Contraseña incorrecta.</strong><br>' +
-                        `<span style="font-size:0.85rem;">Las credenciales ingresadas no son válidas. Verifique su contraseña.<br><br>${advertencia}</span>`,
-                        'error'
-                    );
-                }
-                btn.disabled = false;
-                btn.textContent = 'Iniciar Sesión';
-                return;
-            }
-
-            // ==========================================
-            // ✅ PASO 3: Verificar sesión duplicada y finalizar login
-            // ==========================================
-            const nivel = perfil.nivel || 'usuario';
-            const nombreCompleto = `${perfil.nombre || ''} ${perfil.apellido || ''}`.trim().toUpperCase() || auth.user.email.split('@')[0].toUpperCase();
-
-            // Verificar si ya existe una sesión activa para este usuario en otra pestaña/dispositivo
             const canalVerificacion = window.supabaseClient.channel('sistema-presencia-global');
             let sesionesActivas = 0;
 
@@ -126,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     let count = 0;
                     for (const [key] of Object.entries(estado)) {
                         // La clave en dashboard.js es: "user_id_sessionId"
-                        if (key.startsWith(auth.user.id + '_')) {
+                        if (key.startsWith(perfil.user_id + '_')) {
                             count++;
                         }
                     }
@@ -143,19 +92,67 @@ document.addEventListener('DOMContentLoaded', () => {
 
             await canalVerificacion.unsubscribe();
 
+            // 🚨 SI YA HAY SESIÓN ACTIVA, RECHAZAR EL INTENT SIN CONTAR COMO FALLO
             if (sesionesActivas > 0) {
-                await window.supabaseClient.auth.signOut();
                 mostrarMensaje(
-                    '🚫 <strong>Sesión Activa Detectada</strong><br>' +
-                    '<span style="font-size:0.85rem;">Este usuario ya está conectado en otra ventana o dispositivo.<br><br>Por seguridad, no se permiten múltiples sesiones simultáneas del mismo usuario.<br><br>📞 Si cree que esto es un error, cierre la otra sesión o contacte al administrador.</span>',
+                    '🚫 <strong>Usuario ya conectado</strong><br>' +
+                    '<span style="font-size:0.85rem;">Este usuario tiene una sesión activa en otro dispositivo o ventana.<br><br>Por seguridad, no se permiten intentos de inicio de sesión mientras la sesión esté activa, protegiendo su cuenta de bloqueos maliciosos.</span>',
                     'error'
                 );
+                btn.disabled = false;
+                btn.textContent = 'Iniciar Sesión';
+                return; // DETENEMOS EL PROCESO AQUÍ. No se valida la contraseña.
+            }
+
+            // ==========================================
+            // 🔐 PASO 3: Autenticación (Solo si NO hay sesión activa)
+            // ==========================================
+            const { data: auth, error: authErr } = await window.supabaseClient.auth.signInWithPassword({ email, password });
+            
+            if (authErr) {
+                // Aquí SÍ contamos el intento, porque sabemos que NO hay sesión activa
+                const intentosActuales = (perfil.intentos_fallidos || 0) + 1;
+                
+                await window.supabaseClient
+                    .from('perfiles_usuario')
+                    .update({ intentos_fallidos: intentosActuales })
+                    .eq('user_id', perfil.user_id);
+
+                const intentosRestantes = MAX_INTENTOS - intentosActuales;
+
+                if (intentosRestantes <= 0) {
+                    await window.supabaseClient
+                        .from('perfiles_usuario')
+                        .update({ bloqueado: true, intentos_fallidos: 0, fecha_bloqueo: new Date().toISOString() })
+                        .eq('user_id', perfil.user_id);
+                    
+                    mostrarMensaje(
+                        '🚫 <strong>Usted ha sido bloqueado</strong><br>' +
+                        '<span style="font-size:0.85rem;">Ha excedido el número máximo de intentos de acceso (3).<br><br>📞 Comuníquese con el Administrador del Sistema para solicitar el desbloqueo.</span>',
+                        'error'
+                    );
+                } else {
+                    const advertencia = intentosRestantes === 1 
+                        ? '⚠️ <strong>ADVERTENCIA:</strong> Le queda <strong>1 intento</strong> antes del bloqueo.' 
+                        : `Le quedan <strong>${intentosRestantes} intentos</strong> disponibles.`;
+                    
+                    mostrarMensaje(
+                        '❌ <strong>Contraseña incorrecta.</strong><br>' +
+                        `<span style="font-size:0.85rem;">Las credenciales ingresadas no son válidas. Verifique su contraseña.<br><br>${advertencia}</span>`,
+                        'error'
+                    );
+                }
                 btn.disabled = false;
                 btn.textContent = 'Iniciar Sesión';
                 return;
             }
 
-            // Si pasa la verificación, continuar con el login normal
+            // ==========================================
+            // ✅ PASO 4: Login exitoso
+            // ==========================================
+            const nivel = perfil.nivel || 'usuario';
+            const nombreCompleto = `${perfil.nombre || ''} ${perfil.apellido || ''}`.trim().toUpperCase() || auth.user.email.split('@')[0].toUpperCase();
+
             if (perfil.intentos_fallidos > 0) {
                 await window.supabaseClient
                     .from('perfiles_usuario')
