@@ -7,6 +7,7 @@ window.initRegDenuncias = function() {
         const msg = document.getElementById('msg-reg-denuncias');
         const loadingOverlay = document.getElementById('loading-overlay');
         
+        // Elementos del teléfono
         const nativeSelect = document.getElementById('d_tlf_pais');
         const displayBox = document.querySelector('.phone-display');
         const optionsBox = document.querySelector('.phone-options');
@@ -22,6 +23,7 @@ window.initRegDenuncias = function() {
         }
         console.log("✅ Formulario encontrado. Configurando módulo...");
         
+        // Configurar fecha actual
         const fechaInput = document.getElementById('d_fecha_hora');
         if (fechaInput) {
             const ahora = new Date();
@@ -31,30 +33,36 @@ window.initRegDenuncias = function() {
             });
         }
 
+        // Función para calcular el próximo número de denuncia
         async function actualizarProximoNumero() {
             const inputNum = document.getElementById('d_numero_denuncia');
             if (!inputNum || !window.supabaseClient) return;
             inputNum.value = 'Calculando...';
             
-            const { data: ultimaDenuncia } = await window.supabaseClient
-                .from('denuncias')
-                .select('numero_denuncia')
-                .order('numero_denuncia', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-            
-            let proximo = 'CPNB-00000001';
-            if (ultimaDenuncia && ultimaDenuncia.numero_denuncia) {
-                const partes = ultimaDenuncia.numero_denuncia.split('-');
-                if (partes.length === 2) {
-                    const num = parseInt(partes[1], 10) + 1;
-                    proximo = `CPNB-${num.toString().padStart(8, '0')}`;
+            try {
+                const { data: ultimaDenuncia } = await window.supabaseClient
+                    .from('denuncias')
+                    .select('numero_denuncia')
+                    .order('numero_denuncia', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+                
+                let proximo = 'CPNB-00000001';
+                if (ultimaDenuncia && ultimaDenuncia.numero_denuncia) {
+                    const partes = ultimaDenuncia.numero_denuncia.split('-');
+                    if (partes.length === 2) {
+                        const num = parseInt(partes[1], 10) + 1;
+                        proximo = `CPNB-${num.toString().padStart(8, '0')}`;
+                    }
                 }
+                inputNum.value = proximo;
+            } catch (e) {
+                console.error("Error calculando número:", e);
+                inputNum.value = 'Error';
             }
-            inputNum.value = proximo;
-            return proximo;
         }
 
+        // Configuración de documentos
         const docsUnicos = [
             { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
             { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
@@ -73,11 +81,13 @@ window.initRegDenuncias = function() {
         docsUnicos.forEach(d => archivosUnicos[d.id] = null);
         docsMultiples.forEach(d => archivosMultiples[d.id] = []);
         
+        // Limpiar contenedores antes de generar
         const contenedorUnicos = document.getElementById('docs-unicos-container');
         const contenedorMultiples = document.getElementById('docs-multiples-container');
         if (contenedorUnicos) contenedorUnicos.innerHTML = '';
         if (contenedorMultiples) contenedorMultiples.innerHTML = '';
         
+        // Generar UI Documentos Únicos
         if (contenedorUnicos) {
             docsUnicos.forEach(doc => {
                 const div = document.createElement('div');
@@ -98,6 +108,7 @@ window.initRegDenuncias = function() {
             });
         }
         
+        // Generar UI Documentos Múltiples
         if (contenedorMultiples) {
             docsMultiples.forEach(doc => {
                 const div = document.createElement('div');
@@ -120,6 +131,9 @@ window.initRegDenuncias = function() {
             });
         }
 
+        // ==========================================
+        // FUNCIONES GLOBALES DE UI
+        // ==========================================
         window.toggleDocField = function(campo, mostrar) {
             const area = document.getElementById(`upload-${campo}`);
             if (area) {
@@ -127,6 +141,7 @@ window.initRegDenuncias = function() {
                     area.classList.add('active');
                 } else {
                     area.classList.remove('active');
+                    // Limpiar datos si se oculta
                     if (archivosUnicos[campo] !== undefined) {
                         archivosUnicos[campo] = null;
                         const status = document.getElementById(`status-${campo}`);
@@ -147,6 +162,7 @@ window.initRegDenuncias = function() {
             const statusDiv = document.getElementById(`status-${docId}`);
             if (input.files && input.files[0]) {
                 const file = input.files[0];
+                // Validación robusta de PDF
                 if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
                     archivosUnicos[docId] = file;
                     statusDiv.innerHTML = `
@@ -224,13 +240,13 @@ window.initRegDenuncias = function() {
         };
 
         // ==========================================
-        // 🔹 DROPDOWN DE BANDERAS (210 PAÍSES COMPLETOS)
+        // 🔹 DROPDOWN DE BANDERAS (COMPLETO Y CORREGIDO)
         // ==========================================
         const flagImg = document.getElementById('d-tlf-flag-img');
         const codeText = document.getElementById('d-tlf-code-text');
         const countryText = document.getElementById('d-tlf-country-text');
         
-        // ✅ MAPEO COMPLETO DE LOS 210 PAÍSES
+        // ✅ MAPEO COMPLETO DE TODOS LOS PAÍSES DEL HTML
         const isoMap = {
             "Afganistán":"af","Albania":"al","Alemania":"de","Andorra":"ad","Angola":"ao",
             "Antigua y Barbuda":"ag","Arabia Saudita":"sa","Argelia":"dz","Argentina":"ar",
@@ -283,14 +299,14 @@ window.initRegDenuncias = function() {
         };
 
         if (nativeSelect && displayBox && optionsBox) {
-            console.log("✅ Generando dropdown de banderas con 210 países...");
+            console.log("✅ Generando dropdown de banderas...");
             optionsBox.innerHTML = '';
             let opcionesGeneradas = 0;
             
             Array.from(nativeSelect.options).forEach(opt => {
                 if (!opt.value) return;
                 
-                // ✅ BUSCAR EL CÓDIGO ISO EN EL MAPEO COMPLETO
+                // Buscar ISO en el mapa completo
                 let iso = isoMap[opt.text] || 'xx';
                 
                 const div = document.createElement('div');
@@ -327,6 +343,7 @@ window.initRegDenuncias = function() {
             });
         }
 
+        // Cargar el próximo número al iniciar
         actualizarProximoNumero();
 
         // ==========================================
@@ -344,6 +361,7 @@ window.initRegDenuncias = function() {
                 return;
             }
 
+            // Validar documentos únicos
             for (const doc of docsUnicos) {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                 if (radio && radio.value === 'si' && !archivosUnicos[doc.id]) {
@@ -351,6 +369,7 @@ window.initRegDenuncias = function() {
                     return;
                 }
             }
+            // Validar documentos múltiples
             for (const doc of docsMultiples) {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                 if (radio && radio.value === 'si' && (!archivosMultiples[doc.id] || archivosMultiples[doc.id].length === 0)) {
@@ -372,6 +391,7 @@ window.initRegDenuncias = function() {
                 const uid = user.id;
                 const ts = Date.now();
                 
+                // Recalcular número justo antes de guardar para evitar duplicados
                 const { data: ultimaDenuncia } = await window.supabaseClient
                     .from('denuncias')
                     .select('numero_denuncia')
@@ -388,6 +408,7 @@ window.initRegDenuncias = function() {
                     }
                 }
 
+                // Subir documentos únicos
                 const docsUnicosUrls = {};
                 for (const doc of docsUnicos) {
                     const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
@@ -401,6 +422,7 @@ window.initRegDenuncias = function() {
                     }
                 }
 
+                // Subir documentos múltiples
                 const docsMultiplesUrls = {};
                 for (const doc of docsMultiples) {
                     const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
@@ -421,6 +443,7 @@ window.initRegDenuncias = function() {
                 const tlfPais = document.getElementById('d_tlf_pais')?.value;
                 const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '');
                 
+                // Preparar datos completos
                 const data = {
                     numero_denuncia: nuevoNumeroDenuncia,
                     estacion_policial: document.getElementById('d_estacion')?.value,
@@ -455,20 +478,24 @@ window.initRegDenuncias = function() {
                     setTimeout(() => msg.style.display = 'none', 5000);
                 }
 
+                // Resetear formulario y UI
                 form.reset();
                 if (fechaInput) {
                     const ahora = new Date();
                     fechaInput.value = ahora.toLocaleString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 }
                 
+                // Forzar reset de UI de documentos
                 docsUnicos.forEach(d => toggleDocField(d.id, false));
                 docsMultiples.forEach(d => toggleDocField(d.id, false));
                 
+                // Resetear teléfono
                 if (nativeSelect) nativeSelect.value = '';
                 if (flagImg) flagImg.src = 'https://flagcdn.com/w20/xx.png';
                 if (codeText) codeText.textContent = '+XX';
                 if (countryText) countryText.textContent = 'País';
                 
+                // Actualizar el próximo número para el siguiente registro
                 actualizarProximoNumero();
 
             } catch (err) {
