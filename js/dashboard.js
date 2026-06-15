@@ -1,4 +1,4 @@
-// 🔒 BLOQUEO DE CONSOLA PARA SEGURIDAD
+
 window.console.log = function() {};
 window.console.warn = function() {};
 window.console.error = function() {};
@@ -47,7 +47,7 @@ document.getElementById('user-foto').src = `https://ui-avatars.com/api/?name=${e
 }
 }
 } catch (err) {
-// Error silencioso
+
 }
 
 const rolActual = (sessionStorage.getItem('pnb_user_nivel') || 'consultor').toLowerCase();
@@ -59,18 +59,14 @@ iniciarReloj();
 iniciarChatPrivado();
 }
 
-// 🔒 Matriz de permisos basada en DESBLOQUEO SELECTIVO
-// ✅ CORRECCIÓN: Usar elemento.style.display = '' para quitar el !important inline
 function aplicarPermisos(rol) {
-// Función auxiliar para mostrar elementos (quita el display: none !important inline)
 const mostrar = (elemento) => {
 if (elemento) {
-elemento.style.display = ''; // ✅ Esto elimina completamente el estilo inline, incluyendo !important
+elemento.style.display = ''; 
 }
 };
 
 if (rol === 'administrador') {
-// El admin ve TODO: mostrar todos los menús y botones ocultos
 mostrar(document.getElementById('menu-historial'));
 mostrar(document.getElementById('menu-gestion-usuarios'));
 mostrar(document.getElementById('menu-reg-personas'));
@@ -79,28 +75,25 @@ mostrar(document.getElementById('menu-pv'));
 mostrar(document.getElementById('menu-procesar'));
 mostrar(document.getElementById('menu-denuncias'));
 
-// Mostrar TODOS los botones de Modificar, Eliminar y Consultar (en Procesar/Denuncias)
 document.querySelectorAll('.submenu-item[data-accion="modificar"]').forEach(btn => mostrar(btn));
 document.querySelectorAll('.submenu-item[data-accion="eliminar"]').forEach(btn => mostrar(btn));
 document.querySelectorAll('.submenu-item[data-accion="consultar"]').forEach(btn => mostrar(btn));
 } 
 else if (rol === 'moderador') {
-// El moderador ve los menús de registro pero NO historial ni gestión
+
 mostrar(document.getElementById('menu-reg-personas'));
 mostrar(document.getElementById('menu-reg-vehiculos'));
 mostrar(document.getElementById('menu-pv'));
 mostrar(document.getElementById('menu-procesar'));
 mostrar(document.getElementById('menu-denuncias'));
 
-// Los botones de Modificar, Eliminar y Consultar (en Procesar/Denuncias) permanecen ocultos
-// porque tienen style="display: none !important;" en el HTML y NO los mostramos aquí
+
 } 
 else if (rol === 'consultor') {
-// El consultor solo ve Consulta. Todo lo demás ya está oculto por defecto en el HTML.
-// No necesitamos hacer nada.
+
 } 
 else {
-// Rol desconocido: Solo consulta (comportamiento por defecto)
+
 }
 }
 
