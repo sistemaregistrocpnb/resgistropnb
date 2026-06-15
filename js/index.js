@@ -28,15 +28,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
      
-            const { data: perfil, error: perfilErr } = await window.supabaseClient
-                .from('perfiles_usuario')
-                .select('user_id, email, bloqueado, intentos_fallidos, fecha_bloqueo, nivel') 
-                .maybeSingle();
+           const { data: perfiles, error: perfilErr } = await window.supabaseClient
+  .from('perfiles_usuario')
+  .select('user_id, email, bloqueado, intentos_fallidos, fecha_bloqueo, nivel')
+  .eq('email', email)
+  .limit(1); 
 
-            if (perfilErr) {
-                console.error('Error al buscar perfil:', perfilErr);
-                throw new Error('Error de conexión con la base de datos. Verifique las políticas RLS.');
-            }
+if (perfilErr) {
+  console.error('Error al buscar perfil:', perfilErr);
+  throw new Error('Error de conexión con la base de datos. Verifique las políticas RLS.');
+}
+
+const perfil = perfiles && perfiles.length > 0 ? perfiles[0] : null;
 
             if (!perfil) {
                 mostrarMensaje(
