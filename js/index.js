@@ -26,9 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
         msgBox.style.display = 'none';
 
         try {
-            // ==========================================
-            // 🔍 PASO 1: Verificar perfil en la base de datos
-            // ==========================================
             const { data: perfil, error: perfilErr } = await window.supabaseClient
                 .from('perfiles_usuario')
                 .select('user_id, email, bloqueado, intentos_fallidos, fecha_bloqueo, nivel, nombre, apellido')
@@ -63,9 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // ==========================================
-            // 🛡️ PASO 2: VERIFICAR SESIÓN ACTIVA (ANTES DE VALIDAR CONTRASEÑA)
-            // ==========================================
             const canalVerificacion = window.supabaseClient.channel('sistema-presencia-global');
             let sesionesActivas = 0;
 
@@ -74,7 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const estado = canalVerificacion.presenceState();
                     let count = 0;
                     for (const [key] of Object.entries(estado)) {
-                        // La clave en dashboard.js es: "user_id_sessionId"
                         if (key.startsWith(perfil.user_id + '_')) {
                             count++;
                         }
@@ -85,15 +78,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 canalVerificacion.subscribe(async (status) => {
                     if (status === 'SUBSCRIBED') {
-                        setTimeout(() => resolve(), 1000); // Esperar 1s para sincronización completa
+                        setTimeout(() => resolve(), 1000); 
                     }
                 });
             });
 
             await canalVerificacion.unsubscribe();
 
-            // 🚨 SI YA HAY SESIÓN ACTIVA, RECHAZAR EL INTENT SIN CONTAR COMO FALLO
             if (sesionesActivas > 0) {
+                await window.supabaseClient.auth.signOut();
                 mostrarMensaje(
                     '🚫 <strong>Usuario ya conectado</strong><br>' +
                     '<span style="font-size:0.85rem;">Este usuario tiene una sesión activa en otro dispositivo o ventana.<br><br>Por seguridad, no se permiten intentos de inicio de sesión mientras la sesión esté activa, protegiendo su cuenta de bloqueos maliciosos.</span>',
@@ -101,16 +94,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 );
                 btn.disabled = false;
                 btn.textContent = 'Iniciar Sesión';
-                return; // DETENEMOS EL PROCESO AQUÍ. No se valida la contraseña.
+                return;
             }
 
-            // ==========================================
-            // 🔐 PASO 3: Autenticación (Solo si NO hay sesión activa)
-            // ==========================================
             const { data: auth, error: authErr } = await window.supabaseClient.auth.signInWithPassword({ email, password });
             
             if (authErr) {
-                // Aquí SÍ contamos el intento, porque sabemos que NO hay sesión activa
                 const intentosActuales = (perfil.intentos_fallidos || 0) + 1;
                 
                 await window.supabaseClient
@@ -147,9 +136,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // ==========================================
-            // ✅ PASO 4: Login exitoso
-            // ==========================================
             const nivel = perfil.nivel || 'usuario';
             const nombreCompleto = `${perfil.nombre || ''} ${perfil.apellido || ''}`.trim().toUpperCase() || auth.user.email.split('@')[0].toUpperCase();
 
@@ -160,8 +146,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     .eq('user_id', auth.user.id);
             }
 
+    
             sessionStorage.setItem('pnb_login_time', Date.now().toString());
-
             if (typeof window.registrarLogin === 'function') {
                 await window.registrarLogin(nombreCompleto, auth.user.email, auth.user.id, nivel);
             }
@@ -170,7 +156,6 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionStorage.setItem('pnb_user_email', auth.user.email);
             sessionStorage.setItem('pnb_user_nivel', nivel);
             sessionStorage.setItem('pnb_session_token', auth.session.access_token); 
-
             mostrarMensaje(
                 '✅ <strong>Acceso concedido.</strong><br>' +
                 '<span style="font-size:0.85rem;">Bienvenido al sistema. Redirigiendo al panel principal...</span>',
