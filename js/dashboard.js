@@ -384,45 +384,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         // 5. ENVIAR MENSAJE (Sin vista optimista para evitar duplicados 100%)
-        async function enviarMensaje() {
-            const texto = chatInput.value.trim();
-            if (!texto) return;
+      async function enviarMensaje() {
+    const texto = chatInput.value.trim();
+    if (!texto) return;
 
-            chatSend.disabled = true;
-            chatInput.disabled = true;
+    chatSend.disabled = true;
+    chatInput.disabled = true;
 
-            let targetReceptor = replyingToUserId;
-            if (!targetReceptor && activeChatUserId && (currentUserRole === 'administrador' || currentUserRole === 'moderador')) {
-                targetReceptor = activeChatUserId;
-            }
-            // Si es consultor, targetReceptor se mantiene null (va a soporte)
+    let targetReceptor = replyingToUserId;
+    if (!targetReceptor && activeChatUserId && (currentUserRole === 'administrador' || currentUserRole === 'moderador')) {
+        targetReceptor = activeChatUserId;
+    }
 
-            try {
-                const { error } = await window.supabaseClient.from('chat_mensajes').insert([{
-                    remitente_id: currentUserId,
-                    nombre_remitente: currentUserName,
-                    rol_remitente: currentUserRole,
-                    receptor_id: targetReceptor,
-                    mensaje: texto,
-                    tipo: (currentUserRole === 'administrador' || currentUserRole === 'moderador') ? 'staff' : 'user'
-                }]);
-                if (error) throw error;
+    try {
+        const { error } = await window.supabaseClient.from('chat_mensajes').insert([{
+            remitente_id: currentUserId,
+            nombre_remitente: currentUserName,
+            rol_remitente: currentUserRole,
+            receptor_id: targetReceptor,
+            mensaje: texto,
+            tipo: currentUserRole === 'administrador' ? 'admin' : 'user' // ✅ CORREGIDO
+        }]);
+        if (error) throw error;
 
-                chatInput.value = '';
-                if (targetReceptor) {
-                    replyingToUserId = null;
-                    replyIndicator.style.display = 'none';
-                }
-            } catch (err) {
-                console.error('Error al enviar:', err);
-                alert('No se pudo enviar el mensaje. Verifique su conexión.');
-            } finally {
-                chatSend.disabled = false;
-                chatInput.disabled = false;
-                chatInput.focus();
-                chatInput.placeholder = activeChatUserId ? `Escribe un mensaje para ${activeChatUserName.textContent}...` : 'Escribe tu mensaje...';
-            }
+        chatInput.value = '';
+        if (targetReceptor) {
+            replyingToUserId = null;
+            replyIndicator.style.display = 'none';
         }
+    } catch (err) {
+        console.error('Error al enviar:', err);
+        alert('No se pudo enviar el mensaje. Verifique su conexión.');
+    } finally {
+        chatSend.disabled = false;
+        chatInput.disabled = false;
+        chatInput.focus();
+        chatInput.placeholder = activeChatUserId ? `Escribe un mensaje para ${activeChatUserName.textContent}...` : 'Escribe tu mensaje...';
+    }
+}
 
         if (chatSend) chatSend.addEventListener('click', enviarMensaje);
         if (chatInput) chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensaje(); });
