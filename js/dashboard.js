@@ -148,22 +148,73 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ✅ BOTÓN DE CERRAR SESIÓN (manual)
-    btnLogout.addEventListener('click', async () => {
-        window.isManualLogout = true; // ✅ Marcamos que es cierre manual
-        
-        if (typeof window.registrarLogout === 'function') {
-            await window.registrarLogout();
+// ✅ Bandera global para evitar doble registro
+window.isManualLogout = false;
+
+btnLogout.addEventListener('click', async () => {
+    window.isManualLogout = true; // ✅ Marcar como cierre manual
+    
+    if (typeof window.registrarLogout === 'function') {
+        await window.registrarLogout();
+    }
+    await window.supabaseClient.auth.signOut();
+    sessionStorage.clear();
+    window.location.href = 'index.html';
+});
+
+// ✅ DETECTOR DE CIERRE DE VENTANA (Funciona en todos los navegadores modernos)
+window.addEventListener('beforeunload', function() {
+    if (window.isManualLogout) return; // Si usó el botón, no hacer nada
+
+    const userId = sessionStorage.getItem('pnb_user_id');
+    const loginTime = sessionStorage.getItem('pnb_login_time');
+    const token = sessionStorage.getItem('pnb_session_token');
+    
+    if (!userId || !loginTime || !token || !window.supabaseClient) return;
+
+    const userEmail = sessionStorage.getItem('pnb_user_email') || '';
+    const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
+    
+    // Calcular duración
+    const duracionSegundos = Math.floor((Date.now() - parseInt(loginTime)) / 1000);
+    let duracionTexto = 'No registrada';
+    const horas = Math.floor(duracionSegundos / 3600);
+    const minutos = Math.floor((duracionSegundos % 3600) / 60);
+    const segundos = duracionSegundos % 60;
+    
+    if (horas > 0) duracionTexto = `${horas}h ${minutos}m ${segundos}s`;
+    else if (minutos > 0) duracionTexto = `${minutos}m ${segundos}s`;
+    else duracionTexto = `${segundos}s`;
+
+    const payload = {
+        user_id: userId,
+        user_nombre: userNombre,
+        user_email: userEmail,
+        accion: 'LOGOUT',
+        modulo: 'AUTENTICACION',
+        detalles: {
+            sesion_duracion: duracionTexto,
+            sesion_duracion_segundos: duracionSegundos,
+            motivo: 'Cierre de ventana o navegador',
+            hora_cierre: new Date().toISOString()
         }
-        
-        // Desuscribir del chat
-        if (window.chatChannelPresence) {
-            try { await window.chatChannelPresence.untrack(); } catch (e) {}
-        }
-        
-        await window.supabaseClient.auth.signOut();
-        sessionStorage.clear();
-        window.location.href = 'index.html';
-    });
+    };
+
+    const url = `${window.supabaseClient.supabaseUrl}/rest/v1/sistema_logs`;
+    
+    // ✅ fetch con keepalive: true FUNCIONA al cerrar la ventana
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'apikey': window.supabaseClient.supabaseKey,
+            'Authorization': `Bearer ${token}`,
+            'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(payload),
+        keepalive: true // ✅ ESTA ES LA CLAVE: mantiene la petición viva al cerrar
+    }).catch(() => {}); // Silenciar errores
+});
 
     // ==========================================
     // 🔹 CHAT PRIVADO CON PAGINACIÓN
