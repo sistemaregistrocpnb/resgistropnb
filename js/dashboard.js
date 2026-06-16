@@ -5,8 +5,10 @@ window.console.error = function() {};
 window.console.info = function() {};
 window.console.debug = function() {};
 
+// ✅ Bandera global única para evitar doble registro de logout
+window.isManualLogout = false;
+
 document.addEventListener('DOMContentLoaded', async () => {
-        window.isManualLogout = false;
     const userEmailEl = document.getElementById('user-email');
     const userRoleEl = document.getElementById('user-role');
     const btnLogout = document.getElementById('btn-logout');
@@ -145,76 +147,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         setInterval(actualizar, 1000);
     }
 
-// ✅ Variable para evitar doble registro si usan el botón de cerrar sesión
-let isManualLogout = false;
-
-btnLogout.addEventListener('click', async () => {
-    window.isManualLogout = true; // ✅ Marcamos que es un cierre manual
-    
-    if (typeof window.registrarLogout === 'function') {
-        await window.registrarLogout();
-    }
-    await window.supabaseClient.auth.signOut();
-    sessionStorage.clear();
-    window.location.href = 'index.html';
-});
-
-// ✅ DETECTOR DE CIERRE DE VENTANA / PESTAÑA (Cierre Automático)
-window.addEventListener('beforeunload', function(event) {
-    // Si el usuario usó el botón de cerrar sesión, no hacemos nada (ya se registró)
-    if (isManualLogout) return;
-
-    const userId = sessionStorage.getItem('pnb_user_id');
-    const loginTime = sessionStorage.getItem('pnb_login_time');
-    const token = sessionStorage.getItem('pnb_session_token');
-    
-    // Solo actuar si hay una sesión activa válida
-    if (userId && loginTime && token) {
-        // Calcular duración
-        const duracionSegundos = Math.floor((Date.now() - parseInt(loginTime)) / 1000);
-        let duracionTexto = 'No registrada';
-        const horas = Math.floor(duracionSegundos / 3600);
-        const minutos = Math.floor((duracionSegundos % 3600) / 60);
-        const segundos = duracionSegundos % 60;
+    // ✅ BOTÓN DE CERRAR SESIÓN (manual)
+    btnLogout.addEventListener('click', async () => {
+        window.isManualLogout = true; // ✅ Marcamos que es cierre manual
         
-        if (horas > 0) duracionTexto = `${horas}h ${minutos}m ${segundos}s`;
-        else if (minutos > 0) duracionTexto = `${minutos}m ${segundos}s`;
-        else duracionTexto = `${segundos}s`;
-
-        const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
-        const userEmail = sessionStorage.getItem('pnb_user_email') || '';
-
-        const payload = {
-            user_id: userId,
-            user_nombre: userNombre,
-            user_email: userEmail,
-            accion: 'LOGOUT',
-            modulo: 'AUTENTICACION',
-            detalles: {
-                sesion_duracion: duracionTexto,
-                sesion_duracion_segundos: duracionSegundos,
-                motivo: 'Cierre de ventana o navegador',
-                hora_cierre: new Date().toISOString()
-            }
-        };
-
-        // ✅ Petición SÍNCRONA (false) para forzar al navegador a esperar el envío
-        const url = `${window.supabaseClient.supabaseUrl}/rest/v1/sistema_logs`;
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', url, false); // El 'false' hace que sea síncrona
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.setRequestHeader('apikey', window.supabaseClient.supabaseKey);
-        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-        xhr.setRequestHeader('Prefer', 'return=minimal');
-        
-        try {
-            xhr.send(JSON.stringify(payload));
-        } catch (e) {
-            console.error('Error al enviar log de cierre automático:', e);
+        if (typeof window.registrarLogout === 'function') {
+            await window.registrarLogout();
         }
-    }
-});
-       async function iniciarChatPrivado() {
+        
+        // Desuscribir del chat
+        if (window.chatChannelPresence) {
+            try { await window.chatChannelPresence.untrack(); } catch (e) {}
+        }
+        
+        await window.supabaseClient.auth.signOut();
+        sessionStorage.clear();
+        window.location.href = 'index.html';
+    });
+
+    // ==========================================
+    // 🔹 CHAT PRIVADO CON PAGINACIÓN
+    // ==========================================
+    async function iniciarChatPrivado() {
         const { data: { session } } = await window.supabaseClient.auth.getSession();
         if (!session) return;
 
@@ -225,7 +179,6 @@ window.addEventListener('beforeunload', function(event) {
             ? nombreDOM
             : (session.user.email?.split('@')[0].toUpperCase() || 'USUARIO');
 
-        // Elementos del DOM
         const chatBubble = document.getElementById('chat-bubble');
         const chatWindow = document.getElementById('chat-window');
         const chatClose = document.getElementById('chat-close');
@@ -251,7 +204,6 @@ window.addEventListener('beforeunload', function(event) {
         const USERS_PER_PAGE = 5;
         let usuariosEnLinea = [];
 
-        // 1. PRESENCIA (Con sessionId único para evitar conflictos de sesiones)
         const sessionId = sessionStorage.getItem('pnb_session_id') || 'sess_' + Date.now();
         window.chatChannelPresence = window.supabaseClient.channel('sistema-presencia-global', {
             config: { presence: { key: currentUserId + '_' + sessionId } }
@@ -266,7 +218,6 @@ window.addEventListener('beforeunload', function(event) {
                 }
             }
 
-            // Staff ve la lista de usuarios
             if ((currentUserRole === 'administrador' || currentUserRole === 'moderador') && adminOnlinePanel) {
                 const usuariosUnicos = [];
                 const userIdsVistos = new Set();
@@ -297,7 +248,6 @@ window.addEventListener('beforeunload', function(event) {
             }
         });
 
-        // 2. RENDERIZAR LISTA DE USUARIOS CON PAGINACIÓN
         function renderizarUsuariosEnLinea() {
             if (!onlineUsersList || !usersPagination) return;
 
@@ -341,7 +291,6 @@ window.addEventListener('beforeunload', function(event) {
                 onlineUsersList.appendChild(li);
             });
 
-            // Paginación
             usersPagination.innerHTML = '';
             if (totalPages > 1) {
                 const crearBtn = (texto, disabled, onClick) => {
@@ -384,7 +333,6 @@ window.addEventListener('beforeunload', function(event) {
             });
         }
 
-        // 3. TIEMPO REAL (Lógica de privacidad estricta)
         window.chatChannelMessages = window.supabaseClient.channel('chat-room-privado')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensajes' }, (payload) => {
                 const nuevoMensaje = payload.new;
@@ -392,7 +340,7 @@ window.addEventListener('beforeunload', function(event) {
 
                 const esMio = nuevoMensaje.remitente_id === currentUserId;
                 const esParaMi = nuevoMensaje.receptor_id === currentUserId;
-                const esSoporte = nuevoMensaje.receptor_id === null; // Mensaje de consultor a staff
+                const esSoporte = nuevoMensaje.receptor_id === null;
 
                 let puedoVerlo = false;
                 if (currentUserRole === 'administrador' || currentUserRole === 'moderador') {
@@ -414,7 +362,6 @@ window.addEventListener('beforeunload', function(event) {
             })
             .subscribe();
 
-        // 4. INTERFAZ
         if (chatBubble) {
             chatBubble.addEventListener('click', () => {
                 const isVisible = chatWindow.style.display === 'flex';
@@ -443,50 +390,48 @@ window.addEventListener('beforeunload', function(event) {
             chatInput.focus();
         };
 
-        // 5. ENVIAR MENSAJE (Sin vista optimista para evitar duplicados 100%)
-      async function enviarMensaje() {
-    const texto = chatInput.value.trim();
-    if (!texto) return;
+        async function enviarMensaje() {
+            const texto = chatInput.value.trim();
+            if (!texto) return;
 
-    chatSend.disabled = true;
-    chatInput.disabled = true;
+            chatSend.disabled = true;
+            chatInput.disabled = true;
 
-    let targetReceptor = replyingToUserId;
-    if (!targetReceptor && activeChatUserId && (currentUserRole === 'administrador' || currentUserRole === 'moderador')) {
-        targetReceptor = activeChatUserId;
-    }
+            let targetReceptor = replyingToUserId;
+            if (!targetReceptor && activeChatUserId && (currentUserRole === 'administrador' || currentUserRole === 'moderador')) {
+                targetReceptor = activeChatUserId;
+            }
 
-    try {
-        const { error } = await window.supabaseClient.from('chat_mensajes').insert([{
-            remitente_id: currentUserId,
-            nombre_remitente: currentUserName,
-            rol_remitente: currentUserRole,
-            receptor_id: targetReceptor,
-            mensaje: texto,
-            tipo: currentUserRole === 'administrador' ? 'admin' : 'user' // ✅ CORREGIDO
-        }]);
-        if (error) throw error;
+            try {
+                const { error } = await window.supabaseClient.from('chat_mensajes').insert([{
+                    remitente_id: currentUserId,
+                    nombre_remitente: currentUserName,
+                    rol_remitente: currentUserRole,
+                    receptor_id: targetReceptor,
+                    mensaje: texto,
+                    tipo: currentUserRole === 'administrador' ? 'admin' : 'user'
+                }]);
+                if (error) throw error;
 
-        chatInput.value = '';
-        if (targetReceptor) {
-            replyingToUserId = null;
-            replyIndicator.style.display = 'none';
+                chatInput.value = '';
+                if (targetReceptor) {
+                    replyingToUserId = null;
+                    replyIndicator.style.display = 'none';
+                }
+            } catch (err) {
+                console.error('Error al enviar:', err);
+                alert('No se pudo enviar el mensaje. Verifique su conexión.');
+            } finally {
+                chatSend.disabled = false;
+                chatInput.disabled = false;
+                chatInput.focus();
+                chatInput.placeholder = activeChatUserId ? `Escribe un mensaje para ${activeChatUserName.textContent}...` : 'Escribe tu mensaje...';
+            }
         }
-    } catch (err) {
-        console.error('Error al enviar:', err);
-        alert('No se pudo enviar el mensaje. Verifique su conexión.');
-    } finally {
-        chatSend.disabled = false;
-        chatInput.disabled = false;
-        chatInput.focus();
-        chatInput.placeholder = activeChatUserId ? `Escribe un mensaje para ${activeChatUserName.textContent}...` : 'Escribe tu mensaje...';
-    }
-}
 
         if (chatSend) chatSend.addEventListener('click', enviarMensaje);
         if (chatInput) chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensaje(); });
 
-        // 6. CARGAR HISTORIAL
         async function cargarMensajesIndividuales(userId) {
             if (!chatMessages) return;
             chatMessages.innerHTML = '<div class="chat-message system"><p>Cargando...</p></div>';
@@ -533,7 +478,6 @@ window.addEventListener('beforeunload', function(event) {
             }
         }
 
-        // 7. RENDERIZAR MENSAJE (Con Nombre y Nivel)
         function agregarMensajeAlDOM(msg) {
             if (!chatMessages) return;
             const div = document.createElement('div');
@@ -554,7 +498,6 @@ window.addEventListener('beforeunload', function(event) {
                 htmlContent += `<div class="msg-sender" style="font-size: 0.65rem; color: #f59e0b; margin-bottom: 2px;">🔒 Mensaje Privado</div>`;
             }
 
-            // ✅ Badge de color según el rol
             const badgeColor = rolMostrar === 'ADMINISTRADOR' ? '#dc2626' : (rolMostrar === 'MODERADOR' ? '#2563eb' : '#64748b');
             htmlContent += `<div class="msg-sender" style="display:flex; align-items:center; gap:6px; margin-bottom: 4px;">
                 <span style="font-weight:700;">${esMio ? 'TÚ' : nombreMostrar}</span>
@@ -573,23 +516,20 @@ window.addEventListener('beforeunload', function(event) {
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
     }
-    window.addEventListener('beforeunload', () => {
-        if (window.chatChannelPresence) {
-            try { window.chatChannelPresence.untrack(); } catch (e) {}
-        }
-    });
-        // ==========================================
-    // ✅ DETECTOR DE CIERRE DE VENTANA / NAVEGADOR (Cierre Automático)
+
+    // ==========================================
+    // ✅ ÚNICO DETECTOR DE CIERRE DE VENTANA (LIMPIO Y DEFINITIVO)
     // ==========================================
     window.addEventListener('beforeunload', function(event) {
-        // Si el usuario usó el botón de cerrar sesión, NO hacemos nada (ya se registró)
+        // Si el usuario usó el botón de cerrar sesión, NO hacer nada
         if (window.isManualLogout) return;
 
         const userId = sessionStorage.getItem('pnb_user_id');
         const loginTime = sessionStorage.getItem('pnb_login_time');
+        const token = sessionStorage.getItem('pnb_session_token');
         
-        // Solo actuar si hay una sesión activa válida y el cliente de Supabase existe
-        if (userId && loginTime && window.supabaseClient) {
+        // Solo actuar si hay una sesión activa válida
+        if (userId && loginTime && token && window.supabaseClient) {
             const userEmail = sessionStorage.getItem('pnb_user_email') || '';
             const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
             
@@ -619,12 +559,10 @@ window.addEventListener('beforeunload', function(event) {
             };
 
             const url = `${window.supabaseClient.supabaseUrl}/rest/v1/sistema_logs`;
-            // Usar el token guardado, o fallback a la anon key
-            const token = sessionStorage.getItem('pnb_session_token') || window.supabaseClient.supabaseKey;
             
-            // ✅ PETICIÓN SÍNCRONA (false): Obliga al navegador a esperar el envío antes de cerrar
+            // ✅ PETICIÓN SÍNCRONA: Obliga al navegador a esperar el envío
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', url, false); 
+            xhr.open('POST', url, false); // false = SÍNCRONO
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.setRequestHeader('apikey', window.supabaseClient.supabaseKey);
             xhr.setRequestHeader('Authorization', `Bearer ${token}`);
@@ -633,11 +571,10 @@ window.addEventListener('beforeunload', function(event) {
             try {
                 xhr.send(JSON.stringify(payload));
             } catch (e) {
-                console.error('Error al enviar log de cierre automático:', e);
+                // Silencioso: el navegador ya está cerrando
             }
         }
     });
 
     initDashboard();
 });
-
