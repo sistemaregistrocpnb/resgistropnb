@@ -169,6 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionStorage.setItem('pnb_user_id', auth.user.id);
             sessionStorage.setItem('pnb_user_email', auth.user.email);
             sessionStorage.setItem('pnb_user_nivel', nivel);
+            sessionStorage.setItem('pnb_session_token', auth.session.access_token); 
 
             mostrarMensaje(
                 '✅ <strong>Acceso concedido.</strong><br>' +
