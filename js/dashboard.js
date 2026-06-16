@@ -6,6 +6,7 @@ window.console.info = function() {};
 window.console.debug = function() {};
 
 document.addEventListener('DOMContentLoaded', async () => {
+        window.isManualLogout = false;
     const userEmailEl = document.getElementById('user-email');
     const userRoleEl = document.getElementById('user-role');
     const btnLogout = document.getElementById('btn-logout');
@@ -148,13 +149,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 let isManualLogout = false;
 
 btnLogout.addEventListener('click', async () => {
-    isManualLogout = true; // Marcamos que es un cierre manual
+    window.isManualLogout = true; // ✅ Marcamos que es un cierre manual
     
-    // ✅ REGISTRAR LOGOUT ANTES DE CERRAR SESIÓN (calcula duración)
     if (typeof window.registrarLogout === 'function') {
         await window.registrarLogout();
     }
-    
     await window.supabaseClient.auth.signOut();
     sessionStorage.clear();
     window.location.href = 'index.html';
@@ -579,6 +578,66 @@ window.addEventListener('beforeunload', function(event) {
             try { window.chatChannelPresence.untrack(); } catch (e) {}
         }
     });
+        // ==========================================
+    // ✅ DETECTOR DE CIERRE DE VENTANA / NAVEGADOR (Cierre Automático)
+    // ==========================================
+    window.addEventListener('beforeunload', function(event) {
+        // Si el usuario usó el botón de cerrar sesión, NO hacemos nada (ya se registró)
+        if (window.isManualLogout) return;
+
+        const userId = sessionStorage.getItem('pnb_user_id');
+        const loginTime = sessionStorage.getItem('pnb_login_time');
+        
+        // Solo actuar si hay una sesión activa válida y el cliente de Supabase existe
+        if (userId && loginTime && window.supabaseClient) {
+            const userEmail = sessionStorage.getItem('pnb_user_email') || '';
+            const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
+            
+            // Calcular duración
+            const duracionSegundos = Math.floor((Date.now() - parseInt(loginTime)) / 1000);
+            let duracionTexto = 'No registrada';
+            const horas = Math.floor(duracionSegundos / 3600);
+            const minutos = Math.floor((duracionSegundos % 3600) / 60);
+            const segundos = duracionSegundos % 60;
+            
+            if (horas > 0) duracionTexto = `${horas}h ${minutos}m ${segundos}s`;
+            else if (minutos > 0) duracionTexto = `${minutos}m ${segundos}s`;
+            else duracionTexto = `${segundos}s`;
+
+            const payload = {
+                user_id: userId,
+                user_nombre: userNombre,
+                user_email: userEmail,
+                accion: 'LOGOUT',
+                modulo: 'AUTENTICACION',
+                detalles: {
+                    sesion_duracion: duracionTexto,
+                    sesion_duracion_segundos: duracionSegundos,
+                    motivo: 'Cierre de ventana o navegador',
+                    hora_cierre: new Date().toISOString()
+                }
+            };
+
+            const url = `${window.supabaseClient.supabaseUrl}/rest/v1/sistema_logs`;
+            // Usar el token guardado, o fallback a la anon key
+            const token = sessionStorage.getItem('pnb_session_token') || window.supabaseClient.supabaseKey;
+            
+            // ✅ PETICIÓN SÍNCRONA (false): Obliga al navegador a esperar el envío antes de cerrar
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', url, false); 
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.setRequestHeader('apikey', window.supabaseClient.supabaseKey);
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            xhr.setRequestHeader('Prefer', 'return=minimal');
+            
+            try {
+                xhr.send(JSON.stringify(payload));
+            } catch (e) {
+                console.error('Error al enviar log de cierre automático:', e);
+            }
+        }
+    });
 
     initDashboard();
 });
+
