@@ -383,18 +383,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+       // ==========================================
+    // ✅ DETECTOR DE CIERRE DE VENTANA (Versión Blindada)
     // ==========================================
-    // ✅ DETECTOR DE CIERRE DE VENTANA (Excluye recargas)
-    // ==========================================
-    window.addEventListener('beforeunload', function() {
-        // 1. Si el usuario usó el botón de cerrar sesión, NO hacer nada
+    window.addEventListener('beforeunload', function(event) {
+        // 1. Si usó el botón de cerrar sesión, NO hacer nada
         if (window.isManualLogout) return;
 
-        // 2. ✅ Si la página fue recargada (F5 / Ctrl+R), NO registrar cierre
-        // Y BORRAR la bandera para que la próxima vez funcione correctamente
-        if (sessionStorage.getItem('pnb_es_recarga') === 'true') {
-            sessionStorage.removeItem('pnb_es_recarga');
-            return;
+        // 2. Detección agresiva de recarga (F5 / Ctrl+R)
+        let esRecarga = false;
+        try {
+            const navEntries = performance.getEntriesByType('navigation');
+            if (navEntries.length > 0 && navEntries[0].type === 'reload') {
+                esRecarga = true;
+            }
+            // Fallback para navegadores antiguos
+            if (performance.navigation && performance.navigation.type === 1) {
+                esRecarga = true;
+            }
+        } catch (e) {
+            // Si falla la detección, asumimos que NO es recarga para no perder el log
+        }
+        
+        if (esRecarga) {
+            return; // Es una recarga, NO registrar cierre
         }
 
         // 3. Si NO es recarga, proceder con el registro de cierre automático
@@ -407,7 +419,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const userEmail = sessionStorage.getItem('pnb_user_email') || '';
         const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
         
-        // Calcular duración
         const duracionSegundos = Math.floor((Date.now() - parseInt(loginTime)) / 1000);
         let duracionTexto = 'No registrada';
         const horas = Math.floor(duracionSegundos / 3600);
@@ -434,7 +445,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const url = `${window.supabaseClient.supabaseUrl}/rest/v1/sistema_logs`;
         
-        // ✅ Petición con keepalive: true para que se envíe al cerrar
+        // ✅ fetch con keepalive: true (garantiza el envío al cerrar la pestaña)
         fetch(url, {
             method: 'POST',
             headers: {
