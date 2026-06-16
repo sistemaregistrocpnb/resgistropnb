@@ -568,64 +568,74 @@ window.addEventListener('beforeunload', function() {
         }
     }
 
-    // ==========================================
-    // ✅ ÚNICO DETECTOR DE CIERRE DE VENTANA (LIMPIO Y DEFINITIVO)
-    // ==========================================
-    window.addEventListener('beforeunload', function(event) {
-        // Si el usuario usó el botón de cerrar sesión, NO hacer nada
-        if (window.isManualLogout) return;
+// ==========================================
+// ✅ DETECTOR DE CIERRE DE VENTANA / NAVEGADOR (Excluye recargas)
+// ==========================================
+window.addEventListener('beforeunload', function(event) {
+    // 1. Si el usuario usó el botón de cerrar sesión, NO hacer nada
+    if (window.isManualLogout) return;
 
-        const userId = sessionStorage.getItem('pnb_user_id');
-        const loginTime = sessionStorage.getItem('pnb_login_time');
-        const token = sessionStorage.getItem('pnb_session_token');
-        
-        // Solo actuar si hay una sesión activa válida
-        if (userId && loginTime && token && window.supabaseClient) {
-            const userEmail = sessionStorage.getItem('pnb_user_email') || '';
-            const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
-            
-            // Calcular duración
-            const duracionSegundos = Math.floor((Date.now() - parseInt(loginTime)) / 1000);
-            let duracionTexto = 'No registrada';
-            const horas = Math.floor(duracionSegundos / 3600);
-            const minutos = Math.floor((duracionSegundos % 3600) / 60);
-            const segundos = duracionSegundos % 60;
-            
-            if (horas > 0) duracionTexto = `${horas}h ${minutos}m ${segundos}s`;
-            else if (minutos > 0) duracionTexto = `${minutos}m ${segundos}s`;
-            else duracionTexto = `${segundos}s`;
+    // 2. ✅ DETECTAR SI ES UNA RECARGA DE PÁGINA
+    const navEntries = performance.getEntriesByType('navigation');
+    const isReload = navEntries.length > 0 && navEntries[0].type === 'reload';
+    
+    // Fallback para navegadores más antiguos
+    const isLegacyReload = performance.navigation && performance.navigation.type === 1;
 
-            const payload = {
-                user_id: userId,
-                user_nombre: userNombre,
-                user_email: userEmail,
-                accion: 'LOGOUT',
-                modulo: 'AUTENTICACION',
-                detalles: {
-                    sesion_duracion: duracionTexto,
-                    sesion_duracion_segundos: duracionSegundos,
-                    motivo: 'Cierre de ventana o navegador',
-                    hora_cierre: new Date().toISOString()
-                }
-            };
+    if (isReload || isLegacyReload) {
+        return; // Es una recarga (F5 / Ctrl+R), NO registrar cierre de sesión
+    }
 
-            const url = `${window.supabaseClient.supabaseUrl}/rest/v1/sistema_logs`;
-            
-            // ✅ PETICIÓN SÍNCRONA: Obliga al navegador a esperar el envío
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', url, false); // false = SÍNCRONO
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.setRequestHeader('apikey', window.supabaseClient.supabaseKey);
-            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-            xhr.setRequestHeader('Prefer', 'return=minimal');
-            
-            try {
-                xhr.send(JSON.stringify(payload));
-            } catch (e) {
-                // Silencioso: el navegador ya está cerrando
-            }
+    // 3. Si NO es recarga, proceder con el registro de cierre automático
+    const userId = sessionStorage.getItem('pnb_user_id');
+    const loginTime = sessionStorage.getItem('pnb_login_time');
+    const token = sessionStorage.getItem('pnb_session_token');
+    
+    if (!userId || !loginTime || !token || !window.supabaseClient) return;
+
+    const userEmail = sessionStorage.getItem('pnb_user_email') || '';
+    const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
+    
+    // Calcular duración
+    const duracionSegundos = Math.floor((Date.now() - parseInt(loginTime)) / 1000);
+    let duracionTexto = 'No registrada';
+    const horas = Math.floor(duracionSegundos / 3600);
+    const minutos = Math.floor((duracionSegundos % 3600) / 60);
+    const segundos = duracionSegundos % 60;
+    
+    if (horas > 0) duracionTexto = `${horas}h ${minutos}m ${segundos}s`;
+    else if (minutos > 0) duracionTexto = `${minutos}m ${segundos}s`;
+    else duracionTexto = `${segundos}s`;
+
+    const payload = {
+        user_id: userId,
+        user_nombre: userNombre,
+        user_email: userEmail,
+        accion: 'LOGOUT',
+        modulo: 'AUTENTICACION',
+        detalles: {
+            sesion_duracion: duracionTexto,
+            sesion_duracion_segundos: duracionSegundos,
+            motivo: 'Cierre de ventana o navegador',
+            hora_cierre: new Date().toISOString()
         }
-    });
+    };
+
+    const url = `${window.supabaseClient.supabaseUrl}/rest/v1/sistema_logs`;
+    
+    // ✅ Petición con keepalive: true para que se envíe al cerrar
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'apikey': window.supabaseClient.supabaseKey,
+            'Authorization': `Bearer ${token}`,
+            'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(payload),
+        keepalive: true 
+    }).catch(() => {}); // Silenciar errores de red al cerrar
+});
 
     initDashboard();
 });
