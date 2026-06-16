@@ -6,70 +6,15 @@ window.console.info = function() {};
 window.console.debug = function() {};
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // ✅ Bandera global para el botón de cerrar sesión
+    window.isManualLogout = false;
+
     const userEmailEl = document.getElementById('user-email');
     const userRoleEl = document.getElementById('user-role');
     const btnLogout = document.getElementById('btn-logout');
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
     const appContent = document.getElementById('app-content');
-
-    // ✅ VARIABLES PARA CONTROL DE LOGOUT
-    let logoutRegistrado = false;
-
-    // ✅ FUNCIÓN PARA REGISTRAR LOGOUT FORZADO (cierre de pestaña/navegador)
-    async function registrarLogoutForzado() {
-        if (logoutRegistrado) return;
-        logoutRegistrado = true;
-        
-        try {
-            const { data: { session } } = await window.supabaseClient.auth.getSession();
-            if (!session) return;
-            
-            const logData = {
-                user_id: session.user.id,
-                email: session.user.email,
-                accion: 'logout_forzado',
-                descripcion: 'Cierre de sesión por cierre de pestaña/navegador',
-                fecha: new Date().toISOString(),
-                tipo: 'automatico'
-            };
-            
-            // Extraer configuración de Supabase
-            const supabaseUrl = window.supabaseClient.rest.url.replace('/rest/v1', '');
-            const supabaseKey = window.supabaseClient.rest.headers['apikey'];
-            const authToken = session.access_token;
-            
-            // Fetch con keepalive para que continúe aunque se cierre la pestaña
-            await fetch(`${supabaseUrl}/rest/v1/logs_sesion`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': supabaseKey,
-                    'Authorization': `Bearer ${authToken}`
-                },
-                body: JSON.stringify(logData),
-                keepalive: true
-            });
-        } catch (err) {
-            // Error silencioso
-        }
-    }
-
-    // ✅ EVENT LISTENERS PARA DETECTAR CIERRE DE PESTAÑA
-    window.addEventListener('beforeunload', () => {
-        registrarLogoutForzado();
-    });
-
-    // Respaldo: detectar cuando la pestaña se oculta
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden' && !logoutRegistrado) {
-            setTimeout(() => {
-                if (document.visibilityState === 'hidden' && !logoutRegistrado) {
-                    registrarLogoutForzado();
-                }
-            }, 1000);
-        }
-    });
 
     async function initDashboard() {
         const { data: { session } } = await window.supabaseClient.auth.getSession();
@@ -200,9 +145,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         setInterval(actualizar, 1000);
     }
 
-    // ✅ BOTÓN DE CERRAR SESIÓN (ÚNICA FORMA DE REGISTRAR LOGOUT FORMAL)
+    // ✅ BOTÓN DE CERRAR SESIÓN (Única forma de registrar LOGOUT formal)
     btnLogout.addEventListener('click', async () => {
-        logoutRegistrado = true; // Marcar para evitar duplicados
+        window.isManualLogout = true;
         if (typeof window.registrarLogout === 'function') {
             await window.registrarLogout();
         }
@@ -211,19 +156,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'index.html';
     });
 
-    let chatChannelPresence = null;
-    let chatChannelMessages = null;
-    let replyingToUserId = null;
-
+    // ==========================================
+    // 🔹 CHAT PRIVADO CON PAGINACIÓN Y BADGES (VERSIÓN COMPLETA)
+    // ==========================================
     async function iniciarChatPrivado() {
         const { data: { session } } = await window.supabaseClient.auth.getSession();
         if (!session) return;
+
         const currentUserId = session.user.id;
         const currentUserRole = sessionStorage.getItem('pnb_user_nivel') || 'consultor';
         const nombreDOM = document.getElementById('user-nombre-display')?.textContent;
         const currentUserName = (nombreDOM && nombreDOM !== 'Cargando...' && nombreDOM !== 'NOMBRE NO DISPONIBLE')
             ? nombreDOM
             : (session.user.email?.split('@')[0].toUpperCase() || 'USUARIO');
+
         const chatBubble = document.getElementById('chat-bubble');
         const chatWindow = document.getElementById('chat-window');
         const chatClose = document.getElementById('chat-close');
@@ -234,70 +180,195 @@ document.addEventListener('DOMContentLoaded', async () => {
         const adminOnlineIndicator = document.getElementById('admin-online-indicator');
         const onlineCountSpan = document.getElementById('online-count');
         const onlineUsersList = document.getElementById('online-users-list');
+        
+        // Elementos nuevos para paginación y chat individual
+        const usersPagination = document.getElementById('users-pagination');
+        const onlineUsersCount = document.getElementById('online-users-count');
+        const activeChatIndicator = document.getElementById('active-chat-indicator');
+        const activeChatUserName = document.getElementById('active-chat-user-name');
+        const backToGeneralBtn = document.getElementById('back-to-general');
+        
         const replyIndicator = document.getElementById('reply-indicator');
         const replyToName = document.getElementById('reply-to-name');
         const cancelReplyBtn = document.getElementById('cancel-reply');
 
-        chatChannelPresence = window.supabaseClient.channel('sistema-presence', {
-            config: { presence: { key: currentUserId } }
+        let replyingToUserId = null;
+        let activeChatUserId = null;
+        let currentChatPage = 1;
+        const USERS_PER_PAGE = 5;
+        let usuariosEnLinea = [];
+
+        const sessionId = sessionStorage.getItem('pnb_session_id') || 'sess_' + Date.now();
+        window.chatChannelPresence = window.supabaseClient.channel('sistema-presencia-global', {
+            config: { presence: { key: currentUserId + '_' + sessionId } }
         });
 
-        chatChannelPresence.on('presence', { event: 'sync' }, () => {
-            const state = chatChannelPresence.presenceState();
-            const usuariosEnLinea = [];
-            for (const [userId, presenceData] of Object.entries(state)) {
+        window.chatChannelPresence.on('presence', { event: 'sync' }, () => {
+            const state = window.chatChannelPresence.presenceState();
+            usuariosEnLinea = [];
+            for (const [clave, presenceData] of Object.entries(state)) {
                 if (presenceData && presenceData.length > 0) {
-                    usuariosEnLinea.push({ id: userId, ...presenceData[presenceData.length - 1] });
+                    usuariosEnLinea.push({ id: presenceData[0].user_id, ...presenceData[0] });
                 }
             }
-            if (currentUserRole === 'administrador') {
+
+            if ((currentUserRole === 'administrador' || currentUserRole === 'moderador') && adminOnlinePanel) {
+                const usuariosUnicos = [];
+                const userIdsVistos = new Set();
+                usuariosEnLinea.forEach(u => {
+                    if (!userIdsVistos.has(u.id)) {
+                        userIdsVistos.add(u.id);
+                        usuariosUnicos.push(u);
+                    }
+                });
+
                 adminOnlinePanel.style.display = 'block';
                 adminOnlineIndicator.style.display = 'block';
-                onlineCountSpan.textContent = usuariosEnLinea.length;
-                onlineUsersList.innerHTML = '';
-                usuariosEnLinea.forEach(user => {
-                    const li = document.createElement('li');
-                    const nombreUser = user.nombre ? user.nombre.toUpperCase() : 'USUARIO';
-                    const rolUser = user.rol ? user.rol.toUpperCase() : 'ROL';
-                    li.textContent = `${nombreUser} (${rolUser})`;
-                    onlineUsersList.appendChild(li);
+                onlineCountSpan.textContent = usuariosUnicos.length;
+                if (onlineUsersCount) onlineUsersCount.textContent = `(${usuariosUnicos.length} conectados)`;
+                renderizarUsuariosEnLinea();
+            }
+        });
+
+        await window.chatChannelPresence.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                await window.chatChannelPresence.track({ 
+                    nombre: currentUserName, 
+                    rol: currentUserRole,
+                    user_id: currentUserId,
+                    sessionId: sessionId,
+                    timestamp: Date.now()
                 });
             }
         });
 
-        await chatChannelPresence.subscribe(async (status) => {
-            if (status === 'SUBSCRIBED') {
-                await chatChannelPresence.track({ nombre: currentUserName, rol: currentUserRole });
-            }
-        });
+        // 1. RENDERIZAR LISTA DE USUARIOS CON PAGINACIÓN
+        function renderizarUsuariosEnLinea() {
+            if (!onlineUsersList || !usersPagination) return;
 
-        chatChannelMessages = window.supabaseClient
-            .channel('chat-room-privado')
+            const totalPages = Math.ceil(usuariosEnLinea.length / USERS_PER_PAGE);
+            if (currentChatPage > totalPages && totalPages > 0) currentChatPage = totalPages;
+            if (totalPages === 0) currentChatPage = 1;
+
+            const inicio = (currentChatPage - 1) * USERS_PER_PAGE;
+            const fin = inicio + USERS_PER_PAGE;
+            const usuariosPagina = usuariosEnLinea.slice(inicio, fin);
+
+            onlineUsersList.innerHTML = '';
+            usuariosPagina.forEach(user => {
+                const li = document.createElement('li');
+                li.style.cssText = 'cursor: pointer; padding: 6px 8px; border-radius: 6px; transition: background 0.2s; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;';
+                
+                const nombreUser = user.nombre ? user.nombre.toUpperCase() : 'USUARIO';
+                const rolUser = user.rol ? user.rol.toUpperCase() : 'ROL';
+                const isActive = activeChatUserId === user.id;
+
+                li.style.background = isActive ? '#dbeafe' : 'transparent';
+                li.style.border = isActive ? '1px solid #93c5fd' : '1px solid transparent';
+
+                li.innerHTML = `
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 0.8rem; color: #1e293b;">${nombreUser}</div>
+                        <div style="font-size: 0.7rem; color: #64748b;">${rolUser}</div>
+                    </div>
+                    <button class="btn-chat-user" data-user-id="${user.id}" data-user-name="${nombreUser}" 
+                        style="background: ${isActive ? '#1e40af' : '#10b981'}; color: white; border: none; 
+                        padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">
+                        ${isActive ? '💬 Activo' : '💬 Chat'}
+                    </button>
+                `;
+
+                li.querySelector('.btn-chat-user').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    iniciarChatIndividual(user.id, nombreUser);
+                });
+
+                onlineUsersList.appendChild(li);
+            });
+
+            // Paginación
+            usersPagination.innerHTML = '';
+            if (totalPages > 1) {
+                const crearBtn = (texto, disabled, onClick) => {
+                    const btn = document.createElement('button');
+                    btn.textContent = texto;
+                    btn.disabled = disabled;
+                    btn.style.cssText = `background: white; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 4px; cursor: ${disabled ? 'default' : 'pointer'}; font-size: 0.7rem; color: ${disabled ? '#ccc' : '#166534'};`;
+                    if (!disabled) btn.onclick = onClick;
+                    return btn;
+                };
+
+                usersPagination.appendChild(crearBtn('◀', currentChatPage === 1, () => { currentChatPage--; renderizarUsuariosEnLinea(); }));
+                for (let i = 1; i <= totalPages; i++) {
+                    const btn = document.createElement('button');
+                    btn.textContent = i;
+                    btn.style.cssText = `background: ${i === currentChatPage ? '#10b981' : 'white'}; color: ${i === currentChatPage ? 'white' : '#166534'}; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; font-weight: bold;`;
+                    btn.onclick = () => { currentChatPage = i; renderizarUsuariosEnLinea(); };
+                    usersPagination.appendChild(btn);
+                }
+                usersPagination.appendChild(crearBtn('▶', currentChatPage === totalPages, () => { currentChatPage++; renderizarUsuariosEnLinea(); }));
+            }
+        }
+
+        function iniciarChatIndividual(userId, userName) {
+            activeChatUserId = userId;
+            if (activeChatUserName) activeChatUserName.textContent = userName;
+            if (activeChatIndicator) activeChatIndicator.style.display = 'flex';
+            chatInput.placeholder = `Escribe un mensaje para ${userName}...`;
+            renderizarUsuariosEnLinea();
+            cargarMensajesIndividuales(userId);
+        }
+
+        if (backToGeneralBtn) {
+            backToGeneralBtn.addEventListener('click', () => {
+                activeChatUserId = null;
+                if (activeChatIndicator) activeChatIndicator.style.display = 'none';
+                chatInput.placeholder = 'Escribe tu mensaje...';
+                renderizarUsuariosEnLinea();
+                cargarMensajesRecientes();
+            });
+        }
+
+        // 2. TIEMPO REAL (Lógica de privacidad estricta)
+        window.chatChannelMessages = window.supabaseClient.channel('chat-room-privado')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensajes' }, (payload) => {
                 const nuevoMensaje = payload.new;
                 if (nuevoMensaje.id && document.querySelector(`[data-msg-id="${nuevoMensaje.id}"]`)) return;
-                const esParaMi = nuevoMensaje.receptor_id === currentUserId || nuevoMensaje.receptor_id === null;
+
                 const esMio = nuevoMensaje.remitente_id === currentUserId;
-                if (esParaMi || esMio || currentUserRole === 'administrador') {
+                const esParaMi = nuevoMensaje.receptor_id === currentUserId;
+                const esSoporte = nuevoMensaje.receptor_id === null;
+
+                let puedoVerlo = false;
+                if (currentUserRole === 'administrador' || currentUserRole === 'moderador') {
+                    puedoVerlo = esMio || esParaMi || esSoporte;
+                } else {
+                    puedoVerlo = esMio || esParaMi;
+                }
+
+                if (puedoVerlo) {
                     if (chatWindow.style.display === 'none' && !esMio) {
                         const badge = document.getElementById('chat-notification');
-                        badge.style.display = 'flex';
-                        badge.textContent = parseInt(badge.textContent || 0) + 1;
+                        if (badge) {
+                            badge.style.display = 'flex';
+                            badge.textContent = parseInt(badge.textContent || 0) + 1;
+                        }
                     }
-                    agregarMensajeAlDOM(nuevoMensaje);
+                    if (chatMessages) agregarMensajeAlDOM(nuevoMensaje);
                 }
             })
             .subscribe();
 
+        // 3. INTERFAZ
         if (chatBubble) {
             chatBubble.addEventListener('click', () => {
                 const isVisible = chatWindow.style.display === 'flex';
                 chatWindow.style.display = isVisible ? 'none' : 'flex';
                 document.getElementById('chat-notification').style.display = 'none';
                 document.getElementById('chat-notification').textContent = '0';
-                if (!isVisible) {
+                if (!isVisible && chatInput) {
                     chatInput.focus();
-                    cargarMensajesRecientes();
+                    activeChatUserId ? cargarMensajesIndividuales(activeChatUserId) : cargarMensajesRecientes();
                 }
             });
         }
@@ -306,7 +377,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             cancelReplyBtn.addEventListener('click', () => {
                 replyingToUserId = null;
                 replyIndicator.style.display = 'none';
-                chatInput.placeholder = "Escribe tu mensaje...";
+                chatInput.placeholder = activeChatUserId ? `Escribe un mensaje para ${activeChatUserName.textContent}...` : 'Escribe tu mensaje...';
             });
         }
         window.activarRespuesta = (userId, userName) => {
@@ -317,73 +388,132 @@ document.addEventListener('DOMContentLoaded', async () => {
             chatInput.focus();
         };
 
+        // 4. ENVIAR MENSAJE
         async function enviarMensaje() {
             const texto = chatInput.value.trim();
             if (!texto) return;
-            const tempId = 'temp-' + Date.now();
-            const targetReceptor = replyingToUserId;
-            const mensajeTemp = {
-                id: tempId, remitente_id: currentUserId, nombre_remitente: currentUserName,
-                rol_remitente: currentUserRole, receptor_id: targetReceptor, mensaje: texto,
-                tipo: currentUserRole === 'administrador' ? 'admin' : 'user', creado_en: new Date().toISOString()
-            };
-            agregarMensajeAlDOM(mensajeTemp);
-            chatInput.value = '';
-            if (targetReceptor) {
-                replyingToUserId = null;
-                replyIndicator.style.display = 'none';
-                chatInput.placeholder = "Escribe tu mensaje...";
+
+            chatSend.disabled = true;
+            chatInput.disabled = true;
+
+            let targetReceptor = replyingToUserId;
+            if (!targetReceptor && activeChatUserId && (currentUserRole === 'administrador' || currentUserRole === 'moderador')) {
+                targetReceptor = activeChatUserId;
             }
-            const { data, error } = await window.supabaseClient.from('chat_mensajes').insert([{
-                remitente_id: currentUserId, nombre_remitente: currentUserName, rol_remitente: currentUserRole,
-                receptor_id: targetReceptor, mensaje: texto, tipo: currentUserRole === 'administrador' ? 'admin' : 'user'
-            }]).select().single();
-            if (error) {
-                const tempDiv = document.querySelector(`[data-msg-id="${tempId}"]`);
-                if (tempDiv) tempDiv.remove();
-            } else if (data) {
-                const tempDiv = document.querySelector(`[data-msg-id="${tempId}"]`);
-                if (tempDiv) tempDiv.remove();
+
+            try {
+                const { error } = await window.supabaseClient.from('chat_mensajes').insert([{
+                    remitente_id: currentUserId,
+                    nombre_remitente: currentUserName,
+                    rol_remitente: currentUserRole,
+                    receptor_id: targetReceptor,
+                    mensaje: texto,
+                    tipo: currentUserRole === 'administrador' ? 'admin' : 'user'
+                }]);
+                if (error) throw error;
+
+                chatInput.value = '';
+                if (targetReceptor) {
+                    replyingToUserId = null;
+                    replyIndicator.style.display = 'none';
+                }
+            } catch (err) {
+                console.error('Error al enviar:', err);
+                alert('No se pudo enviar el mensaje. Verifique su conexión.');
+            } finally {
+                chatSend.disabled = false;
+                chatInput.disabled = false;
+                chatInput.focus();
+                chatInput.placeholder = activeChatUserId ? `Escribe un mensaje para ${activeChatUserName.textContent}...` : 'Escribe tu mensaje...';
             }
         }
+
         if (chatSend) chatSend.addEventListener('click', enviarMensaje);
         if (chatInput) chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensaje(); });
 
-        async function cargarMensajesRecientes() {
+        // 5. CARGAR HISTORIAL
+        async function cargarMensajesIndividuales(userId) {
+            if (!chatMessages) return;
             chatMessages.innerHTML = '<div class="chat-message system"><p>Cargando...</p></div>';
-            const { data, error } = await window.supabaseClient.from('chat_mensajes').select('*').order('creado_en', { ascending: true }).limit(50);
+            
+            const { data, error } = await window.supabaseClient.from('chat_mensajes').select('*')
+                .or(`and(remitente_id.eq.${currentUserId},receptor_id.eq.${userId}),and(remitente_id.eq.${userId},receptor_id.eq.${currentUserId})`)
+                .order('creado_en', { ascending: true }).limit(50);
+
             chatMessages.innerHTML = '';
             if (error) {
-                chatMessages.innerHTML = '<div class="chat-message system"><p>Error al cargar el historial.</p></div>';
+                chatMessages.innerHTML = '<div class="chat-message system"><p>Error al cargar.</p></div>';
+                return;
+            }
+            if (data && data.length > 0) data.forEach(msg => agregarMensajeAlDOM(msg));
+            else chatMessages.innerHTML = `<div class="chat-message system"><p>💬 Inicio de conversación privada</p></div>`;
+        }
+
+        async function cargarMensajesRecientes() {
+            if (!chatMessages) return;
+            chatMessages.innerHTML = '<div class="chat-message system"><p>Cargando...</p></div>';
+            
+            let query = window.supabaseClient.from('chat_mensajes').select('*').order('creado_en', { ascending: true }).limit(50);
+            
+            if (currentUserRole === 'administrador' || currentUserRole === 'moderador') {
+                query = query.or(`remitente_id.eq.${currentUserId},receptor_id.eq.${currentUserId},receptor_id.is.null`);
+            } else {
+                query = query.or(`remitente_id.eq.${currentUserId},receptor_id.eq.${currentUserId}`);
+            }
+
+            const { data, error } = await query;
+            chatMessages.innerHTML = '';
+            if (error) {
+                chatMessages.innerHTML = '<div class="chat-message system"><p>Error al cargar.</p></div>';
                 return;
             }
             if (data && data.length > 0) {
                 data.forEach(msg => agregarMensajeAlDOM(msg));
             } else {
-                chatMessages.innerHTML = `<div class="chat-message system"><p style="font-size: 0.9rem; font-weight: 600;">👋 ¡Bienvenido al Chat de Soporte OTIC-ZULIA!</p><p style="margin-top: 5px; font-size: 0.8rem;">Escribe tu consulta aquí abajo. Un administrador te responderá de forma privada a la brevedad.</p></div>`;
+                chatMessages.innerHTML = `
+                <div class="chat-message system">
+                    <p style="font-size: 0.9rem; font-weight: 600;">👋 ¡Bienvenido al Chat de Soporte OTIC-ZULIA!</p>
+                    <p style="margin-top: 5px; font-size: 0.8rem;">Escribe tu consulta aquí abajo. Un administrador o moderador te responderá de forma privada a la brevedad.</p>
+                </div>`;
             }
         }
 
+        // 6. RENDERIZAR MENSAJE (Con Nombre, Nivel y Botón de Responder)
         function agregarMensajeAlDOM(msg) {
+            if (!chatMessages) return;
             const div = document.createElement('div');
-            if (msg.id && !msg.id.startsWith('temp-')) div.dataset.msgId = msg.id;
+            if (msg.id) div.dataset.msgId = msg.id;
+
             const esMio = msg.remitente_id === currentUserId;
-            const tipoClase = esMio ? (currentUserRole === 'administrador' ? 'admin' : 'user') : (msg.tipo || 'user');
+            const tipoClase = esMio ? ((currentUserRole === 'administrador' || currentUserRole === 'moderador') ? 'admin' : 'user') : (msg.tipo === 'staff' ? 'admin' : 'user');
             div.className = `chat-message ${tipoClase}`;
+
             const fecha = msg.creado_en ? new Date(msg.creado_en) : new Date();
             const hora = fecha.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
+
             let htmlContent = '';
             const nombreMostrar = msg.nombre_remitente ? msg.nombre_remitente.toUpperCase() : (esMio ? 'TÚ' : 'USUARIO');
-            if (msg.rol_remitente === 'administrador' && msg.receptor_id) {
-                htmlContent += `<div class="msg-sender">✉️ Respuesta de Soporte</div>`;
-            } else if (!esMio) {
-                htmlContent += `<div class="msg-sender">${nombreMostrar}</div>`;
+            const rolMostrar = msg.rol_remitente ? msg.rol_remitente.toUpperCase() : 'USUARIO';
+
+            if (msg.receptor_id && msg.receptor_id !== 'general') {
+                htmlContent += `<div class="msg-sender" style="font-size: 0.65rem; color: #f59e0b; margin-bottom: 2px;">🔒 Mensaje Privado</div>`;
             }
-            htmlContent += `<p>${msg.mensaje}</p><span class="msg-meta">${hora}</span>`;
-            if (currentUserRole === 'administrador' && msg.rol_remitente !== 'administrador' && !esMio) {
+
+            // ✅ Badge de color según el rol
+            const badgeColor = rolMostrar === 'ADMINISTRADOR' ? '#dc2626' : (rolMostrar === 'MODERADOR' ? '#2563eb' : '#64748b');
+            htmlContent += `<div class="msg-sender" style="display:flex; align-items:center; gap:6px; margin-bottom: 4px;">
+                <span style="font-weight:700;">${esMio ? 'TÚ' : nombreMostrar}</span>
+                <span style="font-size:0.65rem; background:${badgeColor}; color:white; padding:1px 6px; border-radius:4px; font-weight:700; letter-spacing:0.5px;">${rolMostrar}</span>
+            </div>`;
+
+            htmlContent += `<p style="margin-top: 0; line-height: 1.4;">${msg.mensaje}</p><span class="msg-meta">${hora}</span>`;
+
+            // ✅ Botón de responder (Solo Admin/Mod)
+            if ((currentUserRole === 'administrador' || currentUserRole === 'moderador') && msg.rol_remitente !== 'administrador' && msg.rol_remitente !== 'moderador' && !esMio) {
                 const nombreSeguro = nombreMostrar.replace(/'/g, "\\'");
                 htmlContent += `<button class="btn-reply" onclick="activarRespuesta('${msg.remitente_id}', '${nombreSeguro}')" title="Responder">↩️</button>`;
             }
+
             div.innerHTML = htmlContent;
             chatMessages.appendChild(div);
             chatMessages.scrollTop = chatMessages.scrollHeight;
