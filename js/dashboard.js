@@ -144,16 +144,77 @@ document.addEventListener('DOMContentLoaded', async () => {
         setInterval(actualizar, 1000);
     }
 
-    btnLogout.addEventListener('click', async () => {
-        if (typeof window.registrarLogout === 'function') await window.registrarLogout();
-        if (window.chatChannelPresence) {
-            try { await window.chatChannelPresence.untrack(); await window.chatChannelPresence.unsubscribe(); } catch (e) {}
-        }
-        await window.supabaseClient.auth.signOut();
-        sessionStorage.clear();
-        window.location.href = 'index.html';
-    });
+// ✅ Variable para evitar doble registro si usan el botón de cerrar sesión
+let isManualLogout = false;
 
+btnLogout.addEventListener('click', async () => {
+    isManualLogout = true; // Marcamos que es un cierre manual
+    
+    // ✅ REGISTRAR LOGOUT ANTES DE CERRAR SESIÓN (calcula duración)
+    if (typeof window.registrarLogout === 'function') {
+        await window.registrarLogout();
+    }
+    
+    await window.supabaseClient.auth.signOut();
+    sessionStorage.clear();
+    window.location.href = 'index.html';
+});
+
+// ✅ DETECTOR DE CIERRE DE VENTANA / PESTAÑA (Cierre Automático)
+window.addEventListener('beforeunload', function(event) {
+    // Si el usuario usó el botón de cerrar sesión, no hacemos nada (ya se registró)
+    if (isManualLogout) return;
+
+    const userId = sessionStorage.getItem('pnb_user_id');
+    const loginTime = sessionStorage.getItem('pnb_login_time');
+    const token = sessionStorage.getItem('pnb_session_token');
+    
+    // Solo actuar si hay una sesión activa válida
+    if (userId && loginTime && token) {
+        // Calcular duración
+        const duracionSegundos = Math.floor((Date.now() - parseInt(loginTime)) / 1000);
+        let duracionTexto = 'No registrada';
+        const horas = Math.floor(duracionSegundos / 3600);
+        const minutos = Math.floor((duracionSegundos % 3600) / 60);
+        const segundos = duracionSegundos % 60;
+        
+        if (horas > 0) duracionTexto = `${horas}h ${minutos}m ${segundos}s`;
+        else if (minutos > 0) duracionTexto = `${minutos}m ${segundos}s`;
+        else duracionTexto = `${segundos}s`;
+
+        const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
+        const userEmail = sessionStorage.getItem('pnb_user_email') || '';
+
+        const payload = {
+            user_id: userId,
+            user_nombre: userNombre,
+            user_email: userEmail,
+            accion: 'LOGOUT',
+            modulo: 'AUTENTICACION',
+            detalles: {
+                sesion_duracion: duracionTexto,
+                sesion_duracion_segundos: duracionSegundos,
+                motivo: 'Cierre de ventana o navegador',
+                hora_cierre: new Date().toISOString()
+            }
+        };
+
+        // ✅ Petición SÍNCRONA (false) para forzar al navegador a esperar el envío
+        const url = `${window.supabaseClient.supabaseUrl}/rest/v1/sistema_logs`;
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url, false); // El 'false' hace que sea síncrona
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('apikey', window.supabaseClient.supabaseKey);
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        xhr.setRequestHeader('Prefer', 'return=minimal');
+        
+        try {
+            xhr.send(JSON.stringify(payload));
+        } catch (e) {
+            console.error('Error al enviar log de cierre automático:', e);
+        }
+    }
+});
        async function iniciarChatPrivado() {
         const { data: { session } } = await window.supabaseClient.auth.getSession();
         if (!session) return;
