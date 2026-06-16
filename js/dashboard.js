@@ -6,6 +6,21 @@ window.console.info = function() {};
 window.console.debug = function() {};
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // ✅ 1. DETECCIÓN INFALIBLE DE RECARGA (Se ejecuta AL INSTANTE al cargar)
+    try {
+        const navEntries = performance.getEntriesByType('navigation');
+        if (navEntries.length > 0 && navEntries[0].type === 'reload') {
+            sessionStorage.setItem('pnb_skip_logout', 'true');
+        } else if (performance.navigation && performance.navigation.type === 1) {
+            sessionStorage.setItem('pnb_skip_logout', 'true');
+        }
+    } catch (e) {
+        // Fallback silencioso
+    }
+
+    // ✅ Bandera global para evitar doble registro de logout manual
+    window.isManualLogout = false;
+
     const userEmailEl = document.getElementById('user-email');
     const userRoleEl = document.getElementById('user-role');
     const btnLogout = document.getElementById('btn-logout');
@@ -142,8 +157,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         setInterval(actualizar, 1000);
     }
 
-    // ✅ BOTÓN DE CERRAR SESIÓN (ÚNICA FORMA DE REGISTRAR LOGOUT FORMAL)
+    // ✅ BOTÓN DE CERRAR SESIÓN (Manual)
     btnLogout.addEventListener('click', async () => {
+        window.isManualLogout = true; // Marcar como cierre manual
+        
         if (typeof window.registrarLogout === 'function') {
             await window.registrarLogout();
         }
@@ -216,7 +233,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             .channel('chat-room-privado')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensajes' }, (payload) => {
                 const nuevoMensaje = payload.new;
-                if (nuevoMensaje.id && document.querySelector(`[data-msg-id="${nuevoMensaje.id}"]`)) return;
+                if (nuevoMensaje.id && document.querySelector(`[data-msg-id="${nuevoMensaje.id}"]`)) {
+                    return;
+                }
                 const esParaMi = nuevoMensaje.receptor_id === currentUserId || nuevoMensaje.receptor_id === null;
                 const esMio = nuevoMensaje.remitente_id === currentUserId;
                 if (esParaMi || esMio || currentUserRole === 'administrador') {
@@ -242,7 +261,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         }
-        if (chatClose) chatClose.addEventListener('click', () => { chatWindow.style.display = 'none'; });
+        if (chatClose) {
+            chatClose.addEventListener('click', () => { chatWindow.style.display = 'none'; });
+        }
         if (cancelReplyBtn) {
             cancelReplyBtn.addEventListener('click', () => {
                 replyingToUserId = null;
@@ -264,9 +285,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const tempId = 'temp-' + Date.now();
             const targetReceptor = replyingToUserId;
             const mensajeTemp = {
-                id: tempId, remitente_id: currentUserId, nombre_remitente: currentUserName,
-                rol_remitente: currentUserRole, receptor_id: targetReceptor, mensaje: texto,
-                tipo: currentUserRole === 'administrador' ? 'admin' : 'user', creado_en: new Date().toISOString()
+                id: tempId,
+                remitente_id: currentUserId,
+                nombre_remitente: currentUserName,
+                rol_remitente: currentUserRole,
+                receptor_id: targetReceptor,
+                mensaje: texto,
+                tipo: currentUserRole === 'administrador' ? 'admin' : 'user',
+                creado_en: new Date().toISOString()
             };
             agregarMensajeAlDOM(mensajeTemp);
             chatInput.value = '';
@@ -275,10 +301,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 replyIndicator.style.display = 'none';
                 chatInput.placeholder = "Escribe tu mensaje...";
             }
-            const { data, error } = await window.supabaseClient.from('chat_mensajes').insert([{
-                remitente_id: currentUserId, nombre_remitente: currentUserName, rol_remitente: currentUserRole,
-                receptor_id: targetReceptor, mensaje: texto, tipo: currentUserRole === 'administrador' ? 'admin' : 'user'
-            }]).select().single();
+            const { data, error } = await window.supabaseClient
+                .from('chat_mensajes')
+                .insert([{
+                    remitente_id: currentUserId,
+                    nombre_remitente: currentUserName,
+                    rol_remitente: currentUserRole,
+                    receptor_id: targetReceptor,
+                    mensaje: texto,
+                    tipo: currentUserRole === 'administrador' ? 'admin' : 'user'
+                }])
+                .select()
+                .single();
             if (error) {
                 const tempDiv = document.querySelector(`[data-msg-id="${tempId}"]`);
                 if (tempDiv) tempDiv.remove();
@@ -292,7 +326,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         async function cargarMensajesRecientes() {
             chatMessages.innerHTML = '<div class="chat-message system"><p>Cargando...</p></div>';
-            const { data, error } = await window.supabaseClient.from('chat_mensajes').select('*').order('creado_en', { ascending: true }).limit(50);
+            const { data, error } = await window.supabaseClient
+                .from('chat_mensajes')
+                .select('*')
+                .order('creado_en', { ascending: true })
+                .limit(50);
             chatMessages.innerHTML = '';
             if (error) {
                 chatMessages.innerHTML = '<div class="chat-message system"><p>Error al cargar el historial.</p></div>';
@@ -301,13 +339,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (data && data.length > 0) {
                 data.forEach(msg => agregarMensajeAlDOM(msg));
             } else {
-                chatMessages.innerHTML = `<div class="chat-message system"><p style="font-size: 0.9rem; font-weight: 600;">👋 ¡Bienvenido al Chat de Soporte OTIC-ZULIA!</p><p style="margin-top: 5px; font-size: 0.8rem;">Escribe tu consulta aquí abajo. Un administrador te responderá de forma privada a la brevedad.</p></div>`;
+                chatMessages.innerHTML = `
+<div class="chat-message system">
+<p style="font-size: 0.9rem; font-weight: 600;">👋 ¡Bienvenido al Chat de Soporte OTIC-ZULIA!</p>
+<p style="margin-top: 5px; font-size: 0.8rem;">Escribe tu consulta aquí abajo. Un administrador te responderá de forma privada a la brevedad.</p>
+</div>
+`;
             }
         }
 
         function agregarMensajeAlDOM(msg) {
             const div = document.createElement('div');
-            if (msg.id && !msg.id.startsWith('temp-')) div.dataset.msgId = msg.id;
+            if (msg.id && !msg.id.startsWith('temp-')) {
+                div.dataset.msgId = msg.id;
+            }
             const esMio = msg.remitente_id === currentUserId;
             const tipoClase = esMio ? (currentUserRole === 'administrador' ? 'admin' : 'user') : (msg.tipo || 'user');
             div.className = `chat-message ${tipoClase}`;
@@ -330,6 +375,69 @@ document.addEventListener('DOMContentLoaded', async () => {
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
     }
+
+    // ==========================================
+    // ✅ 2. DETECTOR DE CIERRE DE VENTANA (Usando pagehide + keepalive)
+    // ==========================================
+    window.addEventListener('pagehide', function(event) {
+        // A. Si es una recarga (F5/Ctrl+R), NO registrar logout y limpiar la bandera
+        if (sessionStorage.getItem('pnb_skip_logout') === 'true') {
+            sessionStorage.removeItem('pnb_skip_logout');
+            return;
+        }
+
+        // B. Si el usuario usó el botón de cerrar sesión, NO hacer nada (ya se registró)
+        if (window.isManualLogout) return;
+
+        // C. Si es un cierre real de pestaña/navegador, registrar el LOGOUT
+        const userId = sessionStorage.getItem('pnb_user_id');
+        const loginTime = sessionStorage.getItem('pnb_login_time');
+        const token = sessionStorage.getItem('pnb_session_token');
+        
+        if (!userId || !loginTime || !token || !window.supabaseClient) return;
+
+        const userEmail = sessionStorage.getItem('pnb_user_email') || '';
+        const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
+        
+        const duracionSegundos = Math.floor((Date.now() - parseInt(loginTime)) / 1000);
+        let duracionTexto = 'No registrada';
+        const horas = Math.floor(duracionSegundos / 3600);
+        const minutos = Math.floor((duracionSegundos % 3600) / 60);
+        const segundos = duracionSegundos % 60;
+        
+        if (horas > 0) duracionTexto = `${horas}h ${minutos}m ${segundos}s`;
+        else if (minutos > 0) duracionTexto = `${minutos}m ${segundos}s`;
+        else duracionTexto = `${segundos}s`;
+
+        const payload = {
+            user_id: userId,
+            user_nombre: userNombre,
+            user_email: userEmail,
+            accion: 'LOGOUT',
+            modulo: 'AUTENTICACION',
+            detalles: {
+                sesion_duracion: duracionTexto,
+                sesion_duracion_segundos: duracionSegundos,
+                motivo: 'Cierre de ventana o navegador',
+                hora_cierre: new Date().toISOString()
+            }
+        };
+
+        const url = `${window.supabaseClient.supabaseUrl}/rest/v1/sistema_logs`;
+        
+        // ✅ fetch con keepalive: true garantiza que el navegador envíe la petición aunque la pestaña se cierre
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': window.supabaseClient.supabaseKey,
+                'Authorization': `Bearer ${token}`,
+                'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify(payload),
+            keepalive: true 
+        }).catch(() => {});
+    });
 
     initDashboard();
 });
