@@ -5,25 +5,7 @@ window.console.error = function() {};
 window.console.info = function() {};
 window.console.debug = function() {};
 
-// ✅ Bandera global única para evitar doble registro de logout
-window.isManualLogout = false;
-
 document.addEventListener('DOMContentLoaded', async () => {
-        // ✅ DETECTAR SI LA PÁGINA FUE RECARGADA (F5 / Ctrl+R)
-    // Esto se hace AL CARGAR, cuando performance.getEntriesByType() sí funciona
-    (function detectarRecarga() {
-        const navEntries = performance.getEntriesByType('navigation');
-        if (navEntries.length > 0) {
-            const tipo = navEntries[0].type;
-            sessionStorage.setItem('pnb_es_recarga', tipo === 'reload' ? 'true' : 'false');
-        } else if (performance.navigation && performance.navigation.type === 1) {
-            sessionStorage.setItem('pnb_es_recarga', 'true');
-        } else {
-            sessionStorage.setItem('pnb_es_recarga', 'false');
-        }
-    })();
-        // ✅ Bandera global para evitar doble registro de logout
-    window.isManualLogout = false;
     const userEmailEl = document.getElementById('user-email');
     const userRoleEl = document.getElementById('user-role');
     const btnLogout = document.getElementById('btn-logout');
@@ -162,73 +144,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         setInterval(actualizar, 1000);
     }
 
-    
-// ✅ Bandera global para evitar doble registro
-window.isManualLogout = false;
-
-btnLogout.addEventListener('click', async () => {
-    window.isManualLogout = true; // ✅ Marcar como cierre manual
-    
-    if (typeof window.registrarLogout === 'function') {
-        await window.registrarLogout();
-    }
-    await window.supabaseClient.auth.signOut();
-    sessionStorage.clear();
-    window.location.href = 'index.html';
-});
-// ✅ DETECTOR DE CIERRE DE VENTANA (Funciona en todos los navegadores modernos)
-window.addEventListener('beforeunload', function() {
-    if (window.isManualLogout) return; // Si usó el botón, no hacer nada
-
-    const userId = sessionStorage.getItem('pnb_user_id');
-    const loginTime = sessionStorage.getItem('pnb_login_time');
-    const token = sessionStorage.getItem('pnb_session_token');
-    
-    if (!userId || !loginTime || !token || !window.supabaseClient) return;
-
-    const userEmail = sessionStorage.getItem('pnb_user_email') || '';
-    const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
-    
-    // Calcular duración
-    const duracionSegundos = Math.floor((Date.now() - parseInt(loginTime)) / 1000);
-    let duracionTexto = 'No registrada';
-    const horas = Math.floor(duracionSegundos / 3600);
-    const minutos = Math.floor((duracionSegundos % 3600) / 60);
-    const segundos = duracionSegundos % 60;
-    
-    if (horas > 0) duracionTexto = `${horas}h ${minutos}m ${segundos}s`;
-    else if (minutos > 0) duracionTexto = `${minutos}m ${segundos}s`;
-    else duracionTexto = `${segundos}s`;
-
-    const payload = {
-        user_id: userId,
-        user_nombre: userNombre,
-        user_email: userEmail,
-        accion: 'LOGOUT',
-        modulo: 'AUTENTICACION',
-        detalles: {
-            sesion_duracion: duracionTexto,
-            sesion_duracion_segundos: duracionSegundos,
-            motivo: 'Cierre de ventana o navegador',
-            hora_cierre: new Date().toISOString()
+    // ✅ BOTÓN DE CERRAR SESIÓN (ÚNICA FORMA DE REGISTRAR LOGOUT)
+    btnLogout.addEventListener('click', async () => {
+        if (typeof window.registrarLogout === 'function') {
+            await window.registrarLogout();
         }
-    };
-
-    const url = `${window.supabaseClient.supabaseUrl}/rest/v1/sistema_logs`;
-    
-    // ✅ fetch con keepalive: true FUNCIONA al cerrar la ventana
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'apikey': window.supabaseClient.supabaseKey,
-            'Authorization': `Bearer ${token}`,
-            'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify(payload),
-        keepalive: true // ✅ ESTA ES LA CLAVE: mantiene la petición viva al cerrar
-    }).catch(() => {}); // Silenciar errores
-});
+        await window.supabaseClient.auth.signOut();
+        sessionStorage.clear();
+        window.location.href = 'index.html';
+    });
 
     // ==========================================
     // 🔹 CHAT PRIVADO CON PAGINACIÓN
@@ -582,137 +506,5 @@ window.addEventListener('beforeunload', function() {
         }
     }
 
-// ==========================================
-// ✅ DETECTOR DE CIERRE DE VENTANA / NAVEGADOR (Excluye recargas)
-// ==========================================
-window.addEventListener('beforeunload', function(event) {
-    // 1. Si el usuario usó el botón de cerrar sesión, NO hacer nada
-    if (window.isManualLogout) return;
-
-    // 2. ✅ DETECTAR SI ES UNA RECARGA DE PÁGINA
-    const navEntries = performance.getEntriesByType('navigation');
-    const isReload = navEntries.length > 0 && navEntries[0].type === 'reload';
-    
-    // Fallback para navegadores más antiguos
-    const isLegacyReload = performance.navigation && performance.navigation.type === 1;
-
-    if (isReload || isLegacyReload) {
-        return; // Es una recarga (F5 / Ctrl+R), NO registrar cierre de sesión
-    }
-
-    // 3. Si NO es recarga, proceder con el registro de cierre automático
-    const userId = sessionStorage.getItem('pnb_user_id');
-    const loginTime = sessionStorage.getItem('pnb_login_time');
-    const token = sessionStorage.getItem('pnb_session_token');
-    
-    if (!userId || !loginTime || !token || !window.supabaseClient) return;
-
-    const userEmail = sessionStorage.getItem('pnb_user_email') || '';
-    const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
-    
-    // Calcular duración
-    const duracionSegundos = Math.floor((Date.now() - parseInt(loginTime)) / 1000);
-    let duracionTexto = 'No registrada';
-    const horas = Math.floor(duracionSegundos / 3600);
-    const minutos = Math.floor((duracionSegundos % 3600) / 60);
-    const segundos = duracionSegundos % 60;
-    
-    if (horas > 0) duracionTexto = `${horas}h ${minutos}m ${segundos}s`;
-    else if (minutos > 0) duracionTexto = `${minutos}m ${segundos}s`;
-    else duracionTexto = `${segundos}s`;
-
-    const payload = {
-        user_id: userId,
-        user_nombre: userNombre,
-        user_email: userEmail,
-        accion: 'LOGOUT',
-        modulo: 'AUTENTICACION',
-        detalles: {
-            sesion_duracion: duracionTexto,
-            sesion_duracion_segundos: duracionSegundos,
-            motivo: 'Cierre de ventana o navegador',
-            hora_cierre: new Date().toISOString()
-        }
-    };
-
-    const url = `${window.supabaseClient.supabaseUrl}/rest/v1/sistema_logs`;
-    
-    // ✅ Petición con keepalive: true para que se envíe al cerrar
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'apikey': window.supabaseClient.supabaseKey,
-            'Authorization': `Bearer ${token}`,
-            'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify(payload),
-        keepalive: true 
-    }).catch(() => {}); // Silenciar errores de red al cerrar
-});
-
     initDashboard();
-        // ==========================================
-    // ✅ DETECTOR DE CIERRE DE VENTANA (Excluye recargas)
-    // ==========================================
-    window.addEventListener('beforeunload', function() {
-        // 1. Si el usuario usó el botón de cerrar sesión, NO hacer nada
-        if (window.isManualLogout) return;
-
-        // 2. ✅ Si la página fue recargada (F5 / Ctrl+R), NO registrar cierre
-        if (sessionStorage.getItem('pnb_es_recarga') === 'true') {
-            return;
-        }
-
-        // 3. Si NO es recarga, proceder con el registro de cierre automático
-        const userId = sessionStorage.getItem('pnb_user_id');
-        const loginTime = sessionStorage.getItem('pnb_login_time');
-        const token = sessionStorage.getItem('pnb_session_token');
-        
-        if (!userId || !loginTime || !token || !window.supabaseClient) return;
-
-        const userEmail = sessionStorage.getItem('pnb_user_email') || '';
-        const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
-        
-        // Calcular duración
-        const duracionSegundos = Math.floor((Date.now() - parseInt(loginTime)) / 1000);
-        let duracionTexto = 'No registrada';
-        const horas = Math.floor(duracionSegundos / 3600);
-        const minutos = Math.floor((duracionSegundos % 3600) / 60);
-        const segundos = duracionSegundos % 60;
-        
-        if (horas > 0) duracionTexto = `${horas}h ${minutos}m ${segundos}s`;
-        else if (minutos > 0) duracionTexto = `${minutos}m ${segundos}s`;
-        else duracionTexto = `${segundos}s`;
-
-        const payload = {
-            user_id: userId,
-            user_nombre: userNombre,
-            user_email: userEmail,
-            accion: 'LOGOUT',
-            modulo: 'AUTENTICACION',
-            detalles: {
-                sesion_duracion: duracionTexto,
-                sesion_duracion_segundos: duracionSegundos,
-                motivo: 'Cierre de ventana o navegador',
-                hora_cierre: new Date().toISOString()
-            }
-        };
-
-        const url = `${window.supabaseClient.supabaseUrl}/rest/v1/sistema_logs`;
-        
-        // ✅ Petición con keepalive: true para que se envíe al cerrar
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': window.supabaseClient.supabaseKey,
-                'Authorization': `Bearer ${token}`,
-                'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify(payload),
-            keepalive: true 
-        }).catch(() => {});
-    });
 });
-    
