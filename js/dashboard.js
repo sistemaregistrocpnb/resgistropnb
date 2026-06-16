@@ -6,17 +6,6 @@ window.console.info = function() {};
 window.console.debug = function() {};
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // ✅ DETECTAR SI LA PÁGINA FUE RECARGADA (F5 / Ctrl+R)
-    // Esto se hace AL CARGAR, cuando performance.getEntriesByType() sí funciona
-    (function detectarRecarga() {
-        const navEntries = performance.getEntriesByType('navigation');
-        if (navEntries.length > 0 && navEntries[0].type === 'reload') {
-            sessionStorage.setItem('pnb_es_recarga', 'true');
-        } else if (performance.navigation && performance.navigation.type === 1) {
-            sessionStorage.setItem('pnb_es_recarga', 'true');
-        }
-    })();
-
     // ✅ Bandera global para evitar doble registro de logout
     window.isManualLogout = false;
 
@@ -92,10 +81,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             mostrar(document.getElementById('menu-procesar'));
             mostrar(document.getElementById('menu-denuncias'));
         }
-        else if (rol === 'consultor') {
-        }
-        else {
-        }
     }
 
     async function cargarModulo(htmlPath, jsPath, initFnName) {
@@ -164,10 +149,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         setInterval(actualizar, 1000);
     }
 
+    // ✅ BOTÓN DE CERRAR SESIÓN
     btnLogout.addEventListener('click', async () => {
         window.isManualLogout = true; // ✅ Marcar como cierre manual
         
-        // ✅ REGISTRAR LOGOUT ANTES DE CERRAR SESIÓN (calcula duración)
         if (typeof window.registrarLogout === 'function') {
             await window.registrarLogout();
         }
@@ -383,30 +368,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-       // ==========================================
-    // ✅ DETECTOR DE CIERRE DE VENTANA (Versión Blindada)
+    // ==========================================
+    // ✅ DETECTOR DE CIERRE DE VENTANA (Infalible: evalúa la recarga EN EL MOMENTO)
     // ==========================================
     window.addEventListener('beforeunload', function(event) {
-        // 1. Si usó el botón de cerrar sesión, NO hacer nada
+        // 1. Si el usuario usó el botón de cerrar sesión, NO hacer nada
         if (window.isManualLogout) return;
 
-        // 2. Detección agresiva de recarga (F5 / Ctrl+R)
+        // 2. ✅ Detectar si es una recarga (F5 / Ctrl+R) EN EL MOMENTO EXACTO del beforeunload
         let esRecarga = false;
         try {
+            // Método moderno
             const navEntries = performance.getEntriesByType('navigation');
             if (navEntries.length > 0 && navEntries[0].type === 'reload') {
                 esRecarga = true;
             }
-            // Fallback para navegadores antiguos
-            if (performance.navigation && performance.navigation.type === 1) {
+            // Método antiguo (fallback para compatibilidad)
+            if (!esRecarga && performance.navigation && performance.navigation.type === 1) {
                 esRecarga = true;
             }
         } catch (e) {
-            // Si falla la detección, asumimos que NO es recarga para no perder el log
+            // Si falla la detección, asumimos que NO es recarga para no perder el log de cierre real
         }
-        
+
         if (esRecarga) {
-            return; // Es una recarga, NO registrar cierre
+            return; // Es una recarga, NO registrar cierre de sesión
         }
 
         // 3. Si NO es recarga, proceder con el registro de cierre automático
@@ -419,6 +405,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const userEmail = sessionStorage.getItem('pnb_user_email') || '';
         const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
         
+        // Calcular duración
         const duracionSegundos = Math.floor((Date.now() - parseInt(loginTime)) / 1000);
         let duracionTexto = 'No registrada';
         const horas = Math.floor(duracionSegundos / 3600);
@@ -445,7 +432,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const url = `${window.supabaseClient.supabaseUrl}/rest/v1/sistema_logs`;
         
-        // ✅ fetch con keepalive: true (garantiza el envío al cerrar la pestaña)
+        // ✅ Petición con keepalive: true para que se envíe al cerrar
         fetch(url, {
             method: 'POST',
             headers: {
