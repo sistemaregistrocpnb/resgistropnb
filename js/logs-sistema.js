@@ -54,49 +54,78 @@ function formatearDetalles(detalles) {
     if (!detalles) return '-';
     let d = typeof detalles === 'string' ? JSON.parse(detalles) : detalles;
 
-
+    // ✅ LOGIN
     if (d.nivel && d.hora_inicio) {
         return `Nivel: <strong style="color:#7e22ce;">${d.nivel.toUpperCase()}</strong><br>
-                IP: ${d.ip || 'No registrada'}<br>
-                Hora: ${new Date(d.hora_inicio).toLocaleString('es-VE')}`;
+        IP: ${d.ip || 'No registrada'}<br>
+        Hora: ${new Date(d.hora_inicio).toLocaleString('es-VE')}`;
     }
 
+    // ✅ LOGOUT
     if (d.sesion_duracion || d.sesion_duracion_segundos !== undefined) {
         let duracion = d.sesion_duracion;
         if (!duracion && d.sesion_duracion_segundos) {
             duracion = window.formatearDuracion ? window.formatearDuracion(d.sesion_duracion_segundos) : d.sesion_duracion_segundos + 's';
         }
         return `Duración de sesión: <strong style="color:var(--primary); font-size:1.1rem;">${duracion || 'No registrada'}</strong><br>
-                IP: ${d.ip || 'No registrada'}<br>
-                Cierre: ${d.hora_cierre ? new Date(d.hora_cierre).toLocaleString('es-VE') : 'No registrado'}`;
+        IP: ${d.ip || 'No registrada'}<br>
+        Cierre: ${d.hora_cierre ? new Date(d.hora_cierre).toLocaleString('es-VE') : 'No registrado'}`;
     }
 
-
-    if (d.tipo_busqueda && d.valor_buscado) {
-        const tipoFormateado = d.tipo_busqueda === 'placa' ? 'Placa' :
-                               d.tipo_busqueda === 'serial_carroceria' ? 'Serial de Carrocería' : 'Serial de Motor';
-        return `Consultó <strong>${tipoFormateado}</strong>: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span>`;
+    // ✅ CONSULTA DE PERSONA/VINCULADO - Mostrar cédula y nombre
+    if (d.valor_buscado && d.nombre_completo) {
+        const tipoTexto = d.tipo === 'Vinculado' ? ' (Vinculado)' : '';
+        const placaTexto = d.placa ? `<br>Placa: <strong style="color:var(--primary);">${d.placa}</strong>` : '';
+        return `Consultó Cédula${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.valor_buscado}</strong><br>
+        Nombre: <strong>${d.nombre_completo}</strong>${placaTexto}<br>
+        Estatus: <span style="color:#64748b;">${d.estatus || 'N/A'}</span>`;
     }
+
+    // ✅ CONSULTA SIN NOMBRE (fallback)
     if (d.valor_buscado && !d.tipo_busqueda) {
         const tipoTexto = d.tipo === 'Vinculado' ? ' (Vinculado)' : '';
         return `Consultó Cédula${tipoTexto}: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span>`;
     }
+
+    // ✅ CREAR INCIDENCIA - Mostrar cédula, nombre y descripción
+    if (d.cedula && d.descripcion && !d.descripcion_eliminada) {
+        return `Cédula: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>
+        Nombre: <strong>${d.nombre_completo || 'No disponible'}</strong><br>
+        Tipo: <span style="color:#64748b;">${d.tipo || 'Persona'}</span><br>
+        Descripción: <em>"${d.descripcion}"</em>`;
+    }
+
+    // ✅ ELIMINAR INCIDENCIA - Mostrar cédula, nombre y descripción eliminada
+    if (d.cedula && d.descripcion_eliminada && d.nombre_completo) {
+        return `Cédula: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>
+        Nombre: <strong>${d.nombre_completo}</strong><br>
+        Tipo: <span style="color:#64748b;">${d.tipo || 'Persona'}</span><br>
+        Incidencia eliminada: <em>"${d.descripcion_eliminada}"</em>`;
+    }
+
+    // ✅ REGISTRO VEHÍCULO
     if (d.placa && d.marca && d.modelo) {
         const tipoTexto = d.tipo === 'Motocicleta' ? '🏍️ Motocicleta' : '🚙 Automóvil';
         return `Registró ${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.placa}</strong><br>
-                <span style="color:#64748b;">${d.marca} ${d.modelo} (${d.anio}) - ${d.color}</span>`;
+        <span style="color:#64748b;">${d.marca} ${d.modelo} (${d.anio}) - ${d.color}</span>`;
     }
-    if (d.identificador && d.descripcion_eliminada) {
-        return `Eliminó incidencia del vehículo <strong>${d.identificador}</strong>.<br><em>"${d.descripcion_eliminada}"</em>`;
-    }
-    if (d.cedula && d.estatus && d.estatus.includes('Reintegrado')) {
-    return `Reintegró a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre_completo || 'Nombre no disponible'}) al sistema activo.`;
 
+    // ✅ ELIMINACIÓN DE PERSONA
+    if (d.cedula && d.nombre_completo && d.descripcion_eliminada && !d.tipo) {
+        return `Eliminó a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre_completo}).<br><em>"${d.descripcion_eliminada}"</em>`;
     }
- if (d.cedula && d.descripcion_eliminada) {
-    return `Eliminó a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre_completo || 'Nombre no disponible'}).<br><em>"${d.descripcion_eliminada}"</em>`;
-}
 
+    // ✅ REINTEGRACIÓN DE PERSONA
+    if (d.cedula && d.estatus && d.estatus.toLowerCase().includes('reintegrad')) {
+        return `Reintegró a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre_completo || 'Nombre no disponible'}) al sistema activo.`;
+    }
+
+    // ✅ MODIFICACIÓN
+    if (d.cambios_realizados && d.nombre_completo) {
+        return `Modificó a <strong>${d.nombre_completo}</strong> (C.I: ${d.cedula || 'N/A'}).<br><em>"${d.cambios_realizados}"</em>`;
+    }
+
+    // ✅ Fallback genérico
     return Object.entries(d)
         .filter(([key]) => key !== 'estatus')
         .map(([key, value]) => {
