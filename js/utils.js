@@ -11,19 +11,16 @@
  */
 window.registrarLog = async function(accion, modulo, detalles = {}, registroId = null) {
     const userId = sessionStorage.getItem('pnb_user_id');
-    const userEmail = sessionStorage.getItem('pnb_user_email') || 'sistema@pnb.gob.ve';
-    const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Sistema';
+    const userEmail = sessionStorage.getItem('pnb_user_email');
+    const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
     
     if (!userId) {
-        console.warn('⚠️ No se puede registrar log: usuario no autenticado');
+        console.warn('No se puede registrar log: usuario no autenticado');
         return;
     }
     
     try {
-        // ✅ Convertir detalles a string JSON (compatible con columnas text y jsonb)
-        const detallesString = typeof detalles === 'string' ? detalles : JSON.stringify(detalles);
-        
-        const { error } = await window.supabaseClient
+        await window.supabaseClient
             .from('sistema_logs')
             .insert([{
                 user_id: userId,
@@ -31,26 +28,13 @@ window.registrarLog = async function(accion, modulo, detalles = {}, registroId =
                 user_email: userEmail,
                 accion: accion,
                 modulo: modulo,
-                detalles: detallesString,  // ✅ Ahora es string JSON
+                detalles: JSON.stringify(detalles),  // ✅ CONVERTIR A STRING JSON
                 registro_id: registroId
             }]);
-        
-        if (error) {
-            console.error('❌ Error al registrar log:', error);
-            console.error('Detalles del error:', {
-                message: error.message,
-                details: error.details,
-                hint: error.hint,
-                code: error.code
-            });
-        } else {
-            console.log('✅ Log registrado exitosamente:', { accion, modulo, registroId });
-        }
     } catch (err) {
-        console.error('❌ Excepción al registrar log:', err);
+        console.error('Error al registrar log:', err);
     }
 };
-
 /**
  * Registra el inicio de sesión
  * @param {string} userNombre - Nombre completo del usuario
