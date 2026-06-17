@@ -1,9 +1,6 @@
 window.initModPersonas = function() {
     console.log("✅ Módulo mod-personas.js cargado correctamente.");
 
-    // ==========================================
-    // 🔹 1. FUNCIONES GLOBALES
-    // ==========================================
     window.toggleCampo = function(select, targetId) {
         const el = document.getElementById(targetId);
         const input = el?.querySelector('input');
@@ -35,9 +32,6 @@ window.initModPersonas = function() {
         return (edad >= 0 && edad <= 120) ? edad : null;
     };
 
-    // ==========================================
-    // 🔹 2. DROPDOWN DE BANDERAS
-    // ==========================================
     const nativeSelect = document.getElementById('p_tlf_pais');
     const displayBox = document.querySelector('.phone-display');
     const optionsBox = document.querySelector('.phone-options');
@@ -109,9 +103,6 @@ window.initModPersonas = function() {
         document.addEventListener('click', (e) => { if (!e.target.closest('.phone-dropdown-wrapper')) optionsBox.style.display = 'none'; });
     }
 
-    // ==========================================
-    // 🔹 3. VISTA PREVIA + EDAD + MÁSCARAS
-    // ==========================================
     const setupPreview = (idIn, idImg) => {
         const input = document.getElementById(idIn), preview = document.getElementById(idImg);
         if (!input || !preview) return;
@@ -146,9 +137,6 @@ window.initModPersonas = function() {
         estInput.addEventListener('blur', window.convertirEstatura);
     }
 
-    // ==========================================
-    // 🔹 4. VALIDACIÓN DE CÉDULA EN TIEMPO REAL
-    // ==========================================
     let cedulaCheckTimeout = null;
     let cedulaOriginal = '';
 
@@ -213,9 +201,6 @@ window.initModPersonas = function() {
         });
     }
 
-    // ==========================================
-    // 🔹 5. BÚSQUEDA POR CÉDULA
-    // ==========================================
     const buscarBtn = document.getElementById('btn-buscar');
     const buscarInput = document.getElementById('buscar-cedula');
     const form = document.getElementById('form-mod-personas');
@@ -327,9 +312,6 @@ window.initModPersonas = function() {
         });
     }
 
-    // ==========================================
-    // 🔹 6. ENVÍO / ACTUALIZACIÓN CON LOGS
-    // ==========================================
     const submitBtn = form?.querySelector('.btn-submit');
     const msgForm = document.getElementById('msg-mod-personas');
     const mostrarError = (txt) => {
@@ -380,7 +362,6 @@ window.initModPersonas = function() {
             const estCm = window.convertirEstatura();
             if (!estCm) { mostrarError('La estatura es obligatoria y debe estar entre 0.50 y 2.30 m.'); return; }
 
-            // ✅ VALIDAR QUE AL MENOS LA FOTO FRONTAL EXISTA
             const fotoFrontalFile = document.getElementById('foto_frontal').files[0];
             if (!fotoFrontalFile && !currentUrls.front) {
                 mostrarError('La fotografía frontal es obligatoria.');
@@ -455,7 +436,6 @@ window.initModPersonas = function() {
                 if (error) throw error;
                 if (!data || data.length === 0) throw new Error('No se pudo aplicar la actualización.');
 
-                // ✅ MOSTRAR ÉXITO
                 if (msgForm) {
                     const cedulaCambio = (nuevaCedula !== cedulaOriginal) ? ` (Cédula: ${cedulaOriginal} → ${nuevaCedula})` : '';
                     msgForm.textContent = `✅ Cambios guardados correctamente.${cedulaCambio}`;
@@ -463,9 +443,9 @@ window.initModPersonas = function() {
                     msgForm.style.display = 'block';
                     setTimeout(() => msgForm.style.display = 'none', 5000);
                 }
-// 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+                
 if (typeof window.registrarLog === 'function' && currentId) {
-    // No usamos 'await' aquí para que no bloquee la UI, el log se hace en segundo plano
+    
     window.registrarLog(
         'MODIFICAR',
         'PERSONAS',
