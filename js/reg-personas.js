@@ -352,9 +352,9 @@ window.initRegPersonas = function() {
             document.querySelectorAll('.img-preview').forEach(e => e.style.display='none');
             if(cedulaStatus){cedulaStatus.className='cedula-status';cedulaStatus.textContent='';}
             if(nativeSelect) nativeSelect.value = '';
-            flagImg.src = 'https://flagcdn.com/w20/xx.png';
-            codeText.textContent = '+XX';
-            countryText.textContent = 'País';
+           flagImg.src = 'https://flagcdn.com/w20/ve.png';
+codeText.textContent = '+58';
+countryText.textContent = 'Venezuela';
 
   // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
 if (typeof window.registrarLog === 'function' && insertedData?.id) {
