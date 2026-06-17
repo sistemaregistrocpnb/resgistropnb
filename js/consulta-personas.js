@@ -79,7 +79,7 @@ window.initConsultaPersonas = function() {
         incidenciasPaginaActual = 1; 
 
         try {
-       
+            // 🔹 BÚSQUEDA EN PERSONAS
             const { data: persona, error: errPersona } = await window.supabaseClient
                 .from('registro_personas').select('*').eq('cedula', cedula).maybeSingle();
             if (errPersona) throw errPersona;
@@ -100,22 +100,24 @@ window.initConsultaPersonas = function() {
                 await window.cargarIncidencias(cedula, 'persona', 1);
                 mostrarMensaje('✅ Persona encontrada', 'success');
                 
-        if (typeof window.registrarLog === 'function') {
-    window.registrarLog(
-        'CONSULTA_PERSONA',
-        'PERSONAS',
-        {
-            valor_buscado: cedula,
-            nombre_completo: `${vinculado.primer_nombre || ''} ${vinculado.primer_apellido || ''}`.trim() || 'No disponible',
-            tipo: 'Vinculado',
-            estatus: vinculado.estatus || 'N/A',
-            placa: vinculado.placa || 'N/A'
-        },
-        vinculado.id
-    );
-}
+                // ✅ LOG USANDO UTILS.JS
+                if (typeof window.registrarLog === 'function') {
+                    window.registrarLog(
+                        'CONSULTA_PERSONA',
+                        'PERSONAS',
+                        {
+                            valor_buscado: cedula,
+                            nombre_completo: `${persona.primer_nombre || ''} ${persona.primer_apellido || ''}`.trim() || 'No disponible',
+                            tipo: 'Persona',
+                            estatus: persona.estatus || 'N/A'
+                        },
+                        persona.id
+                    );
+                }
+                return;
+            }
 
-        
+            // 🔹 BÚSQUEDA EN VINCULADOS
             const { data: vinculado, error: errVinculado } = await window.supabaseClient
                 .from('registro_vinculado').select('*').eq('cedula', cedula).maybeSingle();
             if (errVinculado) throw errVinculado;
@@ -136,14 +138,17 @@ window.initConsultaPersonas = function() {
                 await window.cargarIncidencias(cedula, 'vinculado', 1);
                 mostrarMensaje('✅ Vehículo vinculado encontrado', 'success');
                 
+                // ✅ LOG USANDO UTILS.JS
                 if (typeof window.registrarLog === 'function') {
                     window.registrarLog(
                         'CONSULTA_PERSONA',
                         'PERSONAS',
                         {
                             valor_buscado: cedula,
+                            nombre_completo: `${vinculado.primer_nombre || ''} ${vinculado.primer_apellido || ''}`.trim() || 'No disponible',
                             tipo: 'Vinculado',
-                            estatus: vinculado.estatus || 'N/A'
+                            estatus: vinculado.estatus || 'N/A',
+                            placa: vinculado.placa || 'N/A'
                         },
                         vinculado.id
                     );
@@ -606,19 +611,20 @@ window.initConsultaPersonas = function() {
             mostrarMensaje('✅ Incidencia registrada', 'success');
             await window.cargarIncidencias(personaActual.cedula, tipoRegistroActual, 1); 
             
-         if (typeof window.registrarLog === 'function' && insertedData?.id) {
-    window.registrarLog(
-        'CREAR_INCIDENCIA_PERSONA',
-        'PERSONAS',
-        {
-            cedula: personaActual.cedula,
-            nombre_completo: `${personaActual.primer_nombre || ''} ${personaActual.primer_apellido || ''}`.trim() || 'No disponible',
-            tipo: tipoRegistroActual,
-            descripcion: descripcion
-        },
-        insertedData.id
-    );
-}
+            // ✅ LOG USANDO UTILS.JS
+            if (typeof window.registrarLog === 'function' && insertedData?.id) {
+                window.registrarLog(
+                    'CREAR_INCIDENCIA_PERSONA',
+                    'PERSONAS',
+                    {
+                        cedula: personaActual.cedula,
+                        nombre_completo: `${personaActual.primer_nombre || ''} ${personaActual.primer_apellido || ''}`.trim() || 'No disponible',
+                        tipo: tipoRegistroActual,
+                        descripcion: descripcion
+                    },
+                    insertedData.id
+                );
+            }
         } catch (err) {
             console.error('Error guardando incidencia:', err);
             alert('❌ Error: ' + err.message);
@@ -635,7 +641,8 @@ window.initConsultaPersonas = function() {
             pagina: parseInt(btn.dataset.pagina),
             descripcion: btn.dataset.desc,
             fecha: btn.dataset.fecha,
-            autor: btn.dataset.autor
+            autor: btn.dataset.autor,
+            nombre_completo: personaActual ? `${personaActual.primer_nombre || ''} ${personaActual.primer_apellido || ''}`.trim() : 'No disponible'
         };
         
         document.getElementById('cp_elim_descripcion').textContent = window.incidenciaPendienteEliminacion.descripcion;
@@ -699,19 +706,21 @@ window.initConsultaPersonas = function() {
                 setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
             }
 
-       if (typeof window.registrarLog === 'function') {
-    window.registrarLog(
-        'ELIMINAR_INCIDENCIA_PERSONA',
-        'PERSONAS',
-        {
-            cedula: datos.cedula,
-            nombre_completo: personaActual ? `${personaActual.primer_nombre || ''} ${personaActual.primer_apellido || ''}`.trim() : 'No disponible',
-            tipo: datos.tipo,
-            descripcion_eliminada: datos.descripcion
-        },
-        datos.id
-    );
-}
+            // ✅ LOG USANDO UTILS.JS
+            if (typeof window.registrarLog === 'function') {
+                window.registrarLog(
+                    'ELIMINAR_INCIDENCIA_PERSONA',
+                    'PERSONAS',
+                    {
+                        cedula: datos.cedula,
+                        nombre_completo: datos.nombre_completo || 'No disponible',
+                        tipo: datos.tipo,
+                        descripcion_eliminada: datos.descripcion
+                    },
+                    datos.id
+                );
+            }
+
         } catch (err) {
             console.error('Error al eliminar:', err);
             alert('❌ Error al eliminar: ' + err.message);
