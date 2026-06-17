@@ -16,7 +16,6 @@ if (!user) return false;
 const { data: perfil } = await window.supabaseClient
 .from('perfiles_usuario').select('nivel').eq('user_id', user.id).maybeSingle();
 if (!perfil) return false;
-// ✅ Solo administradores pueden ver los logs
 return perfil.nivel === 'administrador';
 } catch (err) {
 return false;
@@ -55,14 +54,13 @@ function formatearDetalles(detalles) {
     if (!detalles) return '-';
     let d = typeof detalles === 'string' ? JSON.parse(detalles) : detalles;
 
-    // ✅ LOGIN: Mostrar nivel, IP y hora
+
     if (d.nivel && d.hora_inicio) {
         return `Nivel: <strong style="color:#7e22ce;">${d.nivel.toUpperCase()}</strong><br>
                 IP: ${d.ip || 'No registrada'}<br>
                 Hora: ${new Date(d.hora_inicio).toLocaleString('es-VE')}`;
     }
 
-    // ✅ LOGOUT: Mostrar duración de la sesión
     if (d.sesion_duracion || d.sesion_duracion_segundos !== undefined) {
         let duracion = d.sesion_duracion;
         if (!duracion && d.sesion_duracion_segundos) {
@@ -73,7 +71,7 @@ function formatearDetalles(detalles) {
                 Cierre: ${d.hora_cierre ? new Date(d.hora_cierre).toLocaleString('es-VE') : 'No registrado'}`;
     }
 
-    // Resto del código original...
+
     if (d.tipo_busqueda && d.valor_buscado) {
         const tipoFormateado = d.tipo_busqueda === 'placa' ? 'Placa' :
                                d.tipo_busqueda === 'serial_carroceria' ? 'Serial de Carrocería' : 'Serial de Motor';
@@ -108,7 +106,7 @@ function formatearDetalles(detalles) {
 }
 
 function obtenerValorRegistro(log) {
-    // ✅ LOGIN: Mostrar "Sesión iniciada" con el nivel
+
     if (log.accion === 'LOGIN') {
         let nivelTexto = 'Usuario';
         if (log.detalles) {
@@ -118,56 +116,54 @@ function obtenerValorRegistro(log) {
         return `<span class="badge badge-login">✅ Sesión iniciada</span><br><small style="color:#7e22ce; font-weight:700;">Nivel: ${nivelTexto}</small>`;
     }
     
-    // ✅ LOGOUT: Mostrar "Sesión cerrada"
+
     if (log.accion === 'LOGOUT') {
         return `<span class="badge badge-logout">❌ Sesión cerrada</span>`;
     }
     
-    // ✅ Procesar detalles para CREAR, MODIFICAR, ELIMINAR, etc.
+
     if (log.detalles) {
         let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
         
-        // 🔹 PRIORIDAD 1: Si hay estatus, mostrarlo como badge
+
         if (d.estatus) {
             const estatusLower = d.estatus.toLowerCase();
-            let badgeClass = 'badge-crear'; // por defecto verde
+            let badgeClass = 'badge-crear'; 
             
             if (estatusLower.includes('eliminad') || estatusLower.includes('procesad')) {
-                badgeClass = 'badge-eliminar'; // rojo
+                badgeClass = 'badge-eliminar'; 
             } else if (estatusLower.includes('verificaci')) {
-                badgeClass = 'badge-otros'; // amarillo/naranja
+                badgeClass = 'badge-otros'; 
             } else if (estatusLower.includes('modificad') || estatusLower.includes('reintegrad')) {
-                badgeClass = 'badge-modificar'; // azul
+                badgeClass = 'badge-modificar'; 
             }
             
             return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
         }
         
-        // 🔹 PRIORIDAD 2: Para VEHICULOS (tanto CREAR como MODIFICAR)
         if (log.modulo === 'VEHICULOS') {
             if (d.placa) {
                 // Si hay placa, mostrarla
                 const badgeClass = log.accion === 'MODIFICAR' ? 'badge-modificar' : 'badge-crear';
                 return `<span class="badge ${badgeClass}">${d.placa}</span>`;
             } else {
-                // Si no hay placa pero es VEHICULOS, mostrar VERIFICACIÓN
+          
                 return `<span class="badge badge-otros">VERIFICACIÓN</span>`;
             }
         }
         
-        // 🔹 PRIORIDAD 3: Para personas eliminadas/reintegradas
         if (log.modulo === 'PERSONAS') {
             if (log.accion === 'ELIMINAR') return `<span class="badge badge-eliminar">ELIMINADO</span>`;
             if (log.accion === 'REINTEGRAR') return `<span class="badge badge-crear">REINTEGRADO</span>`;
         }
         
-        // 🔹 PRIORIDAD 4: Para consultas
+
         if (d.valor_buscado) return d.valor_buscado;
         if (d.identificador) return d.identificador;
         if (d.cedula) return d.cedula;
     }
     
-    // 🔹 Último recurso: mostrar registro_id truncado
+
     if (log.registro_id) {
         return `<span style="font-family: monospace; font-size: 0.8rem; color: #64748b;">${log.registro_id.substring(0, 8)}...</span>`;
     }
@@ -214,7 +210,7 @@ let html = `
 `;
 logsData.forEach(log => {
 const fecha = new Date(log.created_at).toLocaleString('es-VE');
-// ✅ MOSTRAR NOMBRE DEL USUARIO (no el correo)
+
 const usuario = log.user_nombre || 'Sistema';
 const registroDisplay = obtenerValorRegistro(log);
 const detallesDisplay = formatearDetalles(log.detalles);
