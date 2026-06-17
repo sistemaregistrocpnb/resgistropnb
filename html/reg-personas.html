@@ -175,17 +175,51 @@
             <div id="det-jud" class="hidden-field"><label>Detalle</label><input type="text" id="txt_jud" placeholder="Detalle del proceso o condena..."></div>
         </fieldset>
 
-        <fieldset>
-            <legend>🏛️ Datos del Registro</legend>
-            <div class="form-grid">
-                <div class="form-group" style="grid-column: span 2;"><label>Estación policial del registro</label><select id="p_estacion" required><option value="">Seleccione estación...</option><option value="EPM MARACAIBO">EPM MARACAIBO</option><option value="EPP CHIQUINQUIRA">EPP CHIQUINQUIRA</option><option value="EPP FRANCISCO EUGENIO BUSTAMANTE">EPP FRANCISCO EUGENIO BUSTAMANTE</option><option value="EPP RAUL LEONI">EPP RAUL LEONI</option><option value="EPP LUIS HURTADO HIGUERA">EPP LUIS HURTADO HIGUERA</option><option value="EPP OLEGARIO VILLALOBOS">EPP OLEGARIO VILLALOBOS</option><option value="EPP CRISTO DE ARANZA">EPP CRISTO DE ARANZA</option><option value="EPP ANTONIO BORJAS ROMERO">EPP ANTONIO BORJAS ROMERO</option><option value="EPP COQUIVACOA">EPP COQUIVACOA</option><option value="EPP IDELFONSO VASQUEZ">EPP IDELFONSO VASQUEZ</option><option value="EPP MANUEL DAGNINO">EPP MANUEL DAGNINO</option><option value="EPP CARACCIOLO PARRA PEREZ">EPP CARACCIOLO PARRA PEREZ</option><option value="EPP VENANCIO PULGAR">EPP VENANCIO PULGAR</option><option value="EPP JUANA DE AVILA">EPP JUANA DE AVILA</option><option value="EPP SAN ISIDRO">EPP SAN ISIDRO</option><option value="EPP BOLIVAR">EPP BOLIVAR</option><option value="EPP SANTA LUCIA">EPP SANTA LUCIA</option><option value="EPP CECILIO ACOSTA">EPP CECILIO ACOSTA</option><option value="EPP CACIQUE MARA">EPP CACIQUE MARA</option><option value="BRIGADA CICLISTA">BRIGADA CICLISTA</option><option value="EPM SAN FRANCISCO">EPM SAN FRANCISCO</option><option value="EPP EL BAJO">EPP EL BAJO</option><option value="EPP DOMITILA FLORES">EPP DOMITILA FLORES</option><option value="EPP LOS CORTIJOS">EPP LOS CORTIJOS</option><option value="EPP DOMINGO RUS">EPP DOMINGO RUS</option><option value="EPP MARCIAL HERNANDEZ">EPP MARCIAL HERNANDEZ</option><option value="EPM LA CAÑADA DE URDANETA">EPM LA CAÑADA DE URDANETA</option><option value="EPP ANDRES BELLO">EPP ANDRES BELLO</option><option value="EPP SAN JOSE DE POTRERITO">EPP SAN JOSE DE POTRERITO</option><option value="EPM JESUS ENRIQUE LOSSADA">EPM JESUS ENRIQUE LOSSADA</option></select></div>
-            </div>
-        </fieldset>
-
-        <fieldset>
-            <legend>📝 Observaciones</legend>
-            <textarea id="p_observaciones" rows="2" placeholder="Notas adicionales..."></textarea>
-        </fieldset>
+       <fieldset>
+<legend>🏛️ Datos del Registro</legend>
+<div class="form-grid">
+    <div class="form-group" style="grid-column: span 2;">
+        <label>Estación policial del registro</label>
+        <select id="p_estacion" required>
+            <option value="">Seleccione estación...</option>
+            <option value="EPM MARACAIBO">EPM MARACAIBO</option>
+            <option value="EPP CHIQUINQUIRA">EPP CHIQUINQUIRA</option>
+            <option value="EPP FRANCISCO EUGENIO BUSTAMANTE">EPP FRANCISCO EUGENIO BUSTAMANTE</option>
+            <option value="EPP RAUL LEONI">EPP RAUL LEONI</option>
+            <option value="EPP LUIS HURTADO HIGUERA">EPP LUIS HURTADO HIGUERA</option>
+            <option value="EPP OLEGARIO VILLALOBOS">EPP OLEGARIO VILLALOBOS</option>
+            <option value="EPP CRISTO DE ARANZA">EPP CRISTO DE ARANZA</option>
+            <option value="EPP ANTONIO BORJAS ROMERO">EPP ANTONIO BORJAS ROMERO</option>
+            <option value="EPP COQUIVACOA">EPP COQUIVACOA</option>
+            <option value="EPP IDELFONSO VASQUEZ">EPP IDELFONSO VASQUEZ</option>
+            <option value="EPP MANUEL DAGNINO">EPP MANUEL DAGNINO</option>
+            <option value="EPP CARACCIOLO PARRA PEREZ">EPP CARACCIOLO PARRA PEREZ</option>
+            <option value="EPP VENANCIO PULGAR">EPP VENANCIO PULGAR</option>
+            <option value="EPP JUANA DE AVILA">EPP JUANA DE AVILA</option>
+            <option value="EPP SAN ISIDRO">EPP SAN ISIDRO</option>
+            <option value="EPP BOLIVAR">EPP BOLIVAR</option>
+            <option value="EPP SANTA LUCIA">EPP SANTA LUCIA</option>
+            <option value="EPP CECILIO ACOSTA">EPP CECILIO ACOSTA</option>
+            <option value="EPP CACIQUE MARA">EPP CACIQUE MARA</option>
+            <option value="BRIGADA CICLISTA">BRIGADA CICLISTA</option>
+            <option value="EPM SAN FRANCISCO">EPM SAN FRANCISCO</option>
+            <option value="EPP EL BAJO">EPP EL BAJO</option>
+            <option value="EPP DOMITILA FLORES">EPP DOMITILA FLORES</option>
+            <option value="EPP LOS CORTIJOS">EPP LOS CORTIJOS</option>
+            <option value="EPP DOMINGO RUS">EPP DOMINGO RUS</option>
+            <option value="EPP MARCIAL HERNANDEZ">EPP MARCIAL HERNANDEZ</option>
+            <option value="EPM LA CAÑADA DE URDANETA">EPM LA CAÑADA DE URDANETA</option>
+            <option value="EPP ANDRES BELLO">EPP ANDRES BELLO</option>
+            <option value="EPP SAN JOSE DE POTRERITO">EPP SAN JOSE DE POTRERITO</option>
+            <option value="EPM JESUS ENRIQUE LOSSADA">EPM JESUS ENRIQUE LOSSADA</option>
+        </select>
+    </div>
+    <div class="form-group" style="grid-column: span 2;">
+        <label>Dirección de detención <span style="color:red">*</span></label>
+        <input type="text" id="p_direccion_detencion" placeholder="Lugar exacto donde fue detenido" required>
+    </div>
+</div>
+</fieldset>
 
         <button type="submit" class="btn-submit">✅ Registrar Persona</button>
         <div id="msg-reg-personas" class="msg"></div>
