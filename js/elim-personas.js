@@ -38,45 +38,6 @@ window.initElimPersonas = function() {
         img.src = url || '';
         img.style.display = url ? 'block' : 'none';
     };
-// ✅ CORREGIDO: Función para registrar en la tabla sistema_logs
-// Ahora consulta la tabla perfiles_usuario para obtener el nombre real
-async function registrarLog(accion, modulo, detalles) {
-    try {
-        const { data: { user } } = await window.supabaseClient.auth.getUser();
-        if (!user) return;
-
-        // 🔍 Consultamos la tabla perfiles_usuario para obtener el nombre real
-        let nombreUsuario = user.email || 'Sistema'; // Fallback por si falla
-        try {
-            const { data: perfil } = await window.supabaseClient
-                .from('perfiles_usuario')
-                .select('nombre, apellido')
-                .eq('user_id', user.id)
-                .maybeSingle();
-            
-            if (perfil) {
-                nombreUsuario = `${perfil.nombre} ${perfil.apellido}`.trim();
-            }
-        } catch (err) {
-            console.warn('No se pudo obtener el perfil del usuario para el log:', err);
-        }
-
-        const logEntry = {
-            user_id: user.id,
-            user_nombre: nombreUsuario,
-            user_email: user.email || 'sistema',
-            accion: accion,
-            modulo: modulo,
-            detalles: detalles,
-            created_at: new Date().toISOString()
-        };
-
-        const { error } = await window.supabaseClient.from('sistema_logs').insert([logEntry]);
-        if (error) console.error('Error al registrar log:', error);
-    } catch (err) {
-        console.error('Error en registrarLog:', err);
-    }
-}
 
     // 🔹 Mostrar datos + UI según estado
     function renderUI(data, isArchived) {
@@ -177,14 +138,13 @@ async function registrarLog(accion, modulo, detalles) {
             }
             
             // 2. Buscar en eliminados/archivados
-            // ✅ CORRECCIÓN CLAVE: Ordenar por fecha descendente y limitar a 1 para obtener la ÚLTIMA eliminación
             let { data: archivado, error: errArch } = await window.supabaseClient
                 .from('eliminados')
                 .select('*')
                 .eq('cedula', cedula)
-                .order('eliminado_en', { ascending: false }) // La más reciente primero
-                .limit(1) // Solo traemos esa
-                .maybeSingle(); // maybeSingle funciona perfecto con limit(1)
+                .order('eliminado_en', { ascending: false })
+                .limit(1)
+                .maybeSingle();
                 
             if (errArch) throw errArch;
 
@@ -287,41 +247,31 @@ async function registrarLog(accion, modulo, detalles) {
                 
             if (delErr) throw new Error('Error eliminando: ' + delErr.message);
             if (!delData || delData.length === 0) throw new Error('No se encontró el registro para eliminar.');
-             // ✅ NUEVO: Registrar la acción en los logs
-        await registrarLog(
-            'ELIMINAR', 
-            'PERSONAS', 
-            { 
-                cedula: currentData.cedula, 
-                nombre: `${currentData.primer_nombre} ${currentData.primer_apellido}`,
-                descripcion_eliminada: "Registro eliminado y movido a archivados."
-            }
-        );
             
-        showMsgElim('✅ Persona eliminada del sistema activo.', 'success');
+            showMsgElim('✅ Persona eliminada del sistema activo.', 'success');
 
-// 🔹 CREAR LOG DE ELIMINACIÓN
-if (typeof window.registrarLog === 'function' && currentData?.id) {
-    window.registrarLog(
-        'ELIMINAR',
-        'PERSONAS',
-        {
-            cedula: currentData.cedula,
-            nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
-            estatus: 'Eliminado',
-            estacion: currentData.estacion_policial
-        },
-        currentData.id
-    );
-}
+            // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+            if (typeof window.registrarLog === 'function' && currentData?.id) {
+                window.registrarLog(
+                    'ELIMINAR',
+                    'PERSONAS',
+                    {
+                        cedula: currentData.cedula,
+                        nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
+                        estatus: 'Eliminado',
+                        estacion: currentData.estacion_policial
+                    },
+                    currentData.id
+                );
+            }
 
-setTimeout(() => {
-    dataContainer.style.display = 'none';
-    buscarInput.value = '';
-    hideMsg(msgBuscar);
-    hideMsgElim();
-    archivedNotice.style.display = 'none';
-}, 4000);
+            setTimeout(() => {
+                dataContainer.style.display = 'none';
+                buscarInput.value = '';
+                hideMsg(msgBuscar);
+                hideMsgElim();
+                archivedNotice.style.display = 'none';
+            }, 4000);
             
         } catch (err) {
             console.error('Error eliminando:', err);
@@ -378,47 +328,35 @@ setTimeout(() => {
             const { error: insErr } = await window.supabaseClient.from('registro_personas').insert([dataToRestore]);
             if (insErr) throw new Error('Error restaurando: ' + insErr.message);
             
-            // ✅ CORRECCIÓN CLAVE: Eliminar SOLO el registro específico por su ID único
-            // Esto deja intactas las eliminaciones anteriores de la misma persona como respaldo histórico
             await window.supabaseClient
                 .from('eliminados')
                 .delete()
-                .eq('id', currentData.id); // currentData.id es el ID de la fila en 'eliminados'
-               // ✅ NUEVO: Registrar la acción en los logs
-        await registrarLog(
-            'REINTEGRAR', 
-            'PERSONAS', 
-            { 
-                cedula: currentData.cedula, 
-                nombre: `${currentData.primer_nombre} ${currentData.primer_apellido}`,
-                estatus: "Reintegrado al sistema activo"
-            }
-        );
+                .eq('id', currentData.id);
             
-      showMsgElim('✅ Persona reintegrada al sistema activo.', 'success');
+            showMsgElim('✅ Persona reintegrada al sistema activo.', 'success');
 
-// 🔹 CREAR LOG DE REINTEGRACIÓN
-if (typeof window.registrarLog === 'function' && currentData?.id) {
-    window.registrarLog(
-        'REINTEGRAR',
-        'PERSONAS',
-        {
-            cedula: currentData.cedula,
-            nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
-            estatus: 'Restaurado',
-            estacion: currentData.estacion_policial
-        },
-        currentData.id
-    );
-}
+            // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+            if (typeof window.registrarLog === 'function' && currentData?.id) {
+                window.registrarLog(
+                    'REINTEGRAR',
+                    'PERSONAS',
+                    {
+                        cedula: currentData.cedula,
+                        nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
+                        estatus: 'Reintegrado',
+                        estacion: currentData.estacion_policial
+                    },
+                    currentData.id
+                );
+            }
 
-setTimeout(() => {
-    dataContainer.style.display = 'none';
-    buscarInput.value = '';
-    hideMsg(msgBuscar);
-    hideMsgElim();
-    archivedNotice.style.display = 'none';
-}, 4000);
+            setTimeout(() => {
+                dataContainer.style.display = 'none';
+                buscarInput.value = '';
+                hideMsg(msgBuscar);
+                hideMsgElim();
+                archivedNotice.style.display = 'none';
+            }, 4000);
             
         } catch (err) {
             console.error('Error reintegrando:', err);
