@@ -143,9 +143,14 @@ function obtenerValorRegistro(log) {
             return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
         }
         
-        // 🔹 PRIORIDAD 2: Para vehículos, mostrar placa si existe
-        if (log.modulo === 'VEHICULOS' && log.accion === 'CREAR' && d.placa) {
-            return `<span class="badge badge-crear">${d.placa}</span>`;
+        // 🔹 PRIORIDAD 2: Para vehículos (CREAR o MODIFICAR), mostrar placa si existe
+        if (log.modulo === 'VEHICULOS' && d.placa) {
+            if (log.accion === 'CREAR') {
+                return `<span class="badge badge-crear">${d.placa}</span>`;
+            } else if (log.accion === 'MODIFICAR') {
+                // Para MODIFICAR, mostrar la placa con badge azul
+                return `<span class="badge badge-modificar">${d.placa}</span>`;
+            }
         }
         
         // 🔹 PRIORIDAD 3: Para personas eliminadas/reintegradas
