@@ -94,43 +94,6 @@ window.initModVehiculos = function() {
         }
     }
 
-    // ==========================================
-    // ✅ NUEVO: FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO
-    // ==========================================
-    async function registrarLog(accion, modulo, detalles) {
-        try {
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            if (!user) return;
-            let nombreUsuario = user.email || 'Sistema';
-            
-            try {
-                const { data: perfil } = await window.supabaseClient
-                    .from('perfiles_usuario')
-                    .select('nombre, apellido, email')
-                    .eq('user_id', user.id)
-                    .maybeSingle();
-                if (perfil) {
-                    nombreUsuario = [perfil.nombre, perfil.apellido].filter(Boolean).join(' ').trim() || nombreUsuario;
-                }
-            } catch (err) {
-                console.warn('No se pudo obtener el perfil del usuario para el log:', err);
-            }
-
-            const logEntry = {
-                user_id: user.id,
-                user_nombre: nombreUsuario,
-                user_email: user.email || 'sistema',
-                accion: accion,
-                modulo: modulo,
-                detalles: detalles,
-                created_at: new Date().toISOString()
-            };
-            const { error } = await window.supabaseClient.from('sistema_logs').insert([logEntry]);
-            if (error) console.error('Error al registrar log:', error);
-        } catch (err) {
-            console.error('Error en registrarLog:', err);
-        }
-    }
 
     // ==========================================
     // 🔹 FUNCIONES UI
@@ -725,16 +688,25 @@ window.initModVehiculos = function() {
                 
             if (finalError) throw finalError;
             
-            // ✅ NUEVO: REGISTRAR EL LOG DE MODIFICACIÓN
-            await registrarLog('MODIFICAR', 'VEHICULOS', {
-                placa: updateData.placa,
-                marca: updateData.marca,
-                modelo: updateData.modelo,
-                anio: updateData.anio,
-                color: updateData.color,
-                tipo: tipo === 'moto' ? 'Motocicleta' : 'Automóvil',
-                cambios: 'Datos del vehículo actualizados'
-            });
+   // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+if (typeof window.registrarLog === 'function' && currentData?.id) {
+    window.registrarLog(
+        'MODIFICAR',
+        'VEHICULOS',
+        {
+            placa: updateData.placa,
+            marca: updateData.marca,
+            modelo: updateData.modelo,
+            anio: updateData.anio,
+            color: updateData.color,
+            tipo: tipo === 'moto' ? 'Motocicleta' : 'Automóvil',
+            estacion: updateData.estacion_policial,
+            direccion_detencion: updateData.direccion_detencion,
+            cambios_realizados: 'Datos del vehículo actualizados'
+        },
+        currentData.id
+    );
+}
             
             mostrarMsg(msgBox, '✅ Vehículo actualizado correctamente.', 'success');
             setTimeout(() => {
