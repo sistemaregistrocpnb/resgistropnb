@@ -130,14 +130,18 @@
                 await window.cargarIncidencias(cedula, 'vinculado', 1);
                 mostrarMensaje('✅ Vehículo vinculado encontrado', 'success');
                 
-                // ✅ REGISTRAR LOG DE CONSULTA DE VINCULADO
-                if (typeof registrarLog === 'function') {
-                    await registrarLog('CONSULTA_PERSONA', 'Consulta Personas', null, { 
-                        valor_buscado: cedula,
-                        tipo: 'Vinculado',
-                        estatus: vinculado.estatus || 'N/A'
-                    });
-                }
+              // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+if (typeof window.registrarLog === 'function') {
+    window.registrarLog(
+        'CONSULTA_PERSONA',
+        'PERSONAS',
+        {
+            valor_buscado: cedula,
+            estatus: persona.estatus || 'N/A'
+        },
+        persona.id
+    );
+}
                 return;
             }
             mostrarMensaje('❌ No se encontró ninguna persona con esa cédula', 'error');
@@ -591,13 +595,19 @@
             mostrarMensaje('✅ Incidencia registrada', 'success');
             await window.cargarIncidencias(personaActual.cedula, tipoRegistroActual, 1); 
             
-            if (typeof registrarLog === 'function') {
-                await registrarLog('CREAR_INCIDENCIA_PERSONA', 'Consulta Personas', null, { 
-                    cedula: personaActual.cedula, 
-                    tipo: tipoRegistroActual,
-                    descripcion: descripcion
-                });
-            }
+            // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+if (typeof window.registrarLog === 'function') {
+    window.registrarLog(
+        'CONSULTA_PERSONA',
+        'PERSONAS',
+        {
+            valor_buscado: cedula,
+            tipo: 'Vinculado',
+            estatus: vinculado.estatus || 'N/A'
+        },
+        vinculado.id
+    );
+}
         } catch (err) {
             console.error('Error guardando incidencia:', err);
             alert('❌ Error: ' + err.message);
@@ -704,24 +714,3 @@ if (document.readyState === 'loading') {
     window.initConsultaPersonas();
 }
 
-async function registrarLog(accion, modulo, registroId = null, detalles = {}) {
-    try {
-        const { data: { user } } = await window.supabaseClient.auth.getUser();
-        if (!user) return;
-        const { data: perfil } = await window.supabaseClient
-            .from('perfiles_usuario').select('nombre, apellido').eq('user_id', user.id).maybeSingle();
-        const nombreCompleto = perfil ? `${perfil.nombre || ''} ${perfil.apellido || ''}`.trim() : 'Sistema';
-        await window.supabaseClient.from('sistema_logs').insert([{
-            user_id: user.id, 
-            user_email: user.email, 
-            user_nombre: nombreCompleto,
-            accion: accion, 
-            modulo: modulo, 
-            registro_id: registroId, 
-            detalles: detalles, 
-            user_agent: navigator.userAgent
-        }]);
-    } catch (err) {
-        // Silencioso para no mostrar errores de logs al usuario final
-    }
-}
