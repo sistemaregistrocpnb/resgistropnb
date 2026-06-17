@@ -1,4 +1,4 @@
- window.initConsultaPersonas = function() {
+window.initConsultaPersonas = function() {
     const el = (id) => document.getElementById(id);
     const buscarInput = el('cp_buscar_cedula');
     const btnBuscar = el('cp_btn_buscar');
@@ -32,7 +32,6 @@
     if (el('cp_btn_guardar_incidencia')) el('cp_btn_guardar_incidencia').onclick = () => guardarIncidencia();
     if (el('cp_btn_imprimir_reporte')) el('cp_btn_imprimir_reporte').onclick = () => window.print();
 
-    // Listeners del modal de eliminación
     if (el('cp_modal_elim_close')) el('cp_modal_elim_close').onclick = () => {
         el('cp_modal_confirmar_eliminacion').classList.remove('active');
         window.incidenciaPendienteEliminacion = null;
@@ -80,6 +79,7 @@
         incidenciasPaginaActual = 1; 
 
         try {
+            // 🔹 BÚSQUEDA EN PERSONAS
             const { data: persona, error: errPersona } = await window.supabaseClient
                 .from('registro_personas').select('*').eq('cedula', cedula).maybeSingle();
             if (errPersona) throw errPersona;
@@ -100,16 +100,23 @@
                 await window.cargarIncidencias(cedula, 'persona', 1);
                 mostrarMensaje('✅ Persona encontrada', 'success');
                 
-                // ✅ REGISTRAR LOG DE CONSULTA DE PERSONA
-                if (typeof registrarLog === 'function') {
-                    await registrarLog('CONSULTA_PERSONA', 'Consulta Personas', null, { 
-                        valor_buscado: cedula,
-                        estatus: persona.estatus || 'N/A'
-                    });
+                // ✅ LOG USANDO UTILS.JS (variable correcta: persona)
+                if (typeof window.registrarLog === 'function') {
+                    window.registrarLog(
+                        'CONSULTA_PERSONA',
+                        'PERSONAS',
+                        {
+                            valor_buscado: cedula,
+                            tipo: 'Persona',
+                            estatus: persona.estatus || 'N/A'
+                        },
+                        persona.id
+                    );
                 }
                 return;
             }
 
+            // 🔹 BÚSQUEDA EN VINCULADOS
             const { data: vinculado, error: errVinculado } = await window.supabaseClient
                 .from('registro_vinculado').select('*').eq('cedula', cedula).maybeSingle();
             if (errVinculado) throw errVinculado;
@@ -130,18 +137,19 @@
                 await window.cargarIncidencias(cedula, 'vinculado', 1);
                 mostrarMensaje('✅ Vehículo vinculado encontrado', 'success');
                 
-              // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
-if (typeof window.registrarLog === 'function') {
-    window.registrarLog(
-        'CONSULTA_PERSONA',
-        'PERSONAS',
-        {
-            valor_buscado: cedula,
-            estatus: persona.estatus || 'N/A'
-        },
-        persona.id
-    );
-}
+                // ✅ LOG USANDO UTILS.JS (variable correcta: vinculado)
+                if (typeof window.registrarLog === 'function') {
+                    window.registrarLog(
+                        'CONSULTA_PERSONA',
+                        'PERSONAS',
+                        {
+                            valor_buscado: cedula,
+                            tipo: 'Vinculado',
+                            estatus: vinculado.estatus || 'N/A'
+                        },
+                        vinculado.id
+                    );
+                }
                 return;
             }
             mostrarMensaje('❌ No se encontró ninguna persona con esa cédula', 'error');
@@ -581,33 +589,38 @@ if (typeof window.registrarLog === 'function') {
             const { data: { user } } = await window.supabaseClient.auth.getUser();
             if (!user) throw new Error('Debe iniciar sesión');
 
-            const { error } = await window.supabaseClient.from('registro_incidencias').insert([{
-                cedula: personaActual.cedula,
-                tipo_registro: tipoRegistroActual,
-                descripcion: descripcion,
-                fecha_hora: new Date().toISOString(),
-                registrada_por: user.id,
-                email_registrante: user.email
-            }]);
+            const { data: insertedData, error } = await window.supabaseClient
+                .from('registro_incidencias')
+                .insert([{
+                    cedula: personaActual.cedula,
+                    tipo_registro: tipoRegistroActual,
+                    descripcion: descripcion,
+                    fecha_hora: new Date().toISOString(),
+                    registrada_por: user.id,
+                    email_registrante: user.email
+                }])
+                .select('id')
+                .maybeSingle();
+                
             if (error) throw error;
 
             modalIncidencia.classList.remove('active');
             mostrarMensaje('✅ Incidencia registrada', 'success');
             await window.cargarIncidencias(personaActual.cedula, tipoRegistroActual, 1); 
             
-            // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
-if (typeof window.registrarLog === 'function') {
-    window.registrarLog(
-        'CONSULTA_PERSONA',
-        'PERSONAS',
-        {
-            valor_buscado: cedula,
-            tipo: 'Vinculado',
-            estatus: vinculado.estatus || 'N/A'
-        },
-        vinculado.id
-    );
-}
+            // ✅ LOG USANDO UTILS.JS (variables correctas: personaActual)
+            if (typeof window.registrarLog === 'function' && insertedData?.id) {
+                window.registrarLog(
+                    'CREAR_INCIDENCIA_PERSONA',
+                    'PERSONAS',
+                    {
+                        cedula: personaActual.cedula,
+                        tipo: tipoRegistroActual,
+                        descripcion: descripcion
+                    },
+                    insertedData.id
+                );
+            }
         } catch (err) {
             console.error('Error guardando incidencia:', err);
             alert('❌ Error: ' + err.message);
@@ -688,12 +701,18 @@ if (typeof window.registrarLog === 'function') {
                 setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
             }
 
-            if (typeof registrarLog === 'function') {
-                await registrarLog('ELIMINAR_INCIDENCIA_PERSONA', 'Consulta Personas', datos.id, { 
-                    cedula: datos.cedula, 
-                    tipo: datos.tipo,
-                    descripcion_eliminada: datos.descripcion 
-                });
+            // ✅ LOG USANDO UTILS.JS (ya no usa la función local)
+            if (typeof window.registrarLog === 'function') {
+                window.registrarLog(
+                    'ELIMINAR_INCIDENCIA_PERSONA',
+                    'PERSONAS',
+                    {
+                        cedula: datos.cedula,
+                        tipo: datos.tipo,
+                        descripcion_eliminada: datos.descripcion
+                    },
+                    datos.id
+                );
             }
 
         } catch (err) {
@@ -713,4 +732,3 @@ if (document.readyState === 'loading') {
 } else {
     window.initConsultaPersonas();
 }
-
