@@ -110,16 +110,25 @@ window.initConsultaVehiculos = function() {
                 return;
             }
 
-            // ✅ REGISTRAR LOG DE CONSULTA EXITOSA (AHORA INCLUYE EL ESTATUS)
-            if (typeof registrarLog === 'function') {
-                const estatusVehiculo = resultados[0].estatus || 'N/A';
-                await registrarLog('CONSULTA_VEHICULO', 'Consulta Vehículos', null, { 
-                    tipo_busqueda: tipoBusqueda, 
-                    valor_buscado: valor,
-                    resultados_encontrados: resultados.length,
-                    estatus: estatusVehiculo // ✅ ESTO HACE QUE SE MUESTRE EN LA COLUMNA REGISTRO/ESTATUS
-                });
-            }
+      // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+if (typeof window.registrarLog === 'function') {
+    const estatusVehiculo = resultados[0].estatus || 'N/A';
+    const primerResultado = resultados[0];
+    window.registrarLog(
+        'CONSULTA_VEHICULO',
+        'VEHICULOS',
+        {
+            tipo_busqueda: tipoBusqueda,
+            valor_buscado: valor,
+            resultados_encontrados: resultados.length,
+            estatus: estatusVehiculo,
+            placa: primerResultado.placa || null,
+            marca: primerResultado.marca || primerResultado.marca_vehiculo || null,
+            modelo: primerResultado.modelo || primerResultado.modelo_vehiculo || null
+        },
+        primerResultado.id
+    );
+}
 
             const tiposUnicos = [...new Set(resultados.map(r => r.tipo_registro))];
             if (tiposUnicos.length > 1) {
@@ -177,18 +186,23 @@ window.initConsultaVehiculos = function() {
             await window.cargarIncidenciasVehiculo(identificador, tipoRegistroActual, 1);
             mostrarMensaje('✅ Vehículo seleccionado', 'success');
             
-            // ✅ REGISTRAR LOG DE SELECCIÓN (TAMBIÉN INCLUYE EL ESTATUS)
-            if (typeof registrarLog === 'function') {
-                await registrarLog('CONSULTA_VEHICULO', 'Consulta Vehículos', null, { 
-                    tipo_busqueda: tipoBusquedaSelect?.value || 'placa', 
-                    valor_buscado: buscarInput?.value.trim().toUpperCase() || '',
-                    tipo_seleccionado: tipo,
-                    estatus: vehiculoActual ? vehiculoActual.estatus : 'N/A' // ✅ ESTO HACE QUE SE MUESTRE EN LA COLUMNA REGISTRO/ESTATUS
-                });
-            }
-        }
-    };
-
+   // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+if (typeof window.registrarLog === 'function' && vehiculoActual) {
+    window.registrarLog(
+        'CONSULTA_VEHICULO',
+        'VEHICULOS',
+        {
+            tipo_busqueda: tipoBusquedaSelect?.value || 'placa',
+            valor_buscado: buscarInput?.value.trim().toUpperCase() || '',
+            tipo_seleccionado: tipo,
+            estatus: vehiculoActual.estatus || 'N/A',
+            placa: vehiculoActual.placa || null,
+            marca: vehiculoActual.marca || vehiculoActual.marca_vehiculo || null,
+            modelo: vehiculoActual.modelo || vehiculoActual.modelo_vehiculo || null
+        },
+        vehiculoActual.id
+    );
+}
     async function renderFichaBreve(data, tipo) {
         if (!fichaBreve) return;
         const estatus = data.estatus || 'N/A';
@@ -586,14 +600,21 @@ window.initConsultaVehiculos = function() {
             mostrarMensaje('✅ Incidencia registrada', 'success');
             await window.cargarIncidenciasVehiculo(identificador, tipoRegistroActual, 1);
             
-            // ✅ REGISTRAR LOG DE CREACIÓN DE INCIDENCIA
-            if (typeof registrarLog === 'function') {
-                await registrarLog('CREAR_INCIDENCIA_VEHICULO', 'Consulta Vehículos', null, { 
-                    identificador: identificador, 
-                    tipo: tipoRegistroActual,
-                    descripcion: descripcion
-                });
-            }
+      // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+if (typeof window.registrarLog === 'function' && vehiculoActual?.id) {
+    window.registrarLog(
+        'CREAR_INCIDENCIA_VEHICULO',
+        'VEHICULOS',
+        {
+            identificador: identificador,
+            tipo: tipoRegistroActual,
+            descripcion: descripcion,
+            placa: vehiculoActual.placa || null,
+            estatus: vehiculoActual.estatus || 'N/A'
+        },
+        vehiculoActual.id
+    );
+}
         } catch (err) {
             mostrarMensaje('❌ Error: ' + err.message, 'error');
         } finally {
@@ -679,14 +700,21 @@ document.getElementById('cv_btn_confirmar_eliminacion').onclick = async () => {
             setTimeout(() => { msgEl.style.display = 'none'; }, 4000);
         }
 
-        // ✅ REGISTRAR LOG DE ELIMINACIÓN DE INCIDENCIA
-        if (typeof registrarLog === 'function') {
-            await registrarLog('ELIMINAR_INCIDENCIA_VEHICULO', 'Consulta Vehículos', datos.id, { 
-                identificador: datos.identificador, 
-                tipo: datos.tipo,
-                descripcion_eliminada: datos.descripcion 
-            });
-        }
+   // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+if (typeof window.registrarLog === 'function') {
+    window.registrarLog(
+        'ELIMINAR_INCIDENCIA_VEHICULO',
+        'VEHICULOS',
+        {
+            identificador: datos.identificador,
+            tipo: datos.tipo,
+            descripcion_eliminada: datos.descripcion,
+            placa: vehiculoActual?.placa || null,
+            estatus: vehiculoActual?.estatus || 'N/A'
+        },
+        datos.id
+    );
+}
 
     } catch (err) {
         alert('❌ Error al eliminar: ' + err.message);
@@ -702,25 +730,4 @@ if (document.readyState === 'loading') {
     window.initConsultaVehiculos();
 }
 
-// ✅ FUNCIÓN REUTILIZABLE PARA REGISTRAR LOGS EN EL SISTEMA
-async function registrarLog(accion, modulo, registroId = null, detalles = {}) {
-    try {
-        const { data: { user } } = await window.supabaseClient.auth.getUser();
-        if (!user) return;
-        const { data: perfil } = await window.supabaseClient
-            .from('perfiles_usuario').select('nombre, apellido').eq('user_id', user.id).maybeSingle();
-        const nombreCompleto = perfil ? `${perfil.nombre || ''} ${perfil.apellido || ''}`.trim() : 'Sistema';
-        await window.supabaseClient.from('sistema_logs').insert([{
-            user_id: user.id, 
-            user_email: user.email, 
-            user_nombre: nombreCompleto,
-            accion: accion, 
-            modulo: modulo, 
-            registro_id: registroId, 
-            detalles: detalles, 
-            user_agent: navigator.userAgent
-        }]);
-    } catch (err) {
-        // Silencioso para no mostrar errores de logs al usuario final
-    }
-}
+
