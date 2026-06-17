@@ -111,7 +111,7 @@ window.initConsultaVehiculos = function() {
                 return;
             }
 
-            // 🔹 LOG DE CONSULTA USANDO UTILS.JS
+ 
             if (typeof window.registrarLog === 'function') {
                 const primerResultado = resultados[0];
                 window.registrarLog(
@@ -183,7 +183,7 @@ window.initConsultaVehiculos = function() {
             await window.cargarIncidenciasVehiculo(identificador, tipoRegistroActual, 1);
             mostrarMensaje('✅ Vehículo seleccionado', 'success');
 
-            // 🔹 LOG DE SELECCIÓN USANDO UTILS.JS
+
             if (typeof window.registrarLog === 'function' && vehiculoActual) {
                 window.registrarLog(
                     'CONSULTA_VEHICULO',
@@ -603,7 +603,7 @@ window.initConsultaVehiculos = function() {
             mostrarMensaje('✅ Incidencia registrada', 'success');
             await window.cargarIncidenciasVehiculo(identificador, tipoRegistroActual, 1);
 
-            // 🔹 LOG DE CREACIÓN DE INCIDENCIA USANDO UTILS.JS
+
             if (typeof window.registrarLog === 'function' && insertedData?.id) {
                 window.registrarLog(
                     'CREAR_INCIDENCIA_VEHICULO',
@@ -629,7 +629,7 @@ window.initConsultaVehiculos = function() {
         }
     }
 
-    // ✅ FUNCIONES GLOBALES PARA EL MODAL DE ELIMINACIÓN DE VEHÍCULOS
+
     window.prepararEliminacionVehiculo = function(btn) {
         window.incidenciaPendienteEliminacionVehiculo = {
             id: btn.dataset.id,
@@ -700,7 +700,7 @@ window.initConsultaVehiculos = function() {
                 setTimeout(() => { msgEl.style.display = 'none'; }, 4000);
             }
 
-            // 🔹 LOG DE ELIMINACIÓN DE INCIDENCIA USANDO UTILS.JS
+
             if (typeof window.registrarLog === 'function') {
                 window.registrarLog(
                     'ELIMINAR_INCIDENCIA_VEHICULO',
