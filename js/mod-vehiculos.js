@@ -688,7 +688,7 @@ window.initModVehiculos = function() {
                 
             if (finalError) throw finalError;
             
-   // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+// 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
 if (typeof window.registrarLog === 'function' && currentData?.id) {
     window.registrarLog(
         'MODIFICAR',
@@ -700,14 +700,14 @@ if (typeof window.registrarLog === 'function' && currentData?.id) {
             anio: updateData.anio,
             color: updateData.color,
             tipo: tipo === 'moto' ? 'Motocicleta' : 'Automóvil',
+            estatus: 'Verificación',
             estacion: updateData.estacion_policial,
             direccion_detencion: updateData.direccion_detencion,
             cambios_realizados: 'Datos del vehículo actualizados'
         },
         currentData.id
     );
-}
-            
+}         
             mostrarMsg(msgBox, '✅ Vehículo actualizado correctamente.', 'success');
             setTimeout(() => {
                 form.style.display = 'none';
