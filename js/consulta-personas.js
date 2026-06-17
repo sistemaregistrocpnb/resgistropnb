@@ -611,7 +611,6 @@ window.initConsultaPersonas = function() {
             mostrarMensaje('✅ Incidencia registrada', 'success');
             await window.cargarIncidencias(personaActual.cedula, tipoRegistroActual, 1); 
             
-            // ✅ LOG USANDO UTILS.JS
             if (typeof window.registrarLog === 'function' && insertedData?.id) {
                 window.registrarLog(
                     'CREAR_INCIDENCIA_PERSONA',
@@ -706,7 +705,6 @@ window.initConsultaPersonas = function() {
                 setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
             }
 
-            // ✅ LOG USANDO UTILS.JS
             if (typeof window.registrarLog === 'function') {
                 window.registrarLog(
                     'ELIMINAR_INCIDENCIA_PERSONA',
