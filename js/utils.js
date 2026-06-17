@@ -10,19 +10,35 @@
  * @param {string} registroId - ID del registro afectado (opcional)
  */
 window.registrarLog = async function(accion, modulo, detalles = {}, registroId = null) {
-    const userId = sessionStorage.getItem('pnb_user_id');
-    const userEmail = sessionStorage.getItem('pnb_user_email') || 'sistema@pnb.gob.ve';
-    const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Sistema';
-    
-    if (!userId) {
-        console.warn('⚠️ No se puede registrar log: usuario no autenticado');
-        return;
-    }
-    
     try {
-        // ✅ Convertir detalles a string JSON (compatible con columnas text)
+        // 1. Intentar obtener datos de sessionStorage
+        let userId = sessionStorage.getItem('pnb_user_id');
+        let userEmail = sessionStorage.getItem('pnb_user_email') || 'sistema@pnb.gob.ve';
+        let userNombre = document.getElementById('user-nombre-display')?.textContent || 'Sistema';
+
+        // 2. Si no hay userId, intentar obtenerlo directamente de Supabase Auth
+        if (!userId && window.supabaseClient) {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (user) {
+                userId = user.id;
+                userEmail = user.email || userEmail;
+                userNombre = user.user_metadata?.nombre || user.email?.split('@')[0] || 'Sistema';
+                
+                // Restaurar en sessionStorage para futuras llamadas
+                sessionStorage.setItem('pnb_user_id', userId);
+                sessionStorage.setItem('pnb_user_email', userEmail);
+            }
+        }
+
+        if (!userId) {
+            console.warn('⚠️ No se puede registrar log: usuario no autenticado (ni en sessionStorage ni en Supabase)');
+            return;
+        }
+
+        // 3. Convertir detalles a string JSON
         const detallesString = typeof detalles === 'string' ? detalles : JSON.stringify(detalles);
-        
+
+        // 4. Insertar en la base de datos
         const { error } = await window.supabaseClient
             .from('sistema_logs')
             .insert([{
@@ -31,12 +47,12 @@ window.registrarLog = async function(accion, modulo, detalles = {}, registroId =
                 user_email: userEmail,
                 accion: accion,
                 modulo: modulo,
-                detalles: detallesString,  // ✅ Ahora es string JSON
+                detalles: detallesString,
                 registro_id: registroId
             }]);
-        
+
         if (error) {
-            console.error('❌ Error al registrar log:', error);
+            console.error('❌ Error al registrar log en Supabase:', error);
         } else {
             console.log('✅ Log registrado exitosamente:', { accion, modulo, registroId });
         }
