@@ -4,10 +4,6 @@
 
 /**
  * Registra una acción en el sistema de logs
- * @param {string} accion - Tipo de acción (LOGIN, LOGOUT, CREAR, MODIFICAR, ELIMINAR, etc.)
- * @param {string} modulo - Módulo donde ocurre la acción (AUTENTICACION, PERSONAS, VEHICULOS, etc.)
- * @param {object} detalles - Objeto con detalles de la acción
- * @param {string} registroId - ID del registro afectado (opcional)
  */
 window.registrarLog = async function(accion, modulo, detalles = {}, registroId = null) {
     try {
@@ -31,7 +27,7 @@ window.registrarLog = async function(accion, modulo, detalles = {}, registroId =
         }
 
         if (!userId) {
-            console.warn('⚠️ No se puede registrar log: usuario no autenticado (ni en sessionStorage ni en Supabase)');
+            console.warn('⚠️ No se puede registrar log: usuario no autenticado');
             return;
         }
 
@@ -63,10 +59,6 @@ window.registrarLog = async function(accion, modulo, detalles = {}, registroId =
 
 /**
  * Registra el inicio de sesión
- * @param {string} userNombre - Nombre completo del usuario
- * @param {string} userEmail - Email del usuario
- * @param {string} userId - ID del usuario
- * @param {string} nivel - Nivel de acceso (administrador, moderador, consultor)
  */
 window.registrarLogin = async function(userNombre, userEmail, userId, nivel) {
     const horaInicio = Date.now();
@@ -88,7 +80,7 @@ window.registrarLogin = async function(userNombre, userEmail, userId, nivel) {
                 user_email: userEmail || 'sistema@pnb.gob.ve',
                 accion: 'LOGIN',
                 modulo: 'AUTENTICACION',
-                detalles: detallesString,  // ✅ String JSON
+                detalles: detallesString,
                 registro_id: null
             }]);
         
@@ -113,7 +105,6 @@ window.registrarLogout = async function() {
     
     if (!userId) return;
     
-    // Calcular duración de la sesión
     let duracionTexto = 'No registrada';
     let duracionSegundos = 0;
     
@@ -151,7 +142,7 @@ window.registrarLogout = async function() {
                 user_email: userEmail,
                 accion: 'LOGOUT',
                 modulo: 'AUTENTICACION',
-                detalles: detallesString,  // ✅ String JSON
+                detalles: detallesString,
                 registro_id: null
             }]);
         
@@ -167,8 +158,6 @@ window.registrarLogout = async function() {
 
 /**
  * Formatea la duración en segundos a texto legible
- * @param {number} segundos - Duración en segundos
- * @returns {string} Duración formateada (ej: "2h 15m 30s")
  */
 window.formatearDuracion = function(segundos) {
     if (!segundos || segundos < 0) return 'No registrada';
