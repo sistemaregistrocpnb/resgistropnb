@@ -29,7 +29,6 @@
   .cedula-status.checking { color: #64748b; font-style: italic; }
   @media (max-width: 600px) { .form-grid, .search-row { grid-template-columns: 1fr; flex-direction: column; } }
   
-  /* 🔹 Dropdown de teléfono con banderas */
   .phone-dropdown-wrapper { position: relative; width: 100%; }
   .phone-options { max-height: 220px; overflow-y: auto; position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1.5px solid var(--beige-border); border-radius: 0 0 5px 5px; z-index: 20; box-shadow: 0 6px 16px rgba(0,0,0,0.12); display: none; margin-top: 2px; }
   .phone-option { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: 0.15s; }
@@ -44,7 +43,6 @@
 <div class="card">
     <h3>✏️ Modificar Registro de Persona</h3>
     
-    <!-- 🔍 BARRA DE BÚSQUEDA -->
     <div class="search-box">
         <label>Buscar por Cédula:</label>
         <div class="search-row">
@@ -53,8 +51,7 @@
         </div>
         <div id="buscar-msg" class="search-msg"></div>
     </div>
-
-    <!-- 📝 FORMULARIO (Oculto hasta encontrar registro) -->
+  
     <form id="form-mod-personas" class="registro-form" novalidate style="display: none;">
         <input type="hidden" id="mod_record_id">
         
@@ -75,7 +72,6 @@
 
         <fieldset>
             <legend>👤 Datos Personales</legend>
-            <!-- 🔹 Fila Superior -->
             <div class="form-grid">
                 <div class="form-group"><label>Primer Nombre</label><input type="text" id="p_nombre1" required></div>
                 <div class="form-group"><label>Segundo Nombre</label><input type="text" id="p_nombre2"></div>
@@ -88,7 +84,6 @@
                 </div>
                 <div class="form-group"><label>Apodo</label><input type="text" id="p_apodo"></div>
             </div>
-            <!-- 🔹 Fila Inferior -->
             <div class="form-grid" style="margin-top: 14px;">
                 <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" id="p_fecha_nac" required></div>
                 <div class="form-group"><label>Edad (Auto)</label><input type="number" id="p_edad" readonly></div>
@@ -113,7 +108,7 @@
                 <div class="form-group" style="grid-column: span 2;">
                     <label>Teléfono <span style="color:#64748b; font-weight:400;">(Opcional)</span></label>
                     <div style="display: flex; gap: 10px; align-items: center;">
-                        <!-- 🔹 SELECTOR DE PAÍS -->
+    
                         <div class="phone-dropdown-wrapper" style="width: 210px; flex-shrink: 0; position: relative;">
                             <select id="p_tlf_pais" style="position: absolute; opacity: 0; pointer-events: none; width: 100%; height: 100%; z-index: 1;">
                                 <option value="">--</option>
@@ -128,7 +123,7 @@
                             </div>
                             <div class="phone-options" style="display:none;background:#fff;"></div>
                         </div>
-                        <!-- 🔹 CAMPO PARA ESCRIBIR EL NÚMERO (Sin límite) -->
+  
                         <input type="text" id="p_tlf_num" placeholder="Escriba el número aquí" style="flex:1;min-width:120px;padding:9px 10px;border:1.5px solid var(--beige-border);border-radius:5px;background:#fff;font-size:0.9rem;">
                     </div>
                 </div>
