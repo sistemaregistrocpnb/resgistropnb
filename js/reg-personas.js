@@ -356,22 +356,23 @@ window.initRegPersonas = function() {
             codeText.textContent = '+XX';
             countryText.textContent = 'País';
 
-            // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
-            if (typeof window.registrarLog === 'function' && insertedData?.id) {
-                await window.registrarLog(
-                    'CREAR',
-                    'PERSONAS',
-                    {
-                        cedula: cedula,
-                        nombre_completo: `${data.primer_nombre} ${data.primer_apellido}`.trim(),
-                        estatus: data.estatus,
-                        estacion: data.estacion_policial,
-                        direccion_detencion: data.direccion_detencion
-                    },
-                    insertedData.id
-                );
-            }
-
+  // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+if (typeof window.registrarLog === 'function' && insertedData?.id) {
+    await window.registrarLog(
+        'CREAR',
+        'PERSONAS',
+        {
+            cedula: cedula,
+            nombre_completo: `${data.primer_nombre} ${data.primer_apellido}`.trim(),
+            estatus: data.estatus,
+            estacion: data.estacion_policial,
+            direccion_detencion: data.direccion_detencion
+        },
+        insertedData.id
+    );
+} else {
+    console.warn('⚠️ No se ejecutó el registro del log. registrarLog:', typeof window.registrarLog, '| insertedData:', insertedData);
+}
         } catch (err) {
             console.error('Error:', err);
             let m = 'Error inesperado. Intente nuevamente.';
