@@ -91,7 +91,7 @@ function formatearDetalles(detalles) {
     }
     if (d.cedula && d.estatus && d.estatus.includes('Reintegrado')) {
     return `Reintegró a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre_completo || 'Nombre no disponible'}) al sistema activo.`;
-}
+
     }
  if (d.cedula && d.descripcion_eliminada) {
     return `Eliminó a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre_completo || 'Nombre no disponible'}).<br><em>"${d.descripcion_eliminada}"</em>`;
