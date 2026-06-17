@@ -358,62 +358,21 @@ window.initRegPersonas = function() {
             codeText.textContent = '+XX';
             countryText.textContent = 'País';
 
-// 🔹 CREAR LOG (SOLO si el insert fue exitoso)
-if (insertedData?.id) {
-    (async () => {
-        try {
-            let userId = sessionStorage.getItem('pnb_user_id');
-            let userName = 'Usuario';
-            let userEmail = 'usuario@sistema';
-
-            if (userId) {
-                const { data: perfil } = await window.supabaseClient
-                    .from('perfiles_usuario')
-                    .select('nombre, apellido, email')
-                    .eq('user_id', userId)
-                    .maybeSingle();
-
-                if (perfil) {
-                    const nombreCompletoPerfil = [perfil.nombre, perfil.apellido].filter(Boolean).join(' ').trim();
-                    userName = nombreCompletoPerfil || userName;
-                    userEmail = perfil.email || userEmail;
-                }
-            }
-
-            if (userName === 'Usuario') {
-                const { data: { user } } = await window.supabaseClient.auth.getUser();
-                if (user) {
-                    userId = user.id;
-                    userEmail = user.email || userEmail;
-                    userName = user.user_metadata?.full_name ||
-                             user.user_metadata?.name ||
-                             user.email?.split('@')[0] ||
-                             'Usuario';
-                }
-            }
-
-            if (userEmail && !userEmail.includes('@')) {
-                userEmail = userEmail + '@gmail.com';
-            }
-
-            const nombreCompleto = `${data.primer_nombre} ${data.primer_apellido}`.trim();
-
-            const { error: logError } = await window.supabaseClient.from('sistema_logs').insert([{
-                accion: 'CREAR',
-                modulo: 'PERSONAS',
-                registro_id: insertedData.id, // ✅ Ahora SÍ tenemos el ID
-                user_id: userId,
-                user_nombre: userName,
-                user_email: userEmail,
-                detalles: JSON.stringify({
-                    cedula: cedula,
-                    nombre_completo: nombreCompleto,
-                    estatus: data.estatus,
-                    estacion: data.estacion_policial,
-                    direccion_detencion: data.direccion_detencion
-                })
-            }]);
-
+// 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+if (typeof window.registrarLog === 'function' && insertedData?.id) {
+    await window.registrarLog(
+        'CREAR',
+        'PERSONAS',
+        {
+            cedula: cedula,
+            nombre_completo: `${data.primer_nombre} ${data.primer_apellido}`.trim(),
+            estatus: data.estatus,
+            estacion: data.estacion_policial,
+            direccion_detencion: data.direccion_detencion
+        },
+        insertedData.id  // ✅ ID del registro creado
+    );
+}
             if (logError) {
                 console.warn('⚠️ Error al crear log:', logError);
             } else {
