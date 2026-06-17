@@ -289,6 +289,19 @@ Para gestión de usuarios y soporte comuníquese con los números:<br>
     <!-- Paginación -->
     <div id="users-pagination" style="display: flex; justify-content: center; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #bbf7d0;"></div>
 </div>
+    
+    <!-- Indicador de chat activo -->
+    <div id="active-chat-indicator" style="display: none; background: #dbeafe; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; color: #1e40af; margin-bottom: 8px; border: 1px solid #93c5fd;">
+        💬 Chat individual con: <strong id="active-chat-user-name">Usuario</strong>
+        <button id="back-to-general" style="background: #1e40af; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; margin-left: 8px;">Volver al general</button>
+    </div>
+    
+    <!-- Lista de usuarios -->
+    <ul id="online-users-list" class="online-users-list"></ul>
+    
+    <!-- Paginación -->
+    <div id="users-pagination" style="display: flex; justify-content: center; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #bbf7d0;"></div>
+</div>
 <div id="chat-messages" class="chat-messages">
 <div class="chat-message system">
 <p>Escribe tu consulta. Un administrador te responderá de forma privada.</p>
