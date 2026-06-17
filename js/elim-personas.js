@@ -298,14 +298,30 @@ async function registrarLog(accion, modulo, detalles) {
             }
         );
             
-            showMsgElim('✅ Persona eliminada y archivada correctamente.', 'success');
-            setTimeout(() => { 
-                dataContainer.style.display = 'none'; 
-                buscarInput.value = ''; 
-                hideMsg(msgBuscar); 
-                hideMsgElim(); 
-                archivedNotice.style.display = 'none'; 
-            }, 4000);
+        showMsgElim('✅ Persona eliminada del sistema activo.', 'success');
+
+// 🔹 CREAR LOG DE ELIMINACIÓN
+if (typeof window.registrarLog === 'function' && currentData?.id) {
+    window.registrarLog(
+        'ELIMINAR',
+        'PERSONAS',
+        {
+            cedula: currentData.cedula,
+            nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
+            estatus: 'Eliminado',
+            estacion: currentData.estacion_policial
+        },
+        currentData.id
+    );
+}
+
+setTimeout(() => {
+    dataContainer.style.display = 'none';
+    buscarInput.value = '';
+    hideMsg(msgBuscar);
+    hideMsgElim();
+    archivedNotice.style.display = 'none';
+}, 4000);
             
         } catch (err) {
             console.error('Error eliminando:', err);
@@ -379,14 +395,30 @@ async function registrarLog(accion, modulo, detalles) {
             }
         );
             
-            showMsgElim('✅ Persona reintegrada al sistema activo.', 'success');
-            setTimeout(() => { 
-                dataContainer.style.display = 'none'; 
-                buscarInput.value = ''; 
-                hideMsg(msgBuscar); 
-                hideMsgElim(); 
-                archivedNotice.style.display = 'none'; 
-            }, 4000);
+      showMsgElim('✅ Persona reintegrada al sistema activo.', 'success');
+
+// 🔹 CREAR LOG DE REINTEGRACIÓN
+if (typeof window.registrarLog === 'function' && currentData?.id) {
+    window.registrarLog(
+        'REINTEGRAR',
+        'PERSONAS',
+        {
+            cedula: currentData.cedula,
+            nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
+            estatus: 'Restaurado',
+            estacion: currentData.estacion_policial
+        },
+        currentData.id
+    );
+}
+
+setTimeout(() => {
+    dataContainer.style.display = 'none';
+    buscarInput.value = '';
+    hideMsg(msgBuscar);
+    hideMsgElim();
+    archivedNotice.style.display = 'none';
+}, 4000);
             
         } catch (err) {
             console.error('Error reintegrando:', err);
