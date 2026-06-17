@@ -56,43 +56,6 @@ const form = document.getElementById('form-reg-vehiculos');
 const btn = form?.querySelector('.btn-submit');
 const msg = document.getElementById('msg-reg-vehiculos');
 
-// ✅ FUNCIÓN PARA REGISTRAR EN LA TABLA sistema_logs CON NOMBRE COMPLETO
-async function registrarLog(accion, modulo, detalles) {
-    try {
-        const { data: { user } } = await window.supabaseClient.auth.getUser();
-        if (!user) return;
-        let nombreUsuario = user.email || 'Sistema';
-        
-        try {
-            const { data: perfil } = await window.supabaseClient
-                .from('perfiles_usuario')
-                .select('nombre, apellido, email')
-                .eq('user_id', user.id)
-                .maybeSingle();
-            if (perfil) {
-                nombreUsuario = `${perfil.nombre} ${perfil.apellido}`.trim() || nombreUsuario;
-            }
-        } catch (err) {
-            console.warn('No se pudo obtener el perfil del usuario para el log:', err);
-        }
-
-        const logEntry = {
-            user_id: user.id,
-            user_nombre: nombreUsuario,
-            user_email: user.email || 'sistema',
-            accion: accion,
-            modulo: modulo,
-            detalles: detalles,
-            created_at: new Date().toISOString()
-        };
-        const { error } = await window.supabaseClient.from('sistema_logs').insert([logEntry]);
-        if (error) console.error('Error al registrar log:', error);
-    } catch (err) {
-        console.error('Error en registrarLog:', err);
-    }
-}
-
-// 🔹 1. Poblar Años
 if (anioSelect) {
     const currentYear = new Date().getFullYear();
     anioSelect.innerHTML = '<option value="">Seleccione año...</option>';
@@ -288,19 +251,32 @@ form.addEventListener('submit', async (e) => {
             data.serial_motor = document.getElementById('v_serial_motor').value.trim() || '';
         }
         
-        const { error } = await window.supabaseClient.from(tablaDestino).insert([data]);
-        if (error) throw error;
+     const { data: insertedData, error } = await window.supabaseClient
+    .from(tablaDestino)
+    .insert([data])
+    .select('id')
+    .maybeSingle();
+if (error) throw error;
         
-        // ✅ REGISTRAR EL LOG UNA SOLA VEZ
-        await registrarLog('CREAR', 'VEHICULOS', {
+// 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+if (typeof window.registrarLog === 'function' && insertedData?.id) {
+    window.registrarLog(
+        'CREAR',
+        'VEHICULOS',
+        {
             placa: data.placa,
             marca: data.marca,
             modelo: data.modelo,
             anio: data.anio,
             color: data.color,
             tipo: isMoto ? 'Motocicleta' : 'Automóvil',
-            estatus: 'Verificación'
-        });
+            estatus: 'Verificación',
+            estacion: data.estacion_policial,
+            direccion_detencion: data.direccion_detencion
+        },
+        insertedData.id
+    );
+}
         
         // ✅ MOSTRAR MENSAJE DE ÉXITO
         msg.textContent = '✅ Vehículo registrado exitosamente.';
