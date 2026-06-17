@@ -79,7 +79,7 @@ window.initConsultaPersonas = function() {
         incidenciasPaginaActual = 1; 
 
         try {
-            // 🔹 BÚSQUEDA EN PERSONAS
+       
             const { data: persona, error: errPersona } = await window.supabaseClient
                 .from('registro_personas').select('*').eq('cedula', cedula).maybeSingle();
             if (errPersona) throw errPersona;
@@ -100,7 +100,6 @@ window.initConsultaPersonas = function() {
                 await window.cargarIncidencias(cedula, 'persona', 1);
                 mostrarMensaje('✅ Persona encontrada', 'success');
                 
-                // ✅ LOG USANDO UTILS.JS (variable correcta: persona)
                 if (typeof window.registrarLog === 'function') {
                     window.registrarLog(
                         'CONSULTA_PERSONA',
@@ -116,7 +115,7 @@ window.initConsultaPersonas = function() {
                 return;
             }
 
-            // 🔹 BÚSQUEDA EN VINCULADOS
+        
             const { data: vinculado, error: errVinculado } = await window.supabaseClient
                 .from('registro_vinculado').select('*').eq('cedula', cedula).maybeSingle();
             if (errVinculado) throw errVinculado;
@@ -137,7 +136,6 @@ window.initConsultaPersonas = function() {
                 await window.cargarIncidencias(cedula, 'vinculado', 1);
                 mostrarMensaje('✅ Vehículo vinculado encontrado', 'success');
                 
-                // ✅ LOG USANDO UTILS.JS (variable correcta: vinculado)
                 if (typeof window.registrarLog === 'function') {
                     window.registrarLog(
                         'CONSULTA_PERSONA',
@@ -701,7 +699,6 @@ window.initConsultaPersonas = function() {
                 setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
             }
 
-            // ✅ LOG USANDO UTILS.JS (ya no usa la función local)
             if (typeof window.registrarLog === 'function') {
                 window.registrarLog(
                     'ELIMINAR_INCIDENCIA_PERSONA',
