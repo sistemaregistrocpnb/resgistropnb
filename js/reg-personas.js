@@ -170,7 +170,6 @@ window.initRegPersonas = function() {
         cedulaStatus.className = 'cedula-status checking';
         cedulaStatus.textContent = '🔍 Verificando...';
         cedulaInput?.classList.remove('cedula-duplicate');
-
         try {
             const { data: dataPersonas } = await window.supabaseClient
                 .from('registro_personas').select('cedula').eq('cedula', cedula).maybeSingle();
@@ -223,6 +222,7 @@ window.initRegPersonas = function() {
     const mostrarError = (t) => {
         if(msg){msg.textContent='❌ '+t; msg.className='msg error'; msg.style.display='block';}
     };
+
     if (!form || !btn) { console.error('❌ Formulario no encontrado'); return; }
 
     form.addEventListener('submit', async (e) => {
@@ -256,7 +256,6 @@ window.initRegPersonas = function() {
             document.getElementById('p_tlf_num')?.focus();
             return;
         }
-        // ✅ VALIDAR DIRECCIÓN DE DETENCIÓN
         if (!document.getElementById('p_direccion_detencion')?.value.trim()) {
             mostrarError('La dirección de detención es obligatoria.');
             document.getElementById('p_direccion_detencion')?.focus();
@@ -286,7 +285,6 @@ window.initRegPersonas = function() {
 
             const uid = sessionStorage.getItem('pnb_user_id') || 'user';
             const ts = Date.now();
-
             const uploadFile = async (file, suffix) => {
                 if (!file) return null;
                 const path = `${uid}/${ts}_${suffix}.jpg`;
@@ -358,33 +356,22 @@ window.initRegPersonas = function() {
             codeText.textContent = '+XX';
             countryText.textContent = 'País';
 
-// 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
-if (typeof window.registrarLog === 'function' && insertedData?.id) {
-    await window.registrarLog(
-        'CREAR',
-        'PERSONAS',
-        {
-            cedula: cedula,
-            nombre_completo: `${data.primer_nombre} ${data.primer_apellido}`.trim(),
-            estatus: data.estatus,
-            estacion: data.estacion_policial,
-            direccion_detencion: data.direccion_detencion
-        },
-        insertedData.id  // ✅ ID del registro creado
-    );
-}
-            if (logError) {
-                console.warn('⚠️ Error al crear log:', logError);
-            } else {
-                console.log('✅ Log creado exitosamente para:', userName);
+            // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+            if (typeof window.registrarLog === 'function' && insertedData?.id) {
+                await window.registrarLog(
+                    'CREAR',
+                    'PERSONAS',
+                    {
+                        cedula: cedula,
+                        nombre_completo: `${data.primer_nombre} ${data.primer_apellido}`.trim(),
+                        estatus: data.estatus,
+                        estacion: data.estacion_policial,
+                        direccion_detencion: data.direccion_detencion
+                    },
+                    insertedData.id
+                );
             }
-        } catch (logErr) {
-            console.warn('⚠️ Falló log:', logErr);
-        }
-    })();
-} else {
-    console.warn('⚠️ No se creó log: insertedData.id es null');
-}
+
         } catch (err) {
             console.error('Error:', err);
             let m = 'Error inesperado. Intente nuevamente.';
