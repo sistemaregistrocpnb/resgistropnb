@@ -463,73 +463,24 @@ window.initModPersonas = function() {
                     msgForm.style.display = 'block';
                     setTimeout(() => msgForm.style.display = 'none', 5000);
                 }
-
-                // 🔹 CREAR LOG EN SEGUNDO PLANO CON NOMBRE COMPLETO DEL USUARIO
-                (async () => {
-                    try {
-                        // 1. Obtener user_id de sessionStorage
-                        let userId = sessionStorage.getItem('pnb_user_id');
-                        let userName = 'Usuario';
-                        let userEmail = 'usuario@sistema';
-
-                        // 2. Buscar el nombre COMPLETO en la tabla perfiles_usuario
-                   // 2. Buscar el nombre COMPLETO en la tabla perfiles_usuario
-if (userId) {
-    const { data: perfil } = await window.supabaseClient
-        .from('perfiles_usuario')
-        .select('nombre, apellido, email') // ✅ AGREGADO: 'apellido'
-        .eq('user_id', userId)
-        .maybeSingle();
-    if (perfil) {
-        // ✅ CONCATENAR NOMBRE Y APELLIDO (evita espacios extra si falta alguno)
-        const nombreCompletoPerfil = [perfil.nombre, perfil.apellido].filter(Boolean).join(' ').trim();
-        userName = nombreCompletoPerfil || userName;  
-        userEmail = perfil.email || userEmail;
-    }
+// 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+if (typeof window.registrarLog === 'function' && currentId) {
+    // No usamos 'await' aquí para que no bloquee la UI, el log se hace en segundo plano
+    window.registrarLog(
+        'MODIFICAR',
+        'PERSONAS',
+        {
+            cedula: nuevaCedula,
+            nombre_completo: `${updateData.primer_nombre} ${updateData.primer_apellido}`.trim(),
+            estatus: 'Verificación',
+            estacion: updateData.estacion_policial,
+            direccion_detencion: updateData.direccion_detencion,
+            cambios_realizados: 'Actualización de datos'
+        },
+        currentId
+    );
+    console.log('✅ Solicitud de log de modificación enviada a utils.js');
 }
-                        // 3. Si no encontramos en perfiles, intentar con Supabase Auth
-                        if (userName === 'Usuario') {
-                            const { data: { user } } = await window.supabaseClient.auth.getUser();
-                            if (user) {
-                                userId = user.id;
-                                userEmail = user.email || userEmail;
-                                userName = user.user_metadata?.full_name || 
-                                           user.user_metadata?.name || 
-                                           user.email?.split('@')[0] || 
-                                           'Usuario';
-                            }
-                        }
-
-                        // 4. Asegurar que el email tenga dominio
-                        if (userEmail && !userEmail.includes('@')) {
-                            userEmail = userEmail + '@gmail.com';
-                        }
-
-                        const nombreCompleto = `${updateData.primer_nombre} ${updateData.primer_apellido}`.trim();
-
-                        await window.supabaseClient.from('sistema_logs').insert([{
-                            accion: 'MODIFICAR',
-                            modulo: 'PERSONAS',
-                            registro_id: currentId,
-                            user_id: userId || null,
-                            user_nombre: userName,
-                            user_email: userEmail,
-                            detalles: JSON.stringify({
-                                cedula: nuevaCedula,
-                                nombre_completo: nombreCompleto,
-                                estatus: 'Verificación',
-                                estacion: updateData.estacion_policial,
-                                direccion_detencion: updateData.direccion_detencion,
-                                cambios_realizados: 'Actualización de datos'
-                            })
-                        }]);
-
-                        console.log('✅ Log de modificación creado con usuario completo:', userName);
-                    } catch (logErr) {
-                        console.warn('⚠️ Falló log de modificación:', logErr);
-                    }
-                })();
-
                 setTimeout(() => {
                     form.style.display = 'none';
                     buscarInput.value = '';
