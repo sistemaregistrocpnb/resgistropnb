@@ -117,34 +117,54 @@ function obtenerValorRegistro(log) {
         }
         return `<span class="badge badge-login">✅ Sesión iniciada</span><br><small style="color:#7e22ce; font-weight:700;">Nivel: ${nivelTexto}</small>`;
     }
-
+    
     // ✅ LOGOUT: Mostrar "Sesión cerrada"
     if (log.accion === 'LOGOUT') {
-        return `<span class="badge badge-logout"> Sesión cerrada</span>`;
+        return `<span class="badge badge-logout">❌ Sesión cerrada</span>`;
     }
-
-    // Resto del código original...
+    
+    // ✅ Procesar detalles para CREAR, MODIFICAR, ELIMINAR, etc.
     if (log.detalles) {
         let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
+        
+        // 🔹 PRIORIDAD 1: Si hay estatus, mostrarlo como badge
         if (d.estatus) {
-            const badgeClass = d.estatus.toLowerCase().includes('procesad') ? 'badge-eliminar' :
-                               d.estatus.toLowerCase().includes('verificaci') ? 'badge-otros' : 'badge-crear';
+            const estatusLower = d.estatus.toLowerCase();
+            let badgeClass = 'badge-crear'; // por defecto verde
+            
+            if (estatusLower.includes('eliminad') || estatusLower.includes('procesad')) {
+                badgeClass = 'badge-eliminar'; // rojo
+            } else if (estatusLower.includes('verificaci')) {
+                badgeClass = 'badge-otros'; // amarillo/naranja
+            } else if (estatusLower.includes('modificad') || estatusLower.includes('reintegrad')) {
+                badgeClass = 'badge-modificar'; // azul
+            }
+            
             return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
         }
+        
+        // 🔹 PRIORIDAD 2: Para vehículos, mostrar placa si existe
         if (log.modulo === 'VEHICULOS' && log.accion === 'CREAR' && d.placa) {
             return `<span class="badge badge-crear">${d.placa}</span>`;
         }
+        
+        // 🔹 PRIORIDAD 3: Para personas eliminadas/reintegradas
         if (log.modulo === 'PERSONAS') {
             if (log.accion === 'ELIMINAR') return `<span class="badge badge-eliminar">ELIMINADO</span>`;
             if (log.accion === 'REINTEGRAR') return `<span class="badge badge-crear">REINTEGRADO</span>`;
         }
+        
+        // 🔹 PRIORIDAD 4: Para consultas
         if (d.valor_buscado) return d.valor_buscado;
         if (d.identificador) return d.identificador;
         if (d.cedula) return d.cedula;
     }
+    
+    // 🔹 Último recurso: mostrar registro_id truncado
     if (log.registro_id) {
         return `<span style="font-family: monospace; font-size: 0.8rem; color: #64748b;">${log.registro_id.substring(0, 8)}...</span>`;
     }
+    
     return '-';
 }
 function renderTabla() {
