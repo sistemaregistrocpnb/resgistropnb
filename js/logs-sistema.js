@@ -90,11 +90,12 @@ function formatearDetalles(detalles) {
         return `Eliminó incidencia del vehículo <strong>${d.identificador}</strong>.<br><em>"${d.descripcion_eliminada}"</em>`;
     }
     if (d.cedula && d.estatus && d.estatus.includes('Reintegrado')) {
-        return `Reintegró a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre || 'Nombre no disponible'}) al sistema activo.`;
+    return `Reintegró a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre_completo || 'Nombre no disponible'}) al sistema activo.`;
+}
     }
-    if (d.cedula && d.descripcion_eliminada) {
-        return `Eliminó a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre || 'Nombre no disponible'}).<br><em>"${d.descripcion_eliminada}"</em>`;
-    }
+ if (d.cedula && d.descripcion_eliminada) {
+    return `Eliminó a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre_completo || 'Nombre no disponible'}).<br><em>"${d.descripcion_eliminada}"</em>`;
+}
 
     return Object.entries(d)
         .filter(([key]) => key !== 'estatus')
