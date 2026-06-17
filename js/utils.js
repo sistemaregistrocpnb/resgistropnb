@@ -11,16 +11,19 @@
  */
 window.registrarLog = async function(accion, modulo, detalles = {}, registroId = null) {
     const userId = sessionStorage.getItem('pnb_user_id');
-    const userEmail = sessionStorage.getItem('pnb_user_email');
-    const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
+    const userEmail = sessionStorage.getItem('pnb_user_email') || 'sistema@pnb.gob.ve';
+    const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Sistema';
     
     if (!userId) {
-        console.warn('No se puede registrar log: usuario no autenticado');
+        console.warn('⚠️ No se puede registrar log: usuario no autenticado');
         return;
     }
     
     try {
-        await window.supabaseClient
+        // ✅ Convertir detalles a string JSON (compatible con columnas text y jsonb)
+        const detallesString = typeof detalles === 'string' ? detalles : JSON.stringify(detalles);
+        
+        const { error } = await window.supabaseClient
             .from('sistema_logs')
             .insert([{
                 user_id: userId,
@@ -28,11 +31,23 @@ window.registrarLog = async function(accion, modulo, detalles = {}, registroId =
                 user_email: userEmail,
                 accion: accion,
                 modulo: modulo,
-                detalles: detalles,
+                detalles: detallesString,  // ✅ Ahora es string JSON
                 registro_id: registroId
             }]);
+        
+        if (error) {
+            console.error('❌ Error al registrar log:', error);
+            console.error('Detalles del error:', {
+                message: error.message,
+                details: error.details,
+                hint: error.hint,
+                code: error.code
+            });
+        } else {
+            console.log('✅ Log registrado exitosamente:', { accion, modulo, registroId });
+        }
     } catch (err) {
-        console.error('Error al registrar log:', err);
+        console.error('❌ Excepción al registrar log:', err);
     }
 };
 
@@ -47,21 +62,34 @@ window.registrarLogin = async function(userNombre, userEmail, userId, nivel) {
     const horaInicio = Date.now();
     sessionStorage.setItem('pnb_login_time', horaInicio.toString());
     
-    await window.supabaseClient
-        .from('sistema_logs')
-        .insert([{
-            user_id: userId,
-            user_nombre: userNombre,
-            user_email: userEmail,
-            accion: 'LOGIN',
-            modulo: 'AUTENTICACION',
-            detalles: {
-                nivel: nivel,
-                ip: window.location.hostname,
-                user_agent: navigator.userAgent.substring(0, 100),
-                hora_inicio: new Date().toISOString()
-            }
-        }]);
+    try {
+        const detallesString = JSON.stringify({
+            nivel: nivel,
+            ip: window.location.hostname,
+            user_agent: navigator.userAgent.substring(0, 100),
+            hora_inicio: new Date().toISOString()
+        });
+        
+        const { error } = await window.supabaseClient
+            .from('sistema_logs')
+            .insert([{
+                user_id: userId,
+                user_nombre: userNombre,
+                user_email: userEmail || 'sistema@pnb.gob.ve',
+                accion: 'LOGIN',
+                modulo: 'AUTENTICACION',
+                detalles: detallesString,  // ✅ String JSON
+                registro_id: null
+            }]);
+        
+        if (error) {
+            console.error('❌ Error al registrar login:', error);
+        } else {
+            console.log('✅ Login registrado exitosamente');
+        }
+    } catch (err) {
+        console.error('❌ Excepción al registrar login:', err);
+    }
 };
 
 /**
@@ -69,8 +97,8 @@ window.registrarLogin = async function(userNombre, userEmail, userId, nivel) {
  */
 window.registrarLogout = async function() {
     const userId = sessionStorage.getItem('pnb_user_id');
-    const userEmail = sessionStorage.getItem('pnb_user_email');
-    const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Desconocido';
+    const userEmail = sessionStorage.getItem('pnb_user_email') || 'sistema@pnb.gob.ve';
+    const userNombre = document.getElementById('user-nombre-display')?.textContent || 'Sistema';
     const loginTime = sessionStorage.getItem('pnb_login_time');
     
     if (!userId) return;
@@ -97,21 +125,34 @@ window.registrarLogout = async function() {
         }
     }
     
-    await window.supabaseClient
-        .from('sistema_logs')
-        .insert([{
-            user_id: userId,
-            user_nombre: userNombre,
-            user_email: userEmail,
-            accion: 'LOGOUT',
-            modulo: 'AUTENTICACION',
-            detalles: {
-                sesion_duracion: duracionTexto,
-                sesion_duracion_segundos: duracionSegundos,
-                ip: window.location.hostname,
-                hora_cierre: new Date().toISOString()
-            }
-        }]);
+    try {
+        const detallesString = JSON.stringify({
+            sesion_duracion: duracionTexto,
+            sesion_duracion_segundos: duracionSegundos,
+            ip: window.location.hostname,
+            hora_cierre: new Date().toISOString()
+        });
+        
+        const { error } = await window.supabaseClient
+            .from('sistema_logs')
+            .insert([{
+                user_id: userId,
+                user_nombre: userNombre,
+                user_email: userEmail,
+                accion: 'LOGOUT',
+                modulo: 'AUTENTICACION',
+                detalles: detallesString,  // ✅ String JSON
+                registro_id: null
+            }]);
+        
+        if (error) {
+            console.error('❌ Error al registrar logout:', error);
+        } else {
+            console.log('✅ Logout registrado exitosamente');
+        }
+    } catch (err) {
+        console.error('❌ Excepción al registrar logout:', err);
+    }
 };
 
 /**
