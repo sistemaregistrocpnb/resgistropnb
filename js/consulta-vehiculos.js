@@ -11,7 +11,7 @@ window.initConsultaVehiculos = function() {
     const modalIncidencia = el('cv_modal_incidencia');
     const modalTitulo = el('cv_modal_titulo');
     const modalBody = el('cv_modal_body');
-    
+
     let vehiculoActual = null;
     let tipoRegistroActual = null;
     let resultadosMultiples = null;
@@ -56,6 +56,7 @@ window.initConsultaVehiculos = function() {
     async function buscarVehiculo() {
         const tipoBusqueda = tipoBusquedaSelect?.value || 'placa';
         const valor = buscarInput?.value.trim().toUpperCase() || '';
+
         if (!valor) {
             mostrarMensaje('⚠️ Ingrese un valor para buscar', 'error');
             return;
@@ -72,7 +73,7 @@ window.initConsultaVehiculos = function() {
 
         try {
             const resultados = [];
-            
+
             const { data: automoviles, error: errAuto } = await window.supabaseClient
                 .from('registro_automoviles').select('*').eq(tipoBusqueda, valor);
             if (errAuto) throw errAuto;
@@ -110,25 +111,24 @@ window.initConsultaVehiculos = function() {
                 return;
             }
 
-      // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
-if (typeof window.registrarLog === 'function') {
-    const estatusVehiculo = resultados[0].estatus || 'N/A';
-    const primerResultado = resultados[0];
-    window.registrarLog(
-        'CONSULTA_VEHICULO',
-        'VEHICULOS',
-        {
-            tipo_busqueda: tipoBusqueda,
-            valor_buscado: valor,
-            resultados_encontrados: resultados.length,
-            estatus: estatusVehiculo,
-            placa: primerResultado.placa || null,
-            marca: primerResultado.marca || primerResultado.marca_vehiculo || null,
-            modelo: primerResultado.modelo || primerResultado.modelo_vehiculo || null
-        },
-        primerResultado.id
-    );
-}
+            // 🔹 LOG DE CONSULTA USANDO UTILS.JS
+            if (typeof window.registrarLog === 'function') {
+                const primerResultado = resultados[0];
+                window.registrarLog(
+                    'CONSULTA_VEHICULO',
+                    'VEHICULOS',
+                    {
+                        tipo_busqueda: tipoBusqueda,
+                        valor_buscado: valor,
+                        resultados_encontrados: resultados.length,
+                        estatus: primerResultado.estatus || 'N/A',
+                        placa: primerResultado.placa || null,
+                        marca: primerResultado.marca || primerResultado.marca_vehiculo || null,
+                        modelo: primerResultado.modelo || primerResultado.modelo_vehiculo || null
+                    },
+                    primerResultado.id
+                );
+            }
 
             const tiposUnicos = [...new Set(resultados.map(r => r.tipo_registro))];
             if (tiposUnicos.length > 1) {
@@ -155,10 +155,8 @@ if (typeof window.registrarLog === 'function') {
             if (!agrupados[r.tipo_registro]) agrupados[r.tipo_registro] = [];
             agrupados[r.tipo_registro].push(r);
         });
-
         const iconos = { automovil: '🚗', moto: '🏍️', vinculado: '🔗' };
         const titulos = { automovil: 'Automóvil', moto: 'Motocicleta', vinculado: 'Vinculado (Persona + Vehículo)' };
-        
         let html = `<div class="tipo-selector"><h3>⚠️ Se encontraron registros en múltiples tipos. Seleccione cuál desea ver:</h3><div class="tipo-options">`;
         Object.keys(agrupados).forEach(tipo => {
             const count = agrupados[tipo].length;
@@ -169,7 +167,6 @@ if (typeof window.registrarLog === 'function') {
             </div>`;
         });
         html += `</div></div>`;
-        
         tipoSelector.innerHTML = html;
         tipoSelector.style.display = 'block';
     }
@@ -185,32 +182,34 @@ if (typeof window.registrarLog === 'function') {
             const identificador = vehiculoActual.placa || vehiculoActual.serial_carroceria || vehiculoActual.serial_motor;
             await window.cargarIncidenciasVehiculo(identificador, tipoRegistroActual, 1);
             mostrarMensaje('✅ Vehículo seleccionado', 'success');
-            
-   // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
-if (typeof window.registrarLog === 'function' && vehiculoActual) {
-    window.registrarLog(
-        'CONSULTA_VEHICULO',
-        'VEHICULOS',
-        {
-            tipo_busqueda: tipoBusquedaSelect?.value || 'placa',
-            valor_buscado: buscarInput?.value.trim().toUpperCase() || '',
-            tipo_seleccionado: tipo,
-            estatus: vehiculoActual.estatus || 'N/A',
-            placa: vehiculoActual.placa || null,
-            marca: vehiculoActual.marca || vehiculoActual.marca_vehiculo || null,
-            modelo: vehiculoActual.modelo || vehiculoActual.modelo_vehiculo || null
-        },
-        vehiculoActual.id
-    );
-}
+
+            // 🔹 LOG DE SELECCIÓN USANDO UTILS.JS
+            if (typeof window.registrarLog === 'function' && vehiculoActual) {
+                window.registrarLog(
+                    'CONSULTA_VEHICULO',
+                    'VEHICULOS',
+                    {
+                        tipo_busqueda: tipoBusquedaSelect?.value || 'placa',
+                        valor_buscado: buscarInput?.value.trim().toUpperCase() || '',
+                        tipo_seleccionado: tipo,
+                        estatus: vehiculoActual.estatus || 'N/A',
+                        placa: vehiculoActual.placa || null,
+                        marca: vehiculoActual.marca || vehiculoActual.marca_vehiculo || null,
+                        modelo: vehiculoActual.modelo || vehiculoActual.modelo_vehiculo || null
+                    },
+                    vehiculoActual.id
+                );
+            }
+        }
+    };
+
     async function renderFichaBreve(data, tipo) {
         if (!fichaBreve) return;
         const estatus = data.estatus || 'N/A';
         const estatusLower = (estatus || '').toLowerCase();
         const estatusClass = estatusLower.includes('verificaci') ? 'estatus-verificacion' :
-                             estatusLower.includes('procesad') ? 'estatus-procesado' : 'estatus-liberado';
-        
-        const tipoIconos = { automovil: '🚗', moto: '🏍️', vinculado: '🔗' };
+            estatusLower.includes('procesad') ? 'estatus-procesado' : 'estatus-liberado';
+        const tipoIconos = { automovil: '🚗', moto: '️', vinculado: '🔗' };
         const tipoTitulos = { automovil: 'Automóvil', moto: 'Motocicleta', vinculado: 'Vehículo Vinculado' };
 
         let alertasHtml = '';
@@ -248,7 +247,7 @@ if (typeof window.registrarLog === 'function' && vehiculoActual) {
         }
 
         htmlCampos += `<div class="ficha-breve-item"><div class="ficha-breve-label">Estación</div><div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div></div>`;
-        
+
         const observaciones = data.observaciones || '';
         if (observaciones) {
             htmlCampos += `<div class="ficha-breve-item full-width"><div class="ficha-breve-label">📝 Observaciones</div><div class="ficha-breve-value">${observaciones}</div></div>`;
@@ -280,7 +279,6 @@ if (typeof window.registrarLog === 'function' && vehiculoActual) {
         setTimeout(() => {
             const btnDetalles = el('cv_btn_ver_detalles');
             if (btnDetalles) btnDetalles.onclick = () => mostrarDetallesCompletos(data, tipo);
-            
             const btnIncidencia = el('cv_btn_nueva_incidencia');
             if (btnIncidencia) {
                 btnIncidencia.onclick = () => {
@@ -294,7 +292,6 @@ if (typeof window.registrarLog === 'function' && vehiculoActual) {
 
     async function mostrarDetallesCompletos(data, tipo) {
         if (!modalBody || !modalTitulo || !modalDetalles) return;
-        
         modalTitulo.textContent = `📋 Detalles - ${tipo === 'automovil' ? 'Automóvil' : tipo === 'moto' ? 'Motocicleta' : 'Vehículo Vinculado'}`;
         modalBody.innerHTML = '<div class="loading">⏳ Generando reporte oficial...</div>';
         modalDetalles.classList.add('active');
@@ -355,6 +352,7 @@ if (typeof window.registrarLog === 'function' && vehiculoActual) {
             if (datosProcesados?.tipo_delito) {
                 html += `<div class="ficha-alert ficha-alert-delito" style="page-break-inside: avoid; margin: 15px 0; padding: 12px; background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; border-radius: 6px;">⚖️ <strong>Procesado por:</strong> ${datosProcesados.tipo_delito}</div>`;
             }
+
             const problemaJudicial = data.problema_judicial || '';
             if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLowerCase() !== 'no') {
                 html += `<div class="ficha-alert ficha-alert-judicial" style="page-break-inside: avoid; margin: 15px 0; padding: 12px; background: #fef3c7; border: 1px solid #fbbf24; color: #92400e; border-radius: 6px;">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
@@ -388,6 +386,7 @@ if (typeof window.registrarLog === 'function' && vehiculoActual) {
             }
 
             html += `<div class="seccion-titulo">🚗 Datos del Vehículo</div><div class="ficha-completa-grid">`;
+
             if (tipo === 'automovil' || tipo === 'moto') {
                 const campos = [
                     { label: 'Placa', value: data.placa, highlight: true },
@@ -437,7 +436,7 @@ if (typeof window.registrarLog === 'function' && vehiculoActual) {
             html += `</div>`;
 
             if (tipo === 'vinculado' && data.primer_nombre) {
-                html += `<div class="seccion-titulo">👤 Datos de la Persona</div><div class="ficha-completa-grid">`;
+                html += `<div class="seccion-titulo"> Datos de la Persona</div><div class="ficha-completa-grid">`;
                 const camposPersona = [
                     { label: 'Primer Nombre', value: data.primer_nombre },
                     { label: 'Segundo Nombre', value: data.segundo_nombre },
@@ -521,23 +520,22 @@ if (typeof window.registrarLog === 'function' && vehiculoActual) {
             if (error) throw error;
 
             let html = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3>';
-            
+
             if (!incidencias || incidencias.length === 0) {
                 html += '<div class="sin-incidencias">No hay incidencias registradas</div>';
             } else {
                 const esAdministrador = sessionStorage.getItem('pnb_user_nivel') === 'administrador';
-                
                 incidencias.forEach(inc => {
-                    const btnEliminarHtml = esAdministrador 
-                        ? `<button class="btn-eliminar-incidencia" 
-                            data-id="${inc.id}" 
-                            data-identificador="${identificador}" 
-                            data-tipo="${tipo}" 
-                            data-pagina="${pagina}" 
-                            data-desc="${inc.descripcion}" 
-                            data-fecha="${inc.fecha_hora}" 
-                            data-autor="${inc.email_registrante || 'N/A'}" 
-                            onclick="window.prepararEliminacionVehiculo(this)">🗑️ Eliminar</button>` 
+                    const btnEliminarHtml = esAdministrador
+                        ? `<button class="btn-eliminar-incidencia"
+                            data-id="${inc.id}"
+                            data-identificador="${identificador}"
+                            data-tipo="${tipo}"
+                            data-pagina="${pagina}"
+                            data-desc="${inc.descripcion}"
+                            data-fecha="${inc.fecha_hora}"
+                            data-autor="${inc.email_registrante || 'N/A'}"
+                            onclick="window.prepararEliminacionVehiculo(this)">🗑️ Eliminar</button>`
                         : '';
 
                     html += `<div class="incidencia-item">
@@ -552,12 +550,12 @@ if (typeof window.registrarLog === 'function' && vehiculoActual) {
                     </div>`;
                 });
             }
+
             html += '</div>';
-            
             section.innerHTML = html;
             section.style.display = 'block';
         } catch (err) {
-            section.innerHTML = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
+            section.innerHTML = '<div class="incidencias-section"><h3> Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
             section.style.display = 'block';
         }
     };
@@ -565,7 +563,7 @@ if (typeof window.registrarLog === 'function' && vehiculoActual) {
     async function guardarIncidencia() {
         const descripcion = el('cv_incidencia_descripcion')?.value.trim();
         if (!descripcion) {
-            mostrarMensaje('⚠️ Ingrese una descripción', 'error');
+            mostrarMensaje('️ Ingrese una descripción', 'error');
             return;
         }
         if (!vehiculoActual) {
@@ -593,28 +591,33 @@ if (typeof window.registrarLog === 'function' && vehiculoActual) {
                 email_registrante: user.email
             };
 
-            const { error } = await window.supabaseClient.from('registro_incidencias').insert([incidencia]);
+            const { data: insertedData, error } = await window.supabaseClient
+                .from('registro_incidencias')
+                .insert([incidencia])
+                .select('id')
+                .maybeSingle();
+
             if (error) throw error;
 
             if (modalIncidencia) modalIncidencia.classList.remove('active');
             mostrarMensaje('✅ Incidencia registrada', 'success');
             await window.cargarIncidenciasVehiculo(identificador, tipoRegistroActual, 1);
-            
-      // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
-if (typeof window.registrarLog === 'function' && vehiculoActual?.id) {
-    window.registrarLog(
-        'CREAR_INCIDENCIA_VEHICULO',
-        'VEHICULOS',
-        {
-            identificador: identificador,
-            tipo: tipoRegistroActual,
-            descripcion: descripcion,
-            placa: vehiculoActual.placa || null,
-            estatus: vehiculoActual.estatus || 'N/A'
-        },
-        vehiculoActual.id
-    );
-}
+
+            // 🔹 LOG DE CREACIÓN DE INCIDENCIA USANDO UTILS.JS
+            if (typeof window.registrarLog === 'function' && insertedData?.id) {
+                window.registrarLog(
+                    'CREAR_INCIDENCIA_VEHICULO',
+                    'VEHICULOS',
+                    {
+                        identificador: identificador,
+                        tipo: tipoRegistroActual,
+                        descripcion: descripcion,
+                        placa: vehiculoActual.placa || null,
+                        estatus: vehiculoActual.estatus || 'N/A'
+                    },
+                    insertedData.id
+                );
+            }
         } catch (err) {
             mostrarMensaje('❌ Error: ' + err.message, 'error');
         } finally {
@@ -625,103 +628,102 @@ if (typeof window.registrarLog === 'function' && vehiculoActual?.id) {
             }
         }
     }
-};
 
-// ✅ FUNCIONES GLOBALES PARA EL MODAL DE ELIMINACIÓN DE VEHÍCULOS
-window.prepararEliminacionVehiculo = function(btn) {
-    window.incidenciaPendienteEliminacionVehiculo = {
-        id: btn.dataset.id,
-        identificador: btn.dataset.identificador,
-        tipo: btn.dataset.tipo,
-        pagina: parseInt(btn.dataset.pagina),
-        descripcion: btn.dataset.desc,
-        fecha: btn.dataset.fecha,
-        autor: btn.dataset.autor
+    // ✅ FUNCIONES GLOBALES PARA EL MODAL DE ELIMINACIÓN DE VEHÍCULOS
+    window.prepararEliminacionVehiculo = function(btn) {
+        window.incidenciaPendienteEliminacionVehiculo = {
+            id: btn.dataset.id,
+            identificador: btn.dataset.identificador,
+            tipo: btn.dataset.tipo,
+            pagina: parseInt(btn.dataset.pagina),
+            descripcion: btn.dataset.desc,
+            fecha: btn.dataset.fecha,
+            autor: btn.dataset.autor
+        };
+
+        document.getElementById('cv_elim_descripcion').textContent = window.incidenciaPendienteEliminacionVehiculo.descripcion;
+        document.getElementById('cv_elim_fecha').textContent = new Date(window.incidenciaPendienteEliminacionVehiculo.fecha).toLocaleString('es-VE');
+        document.getElementById('cv_elim_autor').textContent = window.incidenciaPendienteEliminacionVehiculo.autor;
+        document.getElementById('cv_modal_confirmar_eliminacion').classList.add('active');
     };
-    
-    document.getElementById('cv_elim_descripcion').textContent = window.incidenciaPendienteEliminacionVehiculo.descripcion;
-    document.getElementById('cv_elim_fecha').textContent = new Date(window.incidenciaPendienteEliminacionVehiculo.fecha).toLocaleString('es-VE');
-    document.getElementById('cv_elim_autor').textContent = window.incidenciaPendienteEliminacionVehiculo.autor;
-    
-    document.getElementById('cv_modal_confirmar_eliminacion').classList.add('active');
-};
 
-document.getElementById('cv_btn_confirmar_eliminacion').onclick = async () => {
-    const datos = window.incidenciaPendienteEliminacionVehiculo;
-    if (!datos) return;
-    
-    const btnConfirmar = document.getElementById('cv_btn_confirmar_eliminacion');
-    btnConfirmar.disabled = true;
-    btnConfirmar.textContent = '⏳ Procesando...';
-    
-    try {
-        const { data: { user } } = await window.supabaseClient.auth.getUser();
-        if (!user) throw new Error('Debe iniciar sesión');
+    document.getElementById('cv_btn_confirmar_eliminacion').onclick = async () => {
+        const datos = window.incidenciaPendienteEliminacionVehiculo;
+        if (!datos) return;
 
-        const { data: incData, error: fetchError } = await window.supabaseClient
-            .from('registro_incidencias')
-            .select('*')
-            .eq('id', datos.id)
-            .single();
+        const btnConfirmar = document.getElementById('cv_btn_confirmar_eliminacion');
+        btnConfirmar.disabled = true;
+        btnConfirmar.textContent = '⏳ Procesando...';
 
-        if (fetchError) throw new Error('No se encontró la incidencia: ' + fetchError.message);
+        try {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) throw new Error('Debe iniciar sesión');
 
-        const { id, created_at, ...datosBackup } = incData;
-        datosBackup.incidencia_id_original = datos.id;
-        datosBackup.eliminado_por = user.id;
-        datosBackup.email_eliminador = user.email;
-        datosBackup.fecha_eliminacion = new Date().toISOString();
+            const { data: incData, error: fetchError } = await window.supabaseClient
+                .from('registro_incidencias')
+                .select('*')
+                .eq('id', datos.id)
+                .single();
 
-        const { error: backupError } = await window.supabaseClient
-            .from('registro_incidencias_backup')
-            .insert([datosBackup])
-            .select();
+            if (fetchError) throw new Error('No se encontró la incidencia: ' + fetchError.message);
 
-        if (backupError) throw new Error('Error al crear respaldo: ' + backupError.message);
+            const { id, created_at, ...datosBackup } = incData;
+            datosBackup.incidencia_id_original = datos.id;
+            datosBackup.eliminado_por = user.id;
+            datosBackup.email_eliminador = user.email;
+            datosBackup.fecha_eliminacion = new Date().toISOString();
 
-        const { error: deleteError } = await window.supabaseClient
-            .from('registro_incidencias')
-            .delete()
-            .eq('id', datos.id)
-            .select();
+            const { error: backupError } = await window.supabaseClient
+                .from('registro_incidencias_backup')
+                .insert([datosBackup])
+                .select();
 
-        if (deleteError) throw new Error('Error al eliminar: ' + deleteError.message);
+            if (backupError) throw new Error('Error al crear respaldo: ' + backupError.message);
 
-        document.getElementById('cv_modal_confirmar_eliminacion').classList.remove('active');
-        window.incidenciaPendienteEliminacionVehiculo = null;
-        
-        await window.cargarIncidenciasVehiculo(datos.identificador, datos.tipo, datos.pagina);
-        
-        const msgEl = document.getElementById('cv_msg');
-        if (msgEl) {
-            msgEl.textContent = '✅ Incidencia eliminada y respaldada correctamente';
-            msgEl.className = 'msg success';
-            msgEl.style.display = 'block';
-            setTimeout(() => { msgEl.style.display = 'none'; }, 4000);
+            const { error: deleteError } = await window.supabaseClient
+                .from('registro_incidencias')
+                .delete()
+                .eq('id', datos.id)
+                .select();
+
+            if (deleteError) throw new Error('Error al eliminar: ' + deleteError.message);
+
+            document.getElementById('cv_modal_confirmar_eliminacion').classList.remove('active');
+            window.incidenciaPendienteEliminacionVehiculo = null;
+            await window.cargarIncidenciasVehiculo(datos.identificador, datos.tipo, datos.pagina);
+
+            const msgEl = document.getElementById('cv_msg');
+            if (msgEl) {
+                msgEl.textContent = '✅ Incidencia eliminada y respaldada correctamente';
+                msgEl.className = 'msg success';
+                msgEl.style.display = 'block';
+                setTimeout(() => { msgEl.style.display = 'none'; }, 4000);
+            }
+
+            // 🔹 LOG DE ELIMINACIÓN DE INCIDENCIA USANDO UTILS.JS
+            if (typeof window.registrarLog === 'function') {
+                window.registrarLog(
+                    'ELIMINAR_INCIDENCIA_VEHICULO',
+                    'VEHICULOS',
+                    {
+                        identificador: datos.identificador,
+                        tipo: datos.tipo,
+                        descripcion_eliminada: datos.descripcion,
+                        placa: vehiculoActual?.placa || null,
+                        estatus: vehiculoActual?.estatus || 'N/A'
+                    },
+                    datos.id
+                );
+            }
+        } catch (err) {
+            alert('❌ Error al eliminar: ' + err.message);
+        } finally {
+            btnConfirmar.disabled = false;
+            btnConfirmar.textContent = '🗑️ Sí, Eliminar y Respaldar';
         }
+    };
 
-   // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
-if (typeof window.registrarLog === 'function') {
-    window.registrarLog(
-        'ELIMINAR_INCIDENCIA_VEHICULO',
-        'VEHICULOS',
-        {
-            identificador: datos.identificador,
-            tipo: datos.tipo,
-            descripcion_eliminada: datos.descripcion,
-            placa: vehiculoActual?.placa || null,
-            estatus: vehiculoActual?.estatus || 'N/A'
-        },
-        datos.id
-    );
-}
-
-    } catch (err) {
-        alert('❌ Error al eliminar: ' + err.message);
-    } finally {
-        btnConfirmar.disabled = false;
-        btnConfirmar.textContent = '🗑️ Sí, Eliminar y Respaldar';
-    }
+    console.log("✅ Módulo consulta-vehiculos.js inicializado correctamente");
 };
 
 if (document.readyState === 'loading') {
@@ -729,5 +731,3 @@ if (document.readyState === 'loading') {
 } else {
     window.initConsultaVehiculos();
 }
-
-
