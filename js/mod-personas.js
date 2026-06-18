@@ -215,6 +215,11 @@ window.initModPersonas = function() {
     };
 
     async function ejecutarBusqueda() {
+         const { data: { session } } = await window.supabaseClient.auth.getSession();
+    if (!session) {
+        showBuscarMsg('❌ No hay sesión activa. Inicie sesión nuevamente.', 'error');
+        return;
+    }
         const cedula = buscarInput.value.trim().replace(/\D/g, '');
         if (cedula.length < 7) { showBuscarMsg('⚠️ Ingrese entre 7 y 8 dígitos', 'error'); return; }
 
@@ -309,14 +314,11 @@ if (data.estacion_policial) {
             form.style.display = 'block';
             showBuscarMsg('✅ Registro cargado. Puede editar la cédula si es necesario.', 'success');
 
-        } catch (err) {
-            console.error(err);
-            showBuscarMsg(' Error de conexión al buscar.', 'error');
-        } finally {
-            buscarBtn.disabled = false;
-        }
-    }
-
+ } catch (err) {
+    console.error('❌ Error completo:', err);
+    console.error('Mensaje:', err.message);
+    showBuscarMsg(' Error de conexión al buscar: ' + err.message, 'error');
+} finally {
     if (buscarBtn) buscarBtn.addEventListener('click', ejecutarBusqueda);
     if (buscarInput) {
         buscarInput.addEventListener('keydown', (e) => {
