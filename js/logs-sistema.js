@@ -125,15 +125,26 @@ function formatearDetalles(detalles) {
         return `Modificó a <strong>${d.nombre_completo}</strong> (C.I: ${d.cedula || 'N/A'}).<br><em>"${d.cambios_realizados}"</em>`;
     }
 
-    // ✅ Fallback genérico
-    return Object.entries(d)
-        .filter(([key]) => key !== 'estatus')
-        .map(([key, value]) => {
-            const keyLimpia = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            return `<strong>${keyLimpia}:</strong> ${value}`;
-        })
-        .join('<br>');
-}
+// ✅ Fallback genérico (FILTRANDO VALORES NULL/VACÍOS)
+const entradasFiltradas = Object.entries(d).filter(([key, value]) => {
+    // Excluir 'estatus' (ya se maneja aparte)
+    if (key === 'estatus') return false;
+    // Excluir valores null, undefined, string vacío o arrays vacíos
+    if (value === null || value === undefined || value === '') return false;
+    if (Array.isArray(value) && value.length === 0) return false;
+    return true;
+});
+
+if (entradasFiltradas.length === 0) return '<span style="color:#94a3b8;">Sin detalles adicionales</span>';
+
+return entradasFiltradas
+    .map(([key, value]) => {
+        const keyLimpia = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        // Si el valor es un objeto, mostrarlo como JSON formateado
+        const valorMostrar = typeof value === 'object' ? JSON.stringify(value) : value;
+        return `<strong>${keyLimpia}:</strong> ${valorMostrar}`;
+    })
+    .join('<br>');
 
 function obtenerValorRegistro(log) {
     // ✅ LOGIN: Mostrar "Sesión iniciada" con el nivel
