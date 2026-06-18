@@ -260,7 +260,22 @@ window.initModPersonas = function() {
             document.getElementById('p_color_ojos').value = data.color_ojos || '';
             document.getElementById('p_color_cabello').value = data.color_cabello || '';
             document.getElementById('p_complexion').value = data.complexion || '';
-            document.getElementById('p_estacion').value = data.estacion_policial || '';
+       // Asignar estación policial
+const estacionSelect = document.getElementById('p_estacion');
+if (data.estacion_policial) {
+    // Verificar si el valor existe en las opciones
+    const existe = Array.from(estacionSelect.options).some(opt => opt.value === data.estacion_policial);
+    if (!existe) {
+        // Si no existe, agregarlo como opción temporal
+        const nuevaOpcion = document.createElement('option');
+        nuevaOpcion.value = data.estacion_policial;
+        nuevaOpcion.textContent = data.estacion_policial;
+        estacionSelect.appendChild(nuevaOpcion);
+    }
+    estacionSelect.value = data.estacion_policial;
+} else {
+    estacionSelect.value = '';
+}
             document.getElementById('p_direccion_detencion').value = data.direccion_detencion || '';
             document.getElementById('p_observaciones').value = data.observaciones || '';
 
