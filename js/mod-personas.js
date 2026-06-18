@@ -267,7 +267,10 @@ window.initModPersonas = function() {
             document.getElementById('p_color_cabello').value = data.color_cabello || '';
             document.getElementById('p_complexion').value = data.complexion || '';
 
-            const estacionSelect = document.getElementById('p_estacion');
+document.getElementById('p_complexion').value = data.complexion || '';
+
+// ✅ Asignar estación policial con verificación
+const estacionSelect = document.getElementById('p_estacion');
 if (estacionSelect) {
     if (data.estacion_policial) {
         const existe = Array.from(estacionSelect.options).some(opt => opt.value === data.estacion_policial);
@@ -282,7 +285,8 @@ if (estacionSelect) {
         estacionSelect.value = '';
     }
 }
-            document.getElementById('p_direccion_detencion').value = data.direccion_detencion || '';
+
+document.getElementById('p_direccion_detencion').value = data.direccion_detencion || '';         document.getElementById('p_direccion_detencion').value = data.direccion_detencion || '';
             document.getElementById('p_observaciones').value = data.observaciones || '';
 
             if (data.tlf_pais) {
