@@ -1,43 +1,6 @@
 window.initElimVehiculos = function() {
     console.log("✅ Módulo elim-vehiculos.js cargado correctamente.");
 
-    // ==========================================
-    // ✅ NUEVO: FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO
-    // ==========================================
-    async function registrarLog(accion, modulo, detalles) {
-        try {
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            if (!user) return;
-            let nombreUsuario = user.email || 'Sistema';
-            
-            try {
-                const { data: perfil } = await window.supabaseClient
-                    .from('perfiles_usuario')
-                    .select('nombre, apellido, email')
-                    .eq('user_id', user.id)
-                    .maybeSingle();
-                if (perfil) {
-                    nombreUsuario = [perfil.nombre, perfil.apellido].filter(Boolean).join(' ').trim() || nombreUsuario;
-                }
-            } catch (err) {
-                console.warn('No se pudo obtener el perfil del usuario para el log:', err);
-            }
-
-            const logEntry = {
-                user_id: user.id,
-                user_nombre: nombreUsuario,
-                user_email: user.email || 'sistema',
-                accion: accion,
-                modulo: modulo,
-                detalles: detalles,
-                created_at: new Date().toISOString()
-            };
-            const { error } = await window.supabaseClient.from('sistema_logs').insert([logEntry]);
-            if (error) console.error('Error al registrar log:', error);
-        } catch (err) {
-            console.error('Error en registrarLog:', err);
-        }
-    }
 
     // 🔹 Referencias DOM
     const buscarInput = document.getElementById('buscar-input-elim');
@@ -502,13 +465,26 @@ window.initElimVehiculos = function() {
 
             if (error) throw error;
 
-            // ✅ NUEVO: REGISTRAR LOG DE ELIMINACIÓN
-            await registrarLog('ELIMINAR', 'VEHICULOS', {
-                placa: currentData.placa,
-                tipo: currentData.tipo_vehiculo || (currentTable === 'registro_motos' ? 'Motocicleta' : 'Automóvil'),
-                estatus: currentData.estatus || 'Eliminado',
-                accion_detalle: 'Registro eliminado y archivado como respaldo histórico'
-            });
+       // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+if (typeof window.registrarLog === 'function' && currentData?.id) {
+    await window.registrarLog(
+        'ELIMINAR',
+        'VEHICULOS',
+        {
+            placa: currentData.placa,
+            tipo: currentData.tipo_vehiculo || (currentTable === 'registro_motos' ? 'Motocicleta' : 'Automóvil'),
+            estatus: 'Eliminado',
+            estacion: currentData.estacion_policial,
+            direccion_detencion: currentData.direccion_detencion,
+            descripcion_eliminada: `Vehículo ${currentData.tipo_vehiculo || 'no especificado'} eliminado del sistema activo por ${eliminadoPor}`,
+            marca: currentData.marca,
+            modelo: currentData.modelo,
+            anio: currentData.anio
+        },
+        currentData.id
+    );
+    console.log('✅ Log de eliminación de vehículo registrado exitosamente');
+}
 
             showMsgElim('✅ Registro eliminado y archivado correctamente como respaldo histórico.', 'success');
             setTimeout(() => {
@@ -629,13 +605,25 @@ window.initElimVehiculos = function() {
 
             if (error) throw error;
 
-            // ✅ NUEVO: REGISTRAR LOG DE REINTEGRACIÓN
-            await registrarLog('REINTEGRAR', 'VEHICULOS', {
-                placa: currentData.placa,
-                tipo: currentData.tipo_vehiculo || (currentData.tabla_origen === 'registro_motos' ? 'Motocicleta' : 'Automóvil'),
-                estatus: currentData.estatus || 'Verificación',
-                accion_detalle: 'Registro reintegrado al sistema activo desde el respaldo histórico'
-            });
+      // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+if (typeof window.registrarLog === 'function' && currentData?.id) {
+    await window.registrarLog(
+        'REINTEGRAR',
+        'VEHICULOS',
+        {
+            placa: currentData.placa,
+            tipo: currentData.tipo_vehiculo || (currentData.tabla_origen === 'registro_motos' ? 'Motocicleta' : 'Automóvil'),
+            estatus: 'Reintegrado',
+            estacion: currentData.estacion_policial,
+            direccion_detencion: currentData.direccion_detencion,
+            marca: currentData.marca,
+            modelo: currentData.modelo,
+            anio: currentData.anio
+        },
+        currentData.id
+    );
+    console.log('✅ Log de reintegración de vehículo registrado exitosamente');
+}
 
             showMsgElim('✅ Registro reintegrado al sistema activo exitosamente.', 'success');
             setTimeout(() => {
