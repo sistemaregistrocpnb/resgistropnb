@@ -256,7 +256,7 @@ if (serialCarro && serialCarro.length > 0 && serialCarro.length < 5) {
                 foto_lado_izquierdo: urls.ri
             };
 
-       if (isMoto) {
+if (isMoto) {
     data.serial_motor = document.getElementById('v_serial_motor').value.trim() || null;
     data.cilindraje = document.getElementById('v_cilindraje').value || 'No especificado';
 } else {
