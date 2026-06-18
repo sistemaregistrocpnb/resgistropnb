@@ -22,14 +22,12 @@
 .input-valid { border-color: #22c55e !important; background-color: #f0fdf4; }
 .input-error { border-color: #ef4444 !important; background-color: #fef2f2; }
 
-/* 🔹 PANEL DE SELECCIÓN (CON COLORES) */
 #selection-panel { display: none; margin-top: 20px; }
 .selection-header { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
 .selection-header h4 { margin: 0 0 8px; color: #1e40af; font-size: 1.05rem; }
 .selection-header p { margin: 0; color: #1e40af; font-size: 0.9rem; }
 #selection-list { display: grid; gap: 12px; }
 
-/* Tarjetas de selección con colores */
 .selection-card {
     background: #fff;
     border: 2px solid #e2e8f0;
@@ -48,7 +46,6 @@
     transform: translateX(4px);
 }
 
-/* Colores específicos por tipo */
 .selection-card.moto {
     background: #fef2f2;
     border-color: #dc2626;
@@ -151,7 +148,6 @@
 
 .btn-cancel-search:hover { background: #475569; }
 
-/* 🔹 Dropdown Teléfono */
 .phone-dropdown-wrapper { position: relative; width: 100%; }
 .phone-options { max-height: 240px; overflow-y: auto; position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1.5px solid var(--beige-border); border-radius: 0 0 5px 5px; z-index: 20; box-shadow: 0 6px 16px rgba(0,0,0,0.12); display: none; margin-top: 2px; }
 .phone-option { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
@@ -167,7 +163,6 @@
 <div class="card">
     <h3>✏️ Modificar Vehículo</h3>
 
-    <!-- 🔍 BÚSQUEDA -->
     <div class="search-box" style="padding: 16px; background: #f8fafc; border: 1.5px dashed var(--beige-border); border-radius: 8px; margin-bottom: 20px;">
         <label style="font-weight:700; display:block; margin-bottom:8px;">Buscar por Placa, Serial de Carrocería o Motor:</label>
         <div class="search-row" style="display: flex; gap: 10px;">
@@ -178,7 +173,6 @@
         <div id="cross-plate-warning" class="msg" style="margin-top:8px; background:#fffbeb; color:#92400e; border:1px solid #fcd34d; text-align:left; display:none;"></div>
     </div>
 
-    <!-- 🔹 PANEL DE SELECCIÓN DINÁMICO -->
     <div id="selection-panel">
         <div class="selection-header">
             <h4>🔎 Múltiples coincidencias encontradas</h4>
@@ -188,7 +182,6 @@
         <button id="btn-cancel-search" class="btn-cancel-search">❌ Cancelar búsqueda</button>
     </div>
 
-    <!-- 📝 FORMULARIO -->
     <form id="form-mod-vehiculos" class="registro-form" novalidate style="display: none;">
         <input type="hidden" id="mod_id_original">
         <input type="hidden" id="mod_tipo_vehiculo">
@@ -211,7 +204,7 @@
 </div>
 </div>
 <div id="tipo-vehiculo-badge" style="display: none; padding: 10px 16px; border-radius: 6px; font-weight: 700; font-size: 0.95rem; text-align: center;">
-<!-- Se llenará dinámicamente -->
+
 </div>
 <small style="color:#64748b;">El tipo de vehículo se detecta automáticamente del registro.</small>
 </fieldset>
