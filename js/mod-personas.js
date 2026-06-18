@@ -268,19 +268,20 @@ window.initModPersonas = function() {
             document.getElementById('p_complexion').value = data.complexion || '';
 
             const estacionSelect = document.getElementById('p_estacion');
-            if (data.estacion_policial) {
-                const existe = Array.from(estacionSelect.options).some(opt => opt.value === data.estacion_policial);
-                if (!existe) {
-                    const nuevaOpcion = document.createElement('option');
-                    nuevaOpcion.value = data.estacion_policial;
-                    nuevaOpcion.textContent = data.estacion_policial;
-                    estacionSelect.appendChild(nuevaOpcion);
-                }
-                estacionSelect.value = data.estacion_policial;
-            } else {
-                estacionSelect.value = '';
-            }
-
+if (estacionSelect) {
+    if (data.estacion_policial) {
+        const existe = Array.from(estacionSelect.options).some(opt => opt.value === data.estacion_policial);
+        if (!existe) {
+            const nuevaOpcion = document.createElement('option');
+            nuevaOpcion.value = data.estacion_policial;
+            nuevaOpcion.textContent = data.estacion_policial;
+            estacionSelect.appendChild(nuevaOpcion);
+        }
+        estacionSelect.value = data.estacion_policial;
+    } else {
+        estacionSelect.value = '';
+    }
+}
             document.getElementById('p_direccion_detencion').value = data.direccion_detencion || '';
             document.getElementById('p_observaciones').value = data.observaciones || '';
 
