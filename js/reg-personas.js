@@ -327,7 +327,7 @@ window.initRegPersonas = function() {
             condicion_medica: document.getElementById('p_cond_medica')?.value === 'true' ? document.getElementById('txt_cond')?.value : null,
             consume_medicamento: document.getElementById('p_medicamento')?.value === 'true' ? document.getElementById('txt_med')?.value : null,
             problema_judicial: document.getElementById('p_judicial')?.value === 'true' ? document.getElementById('txt_jud')?.value : null,
-            observaciones: document.getElementById('p_observaciones')?.value.trim() || null
+            observaciones: document.getElementById('p_observaciones') ? document.getElementById('p_observaciones').value.trim() : null
         };
         
         const { data: insertedData, error: insertError } = await window.supabaseClient
