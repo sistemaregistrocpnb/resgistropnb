@@ -1,9 +1,6 @@
 window.initRegPersonas = function() {
     console.log("✅ Módulo reg-personas.js cargado correctamente.");
 
-    // ==========================================
-    // 🔹 1. FUNCIONES GLOBALES
-    // ==========================================
     window.toggleCampo = function(select, targetId) {
         const el = document.getElementById(targetId);
         const input = el?.querySelector('input');
@@ -37,9 +34,6 @@ window.initRegPersonas = function() {
         return null;
     };
 
-    // ==========================================
-    // 🔹 2. REFERENCIAS DEL DOM
-    // ==========================================
     const form = document.getElementById('form-reg-personas');
     const cedulaInput = document.getElementById('p_cedula');
     const cedulaStatus = document.getElementById('cedula-status');
@@ -50,9 +44,6 @@ window.initRegPersonas = function() {
     const btn = form?.querySelector('.btn-submit');
     const msg = document.getElementById('msg-reg-personas');
 
-    // ==========================================
-    // 🔹 3. DROPDOWN DE BANDERAS
-    // ==========================================
     const nativeSelect = document.getElementById('p_tlf_pais');
     const displayBox = document.querySelector('.phone-display');
     const optionsBox = document.querySelector('.phone-options');
@@ -130,9 +121,7 @@ if (flagImg) flagImg.src = 'https://flagcdn.com/w20/ve.png';
 if (codeText) codeText.textContent = '+58';
 if (countryText) countryText.textContent = 'Venezuela';
 
-    // ==========================================
-    // 🔹 4. VISTA PREVIA + EDAD + MÁSCARAS
-    // ==========================================
+
     const setupPreview = (idIn, idImg) => {
         const input = document.getElementById(idIn), preview = document.getElementById(idImg);
         if (!input || !preview) return;
@@ -164,9 +153,6 @@ if (countryText) countryText.textContent = 'Venezuela';
         estaturaInput.addEventListener('blur', window.convertirEstatura);
     }
 
-    // ==========================================
-    // 🔹 5. VALIDACIÓN DE CÉDULA
-    // ==========================================
     let cedulaCheckTimeout = null;
 
     async function verificarCedula(cedula) {
@@ -220,9 +206,7 @@ if (countryText) countryText.textContent = 'Venezuela';
         });
     }
 
-    // ==========================================
-    // 🔹 6. ENVÍO DEL FORMULARIO
-    // ==========================================
+
     const mostrarError = (t) => {
         if(msg){msg.textContent='❌ '+t; msg.className='msg error'; msg.style.display='block';}
     };
@@ -239,7 +223,6 @@ if (countryText) countryText.textContent = 'Venezuela';
     const tlfNumRaw = (document.getElementById('p_tlf_num')?.value.trim().replace(/\D/g, '') || '').slice(0, 20);
     const estCm = window.convertirEstatura();
     
-    // Validaciones
     if (cedula.length < 7 || cedula.length > 8) {
         mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
         cedulaInput?.focus();
@@ -255,7 +238,6 @@ if (countryText) countryText.textContent = 'Venezuela';
         document.getElementById('p_estatura')?.focus();
         return;
     }
-    // ✅ Teléfono ahora es completamente opcional (sin validación)
     
     if (!document.getElementById('p_direccion_detencion')?.value.trim()) {
         mostrarError('La dirección de detención es obligatoria.');
@@ -275,7 +257,7 @@ if (countryText) countryText.textContent = 'Venezuela';
     if(msg) msg.style.display='none';
     
     try {
-        // 🔹 SUBIR FOTOS
+  
         const bucket = window.supabaseClient.storage.from('fotos_personas');
         const files = {
             f: document.getElementById('foto_frontal').files[0],
@@ -299,7 +281,6 @@ if (countryText) countryText.textContent = 'Venezuela';
             d: await uploadFile(files.d, 'd')
         };
         
-        // ✅ Teléfono opcional
         const tlfCodigo = (tlfPais && tlfNumRaw.length >= 1) ? tlfPais : null;
         const tlfNumero = (tlfPais && tlfNumRaw.length >= 1) ? tlfNumRaw : null;
         
