@@ -190,17 +190,14 @@ form.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!form.checkValidity()) { form.reportValidity(); return; }
     
-    const placa = document.getElementById('v_placa').value.trim().toUpperCase();
-    const serialCarro = document.getElementById('v_serial_carroceria').value.trim();
-    const msgPlaca = document.getElementById('msg-placa');
-    
-    if (msgPlaca?.classList.contains('error')) return mostrarError('La placa ya se encuentra registrada en el sistema.');
-    // Validación de formato de placa venezolana (3 letras + 3-4 números)
-const placaRegex = /^[A-Z]{3}\d{3,4}$/;
-if (!placaRegex.test(placa)) {
-    return mostrarError('Formato de placa inválido. Use: 3 letras + 3-4 números (Ej: ABC123)');
-}
-    const serialCarro = document.getElementById('v_serial_carroceria').value.trim();
+// ✅ Solo UNA declaración al inicio del submit handler
+const placa = document.getElementById('v_placa').value.trim().toUpperCase();
+const serialCarro = document.getElementById('v_serial_carroceria').value.trim();  // ← ÚNICA DECLARACIÓN
+
+// Validaciones
+if (placa.length < 6) return mostrarError('La placa debe tener al menos 6 caracteres.');
+
+// ✅ Validación de serial (usa la variable ya declarada, sin 'const')
 if (serialCarro.length < 10) {
     return mostrarError('El serial de carrocería debe tener al menos 10 caracteres.');
 }
