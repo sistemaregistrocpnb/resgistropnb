@@ -1,5 +1,4 @@
 window.initElimPersonas = function() {
-    // 🔹 Referencias DOM
     const buscarInput = document.getElementById('buscar-cedula-elim');
     const buscarBtn = document.getElementById('btn-buscar-elim');
     const msgBuscar = document.getElementById('buscar-msg-elim');
@@ -35,8 +34,6 @@ window.initElimPersonas = function() {
         img.src = url || '';
         img.style.display = url ? 'block' : 'none';
     };
-
-    // 🔹 Mostrar datos + UI según estado
     function renderUI(data, isArchived) {
         setPhoto('elim-foto-frontal', data.foto_frontal);
         setPhoto('elim-foto-izq', data.foto_perfil_izq);
@@ -100,8 +97,7 @@ window.initElimPersonas = function() {
             btnReintegrar.style.display = 'none';
         }
     }
-
-    //  Búsqueda principal
+    
     async function buscarPersona() {
         const cedula = buscarInput.value.trim().replace(/\D/g, '');
         if (cedula.length < 7) return showMsg(msgBuscar, '️ Ingrese entre 7 y 8 dígitos', 'error');
@@ -113,7 +109,7 @@ window.initElimPersonas = function() {
         archivedNotice.style.display = 'none';
 
         try {
-            // 1. Buscar en activos
+   
             let { data: activo, error: errActivo } = await window.supabaseClient
                 .from('registro_personas')
                 .select('*')
@@ -132,7 +128,6 @@ window.initElimPersonas = function() {
                 return;
             }
 
-            // 2. Buscar en eliminados/archivados
             let { data: archivado, error: errArch } = await window.supabaseClient
                 .from('eliminados')
                 .select('*')
@@ -163,7 +158,6 @@ window.initElimPersonas = function() {
         }
     }
 
-    // 🔹 Modal
     function showModal(titulo, texto, accion, tipo) {
         pendingAction = accion;
         modalTitle.textContent = titulo;
@@ -184,7 +178,6 @@ window.initElimPersonas = function() {
         closeModal();
     }
 
-    // 🔹 Eliminar (Activa → Eliminados)
     async function eliminarRegistro() {
         btnEliminar.disabled = true;
         btnEliminar.textContent = '⏳ Procesando...';
@@ -246,7 +239,7 @@ window.initElimPersonas = function() {
 
             showMsgElim('✅ Persona eliminada del sistema activo.', 'success');
 
-            // 🔹 CREAR LOG
+
             if (typeof window.registrarLog === 'function' && currentData?.id) {
                 await window.registrarLog(
                     'ELIMINAR',
@@ -285,7 +278,6 @@ window.initElimPersonas = function() {
         }
     }
 
-    // 🔹 Reintegrar (Eliminados → Activa)
     async function reintegrarRegistro() {
         btnReintegrar.disabled = true;
         btnReintegrar.textContent = '⏳ Procesando...';
@@ -346,7 +338,6 @@ window.initElimPersonas = function() {
 
             showMsgElim('✅ Persona reintegrada al sistema activo.', 'success');
 
-            // 🔹 CREAR LOG CON EL NUEVO ID
             if (typeof window.registrarLog === 'function') {
                 await window.registrarLog(
                     'REINTEGRAR',
@@ -390,7 +381,6 @@ window.initElimPersonas = function() {
         }
     }
 
-    // 🔹 Listeners
     buscarBtn.addEventListener('click', buscarPersona);
     buscarInput.addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); buscarPersona(); }
