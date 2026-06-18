@@ -251,11 +251,7 @@ window.initRegPersonas = function() {
             document.getElementById('p_estatura')?.focus();
             return;
         }
-        if (tlfPais && tlfNumRaw.length < 1) {
-            mostrarError('Ingrese al menos un dígito para el teléfono.');
-            document.getElementById('p_tlf_num')?.focus();
-            return;
-        }
+
         if (!document.getElementById('p_direccion_detencion')?.value.trim()) {
             mostrarError('La dirección de detención es obligatoria.');
             document.getElementById('p_direccion_detencion')?.focus();
