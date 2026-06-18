@@ -49,117 +49,122 @@ window.initLogsSistema = function() {
             renderTabla();
         } catch (err) {
             console.error('Error cargando logs:', err);
-            if (tablaContainer) tablaContainer.innerHTML = '<div class="sin-logs">❌ Error al cargar logs</div>';
+            if (tablaContainer) tablaContainer.innerHTML = '<div class="sin-logs">❌ Error al cargar logs: ' + err.message + '</div>';
         }
     }
 
-    function formatearDetalles(detalles) {
-    if (!detalles) return '-';
-    let d = typeof detalles === 'string' ? JSON.parse(detalles) : detalles;
+    // 🔹 CAMBIO: Ahora recibe el log completo, no solo los detalles
+    function formatearDetalles(log) {
+        const detalles = log.detalles;
+        if (!detalles) return '-';
+        let d = typeof detalles === 'string' ? JSON.parse(detalles) : detalles;
 
-    // ✅ LOGIN
-    if (d.nivel && d.hora_inicio) {
-        return `Nivel: <strong style="color:#7e22ce;">${d.nivel.toUpperCase()}</strong><br>
-        IP: ${d.ip || 'No registrada'}<br>
-        Hora: ${new Date(d.hora_inicio).toLocaleString('es-VE')}`;
-    }
-
-    // ✅ LOGOUT
-    if (d.sesion_duracion || d.sesion_duracion_segundos !== undefined) {
-        let duracion = d.sesion_duracion;
-        if (!duracion && d.sesion_duracion_segundos) {
-            duracion = window.formatearDuracion ? window.formatearDuracion(d.sesion_duracion_segundos) : d.sesion_duracion_segundos + 's';
+        // ✅ LOGIN
+        if (d.nivel && d.hora_inicio) {
+            return `Nivel: <strong style="color:#7e22ce;">${d.nivel.toUpperCase()}</strong><br>
+            IP: ${d.ip || 'No registrada'}<br>
+            Hora: ${new Date(d.hora_inicio).toLocaleString('es-VE')}`;
         }
-        return `Duración de sesión: <strong style="color:var(--primary); font-size:1.1rem;">${duracion || 'No registrada'}</strong><br>
-        IP: ${d.ip || 'No registrada'}<br>
-        Cierre: ${d.hora_cierre ? new Date(d.hora_cierre).toLocaleString('es-VE') : 'No registrado'}`;
-    }
 
-    // ✅ CONSULTA DE PERSONA/VINCULADO
-    if (d.valor_buscado && d.nombre_completo) {
-        const tipoTexto = d.tipo === 'Vinculado' ? ' (Vinculado)' : '';
-        const placaTexto = d.placa ? `<br>Placa: <strong style="color:var(--primary);">${d.placa}</strong>` : '';
-        return `Consultó Cédula${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.valor_buscado}</strong><br>
-        Nombre: <strong>${d.nombre_completo}</strong>${placaTexto}<br>
-        Estatus: <span style="color:#64748b;">${d.estatus || 'N/A'}</span>`;
-    }
-
-    // ✅ CONSULTA SIN NOMBRE
-    if (d.valor_buscado && !d.tipo_busqueda) {
-        const tipoTexto = d.tipo === 'Vinculado' ? ' (Vinculado)' : '';
-        return `Consultó Cédula${tipoTexto}: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span>`;
-    }
-
-    // ✅ CREAR INCIDENCIA
-    if (d.cedula && d.descripcion && !d.descripcion_eliminada) {
-        return `Cédula: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>
-        Nombre: <strong>${d.nombre_completo || 'No disponible'}</strong><br>
-        Tipo: <span style="color:#64748b;">${d.tipo || 'Persona'}</span><br>
-        Descripción: <em>"${d.descripcion}"</em>`;
-    }
-
-    // ✅ ELIMINAR INCIDENCIA
-    if (d.cedula && d.descripcion_eliminada && d.nombre_completo) {
-        return `Cédula: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>
-        Nombre: <strong>${d.nombre_completo}</strong><br>
-        Tipo: <span style="color:#64748b;">${d.tipo || 'Persona'}</span><br>
-        Incidencia eliminada: <em>"${d.descripcion_eliminada}"</em>`;
-    }
-
-    // ✅ REGISTRO VEHÍCULO
-    if (d.placa && d.marca && d.modelo) {
-        const tipoTexto = d.tipo === 'Motocicleta' ? '🏍️ Motocicleta' : ' Automóvil';
-        return `Registró ${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.placa}</strong><br>
-        <span style="color:#64748b;">${d.marca} ${d.modelo} (${d.anio}) - ${d.color}</span>`;
-    }
-
-    // ✅ ELIMINACIÓN DE PERSONA
-    if (d.cedula && d.nombre_completo && d.descripcion_eliminada && !d.tipo) {
-        return `Eliminó a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre_completo}).<br><em>"${d.descripcion_eliminada}"</em>`;
-    }
-
-    // ✅ REINTEGRACIÓN DE PERSONA
-    if (d.cedula && d.estatus && d.estatus.toLowerCase().includes('reintegrad')) {
-        return `Reintegró a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre_completo || 'Nombre no disponible'}) al sistema activo.`;
-    }
-
-    // ✅ MODIFICACIÓN
-    if (d.cambios_realizados && d.nombre_completo) {
-        return `Modificó a <strong>${d.nombre_completo}</strong> (C.I: ${d.cedula || 'N/A'}).<br><em>"${d.cambios_realizados}"</em>`;
-    }
-
-    // ✅ CREAR PERSONA - Mostrar cédula, nombre, estación y dirección
-    if (log.accion === 'CREAR' && log.modulo === 'PERSONAS' && d.cedula) {
-        let html = `Cédula: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>`;
-        html += `Nombre: <strong>${d.nombre_completo || 'No disponible'}</strong><br>`;
-        html += `Estatus: <span style="color:#64748b;">${d.estatus || 'N/A'}</span><br>`;
-        if (d.estacion) {
-            html += `Estación: <strong style="color:#059669;">${d.estacion}</strong><br>`;
+        // ✅ LOGOUT
+        if (d.sesion_duracion || d.sesion_duracion_segundos !== undefined) {
+            let duracion = d.sesion_duracion;
+            if (!duracion && d.sesion_duracion_segundos) {
+                duracion = window.formatearDuracion ? window.formatearDuracion(d.sesion_duracion_segundos) : d.sesion_duracion_segundos + 's';
+            }
+            return `Duración de sesión: <strong style="color:var(--primary); font-size:1.1rem;">${duracion || 'No registrada'}</strong><br>
+            IP: ${d.ip || 'No registrada'}<br>
+            Cierre: ${d.hora_cierre ? new Date(d.hora_cierre).toLocaleString('es-VE') : 'No registrado'}`;
         }
-        if (d.direccion_detencion) {
-            html += `Dirección de detención: <em>${d.direccion_detencion}</em>`;
+
+        // ✅ CONSULTA DE PERSONA/VINCULADO
+        if (d.valor_buscado && d.nombre_completo) {
+            const tipoTexto = d.tipo === 'Vinculado' ? ' (Vinculado)' : '';
+            const placaTexto = d.placa ? `<br>Placa: <strong style="color:var(--primary);">${d.placa}</strong>` : '';
+            return `Consultó Cédula${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.valor_buscado}</strong><br>
+            Nombre: <strong>${d.nombre_completo}</strong>${placaTexto}<br>
+            Estatus: <span style="color:#64748b;">${d.estatus || 'N/A'}</span>`;
         }
-        return html;
+
+        // ✅ CONSULTA SIN NOMBRE
+        if (d.valor_buscado && !d.tipo_busqueda) {
+            const tipoTexto = d.tipo === 'Vinculado' ? ' (Vinculado)' : '';
+            return `Consultó Cédula${tipoTexto}: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span>`;
+        }
+
+        // ✅ CREAR INCIDENCIA
+        if (d.cedula && d.descripcion && !d.descripcion_eliminada) {
+            return `Cédula: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>
+            Nombre: <strong>${d.nombre_completo || 'No disponible'}</strong><br>
+            Tipo: <span style="color:#64748b;">${d.tipo || 'Persona'}</span><br>
+            Descripción: <em>"${d.descripcion}"</em>`;
+        }
+
+        // ✅ ELIMINAR INCIDENCIA
+        if (d.cedula && d.descripcion_eliminada && d.nombre_completo) {
+            return `Cédula: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>
+            Nombre: <strong>${d.nombre_completo}</strong><br>
+            Tipo: <span style="color:#64748b;">${d.tipo || 'Persona'}</span><br>
+            Incidencia eliminada: <em>"${d.descripcion_eliminada}"</em>`;
+        }
+
+        // ✅ REGISTRO VEHÍCULO
+        if (d.placa && d.marca && d.modelo) {
+            const tipoTexto = d.tipo === 'Motocicleta' ? '🏍️ Motocicleta' : '🚙 Automóvil';
+            return `Registró ${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.placa}</strong><br>
+            <span style="color:#64748b;">${d.marca} ${d.modelo} (${d.anio}) - ${d.color}</span><br>
+            Estación: <strong style="color:#059669;">${d.estacion || 'No especificada'}</strong>`;
+        }
+
+        // ✅ ELIMINACIÓN DE PERSONA
+        if (d.cedula && d.nombre_completo && d.descripcion_eliminada && !d.tipo) {
+            return `Eliminó a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre_completo}).<br><em>"${d.descripcion_eliminada}"</em>`;
+        }
+
+        // ✅ REINTEGRACIÓN DE PERSONA
+        if (d.cedula && d.estatus && d.estatus.toLowerCase().includes('reintegrad')) {
+            return `Reintegró a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre_completo || 'Nombre no disponible'}) al sistema activo.`;
+        }
+
+        // ✅ MODIFICACIÓN
+        if (d.cambios_realizados && d.nombre_completo) {
+            return `Modificó a <strong>${d.nombre_completo}</strong> (C.I: ${d.cedula || 'N/A'}).<br><em>"${d.cambios_realizados}"</em>`;
+        }
+
+        // ✅ CREAR PERSONA - Mostrar cédula, nombre, estación y dirección
+        // 🔹 CORRECCIÓN: Ahora usa log.accion y log.modulo correctamente
+        if (log.accion === 'CREAR' && log.modulo === 'PERSONAS' && d.cedula) {
+            let html = `Cédula: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>`;
+            html += `Nombre: <strong>${d.nombre_completo || 'No disponible'}</strong><br>`;
+            html += `Estatus: <span style="color:#64748b;">${d.estatus || 'N/A'}</span><br>`;
+            if (d.estacion) {
+                html += `Estación: <strong style="color:#059669;">${d.estacion}</strong><br>`;
+            }
+            if (d.direccion_detencion) {
+                html += `Dirección de detención: <em>${d.direccion_detencion}</em>`;
+            }
+            return html;
+        }
+
+        // ✅ Fallback genérico (FILTRANDO VALORES NULL/VACÍOS)
+        const entradasFiltradas = Object.entries(d).filter(([key, value]) => {
+            if (key === 'estatus') return false;
+            if (value === null || value === undefined || value === '') return false;
+            if (Array.isArray(value) && value.length === 0) return false;
+            return true;
+        });
+
+        if (entradasFiltradas.length === 0) return '<span style="color:#94a3b8;">Sin detalles adicionales</span>';
+
+        return entradasFiltradas
+            .map(([key, value]) => {
+                const keyLimpia = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                const valorMostrar = typeof value === 'object' ? JSON.stringify(value) : value;
+                return `<strong>${keyLimpia}:</strong> ${valorMostrar}`;
+            })
+            .join('<br>');
     }
 
-    // ✅ Fallback genérico (FILTRANDO VALORES NULL/VACÍOS)
-    const entradasFiltradas = Object.entries(d).filter(([key, value]) => {
-        if (key === 'estatus') return false;
-        if (value === null || value === undefined || value === '') return false;
-        if (Array.isArray(value) && value.length === 0) return false;
-        return true;
-    });
-
-    if (entradasFiltradas.length === 0) return '<span style="color:#94a3b8;">Sin detalles adicionales</span>';
-
-    return entradasFiltradas
-        .map(([key, value]) => {
-            const keyLimpia = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            const valorMostrar = typeof value === 'object' ? JSON.stringify(value) : value;
-            return `<strong>${keyLimpia}:</strong> ${valorMostrar}`;
-        })
-        .join('<br>');
-}
     function obtenerValorRegistro(log) {
         // ✅ LOGIN
         if (log.accion === 'LOGIN') {
@@ -278,7 +283,8 @@ window.initLogsSistema = function() {
             const fecha = new Date(log.created_at).toLocaleString('es-VE');
             const usuario = log.user_nombre || 'Sistema';
             const registroDisplay = obtenerValorRegistro(log);
-            const detallesDisplay = formatearDetalles(log.detalles);
+            // 🔹 CAMBIO: Ahora pasamos el log completo, no solo log.detalles
+            const detallesDisplay = formatearDetalles(log);
 
             html += `
             <tr>
