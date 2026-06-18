@@ -267,7 +267,6 @@ window.initModPersonas = function() {
             document.getElementById('p_color_cabello').value = data.color_cabello || '';
             document.getElementById('p_complexion').value = data.complexion || '';
 
-// ✅ Asignar estación policial con verificación
 const estacionSelect = document.getElementById('p_estacion');
 if (estacionSelect) {
     if (data.estacion_policial) {
@@ -325,7 +324,6 @@ document.getElementById('p_direccion_detencion').value = data.direccion_detencio
         }
     }
 
-    // ✅ EVENT LISTENERS FUERA DE LA FUNCIÓN
     if (buscarBtn) buscarBtn.addEventListener('click', ejecutarBusqueda);
     if (buscarInput) {
         buscarInput.addEventListener('keydown', (e) => {
