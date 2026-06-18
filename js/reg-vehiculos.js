@@ -195,7 +195,15 @@ form.addEventListener('submit', async (e) => {
     const msgPlaca = document.getElementById('msg-placa');
     
     if (msgPlaca?.classList.contains('error')) return mostrarError('La placa ya se encuentra registrada en el sistema.');
-    if (placa.length < 6) return mostrarError('La placa debe tener al menos 6 caracteres.');
+    // Validación de formato de placa venezolana (3 letras + 3-4 números)
+const placaRegex = /^[A-Z]{3}\d{3,4}$/;
+if (!placaRegex.test(placa)) {
+    return mostrarError('Formato de placa inválido. Use: 3 letras + 3-4 números (Ej: ABC123)');
+}
+    const serialCarro = document.getElementById('v_serial_carroceria').value.trim();
+if (serialCarro.length < 10) {
+    return mostrarError('El serial de carrocería debe tener al menos 10 caracteres.');
+}
     
     btn.disabled = true;
     btn.textContent = '⏳ Guardando...';
@@ -258,9 +266,8 @@ form.addEventListener('submit', async (e) => {
     .maybeSingle();
 if (error) throw error;
         
-// 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
 if (typeof window.registrarLog === 'function' && insertedData?.id) {
-    window.registrarLog(
+    await window.registrarLog(
         'CREAR',
         'VEHICULOS',
         {
@@ -276,8 +283,8 @@ if (typeof window.registrarLog === 'function' && insertedData?.id) {
         },
         insertedData.id
     );
-}
-        
+    console.log('✅ Log de registro de vehículo registrado exitosamente');
+}    
         // ✅ MOSTRAR MENSAJE DE ÉXITO
         msg.textContent = '✅ Vehículo registrado exitosamente.';
         msg.className = 'msg success';
@@ -290,17 +297,24 @@ if (typeof window.registrarLog === 'function' && insertedData?.id) {
         
         setTimeout(() => { msg.style.display = 'none'; }, 4000);
         
-    } catch (err) {
-        console.error('Error:', err);
-        let mensaje = 'Error inesperado. Intente nuevamente.';
-        if (err.message.includes('23505') || err.message.includes('unique')) {
-            mensaje = '❌ Esta placa o serial ya se encuentra registrada en el sistema.';
-        } else if (err.message.includes('storage')) {
-            mensaje = '❌ Error subiendo fotografías.';
-        } else if (err.message.includes('Falta la fotografía')) {
-            mensaje = '⚠️ ' + err.message;
-        }
-        mostrarError(mensaje);
+ catch (err) {
+    console.error('Error:', err);
+    let mensaje = 'Error inesperado. Intente nuevamente.';
+    
+    if (err.message.includes('23505') || err.message.includes('unique')) {
+        mensaje = '❌ Esta placa o serial ya se encuentra registrada en el sistema.';
+    } else if (err.message.includes('storage')) {
+        mensaje = '❌ Error subiendo fotografías. Verifique el tamaño y formato de las imágenes.';
+    } else if (err.message.includes('Falta la fotografía')) {
+        mensaje = '⚠️ ' + err.message;
+    } else if (err.message.includes('null value in column')) {
+        mensaje = ' Faltan campos obligatorios. Verifique que todos los campos requeridos estén completos.';
+    } else if (err.message.includes('too long')) {
+        mensaje = '❌ Algún campo excede la longitud máxima permitida.';
+    }
+    
+    mostrarError(mensaje);
+}
     } finally {
         btn.disabled = false;
         btn.textContent = '✅ Registrar Vehículo';
