@@ -215,11 +215,12 @@ window.initModPersonas = function() {
     };
 
     async function ejecutarBusqueda() {
-         const { data: { session } } = await window.supabaseClient.auth.getSession();
-    if (!session) {
-        showBuscarMsg('❌ No hay sesión activa. Inicie sesión nuevamente.', 'error');
-        return;
-    }
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        if (!session) {
+            showBuscarMsg('❌ No hay sesión activa. Inicie sesión nuevamente.', 'error');
+            return;
+        }
+
         const cedula = buscarInput.value.trim().replace(/\D/g, '');
         if (cedula.length < 7) { showBuscarMsg('⚠️ Ingrese entre 7 y 8 dígitos', 'error'); return; }
 
@@ -265,22 +266,21 @@ window.initModPersonas = function() {
             document.getElementById('p_color_ojos').value = data.color_ojos || '';
             document.getElementById('p_color_cabello').value = data.color_cabello || '';
             document.getElementById('p_complexion').value = data.complexion || '';
-       // Asignar estación policial
-const estacionSelect = document.getElementById('p_estacion');
-if (data.estacion_policial) {
-    // Verificar si el valor existe en las opciones
-    const existe = Array.from(estacionSelect.options).some(opt => opt.value === data.estacion_policial);
-    if (!existe) {
-        // Si no existe, agregarlo como opción temporal
-        const nuevaOpcion = document.createElement('option');
-        nuevaOpcion.value = data.estacion_policial;
-        nuevaOpcion.textContent = data.estacion_policial;
-        estacionSelect.appendChild(nuevaOpcion);
-    }
-    estacionSelect.value = data.estacion_policial;
-} else {
-    estacionSelect.value = '';
-}
+
+            const estacionSelect = document.getElementById('p_estacion');
+            if (data.estacion_policial) {
+                const existe = Array.from(estacionSelect.options).some(opt => opt.value === data.estacion_policial);
+                if (!existe) {
+                    const nuevaOpcion = document.createElement('option');
+                    nuevaOpcion.value = data.estacion_policial;
+                    nuevaOpcion.textContent = data.estacion_policial;
+                    estacionSelect.appendChild(nuevaOpcion);
+                }
+                estacionSelect.value = data.estacion_policial;
+            } else {
+                estacionSelect.value = '';
+            }
+
             document.getElementById('p_direccion_detencion').value = data.direccion_detencion || '';
             document.getElementById('p_observaciones').value = data.observaciones || '';
 
@@ -314,11 +314,16 @@ if (data.estacion_policial) {
             form.style.display = 'block';
             showBuscarMsg('✅ Registro cargado. Puede editar la cédula si es necesario.', 'success');
 
- } catch (err) {
-    console.error('❌ Error completo:', err);
-    console.error('Mensaje:', err.message);
-    showBuscarMsg(' Error de conexión al buscar: ' + err.message, 'error');
-} finally {
+        } catch (err) {
+            console.error('❌ Error completo:', err);
+            console.error('Mensaje:', err.message);
+            showBuscarMsg('❌ Error de conexión al buscar: ' + err.message, 'error');
+        } finally {
+            buscarBtn.disabled = false;
+        }
+    }
+
+    // ✅ EVENT LISTENERS FUERA DE LA FUNCIÓN
     if (buscarBtn) buscarBtn.addEventListener('click', ejecutarBusqueda);
     if (buscarInput) {
         buscarInput.addEventListener('keydown', (e) => {
@@ -461,22 +466,24 @@ if (data.estacion_policial) {
                     setTimeout(() => msgForm.style.display = 'none', 5000);
                 }
                 
-if (typeof window.registrarLog === 'function' && currentId) {
-    await window.registrarLog(
-        'MODIFICAR',
-        'PERSONAS',
-        {
-            cedula: nuevaCedula,
-            nombre_completo: `${updateData.primer_nombre} ${updateData.primer_apellido}`.trim(),
-            estatus: 'Verificación',
-            estacion: updateData.estacion_policial,
-            direccion_detencion: updateData.direccion_detencion,
-            cambios_realizados: 'Actualización de datos'
-        },
-        currentId
-    );
-    console.log('✅ Log de modificación registrado exitosamente');
-}           setTimeout(() => {
+                if (typeof window.registrarLog === 'function' && currentId) {
+                    await window.registrarLog(
+                        'MODIFICAR',
+                        'PERSONAS',
+                        {
+                            cedula: nuevaCedula,
+                            nombre_completo: `${updateData.primer_nombre} ${updateData.primer_apellido}`.trim(),
+                            estatus: 'Verificación',
+                            estacion: updateData.estacion_policial,
+                            direccion_detencion: updateData.direccion_detencion,
+                            cambios_realizados: 'Actualización de datos'
+                        },
+                        currentId
+                    );
+                    console.log('✅ Log de modificación registrado exitosamente');
+                }
+
+                setTimeout(() => {
                     form.style.display = 'none';
                     buscarInput.value = '';
                     msgBuscar.style.display = 'none';
