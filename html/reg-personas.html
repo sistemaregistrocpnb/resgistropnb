@@ -75,7 +75,7 @@
     <!-- 🔹 Fila Superior -->
     <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
         <div class="form-group"><label>Primer Nombre</label><input type="text" id="p_nombre1" required></div>
-        <div class="form-group"><label>Segundo Nombre</label><input type="text" id="p_nombre2"></div>
+        <div class="form-group"><label>Segundo Nombre<span style="color:#64748b; font-weight:400;">(dejar en blanco si no posee)</span></label><input type="text" id="p_nombre2"></div>
         <div class="form-group"><label>Primer Apellido</label><input type="text" id="p_apellido1" required></div>
         <div class="form-group"><label>Segundo Apellido</label><input type="text" id="p_apellido2"></div>
         <div class="form-group">
@@ -83,14 +83,14 @@
             <input type="text" id="p_cedula" maxlength="8" placeholder="Ej: 12345678" required>
             <div id="cedula-status" class="cedula-status"></div>
         </div>
-        <div class="form-group"><label>Apodo</label><input type="text" id="p_apodo"></div>
+        <div class="form-group"><label>Apodo<span style="color:#64748b; font-weight:400;">(Opcional)</span></label><input type="text" id="p_apodo"></div>
     </div>
 
     <!-- 🔹 Fila Inferior -->
     <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: 14px;">
         <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" id="p_fecha_nac" required></div>
         <div class="form-group"><label>Edad (Auto)</label><input type="number" id="p_edad" readonly required></div>
-        <div class="form-group"><label>Marca Corporal</label><input type="text" id="p_marca"></div>
+        <div class="form-group"><label>Marca Corporal<span style="color:#64748b; font-weight:400;">(Opcional)</span></label><input type="text" id="p_marca"></div>
         <div class="form-group">
             <label>Nacionalidad</label>
             <select id="p_nacionalidad" required>
@@ -224,7 +224,7 @@
       <fieldset>
     <legend> Observaciones Adicionales</legend>
     <div class="form-group">
-        <label>Notas o detalles extra</label>
+        <label>Notas o detalles extra<span style="color:#64748b; font-weight:400;">(Opcional)</span></label>
         <textarea id="p_observaciones" rows="3" placeholder="Escriba aquí cualquier observación adicional..." style="width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; resize: vertical;"></textarea>
     </div>
 </fieldset>
