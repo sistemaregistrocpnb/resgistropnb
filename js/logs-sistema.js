@@ -131,20 +131,7 @@ window.initLogsSistema = function() {
             return `Modificó a <strong>${d.nombre_completo}</strong> (C.I: ${d.cedula || 'N/A'}).<br><em>"${d.cambios_realizados}"</em>`;
         }
 
-        // ✅ CREAR PERSONA - Mostrar cédula, nombre, estación y dirección
-        // 🔹 CORRECCIÓN: Ahora usa log.accion y log.modulo correctamente
-        if (log.accion === 'CREAR' && log.modulo === 'PERSONAS' && d.cedula) {
-            let html = `Cédula: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>`;
-            html += `Nombre: <strong>${d.nombre_completo || 'No disponible'}</strong><br>`;
-            html += `Estatus: <span style="color:#64748b;">${d.estatus || 'N/A'}</span><br>`;
-            if (d.estacion) {
-                html += `Estación: <strong style="color:#059669;">${d.estacion}</strong><br>`;
-            }
-            if (d.direccion_detencion) {
-                html += `Dirección de detención: <em>${d.direccion_detencion}</em>`;
-            }
-            return html;
-        }
+ if (log.accion === 'CREAR' && log.modulo === 'PERSONAS' && d.cedula) {
 
         // ✅ Fallback genérico (FILTRANDO VALORES NULL/VACÍOS)
         const entradasFiltradas = Object.entries(d).filter(([key, value]) => {
