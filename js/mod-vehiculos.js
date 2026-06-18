@@ -630,7 +630,6 @@ window.initModVehiculos = function() {
         const color = document.getElementById('m_color').value;
         
         if (!placa) return mostrarMsg(msgBox, 'La placa es obligatoria.', 'error');
-        if (!serialCarro) return mostrarMsg(msgBox, 'El serial de carrocería es obligatorio.', 'error');
         if (!color) return mostrarMsg(msgBox, 'Seleccione un color.', 'error');
         
         const btnSubmit = form.querySelector('.btn-submit');
@@ -690,7 +689,7 @@ window.initModVehiculos = function() {
             
 // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
 if (typeof window.registrarLog === 'function' && currentData?.id) {
-    window.registrarLog(
+    await window.registrarLog(
         'MODIFICAR',
         'VEHICULOS',
         {
@@ -703,11 +702,13 @@ if (typeof window.registrarLog === 'function' && currentData?.id) {
             estatus: 'Verificación',
             estacion: updateData.estacion_policial,
             direccion_detencion: updateData.direccion_detencion,
-            cambios_realizados: 'Datos del vehículo actualizados'
+            cambios_realizados: `Datos del vehículo actualizados. Serial Carrocería: ${updateData.serial_carroceria || 'N/A'}, Serial Motor: ${updateData.serial_motor || 'N/A'}`,
+            tipo_vehiculo: tipo === 'moto' ? 'Motocicleta' : 'Automóvil'
         },
         currentData.id
     );
-}         
+    console.log('✅ Log de modificación de vehículo registrado exitosamente');
+}        
             mostrarMsg(msgBox, '✅ Vehículo actualizado correctamente.', 'success');
             setTimeout(() => {
                 form.style.display = 'none';
