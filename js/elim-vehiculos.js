@@ -465,24 +465,20 @@ window.initElimVehiculos = function() {
 
             if (error) throw error;
 
-       // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
 if (typeof window.registrarLog === 'function' && currentData?.id) {
     await window.registrarLog(
         'ELIMINAR',
-        'VEHICULOS',
+        'PERSONAS',
         {
-            placa: currentData.placa,
-            tipo: currentData.tipo_vehiculo || (currentTable === 'registro_motos' ? 'Motocicleta' : 'Automóvil'),
+            cedula: currentData.cedula,
+            nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
             estatus: 'Eliminado',
             estacion: currentData.estacion_policial,
-            direccion_detencion: currentData.direccion_detencion,
-            descripcion_eliminada: `Vehículo ${currentData.tipo_vehiculo || 'no especificado'} eliminado del sistema activo por ${eliminadoPor}`,
-            marca: currentData.marca,
-            modelo: currentData.modelo,
-            anio: currentData.anio
+            tipo: 'Persona'
         },
         currentData.id
     );
+}
     console.log('✅ Log de eliminación de vehículo registrado exitosamente');
 }
 
@@ -605,23 +601,20 @@ if (typeof window.registrarLog === 'function' && currentData?.id) {
 
             if (error) throw error;
 
-      // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
 if (typeof window.registrarLog === 'function' && currentData?.id) {
     await window.registrarLog(
         'REINTEGRAR',
-        'VEHICULOS',
+        'PERSONAS',
         {
-            placa: currentData.placa,
-            tipo: currentData.tipo_vehiculo || (currentData.tabla_origen === 'registro_motos' ? 'Motocicleta' : 'Automóvil'),
+            cedula: currentData.cedula,
+            nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
             estatus: 'Reintegrado',
             estacion: currentData.estacion_policial,
-            direccion_detencion: currentData.direccion_detencion,
-            marca: currentData.marca,
-            modelo: currentData.modelo,
-            anio: currentData.anio
+            tipo: 'Persona'
         },
         currentData.id
     );
+}
     console.log('✅ Log de reintegración de vehículo registrado exitosamente');
 }
 
