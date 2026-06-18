@@ -445,8 +445,7 @@ window.initModPersonas = function() {
                 }
                 
 if (typeof window.registrarLog === 'function' && currentId) {
-    
-    window.registrarLog(
+    await window.registrarLog(
         'MODIFICAR',
         'PERSONAS',
         {
@@ -459,9 +458,8 @@ if (typeof window.registrarLog === 'function' && currentId) {
         },
         currentId
     );
-    console.log('✅ Solicitud de log de modificación enviada a utils.js');
-}
-                setTimeout(() => {
+    console.log('✅ Log de modificación registrado exitosamente');
+}           setTimeout(() => {
                     form.style.display = 'none';
                     buscarInput.value = '';
                     msgBuscar.style.display = 'none';
