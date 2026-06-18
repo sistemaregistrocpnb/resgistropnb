@@ -301,7 +301,7 @@ window.initRegPersonas = function() {
         
         const data = {
             estatus: 'Verificación',
-            estacion_policial: document.getElementById('p_estacion')?.value || null,
+            estacion_policial: document.getElementById('v_estacion')?.value || null,
             direccion_detencion: document.getElementById('p_direccion_detencion')?.value.trim() || null,
             foto_frontal: urls.f, foto_perfil_izq: urls.i, foto_perfil_der: urls.d,
             primer_nombre: document.getElementById('p_nombre1')?.value.trim(),
