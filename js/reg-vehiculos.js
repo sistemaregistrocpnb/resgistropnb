@@ -1,7 +1,6 @@
  window.initRegVehiculos = function() {
     console.log("✅ Módulo reg-vehiculos.js cargado correctamente.");
 
-    // 🔹 LISTAS COMPLETAS DE MARCAS Y MODELOS PARA MOTOCICLETAS
     const marcasModelosMoto = {
         "Empire Keeway": ["Matrix Lite", "Matrix II 150", "EK Xpress Lite", "QJ Fort", "Horse (EK Horse 2 SE)", "EK Arsen II 200", "EK Atlas", "EK Atlas HD/HDS 200", "Owen 200", "Thunder EK", "TX II 150", "TX 250GS", "QJ Motor SRT 550", "QJ Motor SRT 550X", "QJ Motor SRT 700S", "QJ Motor SRT 700SX", "Superlight 200S", "V302C"],
         "Bera Motorcycles": ["Bera BWS", "Milán", "Runner", "SBR", "X1", "BRF", "León", "BR200 / DT", "Cobra", "Kavak", "BRZ", "GR", "Antiking", "Carguero"],
@@ -23,7 +22,6 @@
         "Otra": ["Otra (Especificar en observaciones)"]
     };
 
-    // 🔹 LISTAS COMPLETAS DE MARCAS Y MODELOS PARA AUTOMÓVILES
     const marcasModelosAuto = {
         "JAC Motors": ["Arena / Arena Sport (Sedán)", "Aventura / Aventura Pro (JS3)", "Nevado / Nevado Sport Wagon (JS4)", "Tepuy / Tepuy Pro (JS6)", "Savanna / Savanna Pro Sport (JS8)", "La Venezolana (T6 - Pick-up 4x2 y 4x4)", "La Venezolana Pro (T8 - Pick-up 4x4)", "T9 (Pick-up)", "J7 / J7 Elite Pro", "Refine (Mini-van / MPV)", "Sunray (Vans de carga y pasajeros)", "Bachaco (Camión de carga)", "Búfalo (Camión de carga)", "Leyenda (Camión de carga)"],
         "Toyota": ["Agya", "Yaris / Yaris Cross", "Corolla / Corolla Cross", "Camry", "Prius", "Hilux", "Land Cruiser (Serie 70 / Machito)", "Land Cruiser Prado", "Land Cruiser (Serie 200 / Serie 300)", "Fortuner", "4Runner", "RAV4", "Sequoia", "Tundra", "Tacoma", "Hiace", "Coaster", "Terios (Histórico / Daihatsu)", "Starlet (Histórico)", "Celica (Histórico)", "Merú (Histórico)", "Aygo X", "Aqua", "Avanza", "Rush", "Raize", "Yaris Heykers", "Corolla Hatchback / Corolla Touring Sports", "GR Yaris", "GR Corolla", "GR86", "GR Supra", "Avalon", "Century", "Crown / Crown Signia", "Mirai", "bZ4X / bZ3", "Urban Cruiser", "C-HR", "Harrier", "Highlander / Grand Highlander", "Venza", "Sienna", "Alphard / Vellfire", "Innova", "Roomy", "Sienta", "Voxy", "Noah", "Probox", "LiteAce / TownAce", "Hilux Champ / Rangga", "Proace / Proace City / Proace Max"],
@@ -50,7 +48,6 @@
         "Otra": ["Otra (Especificar en observaciones)"]
     };
 
-    // 🔹 Referencias DOM
     const marcaSelect = document.getElementById('v_marca');
     const modeloSelect = document.getElementById('v_modelo');
     const anioSelect = document.getElementById('v_anio');
@@ -64,7 +61,6 @@
         for (let y = currentYear; y >= 1850; y--) anioSelect.innerHTML += `<option value="${y}">${y}</option>`;
     }
 
-    // 🔹 2. Lógica de Marcas/Modelos
     function cargarMarcas(tipo) {
         const lista = tipo === 'moto' ? marcasModelosMoto : marcasModelosAuto;
         marcaSelect.innerHTML = '<option value="">Seleccione marca...</option>';
@@ -80,7 +76,6 @@
         if (lista[marca]) lista[marca].forEach(mod => modeloSelect.innerHTML += `<option value="${mod}">${mod}</option>`);
     });
 
-    // 🔹 3. Selector de Tipo (Moto/Auto)
     window.selectVehicleType = function(type) {
         document.querySelectorAll('.tipo-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
         document.getElementById('v_tipo').value = (type === 'moto') ? 'Motocicleta' : 'Automóvil';
@@ -96,7 +91,6 @@
         resetValidation();
     };
 
-    // 🔹 4. Vista Previa de Imágenes
     const setupPreview = (inputId, previewId) => {
         const input = document.getElementById(inputId);
         const preview = document.getElementById(previewId);
@@ -117,7 +111,6 @@
         setupPreview(id, id.replace('v_foto_', 'prev_v_'));
     });
 
-    // 🔹 5. VALIDACIÓN EN TIEMPO REAL
     function debounce(func, wait) {
         let timeout;
         return function(...args) {
@@ -174,7 +167,6 @@
     document.getElementById('v_serial_carroceria')?.addEventListener('input', validateCarro);
     document.getElementById('v_serial_motor')?.addEventListener('input', validateMotor);
 
-    // 🔹 6. FUNCIÓN DE LIMPIEZA COMPLETA
     function resetValidation() {
         document.querySelectorAll('.registro-form input').forEach(i => i.classList.remove('input-valid', 'input-error'));
         ['msg-placa', 'msg-carroceria', 'msg-motor'].forEach(id => {
@@ -191,7 +183,6 @@
         }
     }
 
-    // 🔹 7. Envío del Formulario
     if (!form || !btn) return console.error('❌ Formulario no encontrado');
 
     form.addEventListener('submit', async (e) => {
@@ -204,7 +195,7 @@
 
         if (msgPlaca?.classList.contains('error')) return mostrarError('La placa ya se encuentra registrada en el sistema.');
         if (placa.length < 6) return mostrarError('La placa debe tener al menos 6 caracteres.');
-        // ✅ Serial de carrocería ahora es opcional
+
 if (serialCarro && serialCarro.length > 0 && serialCarro.length < 5) {
     return mostrarError('El serial de carrocería debe tener al menos 5 caracteres si se ingresa.');
 }
@@ -271,7 +262,6 @@ if (isMoto) {
 
             if (error) throw error;
 
-            // 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
             if (typeof window.registrarLog === 'function' && insertedData?.id) {
                 await window.registrarLog(
                     'CREAR',
@@ -292,12 +282,10 @@ if (isMoto) {
                 console.log('✅ Log de registro de vehículo registrado exitosamente');
             }
 
-            // ✅ MOSTRAR MENSAJE DE ÉXITO
             msg.textContent = '✅ Vehículo registrado exitosamente.';
             msg.className = 'msg success';
             msg.style.display = 'block';
 
-            // ✅ LIMPIEZA TOTAL TRAS ÉXITO
             form.reset();
             resetValidation();
             selectVehicleType('moto');
@@ -320,7 +308,6 @@ if (isMoto) {
         }
     });
 
-    // Inicializar
     selectVehicleType('moto');
     console.log("✅ Módulo reg-vehiculos.js inicializado correctamente");
 };
