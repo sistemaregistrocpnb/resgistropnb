@@ -23,15 +23,12 @@ window.initElimPersonas = function() {
     const hideMsg = (el) => { el.style.display = 'none'; };
     const showMsgElim = (txt, type) => { msgElim.textContent = txt; msgElim.className = `msg ${type}`; msgElim.style.display = 'block'; };
     const hideMsgElim = () => { msgElim.style.display = 'none'; };
-    
     const setVal = (id, val) => {
         const el = document.getElementById(id);
         if(el) el.value = (val !== null && val !== undefined && val !== '') ? val : '-';
     };
-    
     const showField = (id) => { const el = document.getElementById(id); if(el) el.style.display = 'block'; };
     const hideField = (id) => { const el = document.getElementById(id); if(el) el.style.display = 'none'; };
-    
     const setPhoto = (imgId, url) => {
         const img = document.getElementById(imgId);
         if (!img) return;
@@ -41,12 +38,10 @@ window.initElimPersonas = function() {
 
     // 🔹 Mostrar datos + UI según estado
     function renderUI(data, isArchived) {
-        // Fotos
         setPhoto('elim-foto-frontal', data.foto_frontal);
         setPhoto('elim-foto-izq', data.foto_perfil_izq);
         setPhoto('elim-foto-der', data.foto_perfil_der);
-        
-        // Campos de texto
+
         setVal('elim-n1', data.primer_nombre);
         setVal('elim-n2', data.segundo_nombre);
         setVal('elim-a1', data.primer_apellido);
@@ -69,25 +64,25 @@ window.initElimPersonas = function() {
         setVal('elim-comp', data.complexion);
 
         setVal('elim-lentes', data.usa_lentes ? 'Sí' : 'No');
-        if (data.usa_lentes && data.detalle_lentes) { showField('box-lentes-det'); setVal('elim-lentes-det', data.detalle_lentes); } 
+        if (data.usa_lentes && data.detalle_lentes) { showField('box-lentes-det'); setVal('elim-lentes-det', data.detalle_lentes); }
         else { hideField('box-lentes-det'); }
-        
+
         setVal('elim-perf', data.perforaciones ? 'Sí' : 'No');
-        if (data.perforaciones && data.detalle_perforaciones) { showField('box-perf-det'); setVal('elim-perf-det', data.detalle_perforaciones); } 
+        if (data.perforaciones && data.detalle_perforaciones) { showField('box-perf-det'); setVal('elim-perf-det', data.detalle_perforaciones); }
         else { hideField('box-perf-det'); }
-        
+
         setVal('elim-cond', data.condicion_medica ? 'Sí' : 'No');
-        if (data.condicion_medica) { showField('box-cond-det'); setVal('elim-cond-det', data.condicion_medica); } 
+        if (data.condicion_medica) { showField('box-cond-det'); setVal('elim-cond-det', data.condicion_medica); }
         else { hideField('box-cond-det'); }
-        
+
         setVal('elim-med', data.consume_medicamento ? 'Sí' : 'No');
-        if (data.consume_medicamento) { showField('box-med-det'); setVal('elim-med-det', data.consume_medicamento); } 
+        if (data.consume_medicamento) { showField('box-med-det'); setVal('elim-med-det', data.consume_medicamento); }
         else { hideField('box-med-det'); }
-        
+
         setVal('elim-jud', data.problema_judicial ? 'Sí' : 'No');
-        if (data.problema_judicial) { showField('box-jud-det'); setVal('elim-jud-det', data.problema_judicial); } 
+        if (data.problema_judicial) { showField('box-jud-det'); setVal('elim-jud-det', data.problema_judicial); }
         else { hideField('box-jud-det'); }
-        
+
         setVal('elim-estacion', data.estacion_policial);
         setVal('elim-obs', data.observaciones);
 
@@ -106,17 +101,17 @@ window.initElimPersonas = function() {
         }
     }
 
-    // 🔹 Búsqueda principal (CORREGIDA para manejar múltiples eliminaciones)
+    //  Búsqueda principal
     async function buscarPersona() {
         const cedula = buscarInput.value.trim().replace(/\D/g, '');
-        if (cedula.length < 7) return showMsg(msgBuscar, '⚠️ Ingrese entre 7 y 8 dígitos', 'error');
-        
+        if (cedula.length < 7) return showMsg(msgBuscar, '️ Ingrese entre 7 y 8 dígitos', 'error');
+
         showMsg(msgBuscar, '🔍 Buscando...', 'success');
         buscarBtn.disabled = true;
         dataContainer.style.display = 'none';
         hideMsg(msgElim);
         archivedNotice.style.display = 'none';
-        
+
         try {
             // 1. Buscar en activos
             let { data: activo, error: errActivo } = await window.supabaseClient
@@ -124,19 +119,19 @@ window.initElimPersonas = function() {
                 .select('*')
                 .eq('cedula', cedula)
                 .maybeSingle();
-                
+
             if (errActivo) throw errActivo;
 
             if (activo) {
-                currentData = activo; 
+                currentData = activo;
                 currentId = activo.id;
                 renderUI(activo, false);
-                dataContainer.style.display = 'block'; 
+                dataContainer.style.display = 'block';
                 hideMsg(msgBuscar);
-                window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
-            
+
             // 2. Buscar en eliminados/archivados
             let { data: archivado, error: errArch } = await window.supabaseClient
                 .from('eliminados')
@@ -145,25 +140,26 @@ window.initElimPersonas = function() {
                 .order('eliminado_en', { ascending: false })
                 .limit(1)
                 .maybeSingle();
-                
+
             if (errArch) throw errArch;
 
             if (archivado) {
-                currentData = archivado; 
+                currentData = archivado;
                 currentId = archivado.id_original || archivado.id;
                 renderUI(archivado, true);
-                dataContainer.style.display = 'block'; 
+                dataContainer.style.display = 'block';
                 hideMsg(msgBuscar);
-                window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
-            
+
             showMsg(msgBuscar, '❌ Persona no encontrada en el sistema.', 'error');
+
         } catch (err) {
             console.error('Error búsqueda:', err);
             showMsg(msgBuscar, '❌ Error de conexión: ' + err.message, 'error');
-        } finally { 
-            buscarBtn.disabled = false; 
+        } finally {
+            buscarBtn.disabled = false;
         }
     }
 
@@ -177,9 +173,9 @@ window.initElimPersonas = function() {
         modal.style.display = 'flex';
     }
 
-    function closeModal() { 
-        modal.style.display = 'none'; 
-        pendingAction = null; 
+    function closeModal() {
+        modal.style.display = 'none';
+        pendingAction = null;
     }
 
     async function ejecutarAccion() {
@@ -188,237 +184,241 @@ window.initElimPersonas = function() {
         closeModal();
     }
 
- async function eliminarRegistro() {
-    btnEliminar.disabled = true;
-    btnEliminar.textContent = '⏳ Procesando...';
-    hideMsgElim();
-    
-    try {
-        const { data: { user } } = await window.supabaseClient.auth.getUser();
-        const eliminadoPor = user?.email || 'usuario@sistema';
-        
-        const dataToArchive = {
-            id_original: currentId,
-            eliminado_por: eliminadoPor,
-            estatus: currentData.estatus,
-            estacion_policial: currentData.estacion_policial,
-            direccion_detencion: currentData.direccion_detencion,
-            foto_frontal: currentData.foto_frontal,
-            foto_perfil_izq: currentData.foto_perfil_izq,
-            foto_perfil_der: currentData.foto_perfil_der,
-            primer_nombre: currentData.primer_nombre,
-            segundo_nombre: currentData.segundo_nombre,
-            primer_apellido: currentData.primer_apellido,
-            segundo_apellido: currentData.segundo_apellido,
-            cedula: currentData.cedula,
-            fecha_nacimiento: currentData.fecha_nacimiento,
-            edad: currentData.edad,
-            tlf_pais: currentData.tlf_pais,
-            tlf_numero: currentData.tlf_numero,
-            direccion: currentData.direccion,
-            apodo: currentData.apodo,
-            marca_corporal: currentData.marca_corporal,
-            nacionalidad: currentData.nacionalidad,
-            sexo: currentData.sexo,
-            estatura_cm: currentData.estatura_cm,
-            color_piel: currentData.color_piel,
-            color_ojos: currentData.color_ojos,
-            color_cabello: currentData.color_cabello,
-            complexion: currentData.complexion,
-            usa_lentes: currentData.usa_lentes,
-            detalle_lentes: currentData.detalle_lentes,
-            perforaciones: currentData.perforaciones,
-            detalle_perforaciones: currentData.detalle_perforaciones,
-            condicion_medica: currentData.condicion_medica,
-            consume_medicamento: currentData.consume_medicamento,
-            problema_judicial: currentData.problema_judicial,
-            observaciones: currentData.observaciones
-        };
-        
-        const { error: insErr } = await window.supabaseClient.from('eliminados').insert([dataToArchive]);
-        if (insErr) throw new Error('Error archivando: ' + insErr.message);
-        
-        const { data: delData, error: delErr } = await window.supabaseClient
-            .from('registro_personas')
-            .delete()
-            .eq('id', currentData.id)
-            .select('id');
-        
-        if (delErr) throw new Error('Error eliminando: ' + delErr.message);
-        if (!delData || delData.length === 0) throw new Error('No se encontró el registro para eliminar.');
-        
-        showMsgElim('✅ Persona eliminada del sistema activo.', 'success');
-        
-        // 🔹 REGISTRO DE LOG MEJORADO
-if (typeof window.registrarLog === 'function' && currentData?.id) {
-    await window.registrarLog(
-        'REINTEGRAR',
-        'PERSONAS',
-        {
-            cedula: currentData.cedula,
-            nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
-            estatus: 'Reintegrado',
-            estacion: currentData.estacion_policial,
-            tipo: 'Persona'  // ✅ Agregado
-        },
-        currentData.id
-    );
-}
-            console.log('✅ Log de eliminación registrado exitosamente');
-        }
-        
-        // Resetear variables
-        currentData = null;
-        currentId = null;
-        
-        setTimeout(() => {
-            dataContainer.style.display = 'none';
-            buscarInput.value = '';
-            hideMsg(msgBuscar);
-            hideMsgElim();
-            archivedNotice.style.display = 'none';
-        }, 4000);
-        
-    } catch (err) {
-        console.error('Error eliminando:', err);
-        showMsgElim('❌ ' + err.message, 'error');
-    } finally {
-        btnEliminar.disabled = false;
-        btnEliminar.textContent = '🗑️ Eliminar Persona del Sistema';
-    }
-}
+    // 🔹 Eliminar (Activa → Eliminados)
+    async function eliminarRegistro() {
+        btnEliminar.disabled = true;
+        btnEliminar.textContent = '⏳ Procesando...';
+        hideMsgElim();
 
-    async function reintegrarRegistro() {
-    btnReintegrar.disabled = true;
-    btnReintegrar.textContent = '⏳ Procesando...';
-    hideMsgElim();
-    
-    try {
-        const dataToRestore = {
-            estatus: 'Verificación', // ✅ Vuelve a estado de verificación
-            estacion_policial: currentData.estacion_policial,
-            direccion_detencion: currentData.direccion_detencion,
-            foto_frontal: currentData.foto_frontal,
-            foto_perfil_izq: currentData.foto_perfil_izq,
-            foto_perfil_der: currentData.foto_perfil_der,
-            primer_nombre: currentData.primer_nombre,
-            segundo_nombre: currentData.segundo_nombre,
-            primer_apellido: currentData.primer_apellido,
-            segundo_apellido: currentData.segundo_apellido,
-            cedula: currentData.cedula,
-            fecha_nacimiento: currentData.fecha_nacimiento,
-            edad: currentData.edad,
-            tlf_pais: currentData.tlf_pais,
-            tlf_numero: currentData.tlf_numero,
-            direccion: currentData.direccion,
-            apodo: currentData.apodo,
-            marca_corporal: currentData.marca_corporal,
-            nacionalidad: currentData.nacionalidad,
-            sexo: currentData.sexo,
-            estatura_cm: currentData.estatura_cm,
-            color_piel: currentData.color_piel,
-            color_ojos: currentData.color_ojos,
-            color_cabello: currentData.color_cabello,
-            complexion: currentData.complexion,
-            usa_lentes: currentData.usa_lentes,
-            detalle_lentes: currentData.detalle_lentes,
-            perforaciones: currentData.perforaciones,
-            detalle_perforaciones: currentData.detalle_perforaciones,
-            condicion_medica: currentData.condicion_medica,
-            consume_medicamento: currentData.consume_medicamento,
-            problema_judicial: currentData.problema_judicial,
-            observaciones: currentData.observaciones
-        };
-        
-        // ✅ OBTENER EL NUEVO ID DESPUÉS DEL INSERT
-        const { data: insertedData, error: insErr } = await window.supabaseClient
-            .from('registro_personas')
-            .insert([dataToRestore])
-            .select('id')
-            .maybeSingle();
-        
-        if (insErr) throw new Error('Error restaurando: ' + insErr.message);
-        if (!insertedData) throw new Error('No se pudo obtener el ID del registro restaurado.');
-        
-        const nuevoId = insertedData.id;
-        
-        await window.supabaseClient
-            .from('eliminados')
-            .delete()
-            .eq('id', currentData.id);
-        
-        showMsgElim('✅ Persona reintegrada al sistema activo.', 'success');
-        
-        // 🔹 REGISTRO DE LOG CON EL NUEVO ID
-        if (typeof window.registrarLog === 'function') {
-            await window.registrarLog(
-                'REINTEGRAR',
-                'PERSONAS',
-                {
-                    cedula: currentData.cedula,
-                    nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
-                    estatus: 'Reintegrado',
-                    estacion: currentData.estacion_policial,
-                    direccion_detencion: currentData.direccion_detencion
-                },
-                nuevoId  // ✅ Usar el nuevo ID de registro_personas
-            );
-            console.log('✅ Log de reintegración registrado exitosamente');
+        try {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            const eliminadoPor = user?.email || 'usuario@sistema';
+
+            const dataToArchive = {
+                id_original: currentId,
+                eliminado_por: eliminadoPor,
+                estatus: currentData.estatus,
+                estacion_policial: currentData.estacion_policial,
+                direccion_detencion: currentData.direccion_detencion,
+                foto_frontal: currentData.foto_frontal,
+                foto_perfil_izq: currentData.foto_perfil_izq,
+                foto_perfil_der: currentData.foto_perfil_der,
+                primer_nombre: currentData.primer_nombre,
+                segundo_nombre: currentData.segundo_nombre,
+                primer_apellido: currentData.primer_apellido,
+                segundo_apellido: currentData.segundo_apellido,
+                cedula: currentData.cedula,
+                fecha_nacimiento: currentData.fecha_nacimiento,
+                edad: currentData.edad,
+                tlf_pais: currentData.tlf_pais,
+                tlf_numero: currentData.tlf_numero,
+                direccion: currentData.direccion,
+                apodo: currentData.apodo,
+                marca_corporal: currentData.marca_corporal,
+                nacionalidad: currentData.nacionalidad,
+                sexo: currentData.sexo,
+                estatura_cm: currentData.estatura_cm,
+                color_piel: currentData.color_piel,
+                color_ojos: currentData.color_ojos,
+                color_cabello: currentData.color_cabello,
+                complexion: currentData.complexion,
+                usa_lentes: currentData.usa_lentes,
+                detalle_lentes: currentData.detalle_lentes,
+                perforaciones: currentData.perforaciones,
+                detalle_perforaciones: currentData.detalle_perforaciones,
+                condicion_medica: currentData.condicion_medica,
+                consume_medicamento: currentData.consume_medicamento,
+                problema_judicial: currentData.problema_judicial,
+                observaciones: currentData.observaciones
+            };
+
+            const { error: insErr } = await window.supabaseClient.from('eliminados').insert([dataToArchive]);
+            if (insErr) throw new Error('Error archivando: ' + insErr.message);
+
+            const { data: delData, error: delErr } = await window.supabaseClient
+                .from('registro_personas')
+                .delete()
+                .eq('id', currentData.id)
+                .select('id');
+
+            if (delErr) throw new Error('Error eliminando: ' + delErr.message);
+            if (!delData || delData.length === 0) throw new Error('No se encontró el registro para eliminar.');
+
+            showMsgElim('✅ Persona eliminada del sistema activo.', 'success');
+
+            // 🔹 CREAR LOG
+            if (typeof window.registrarLog === 'function' && currentData?.id) {
+                await window.registrarLog(
+                    'ELIMINAR',
+                    'PERSONAS',
+                    {
+                        cedula: currentData.cedula,
+                        nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
+                        estatus: 'Eliminado',
+                        estacion: currentData.estacion_policial,
+                        direccion_detencion: currentData.direccion_detencion,
+                        descripcion_eliminada: `Persona eliminada del sistema activo por ${eliminadoPor}`,
+                        tipo: 'Persona'
+                    },
+                    currentData.id
+                );
+                console.log('✅ Log de eliminación registrado exitosamente');
+            }
+
+            currentData = null;
+            currentId = null;
+
+            setTimeout(() => {
+                dataContainer.style.display = 'none';
+                buscarInput.value = '';
+                hideMsg(msgBuscar);
+                hideMsgElim();
+                archivedNotice.style.display = 'none';
+            }, 4000);
+
+        } catch (err) {
+            console.error('Error eliminando:', err);
+            showMsgElim('❌ ' + err.message, 'error');
+        } finally {
+            btnEliminar.disabled = false;
+            btnEliminar.textContent = '🗑️ Eliminar Persona del Sistema';
         }
-        
-        // Resetear variables
-        currentData = null;
-        currentId = null;
-        
-        setTimeout(() => {
-            dataContainer.style.display = 'none';
-            buscarInput.value = '';
-            hideMsg(msgBuscar);
-            hideMsgElim();
-            archivedNotice.style.display = 'none';
-        }, 4000);
-        
-    } catch (err) {
-        console.error('Error reintegrando:', err);
-        let msg = 'Error al reintegrar.';
-        if (err.message.includes('23505') || err.message.includes('unique')) {
-            msg = '❌ Esta cédula ya existe en el sistema activo.';
-        } else {
-            msg = '❌ ' + err.message;
-        }
-        showMsgElim(msg, 'error');
-    } finally {
-        btnReintegrar.disabled = false;
-        btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo';
     }
-}
+
+    // 🔹 Reintegrar (Eliminados → Activa)
+    async function reintegrarRegistro() {
+        btnReintegrar.disabled = true;
+        btnReintegrar.textContent = '⏳ Procesando...';
+        hideMsgElim();
+
+        try {
+            const dataToRestore = {
+                estatus: 'Verificación',
+                estacion_policial: currentData.estacion_policial,
+                direccion_detencion: currentData.direccion_detencion,
+                foto_frontal: currentData.foto_frontal,
+                foto_perfil_izq: currentData.foto_perfil_izq,
+                foto_perfil_der: currentData.foto_perfil_der,
+                primer_nombre: currentData.primer_nombre,
+                segundo_nombre: currentData.segundo_nombre,
+                primer_apellido: currentData.primer_apellido,
+                segundo_apellido: currentData.segundo_apellido,
+                cedula: currentData.cedula,
+                fecha_nacimiento: currentData.fecha_nacimiento,
+                edad: currentData.edad,
+                tlf_pais: currentData.tlf_pais,
+                tlf_numero: currentData.tlf_numero,
+                direccion: currentData.direccion,
+                apodo: currentData.apodo,
+                marca_corporal: currentData.marca_corporal,
+                nacionalidad: currentData.nacionalidad,
+                sexo: currentData.sexo,
+                estatura_cm: currentData.estatura_cm,
+                color_piel: currentData.color_piel,
+                color_ojos: currentData.color_ojos,
+                color_cabello: currentData.color_cabello,
+                complexion: currentData.complexion,
+                usa_lentes: currentData.usa_lentes,
+                detalle_lentes: currentData.detalle_lentes,
+                perforaciones: currentData.perforaciones,
+                detalle_perforaciones: currentData.detalle_perforaciones,
+                condicion_medica: currentData.condicion_medica,
+                consume_medicamento: currentData.consume_medicamento,
+                problema_judicial: currentData.problema_judicial,
+                observaciones: currentData.observaciones
+            };
+
+            const { data: insertedData, error: insErr } = await window.supabaseClient
+                .from('registro_personas')
+                .insert([dataToRestore])
+                .select('id')
+                .maybeSingle();
+
+            if (insErr) throw new Error('Error restaurando: ' + insErr.message);
+            if (!insertedData) throw new Error('No se pudo obtener el ID del registro restaurado.');
+
+            const nuevoId = insertedData.id;
+
+            await window.supabaseClient
+                .from('eliminados')
+                .delete()
+                .eq('id', currentData.id);
+
+            showMsgElim('✅ Persona reintegrada al sistema activo.', 'success');
+
+            // 🔹 CREAR LOG CON EL NUEVO ID
+            if (typeof window.registrarLog === 'function') {
+                await window.registrarLog(
+                    'REINTEGRAR',
+                    'PERSONAS',
+                    {
+                        cedula: currentData.cedula,
+                        nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
+                        estatus: 'Reintegrado',
+                        estacion: currentData.estacion_policial,
+                        direccion_detencion: currentData.direccion_detencion,
+                        tipo: 'Persona'
+                    },
+                    nuevoId
+                );
+                console.log('✅ Log de reintegración registrado exitosamente');
+            }
+
+            currentData = null;
+            currentId = null;
+
+            setTimeout(() => {
+                dataContainer.style.display = 'none';
+                buscarInput.value = '';
+                hideMsg(msgBuscar);
+                hideMsgElim();
+                archivedNotice.style.display = 'none';
+            }, 4000);
+
+        } catch (err) {
+            console.error('Error reintegrando:', err);
+            let msg = 'Error al reintegrar.';
+            if (err.message.includes('23505') || err.message.includes('unique')) {
+                msg = '❌ Esta cédula ya existe en el sistema activo.';
+            } else {
+                msg = '❌ ' + err.message;
+            }
+            showMsgElim(msg, 'error');
+        } finally {
+            btnReintegrar.disabled = false;
+            btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo';
+        }
+    }
+
     // 🔹 Listeners
     buscarBtn.addEventListener('click', buscarPersona);
-    buscarInput.addEventListener('keydown', e => { 
-        if (e.key === 'Enter') { e.preventDefault(); buscarPersona(); } 
+    buscarInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); buscarPersona(); }
     });
-    
+
     btnEliminar.addEventListener('click', () => {
         if (!currentData) return;
         showModal(
-            '⚠️ Confirmar Eliminación', 
-            `¿Eliminar a ${currentData.primer_nombre} ${currentData.primer_apellido} (C.I: ${currentData.cedula})? Se archivará permanentemente.`, 
-            'delete', 
+            '⚠️ Confirmar Eliminación',
+            `¿Eliminar a ${currentData.primer_nombre} ${currentData.primer_apellido} (C.I: ${currentData.cedula})? Se archivará permanentemente.`,
+            'delete',
             'danger'
         );
     });
-    
+
     btnReintegrar.addEventListener('click', () => {
         if (!currentData) return;
         showModal(
-            '♻️ Confirmar Reintegración', 
-            `¿Reintegrar a ${currentData.primer_nombre} ${currentData.primer_apellido} (C.I: ${currentData.cedula})? Volverá al sistema activo.`, 
-            'reintegrate', 
+            '♻️ Confirmar Reintegración',
+            `¿Reintegrar a ${currentData.primer_nombre} ${currentData.primer_apellido} (C.I: ${currentData.cedula})? Volverá al sistema activo.`,
+            'reintegrate',
             'success'
         );
     });
-    
+
     btnModalYes.addEventListener('click', ejecutarAccion);
     btnModalNo.addEventListener('click', closeModal);
     modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+    console.log("✅ Módulo elim-personas.js inicializado correctamente");
 };
