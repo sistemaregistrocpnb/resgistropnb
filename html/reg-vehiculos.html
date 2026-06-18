@@ -6,8 +6,6 @@
   .registro-form label { font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; display: block; }
   .registro-form input, .registro-form select, .registro-form textarea { width: 100%; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem; background: #fff; transition: border 0.2s; }
   .registro-form input:focus, .registro-form select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,43,92,0.1); }
-  
-  /* 🔹 Indicadores de Validación */
   .status-msg { display: block; font-size: 0.75rem; margin-top: 4px; font-weight: 600; min-height: 16px; }
   .status-msg.valid { color: #15803d; }
   .status-msg.error { color: #dc2626; }
@@ -39,8 +37,7 @@
             <label style="font-weight: 600; font-size: 0.95rem;">Estatus:</label>
             <span class="status-badge">✅ VERIFICACIÓN</span>
         </div>
-
-        <!-- 🔹 1. TIPO DE VEHÍCULO -->
+      
         <fieldset>
             <legend>🚗 Tipo de Vehículo</legend>
             <div class="tipo-selector">
@@ -50,7 +47,6 @@
             <input type="hidden" id="v_tipo" value="Motocicleta">
         </fieldset>
 
-        <!-- 🔹 2. FOTOS (Dinámico) -->
         <fieldset id="sec-fotos">
             <legend>📸 Fotografías</legend>
             <div class="form-grid" id="grid-fotos-moto">
@@ -67,7 +63,6 @@
             </div>
         </fieldset>
 
-        <!-- 🔹 3. IDENTIFICACIÓN (Con validación en vivo) -->
         <fieldset>
             <legend>📋 Datos de Identificación</legend>
             <div class="form-grid">
@@ -105,8 +100,7 @@
                 </div>
             </div>
         </fieldset>
-
-        <!-- 🔹 4. CARACTERÍSTICAS -->
+      
         <fieldset>
             <legend>⚙️ Características</legend>
             <div class="form-grid">
@@ -124,7 +118,6 @@
             </div>
         </fieldset>
 
-        <!-- 🔹 5. DATOS DEL REGISTRO -->
         <fieldset>
             <legend>️ Datos del Registro</legend>
             <div class="form-grid">
@@ -166,8 +159,7 @@
                 <div class="form-group" style="grid-column: span 2;"><label>Dirección de detención</label><input type="text" id="v_direccion_detencion" placeholder="Lugar exacto donde fue detenido"></div>
             </div>
         </fieldset>
-
-        <!-- 🔹 6. OBSERVACIONES -->
+      
         <fieldset>
             <legend>📝 Observaciones (Opcional)</legend>
             <textarea id="v_observaciones" rows="2" placeholder="Notas adicionales (accesorios, rayones, condiciones, etc.)..."></textarea>
