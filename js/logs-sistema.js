@@ -53,7 +53,7 @@ window.initLogsSistema = function() {
         }
     }
 
-    // 🔹 CAMBIO: Ahora recibe el log completo, no solo los detalles
+    // 🔹 FUNCIÓN FORMATEAR DETALLES - Recibe el log completo
     function formatearDetalles(log) {
         const detalles = log.detalles;
         if (!detalles) return '-';
@@ -77,7 +77,7 @@ window.initLogsSistema = function() {
             Cierre: ${d.hora_cierre ? new Date(d.hora_cierre).toLocaleString('es-VE') : 'No registrado'}`;
         }
 
-        // ✅ CONSULTA DE PERSONA/VINCULADO
+        // ✅ CONSULTA DE PERSONA/VINCULADO (con nombre)
         if (d.valor_buscado && d.nombre_completo) {
             const tipoTexto = d.tipo === 'Vinculado' ? ' (Vinculado)' : '';
             const placaTexto = d.placa ? `<br>Placa: <strong style="color:var(--primary);">${d.placa}</strong>` : '';
@@ -86,25 +86,39 @@ window.initLogsSistema = function() {
             Estatus: <span style="color:#64748b;">${d.estatus || 'N/A'}</span>`;
         }
 
-        // ✅ CONSULTA SIN NOMBRE
+        // ✅ CONSULTA SIN NOMBRE (fallback)
         if (d.valor_buscado && !d.tipo_busqueda) {
             const tipoTexto = d.tipo === 'Vinculado' ? ' (Vinculado)' : '';
             return `Consultó Cédula${tipoTexto}: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span>`;
         }
 
-        // ✅ CREAR INCIDENCIA
+        // ✅ CONSULTA VEHÍCULO (por placa/serial)
+        if (d.tipo_busqueda && d.valor_buscado) {
+            const tipoFormateado = d.tipo_busqueda === 'placa' ? 'Placa' :
+                d.tipo_busqueda === 'serial_carroceria' ? 'Serial de Carrocería' : 'Serial de Motor';
+            return `Consultó <strong>${tipoFormateado}</strong>: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span><br>
+            Estatus: <span style="color:#64748b;">${d.estatus || 'N/A'}</span>`;
+        }
+
+        // ✅ CREAR INCIDENCIA (persona o vehículo)
         if (d.cedula && d.descripcion && !d.descripcion_eliminada) {
-            return `Cédula: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>
+            return `Cédula/Placa: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>
             Nombre: <strong>${d.nombre_completo || 'No disponible'}</strong><br>
-            Tipo: <span style="color:#64748b;">${d.tipo || 'Persona'}</span><br>
+            Tipo: <span style="color:#64748b;">${d.tipo || 'N/A'}</span><br>
             Descripción: <em>"${d.descripcion}"</em>`;
         }
 
-        // ✅ ELIMINAR INCIDENCIA
+        // ✅ ELIMINAR INCIDENCIA (persona o vehículo)
         if (d.cedula && d.descripcion_eliminada && d.nombre_completo) {
-            return `Cédula: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>
+            return `Cédula/Placa: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>
             Nombre: <strong>${d.nombre_completo}</strong><br>
-            Tipo: <span style="color:#64748b;">${d.tipo || 'Persona'}</span><br>
+            Tipo: <span style="color:#64748b;">${d.tipo || 'N/A'}</span><br>
+            Incidencia eliminada: <em>"${d.descripcion_eliminada}"</em>`;
+        }
+
+        // ✅ ELIMINAR INCIDENCIA VEHÍCULO (sin nombre_completo)
+        if (d.identificador && d.descripcion_eliminada) {
+            return `Identificador: <strong style="color:var(--primary); font-size:1.1rem;">${d.identificador}</strong><br>
             Incidencia eliminada: <em>"${d.descripcion_eliminada}"</em>`;
         }
 
@@ -131,7 +145,16 @@ window.initLogsSistema = function() {
             return `Modificó a <strong>${d.nombre_completo}</strong> (C.I: ${d.cedula || 'N/A'}).<br><em>"${d.cambios_realizados}"</em>`;
         }
 
- if (log.accion === 'CREAR' && log.modulo === 'PERSONAS' && d.cedula) {
+        // ✅ CREAR PERSONA - Mostrar cédula, nombre, estación y dirección
+        if (log.accion === 'CREAR' && log.modulo === 'PERSONAS' && d.cedula) {
+            let html = `Cédula: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>`;
+            html += `Nombre: <strong>${d.nombre_completo || 'No disponible'}</strong><br>`;
+            html += `Estación: <strong style="color:#059669;">${d.estacion || 'No especificada'}</strong><br>`;
+            if (d.direccion_detencion) {
+                html += `Dirección de detención: <em>${d.direccion_detencion}</em>`;
+            }
+            return html;
+        }
 
         // ✅ Fallback genérico (FILTRANDO VALORES NULL/VACÍOS)
         const entradasFiltradas = Object.entries(d).filter(([key, value]) => {
@@ -270,7 +293,7 @@ window.initLogsSistema = function() {
             const fecha = new Date(log.created_at).toLocaleString('es-VE');
             const usuario = log.user_nombre || 'Sistema';
             const registroDisplay = obtenerValorRegistro(log);
-            // 🔹 CAMBIO: Ahora pasamos el log completo, no solo log.detalles
+            // 🔹 PASAMOS EL LOG COMPLETO A formatearDetalles
             const detallesDisplay = formatearDetalles(log);
 
             html += `
