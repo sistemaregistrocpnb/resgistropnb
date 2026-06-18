@@ -267,8 +267,6 @@ window.initModPersonas = function() {
             document.getElementById('p_color_cabello').value = data.color_cabello || '';
             document.getElementById('p_complexion').value = data.complexion || '';
 
-document.getElementById('p_complexion').value = data.complexion || '';
-
 // ✅ Asignar estación policial con verificación
 const estacionSelect = document.getElementById('p_estacion');
 if (estacionSelect) {
@@ -285,7 +283,6 @@ if (estacionSelect) {
         estacionSelect.value = '';
     }
 }
-
 document.getElementById('p_direccion_detencion').value = data.direccion_detencion || '';         document.getElementById('p_direccion_detencion').value = data.direccion_detencion || '';
             document.getElementById('p_observaciones').value = data.observaciones || '';
 
