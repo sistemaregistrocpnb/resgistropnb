@@ -250,20 +250,20 @@ window.initElimPersonas = function() {
         showMsgElim('✅ Persona eliminada del sistema activo.', 'success');
         
         // 🔹 REGISTRO DE LOG MEJORADO
-        if (typeof window.registrarLog === 'function' && currentData?.id) {
-            await window.registrarLog(
-                'ELIMINAR',
-                'PERSONAS',
-                {
-                    cedula: currentData.cedula,
-                    nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
-                    estatus: 'Eliminado',
-                    estacion: currentData.estacion_policial,
-                    direccion_detencion: currentData.direccion_detencion,
-                    descripcion_eliminada: `Persona eliminada del sistema activo por ${eliminadoPor}`
-                },
-                currentData.id
-            );
+if (typeof window.registrarLog === 'function' && currentData?.id) {
+    await window.registrarLog(
+        'REINTEGRAR',
+        'PERSONAS',
+        {
+            cedula: currentData.cedula,
+            nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
+            estatus: 'Reintegrado',
+            estacion: currentData.estacion_policial,
+            tipo: 'Persona'  // ✅ Agregado
+        },
+        currentData.id
+    );
+}
             console.log('✅ Log de eliminación registrado exitosamente');
         }
         
