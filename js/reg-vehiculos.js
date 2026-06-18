@@ -1,4 +1,4 @@
-window.initRegVehiculos = function() {
+ window.initRegVehiculos = function() {
     console.log("✅ Módulo reg-vehiculos.js cargado correctamente.");
 
     // 🔹 LISTAS COMPLETAS DE MARCAS Y MODELOS PARA MOTOCICLETAS
@@ -129,11 +129,11 @@ window.initRegVehiculos = function() {
     async function checkAvailability(input, msgId) {
         const val = input.value.trim().toUpperCase();
         const msgEl = document.getElementById(msgId);
-        if (!val) {
-            input.classList.remove('input-valid', 'input-error');
-            if (msgEl) { msgEl.textContent = ''; msgEl.className = 'status-msg'; }
-            return;
-        }
+   if (!val) {
+    input.classList.remove('input-valid', 'input-error');
+    if (msgEl) { msgEl.textContent = ''; msgEl.className = 'status-msg'; }
+    return;
+}
         if (msgEl) { msgEl.textContent = '⏳ Verificando...'; msgEl.className = 'status-msg'; }
         try {
             let found = false;
@@ -204,7 +204,10 @@ window.initRegVehiculos = function() {
 
         if (msgPlaca?.classList.contains('error')) return mostrarError('La placa ya se encuentra registrada en el sistema.');
         if (placa.length < 6) return mostrarError('La placa debe tener al menos 6 caracteres.');
-        if (serialCarro.length < 10) return mostrarError('El serial de carrocería debe tener al menos 10 caracteres.');
+        // ✅ Serial de carrocería ahora es opcional
+if (serialCarro && serialCarro.length > 0 && serialCarro.length < 5) {
+    return mostrarError('El serial de carrocería debe tener al menos 5 caracteres si se ingresa.');
+}
 
         btn.disabled = true;
         btn.textContent = '⏳ Guardando...';
@@ -243,7 +246,7 @@ window.initRegVehiculos = function() {
                 placa,
                 anio: parseInt(document.getElementById('v_anio').value),
                 color: document.getElementById('v_color').value,
-                serial_carroceria: serialCarro,
+                serial_carroceria: serialCarro || null,
                 marca: document.getElementById('v_marca').value,
                 modelo: document.getElementById('v_modelo').value,
                 observaciones: document.getElementById('v_observaciones')?.value.trim() || null,
@@ -253,12 +256,12 @@ window.initRegVehiculos = function() {
                 foto_lado_izquierdo: urls.ri
             };
 
-            if (isMoto) {
-                data.serial_motor = document.getElementById('v_serial_motor').value.trim() || '';
-                data.cilindraje = document.getElementById('v_cilindraje').value || 'No especificado';
-            } else {
-                data.serial_motor = document.getElementById('v_serial_motor').value.trim() || '';
-            }
+       if (isMoto) {
+    data.serial_motor = document.getElementById('v_serial_motor').value.trim() || null;
+    data.cilindraje = document.getElementById('v_cilindraje').value || 'No especificado';
+} else {
+    data.serial_motor = document.getElementById('v_serial_motor').value.trim() || null;
+}
 
             const { data: insertedData, error } = await window.supabaseClient
                 .from(tablaDestino)
