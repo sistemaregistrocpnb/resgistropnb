@@ -1,9 +1,5 @@
 window.initModVehiculos = function() {
     console.log("✅ Módulo mod-vehiculos.js cargado correctamente.");
-
-    // ==========================================
-    // 🔹 FUNCIÓN PREVISUALIZAR FOTO
-    // ==========================================
     window.previewFile = function(input, imgId) {
         const img = document.getElementById(imgId);
         if (!img) return;
@@ -17,9 +13,6 @@ window.initModVehiculos = function() {
         }
     };
 
-    // ==========================================
-    // 🔹 LISTAS COMPLETAS DE MARCAS/MODELOS
-    // ==========================================
     const marcasModelosMoto = {
         "Empire Keeway": ["Matrix Lite", "Matrix II 150", "EK Xpress Lite", "QJ Fort", "Horse (EK Horse 2 SE)", "EK Arsen II 200", "EK Atlas", "EK Atlas HD/HDS 200", "Owen 200", "Thunder EK", "TX II 150", "TX 250GS", "QJ Motor SRT 550", "QJ Motor SRT 550X", "QJ Motor SRT 700S", "QJ Motor SRT 700SX", "Superlight 200S", "V302C"],
         "Bera Motorcycles": ["Bera BWS", "Milán", "Runner", "SBR", "X1", "BRF", "León", "BR200 / DT", "Cobra", "Kavak", "BRZ", "GR", "Antiking", "Carguero"],
@@ -67,9 +60,6 @@ window.initModVehiculos = function() {
         "Otra": ["Otra (Especificar en observaciones)"]
     };
 
-    // ==========================================
-    // 🔹 REFERENCIAS DOM
-    // ==========================================
     const marcaSelect = document.getElementById('m_marca');
     const modeloSelect = document.getElementById('m_modelo');
     const anioSelect = document.getElementById('m_anio');
@@ -94,10 +84,6 @@ window.initModVehiculos = function() {
         }
     }
 
-
-    // ==========================================
-    // 🔹 FUNCIONES UI
-    // ==========================================
     function cargarMarcas(tipo) {
         const lista = tipo === 'moto' ? marcasModelosMoto : marcasModelosAuto;
         marcaSelect.innerHTML = '<option value="">Seleccione marca...</option>';
@@ -178,9 +164,6 @@ window.initModVehiculos = function() {
         cargarMarcas(type);
     }
 
-    // ==========================================
-    // 🔹 BÚSQUEDA MULTI-TABLA CON DETECCIÓN CRUZADA POR SERIALES
-    // ==========================================
     function detectarCoincidenciasVehiculo(reg, val) {
         const campos = [];
         const v = val.trim().toUpperCase();
@@ -371,9 +354,6 @@ window.initModVehiculos = function() {
         }
     }
 
-    // ==========================================
-    // 🔹 CARGAR DATOS EN FORMULARIO
-    // ==========================================
     function cargarDatos(data, tabla, tipo) {
         currentData = data;
         isSelectionMode = false;
@@ -471,9 +451,6 @@ window.initModVehiculos = function() {
         }
     }
 
-    // ==========================================
-    // 🔹 LISTENER PRINCIPAL DE BÚSQUEDA
-    // ==========================================
     if (btnBuscar && inputBusqueda) {
         btnBuscar.addEventListener('click', async () => {
             const val = inputBusqueda.value.trim();
@@ -524,9 +501,6 @@ window.initModVehiculos = function() {
         });
     }
 
-    // ==========================================
-    // 🔹 VALIDACIÓN EN TIEMPO REAL
-    // ==========================================
     function debounce(func, wait) {
         let timeout;
         return function(...args) {
@@ -611,10 +585,7 @@ window.initModVehiculos = function() {
             if (el) el.textContent = '';
         });
     }
-
-    // ==========================================
-    // 🔹 ENVÍO DEL FORMULARIO
-    // ==========================================
+    
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!currentData) return mostrarMsg(msgBox, 'Primero debe buscar y seleccionar un vehículo.', 'error');
@@ -686,8 +657,7 @@ window.initModVehiculos = function() {
                 .eq('id', currentData.id);
                 
             if (finalError) throw finalError;
-            
-// 🔹 CREAR LOG USANDO LA FUNCIÓN CENTRALIZADA DE UTILS.JS
+
 if (typeof window.registrarLog === 'function' && currentData?.id) {
     await window.registrarLog(
         'MODIFICAR',
