@@ -125,6 +125,10 @@ window.initRegPersonas = function() {
         displayBox.addEventListener('click', (e) => { e.stopPropagation(); optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block'; });
         document.addEventListener('click', (e) => { if (!e.target.closest('.phone-dropdown-wrapper')) optionsBox.style.display = 'none'; });
     }
+    if (nativeSelect) nativeSelect.value = '+58';
+if (flagImg) flagImg.src = 'https://flagcdn.com/w20/ve.png';
+if (codeText) codeText.textContent = '+58';
+if (countryText) countryText.textContent = 'Venezuela';
 
     // ==========================================
     // 🔹 4. VISTA PREVIA + EDAD + MÁSCARAS
