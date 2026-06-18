@@ -1,9 +1,9 @@
 // 🔒 BLOQUEO DE CONSOLA PARA SEGURIDAD
-window.console.log = function() {};
-window.console.warn = function() {};
-window.console.error = function() {};
-window.console.info = function() {};
-window.console.debug = function() {};
+//window.console.log = function() {};
+//window.console.warn = function() {};
+//window.console.error = function() {};
+//window.console.info = function() {};
+//window.console.debug = function() {};
 
 document.addEventListener('DOMContentLoaded', async () => {
     // ✅ Bandera global para el botón de cerrar sesión
