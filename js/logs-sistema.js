@@ -122,13 +122,15 @@ window.initLogsSistema = function() {
             Incidencia eliminada: <em>"${d.descripcion_eliminada}"</em>`;
         }
 
-        // ✅ REGISTRO VEHÍCULO
-        if (d.placa && d.marca && d.modelo) {
-            const tipoTexto = d.tipo === 'Motocicleta' ? '🏍️ Motocicleta' : '🚙 Automóvil';
-            return `Registró ${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.placa}</strong><br>
-            <span style="color:#64748b;">${d.marca} ${d.modelo} (${d.anio}) - ${d.color}</span><br>
-            Estación: <strong style="color:#059669;">${d.estacion || 'No especificada'}</strong>`;
-        }
+
+    // ✅ REGISTRO VEHÍCULO
+if (d.placa && d.marca && d.modelo) {
+    const tipoTexto = d.tipo === 'Motocicleta' ? '🏍️ Motocicleta' : '🚙 Automóvil';
+    const colorTexto = d.color || 'No especificado';  // ✅ Fallback agregado
+    return `Registró ${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.placa}</strong><br>
+    <span style="color:#64748b;">${d.marca} ${d.modelo} (${d.anio}) - ${colorTexto}</span><br>
+    Estación: <strong style="color:#059669;">${d.estacion || 'No especificada'}</strong>`;
+}
 
         // ✅ ELIMINACIÓN DE PERSONA
         if (d.cedula && d.nombre_completo && d.descripcion_eliminada && !d.tipo) {
