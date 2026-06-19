@@ -1,7 +1,5 @@
 window.initElimVehiculos = function() {
     console.log("✅ Módulo elim-vehiculos.js cargado correctamente.");
-
-    // 🔹 Referencias DOM
     const buscarInput = document.getElementById('buscar-input-elim');
     const buscarBtn = document.getElementById('btn-buscar-elim');
     const msgBuscar = document.getElementById('buscar-msg-elim');
@@ -25,7 +23,6 @@ window.initElimVehiculos = function() {
     let isArchived = false;
     let pendingAction = null;
 
-    // 🔹 Helpers UI
     const showMsg = (el, txt, type) => { if(el) { el.innerHTML = txt; el.className = `search-msg ${type}`; el.style.display = 'block'; } };
     const hideMsg = (el) => { if(el) el.style.display = 'none'; };
     const showMsgElim = (txt, type) => { msgElim.innerHTML = txt; msgElim.className = `msg ${type}`; msgElim.style.display = 'block'; };
@@ -33,7 +30,6 @@ window.initElimVehiculos = function() {
     const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = (val !== null && val !== undefined && val !== '') ? val : '-'; };
     const setPhoto = (imgId, url) => { const img = document.getElementById(imgId); if (img) { img.src = url || ''; img.style.display = url ? 'block' : 'none'; } };
 
-    // 🔹 Mostrar datos + UI según estado
     function cargarDatos(data, source) {
         currentData = data;
         isArchived = (source === 'eliminados_vinculados' || source === 'vehiculos_eliminados');
@@ -54,7 +50,6 @@ window.initElimVehiculos = function() {
         hideMsgElim();
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        // Banner de persona (si es vinculado)
         let personaBanner = document.getElementById('persona-banner');
         if (!personaBanner) {
             personaBanner = document.createElement('div');
@@ -123,9 +118,6 @@ window.initElimVehiculos = function() {
         }
     }
 
-    // ==========================================
-    // 🔍 BÚSQUEDA MULTI-TABLA (5 TABLAS)
-    // ==========================================
     function detectarCoincidenciasVehiculo(reg, val) {
         const campos = [];
         const v = val.trim().toUpperCase();
@@ -140,7 +132,7 @@ window.initElimVehiculos = function() {
         const resultados = [];
         const val = valor.trim().toUpperCase();
         try {
-            // 1. Motos Activas
+    
             const { data: motos, error: errMoto } = await window.supabaseClient
                 .from('registro_motos').select('*')
                 .or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
@@ -153,7 +145,6 @@ window.initElimVehiculos = function() {
                 }));
             }
 
-            // 2. Autos Activos
             const { data: autos, error: errAuto } = await window.supabaseClient
                 .from('registro_automoviles').select('*')
                 .or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
@@ -166,7 +157,6 @@ window.initElimVehiculos = function() {
                 }));
             }
 
-            // 3. Vinculados Activos
             const { data: vinculados, error: errVinc } = await window.supabaseClient
                 .from('registro_vinculado').select('*')
                 .or(`cedula.ilike.${val},placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
@@ -181,7 +171,6 @@ window.initElimVehiculos = function() {
                 }));
             }
 
-            // 4. Vehículos Eliminados (Histórico)
             const { data: eliminados, error: errElim } = await window.supabaseClient
                 .from('vehiculos_eliminados').select('*')
                 .or(`placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
@@ -199,7 +188,6 @@ window.initElimVehiculos = function() {
                 });
             }
 
-            // 5. Eliminados Vinculados (Histórico)
             const { data: elimVinc, error: errElimVinc } = await window.supabaseClient
                 .from('eliminados_vinculados').select('*')
                 .or(`cedula.ilike.${val},placa.ilike.${val},serial_carroceria.ilike.${val},serial_motor.ilike.${val}`);
@@ -285,7 +273,6 @@ window.initElimVehiculos = function() {
         if (crossWarning) crossWarning.style.display = 'none';
     }
 
-    // 🔍 LISTENER PRINCIPAL DE BÚSQUEDA
     if (buscarBtn && buscarInput) {
         buscarBtn.addEventListener('click', async () => {
             const val = buscarInput.value.trim();
@@ -333,9 +320,6 @@ window.initElimVehiculos = function() {
         });
     }
 
-    // ==========================================
-    // 🔹 MODAL DE CONFIRMACIÓN
-    // ==========================================
     function showModal(titulo, texto, accion, tipo) {
         pendingAction = accion;
         modalTitle.textContent = titulo;
@@ -360,9 +344,6 @@ window.initElimVehiculos = function() {
     if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
     if (btnModalYes) btnModalYes.addEventListener('click', ejecutarAccion);
 
-    // ==========================================
-    // 🔹 ELIMINAR (Activa → Archivada)
-    // ==========================================
     async function eliminarRegistro() {
         if (!currentData) return;
         btnEliminar.disabled = true;
@@ -466,7 +447,6 @@ window.initElimVehiculos = function() {
 
             if (error) throw error;
 
-            // 🔹 LOG CENTRALIZADO CON TODOS LOS DATOS DEL VEHÍCULO
             if (typeof window.registrarLog === 'function') {
                 await window.registrarLog(
                     'ELIMINAR',
@@ -507,9 +487,6 @@ window.initElimVehiculos = function() {
         }
     }
 
-    // ==========================================
-    // 🔹 REINTEGRAR (Archivada → Activa)
-    // ==========================================
     async function reintegrarRegistro() {
         if (!currentData) return;
         btnReintegrar.disabled = true;
@@ -618,7 +595,6 @@ window.initElimVehiculos = function() {
 
             if (error) throw error;
 
-            // 🔹 LOG CENTRALIZADO CON TODOS LOS DATOS DEL VEHÍCULO
             if (typeof window.registrarLog === 'function') {
                 await window.registrarLog(
                     'REINTEGRAR',
@@ -663,9 +639,6 @@ window.initElimVehiculos = function() {
         }
     }
 
-    // ==========================================
-    // 🔹 LISTENERS DE BOTONES DE ACCIÓN
-    // ==========================================
     if (btnEliminar) {
         btnEliminar.addEventListener('click', () => {
             if (!currentData) return;
