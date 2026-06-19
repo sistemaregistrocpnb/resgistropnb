@@ -413,39 +413,69 @@ window.initRegVinculado = function() {
         if(msgForm){msgForm.textContent='❌ '+t; msgForm.className='msg error'; msgForm.style.display='block';}
     }
 
-    if (form && btnSubmit) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            // ✅ NUEVO: PERMITIR GUARDAR CON UNA SOLA FOTO (QUITAR REQUIRED DEL HTML)
-            document.querySelectorAll('input[type="file"][id^="pv_foto_"]').forEach(input => {
-                input.removeAttribute('required');
-            });
-
-            if (!form.checkValidity()) { form.reportValidity(); return; }
-
-            // ✅ NUEVO: VALIDAR QUE HAYA AL MENOS UNA FOTO DE PERSONA Y UNA DE VEHÍCULO
-            const fotosPersona = ['pv_foto_p_frontal', 'pv_foto_p_izq', 'pv_foto_p_der'];
-            const fotosVehiculo = ['pv_foto_v_frontal', 'pv_foto_v_trasera', 'pv_foto_v_der', 'pv_foto_v_izq'];
-            
-            const hayFotoPersona = fotosPersona.some(id => document.getElementById(id)?.files?.length > 0);
-            const hayFotoVehiculo = fotosVehiculo.some(id => document.getElementById(id)?.files?.length > 0);
-
-            if (!hayFotoPersona) return mostrarError('Debe adjuntar al menos una (1) fotografía de la persona.');
-            if (!hayFotoVehiculo) return mostrarError('Debe adjuntar al menos una (1) fotografía del vehículo.');
-
-            const inputsValidar = ['pv_p_cedula', 'pv_v_placa', 'pv_v_serial_carro', 'pv_v_serial_motor'];
-            const hasError = inputsValidar.some(id => document.getElementById(id)?.classList.contains('input-error'));
-            if (hasError) return mostrarError('Por favor corrija los campos marcados en rojo.');
-
-            const cedula = document.getElementById('pv_p_cedula').value.trim();
-            if (cedula.length < 7) return mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
-
-            btnSubmit.disabled = true; 
-            btnSubmit.textContent = '⏳ Registrando...';
-            msgForm.style.display = 'none';
-
-            try {
+ if (form && btnSubmit) {
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        if (!form.checkValidity()) { 
+            form.reportValidity(); 
+            return; 
+        }
+        
+        // ✅ VALIDAR QUE HAYA AL MENOS UNA FOTO DE PERSONA Y UNA DE VEHÍCULO
+        const fotosPersona = ['pv_foto_p_frontal', 'pv_foto_p_izq', 'pv_foto_p_der'];
+        const fotosVehiculo = ['pv_foto_v_frontal', 'pv_foto_v_trasera', 'pv_foto_v_der', 'pv_foto_v_izq'];
+        const hayFotoPersona = fotosPersona.some(id => document.getElementById(id)?.files?.length > 0);
+        const hayFotoVehiculo = fotosVehiculo.some(id => document.getElementById(id)?.files?.length > 0);
+        
+        if (!hayFotoPersona) {
+            mostrarError('Debe adjuntar al menos una (1) fotografía de la persona.');
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = '✅ Registrar Persona y Vehículo';
+            return;
+        }
+        
+        if (!hayFotoVehiculo) {
+            mostrarError('Debe adjuntar al menos una (1) fotografía del vehículo.');
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = '✅ Registrar Persona y Vehículo';
+            return;
+        }
+        
+        // ✅ VALIDAR DIRECCIÓN DE DETENCIÓN (OBLIGATORIA)
+        const dirDetencion = document.getElementById('pv_dir_detencion')?.value.trim();
+        if (!dirDetencion) {
+            mostrarError('La dirección de detención es obligatoria.');
+            document.getElementById('pv_dir_detencion')?.focus();
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = '✅ Registrar Persona y Vehículo';
+            return;
+        }
+        
+        // Validar que no haya campos con error de validación
+        const inputsValidar = ['pv_p_cedula', 'pv_v_placa', 'pv_v_serial_carro', 'pv_v_serial_motor'];
+        const hasError = inputsValidar.some(id => document.getElementById(id)?.classList.contains('input-error'));
+        if (hasError) {
+            mostrarError('Por favor corrija los campos marcados en rojo.');
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = '✅ Registrar Persona y Vehículo';
+            return;
+        }
+        
+        const cedula = document.getElementById('pv_p_cedula').value.trim();
+        if (cedula.length < 7) {
+            mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = '✅ Registrar Persona y Vehículo';
+            return;
+        }
+        
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = '⏳ Registrando...';
+        msgForm.style.display = 'none';
+        
+        try {
+            // ... resto del código ...
                 const bucket = window.supabaseClient.storage.from('fotos_personas');
                 const uid = sessionStorage.getItem('pnb_user_id') || 'user';
                 const ts = Date.now();
