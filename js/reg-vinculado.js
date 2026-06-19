@@ -2,44 +2,6 @@ window.initRegVinculado = function() {
     console.log("✅ Módulo reg-vinculado.js cargado correctamente.");
 
     // ==========================================
-    // ✅ NUEVO: FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO
-    // ==========================================
-    async function registrarLog(accion, modulo, detalles) {
-        try {
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            if (!user) return;
-            let nombreUsuario = user.email || 'Sistema';
-            
-            try {
-                const { data: perfil } = await window.supabaseClient
-                    .from('perfiles_usuario')
-                    .select('nombre, apellido, email')
-                    .eq('user_id', user.id)
-                    .maybeSingle();
-                if (perfil) {
-                    nombreUsuario = [perfil.nombre, perfil.apellido].filter(Boolean).join(' ').trim() || nombreUsuario;
-                }
-            } catch (err) {
-                console.warn('No se pudo obtener el perfil del usuario para el log:', err);
-            }
-
-            const logEntry = {
-                user_id: user.id,
-                user_nombre: nombreUsuario,
-                user_email: user.email || 'sistema',
-                accion: accion,
-                modulo: modulo,
-                detalles: detalles,
-                created_at: new Date().toISOString()
-            };
-            const { error } = await window.supabaseClient.from('sistema_logs').insert([logEntry]);
-            if (error) console.error('Error al registrar log:', error);
-        } catch (err) {
-            console.error('Error en registrarLog:', err);
-        }
-    }
-
-    // ==========================================
     // 🔹 1. MAPA DE BANDERAS
     // ==========================================
     const isoMap = {
@@ -115,7 +77,7 @@ window.initRegVinculado = function() {
         "JAC Motors": ["Arena / Arena Sport (Sedán)", "Aventura / Aventura Pro (JS3)", "Nevado / Nevado Sport Wagon (JS4)", "Tepuy / Tepuy Pro (JS6)", "Savanna / Savanna Pro Sport (JS8)", "La Venezolana (T6 - Pick-up 4x2 y 4x4)", "La Venezolana Pro (T8 - Pick-up 4x4)", "T9 (Pick-up)", "J7 / J7 Elite Pro", "Refine (Mini-van / MPV)", "Sunray (Vans de carga y pasajeros)", "Bachaco (Camión de carga)", "Búfalo (Camión de carga)", "Leyenda (Camión de carga)"],
         "Toyota": ["Agya", "Yaris / Yaris Cross", "Corolla / Corolla Cross", "Camry", "Prius", "Hilux", "Land Cruiser (Serie 70 / Machito)", "Land Cruiser Prado", "Land Cruiser (Serie 200 / Serie 300)", "Fortuner", "4Runner", "RAV4", "Sequoia", "Tundra", "Tacoma", "Hiace", "Coaster", "Terios (Histórico / Daihatsu)", "Starlet (Histórico)", "Celica (Histórico)", "Merú (Histórico)", "Aygo X", "Aqua", "Avanza", "Rush", "Raize", "Yaris Heykers", "Corolla Hatchback / Corolla Touring Sports", "GR Yaris", "GR Corolla", "GR86", "GR Supra", "Avalon", "Century", "Crown / Crown Signia", "Mirai", "bZ4X / bZ3", "Urban Cruiser", "C-HR", "Harrier", "Highlander / Grand Highlander", "Venza", "Sienna", "Alphard / Vellfire", "Innova", "Roomy", "Sienta", "Voxy", "Noah", "Probox", "LiteAce / TownAce", "Hilux Champ / Rangga", "Proace / Proace City / Proace Max"],
         "Changan Auto": ["Alsvin", "CS15", "CS35 Plus", "CS55 Plus", "CS75 Plus", "CS85 Coupe", "CS95", "Uni-T", "Uni-K", "Uni-V", "Hunter (Pick-up)", "Star 5 (Vans de carga y pasajeros)", "Q20 / M201 (Mini-trucks de carga)"],
-        "Foton": ["Tunland E", "Tunland G7", "TruckMate M25 (1.3 Toneladas)", "TruckMate + Cargabox", "Foton 2 Toneladas", "Foton 3 Toneladas", "View C2 (Van de carga y pasajeros)", "View CS2 (Ambulancia y transporte)", "Aumark S (Camiones de mediana capacidad / 5 a 8 Toneladas)", "Aumark TX", "Auman R (Camiones de carga pesada / 10 a 45 Toneladas)", "Mars V7", "Mars V9", "Tunland V9", "Tunland Yutu", "Grand General G9", "Sauvana", "Toplander", "Saga", "Toano / Toano Grand-V", "View Traveller", "View Transvan", "View i-series", "Gratour V3", "Gratour ix5", "Gratour im6", "Midi", "MP-X", "Smart Smurf E7", "EV Light Truck 4.5T"],
+        "Foton": ["Tunland E", "Tunland G7", "TruckMate M25 (1.3 Toneladas)", "TruckMate + Cargobox", "Foton 2 Toneladas", "Foton 3 Toneladas", "View C2 (Van de carga y pasajeros)", "View CS2 (Ambulancia y transporte)", "Aumark S (Camiones de mediana capacidad / 5 a 8 Toneladas)", "Aumark TX", "Auman R (Camiones de carga pesada / 10 a 45 Toneladas)", "Mars V7", "Mars V9", "Tunland V9", "Tunland Yutu", "Grand General G9", "Sauvana", "Toplander", "Saga", "Toano / Toano Grand-V", "View Traveller", "View Transvan", "View i-series", "Gratour V3", "Gratour ix5", "Gratour im6", "Midi", "MP-X", "Smart Smurf E7", "EV Light Truck 4.5T"],
         "Chevrolet": ["Aveo", "Spark", "Optra", "Cruze", "Onix", "Cavalier", "Tracker", "Captiva", "Trailblazer", "Traverse", "Tahoe", "Suburban", "Orlando", "Silverado", "Colorado", "D-Max", "Grand Vitara", "LUV", "Astra", "Corsa", "Meriva", "Zafira", "Epica", "Impala", "Malibu", "Century", "Celebrity", "Caprice", "Swift", "San Remo", "Trax", "Chevette", "Lumina", "Monte carlos", "Trailblazer (Global/Crossover)", "Equinox", "Equinox EV", "Blazer", "Blazer EV", "Silverado EV", "Montana", "S10", "Spin", "Groove", "Seeker", "Monza (Global actual)", "Sail", "Menlo", "Bolt EV / Bolt EUV"],
         "Ford": ["Territory", "EcoSport", "Escape", "Edge", "Explorer", "Everest", "Bronco / Bronco Sport", "Expedition", "Ranger / Ranger Raptor", "F-150 / FX4 / Lariat", "F-350 / Super Duty", "Fiesta", "Focus", "Laser", "Festiva", "Ka", "Fusion", "Mustang", "Sierra"],
         "Jeep": ["CJ-5 / CJ-7", "Wrangler (YJ / TJ / JK / JL)", "Cherokee (XJ / KJ / KK / KL)", "Grand Cherokee (ZJ / WJ / WK / WK2 / WL)", "Gladiator", "Compass", "Renegade", "Commander (Histórico 3 filas)", "Wagoneer / Grand Wagoneer (Históricos)", "J-10 / J-20 (Camionetas pickup históricas)", "Comanche", "Avenger", "Recon", "Wagoneer S", "Commander (Modelo actual para Latinoamérica/Asia)", "Grand Commander (Mercado asiático)", "Meridian"],
@@ -235,7 +197,7 @@ window.initRegVinculado = function() {
     };
 
     // ==========================================
-    // 🔹 4. DROPDOWN TELÉFONOS (BANDERAS)
+    // 🔹 4. DROPDOWN TELÉFONOS (BANDERAS) - CON VENEZUELA POR DEFECTO
     // ==========================================
     const initPhoneDropdown = () => {
         const nativeSelect = document.getElementById('pv_p_tlf_pais');
@@ -244,6 +206,7 @@ window.initRegVinculado = function() {
         const flagImg = document.getElementById('pv_tlf-flag-img');
         const codeText = document.getElementById('pv_tlf-code-text');
         const countryText = document.getElementById('pv_tlf-country-text');
+
         if (optionsBox && nativeSelect && displayBox) {
             optionsBox.innerHTML = '';
             Array.from(nativeSelect.options).forEach(opt => {
@@ -263,6 +226,12 @@ window.initRegVinculado = function() {
             });
             displayBox.addEventListener('click', (e) => { e.stopPropagation(); optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block'; });
             document.addEventListener('click', (e) => { if (!e.target.closest('.phone-dropdown-wrapper')) optionsBox.style.display = 'none'; });
+
+            // ✅ ESTABLECER VENEZUELA COMO VALOR POR DEFECTO
+            nativeSelect.value = '+58';
+            flagImg.src = 'https://flagcdn.com/w20/ve.png';
+            codeText.textContent = '+58';
+            countryText.textContent = 'Venezuela';
         }
     };
 
@@ -413,76 +382,53 @@ window.initRegVinculado = function() {
         if(msgForm){msgForm.textContent='❌ '+t; msgForm.className='msg error'; msgForm.style.display='block';}
     }
 
- if (form && btnSubmit) {
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        if (!form.checkValidity()) { 
-            form.reportValidity(); 
-            return; 
-        }
-        
-        // ✅ VALIDAR QUE HAYA AL MENOS UNA FOTO DE PERSONA Y UNA DE VEHÍCULO
-        const fotosPersona = ['pv_foto_p_frontal', 'pv_foto_p_izq', 'pv_foto_p_der'];
-        const fotosVehiculo = ['pv_foto_v_frontal', 'pv_foto_v_trasera', 'pv_foto_v_der', 'pv_foto_v_izq'];
-        const hayFotoPersona = fotosPersona.some(id => document.getElementById(id)?.files?.length > 0);
-        const hayFotoVehiculo = fotosVehiculo.some(id => document.getElementById(id)?.files?.length > 0);
-        
-        if (!hayFotoPersona) {
-            mostrarError('Debe adjuntar al menos una (1) fotografía de la persona.');
-            btnSubmit.disabled = false;
-            btnSubmit.textContent = '✅ Registrar Persona y Vehículo';
-            return;
-        }
-        
-        if (!hayFotoVehiculo) {
-            mostrarError('Debe adjuntar al menos una (1) fotografía del vehículo.');
-            btnSubmit.disabled = false;
-            btnSubmit.textContent = '✅ Registrar Persona y Vehículo';
-            return;
-        }
-        
-        // ✅ VALIDAR DIRECCIÓN DE DETENCIÓN (OBLIGATORIA)
-        const dirDetencion = document.getElementById('pv_dir_detencion')?.value.trim();
-        if (!dirDetencion) {
-            mostrarError('La dirección de detención es obligatoria.');
-            document.getElementById('pv_dir_detencion')?.focus();
-            btnSubmit.disabled = false;
-            btnSubmit.textContent = '✅ Registrar Persona y Vehículo';
-            return;
-        }
-        
-        // Validar que no haya campos con error de validación
-        const inputsValidar = ['pv_p_cedula', 'pv_v_placa', 'pv_v_serial_carro', 'pv_v_serial_motor'];
-        const hasError = inputsValidar.some(id => document.getElementById(id)?.classList.contains('input-error'));
-        if (hasError) {
-            mostrarError('Por favor corrija los campos marcados en rojo.');
-            btnSubmit.disabled = false;
-            btnSubmit.textContent = '✅ Registrar Persona y Vehículo';
-            return;
-        }
-        
-        const cedula = document.getElementById('pv_p_cedula').value.trim();
-        if (cedula.length < 7) {
-            mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
-            btnSubmit.disabled = false;
-            btnSubmit.textContent = '✅ Registrar Persona y Vehículo';
-            return;
-        }
-        
-        btnSubmit.disabled = true;
-        btnSubmit.textContent = '⏳ Registrando...';
-        msgForm.style.display = 'none';
-        
-        try {
-            // ... resto del código ...
+    if (form && btnSubmit) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // ✅ QUITAR REQUIRED DE FOTOS PARA VALIDAR MANUALMENTE
+            document.querySelectorAll('input[type="file"][id^="pv_foto_"]').forEach(input => {
+                input.removeAttribute('required');
+            });
+
+            if (!form.checkValidity()) { form.reportValidity(); return; }
+
+            // ✅ VALIDAR QUE HAYA AL MENOS UNA FOTO DE PERSONA Y UNA DE VEHÍCULO
+            const fotosPersona = ['pv_foto_p_frontal', 'pv_foto_p_izq', 'pv_foto_p_der'];
+            const fotosVehiculo = ['pv_foto_v_frontal', 'pv_foto_v_trasera', 'pv_foto_v_der', 'pv_foto_v_izq'];
+            const hayFotoPersona = fotosPersona.some(id => document.getElementById(id)?.files?.length > 0);
+            const hayFotoVehiculo = fotosVehiculo.some(id => document.getElementById(id)?.files?.length > 0);
+
+            if (!hayFotoPersona) return mostrarError('Debe adjuntar al menos una (1) fotografía de la persona.');
+            if (!hayFotoVehiculo) return mostrarError('Debe adjuntar al menos una (1) fotografía del vehículo.');
+
+            // ✅ VALIDAR DIRECCIÓN DE DETENCIÓN
+            const dirDetencion = document.getElementById('pv_dir_detencion')?.value.trim();
+            if (!dirDetencion) {
+                mostrarError('La dirección de detención es obligatoria.');
+                document.getElementById('pv_dir_detencion')?.focus();
+                return;
+            }
+
+            const inputsValidar = ['pv_p_cedula', 'pv_v_placa', 'pv_v_serial_carro', 'pv_v_serial_motor'];
+            const hasError = inputsValidar.some(id => document.getElementById(id)?.classList.contains('input-error'));
+            if (hasError) return mostrarError('Por favor corrija los campos marcados en rojo.');
+
+            const cedula = document.getElementById('pv_p_cedula').value.trim();
+            if (cedula.length < 7) return mostrarError('La cédula debe tener entre 7 y 8 dígitos.');
+
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = '⏳ Registrando...';
+            msgForm.style.display = 'none';
+
+            try {
                 const bucket = window.supabaseClient.storage.from('fotos_personas');
                 const uid = sessionStorage.getItem('pnb_user_id') || 'user';
                 const ts = Date.now();
 
                 const uploadFile = async (inputId, suffix) => {
                     const file = document.getElementById(inputId).files[0];
-                    if (!file) return null; // ✅ Retorna null si no hay archivo, haciéndolo opcional
+                    if (!file) return null;
                     const path = `${uid}/${ts}_${suffix}.jpg`;
                     const { error } = await bucket.upload(path, file, { cacheControl: '3600' });
                     if (error) throw error;
@@ -528,7 +474,7 @@ window.initRegVinculado = function() {
                     detalle_perforaciones: document.getElementById('pv_p_perforaciones').value === 'true' ? document.getElementById('pv_txt_lugar_perforacion').value.trim() : null,
                     tipo_vehiculo: document.getElementById('pv_v_tipo').value,
                     placa: document.getElementById('pv_v_placa').value.trim().toUpperCase(),
-                    serial_carroceria: document.getElementById('pv_v_serial_carro').value.trim(),
+                    serial_carroceria: document.getElementById('pv_v_serial_carro').value.trim() || null,
                     serial_motor: document.getElementById('pv_v_serial_motor').value.trim() || null,
                     cilindraje: document.getElementById('pv_v_cilindraje').value || null,
                     color_vehiculo: document.getElementById('pv_v_color').value,
@@ -543,21 +489,40 @@ window.initRegVinculado = function() {
                     foto_lado_der_vehiculo: fv_der,
                     foto_lado_izq_vehiculo: fv_izq,
                     estacion_policial: document.getElementById('pv_estacion').value,
-                    direccion_detencion: document.getElementById('pv_dir_detencion').value.trim() || null,
+                    direccion_detencion: dirDetencion,
                     observaciones: document.getElementById('pv_observaciones').value.trim() || null
                 };
 
-                const { error } = await window.supabaseClient.from('registro_vinculado').insert([data]);
+                const { data: insertedData, error } = await window.supabaseClient
+                    .from('registro_vinculado')
+                    .insert([data])
+                    .select('id')
+                    .maybeSingle();
+
                 if (error) throw error;
 
-                // ✅ NUEVO: REGISTRAR EL LOG DE CREACIÓN DE VÍNCULO
-                await registrarLog('CREAR', 'VINCULADOS', {
-                    cedula: data.cedula,
-                    nombre_completo: `${data.primer_nombre} ${data.primer_apellido}`.trim(),
-                    placa: data.placa,
-                    tipo_vehiculo: data.tipo_vehiculo,
-                    estatus: 'Verificación'
-                });
+                // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
+                if (typeof window.registrarLog === 'function' && insertedData?.id) {
+                    await window.registrarLog(
+                        'CREAR',
+                        'VINCULADOS',
+                        {
+                            cedula: data.cedula,
+                            nombre_completo: `${data.primer_nombre} ${data.primer_apellido}`.trim(),
+                            placa: data.placa,
+                            marca: data.marca_vehiculo,
+                            modelo: data.modelo_vehiculo,
+                            anio: data.anio_vehiculo,
+                            color: data.color_vehiculo,
+                            tipo_vehiculo: data.tipo_vehiculo,
+                            estatus: 'Verificación',
+                            estacion: data.estacion_policial,
+                            direccion_detencion: data.direccion_detencion
+                        },
+                        insertedData.id
+                    );
+                    console.log('✅ Log de registro vinculado registrado exitosamente');
+                }
 
                 msgForm.textContent = '✅ Registro vinculado creado exitosamente.';
                 msgForm.className = 'msg success';
@@ -576,7 +541,7 @@ window.initRegVinculado = function() {
                 console.error('Error al registrar:', err);
                 mostrarError('❌ Error al registrar: ' + err.message);
             } finally {
-                btnSubmit.disabled = false; 
+                btnSubmit.disabled = false;
                 btnSubmit.textContent = '✅ Registrar Persona y Vehículo';
             }
         });
@@ -598,7 +563,6 @@ window.initRegVinculado = function() {
     setupEdad();
     setupValidation();
     initPhoneDropdown();
-    
     setupPhotoPreview('pv_foto_p_frontal', 'prev_p_frontal');
     setupPhotoPreview('pv_foto_p_izq', 'prev_p_izq');
     setupPhotoPreview('pv_foto_p_der', 'prev_p_der');
@@ -606,11 +570,6 @@ window.initRegVinculado = function() {
     setupPhotoPreview('pv_foto_v_trasera', 'prev_v_trasera');
     setupPhotoPreview('pv_foto_v_der', 'prev_v_der');
     setupPhotoPreview('pv_foto_v_izq', 'prev_v_izq');
-// ✅ Establecer Venezuela como valor por defecto
-nativeSelect.value = '+58';
-flagImg.src = 'https://flagcdn.com/w20/ve.png';
-codeText.textContent = '+58';
-countryText.textContent = 'Venezuela';
-    
-    console.log("✅ Módulo inicializado. La validación ahora permite que motos y autos compartan seriales y guarda con 1 foto mínima.");
+
+    console.log("✅ Módulo reg-vinculado.js inicializado correctamente.");
 };
