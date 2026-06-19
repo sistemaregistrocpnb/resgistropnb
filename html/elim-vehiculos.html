@@ -25,7 +25,6 @@
 .archived-banner { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 12px; margin-bottom: 16px; display: none; text-align: center; }
 .archived-banner strong { color: #92400e; }
 
-/* 🔹 PANEL DE SELECCIÓN (Idéntico a mod-vehiculos) */
 #selection-panel { display: none; margin-top: 20px; }
 .selection-header { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
 .selection-header h4 { margin: 0 0 8px; color: #1e40af; font-size: 1.05rem; }
@@ -67,7 +66,6 @@
 }
 .btn-cancel-search:hover { background: #475569; }
 
-/* Modal */
 .elim-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; animation: fadeIn 0.2s; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .elim-modal-box { background: #fff; padding: 24px; border-radius: 10px; width: 90%; max-width: 440px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-top: 4px solid var(--primary); }
@@ -86,7 +84,6 @@
 <div class="card">
   <h3>🗑️ Eliminar / Reintegrar Vehículo</h3>
   
-  <!-- 🔍 BÚSQUEDA -->
   <div class="search-box">
     <label>Buscar por Cédula, Placa, Serial de Carrocería o Motor:</label>
     <div class="search-row">
@@ -96,23 +93,20 @@
     <div id="buscar-msg-elim" class="search-msg"></div>
   </div>
 
-  <!-- 🔹 PANEL DE SELECCIÓN DINÁMICO -->
   <div id="selection-panel">
     <div class="selection-header">
       <h4>🔎 Múltiples coincidencias encontradas</h4>
       <p>Se encontraron <strong><span id="result-count">0</span> registros</strong> con ese dato o seriales asociados. Seleccione cuál desea gestionar:</p>
     </div>
     
-    <!-- ⚠️ ALERTA CRUZADA -->
     <div id="cross-plate-warning" class="msg" style="margin-bottom: 16px; background:#fffbeb; color:#92400e; border:1px solid #fcd34d; border-radius:5px; text-align:left; display:none; padding: 12px;"></div>
     
     <div id="selection-list"></div>
     <button id="btn-cancel-search" class="btn-cancel-search">❌ Cancelar búsqueda</button>
   </div>
-
-  <!-- 📝 DATOS DEL VEHÍCULO -->
+  
   <div id="elim-data-container" style="display: none;">
-    <!-- ✅ BANNER DE ARCHIVADO -->
+    
     <div id="archived-banner" class="archived-banner">
       <strong>🗄️ Registro Archivado</strong><br>
       Eliminado el <span id="archived-date">-</span> por <span id="archived-by">-</span>
@@ -161,14 +155,12 @@
       <textarea id="elim-obs" rows="2" readonly></textarea>
     </fieldset>
 
-    <!-- Botones dinámicos -->
     <button id="btn-eliminar" class="btn-eliminar">🗑️ Eliminar Vehículo del Sistema</button>
     <button id="btn-reintegrar" class="btn-reintegrar">♻️ Reintegrar al Sistema Activo</button>
     <div id="msg-elim" class="msg"></div>
   </div>
 </div>
 
-<!-- ✅ Modal de Confirmación -->
 <div id="elim-modal" class="elim-modal">
   <div class="elim-modal-box">
     <h4 id="modal-title">⚠️ Confirmar Acción</h4>
