@@ -1,9 +1,6 @@
 window.initRegVinculado = function() {
     console.log("✅ Módulo reg-vinculado.js cargado correctamente.");
 
-    // ==========================================
-    // 🔹 1. MAPA DE BANDERAS
-    // ==========================================
     const isoMap = {
         "Afganistán": "af", "Albania": "al", "Alemania": "de", "Andorra": "ad", "Angola": "ao",
         "Antigua y Barbuda": "ag", "Arabia Saudita": "sa", "Argelia": "dz", "Argentina": "ar",
@@ -49,9 +46,6 @@ window.initRegVinculado = function() {
         "Yemen": "ye", "Yibuti": "dj", "Zambia": "zm", "Zimbabue": "zw"
     };
 
-    // ==========================================
-    // 🔹 2. LISTAS COMPLETAS
-    // ==========================================
     const marcasModelosMoto = {
         "Empire Keeway": ["Matrix Lite", "Matrix II 150", "EK Xpress Lite", "QJ Fort", "Horse (EK Horse 2 SE)", "EK Arsen II 200", "EK Atlas", "EK Atlas HD/HDS 200", "Owen 200", "Thunder EK", "TX II 150", "TX 250GS", "QJ Motor SRT 550", "QJ Motor SRT 550X", "QJ Motor SRT 700S", "QJ Motor SRT 700SX", "Superlight 200S", "V302C"],
         "Bera Motorcycles": ["Bera BWS", "Milán", "Runner", "SBR", "X1", "BRF", "León", "BR200 / DT", "Cobra", "Kavak", "BRZ", "GR", "Antiking", "Carguero"],
@@ -108,9 +102,6 @@ window.initRegVinculado = function() {
         "EPP DOMITILA", "EPP CORTIJOS", "EPP MARCIAL HERNANDEZ", "EPP POTRERITO", "EPP ANDRES BELLO", "EPP SANTA LUCIA"
     ];
 
-    // ==========================================
-    // 🔹 3. FUNCIONES DE UI
-    // ==========================================
     window.toggleCampo = function(select, targetId) {
         const el = document.getElementById(targetId);
         const input = el?.querySelector('input');
@@ -196,9 +187,6 @@ window.initRegVinculado = function() {
         }
     };
 
-    // ==========================================
-    // 🔹 4. DROPDOWN TELÉFONOS (BANDERAS) - CON VENEZUELA POR DEFECTO
-    // ==========================================
     const initPhoneDropdown = () => {
         const nativeSelect = document.getElementById('pv_p_tlf_pais');
         const displayBox = document.querySelector('.phone-display');
@@ -227,17 +215,13 @@ window.initRegVinculado = function() {
             displayBox.addEventListener('click', (e) => { e.stopPropagation(); optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block'; });
             document.addEventListener('click', (e) => { if (!e.target.closest('.phone-dropdown-wrapper')) optionsBox.style.display = 'none'; });
 
-            // ✅ ESTABLECER VENEZUELA COMO VALOR POR DEFECTO
+
             nativeSelect.value = '+58';
             flagImg.src = 'https://flagcdn.com/w20/ve.png';
             codeText.textContent = '+58';
             countryText.textContent = 'Venezuela';
         }
     };
-
-    // ==========================================
-    // 🔹 5. PREVISUALIZACIÓN DE FOTOS
-    // ==========================================
     const setupPhotoPreview = (inputId, imgId) => {
         const input = document.getElementById(inputId);
         const img = document.getElementById(imgId);
@@ -251,9 +235,6 @@ window.initRegVinculado = function() {
         });
     };
 
-    // ==========================================
-    // 🔹 6. VALIDACIÓN EN TIEMPO REAL
-    // ==========================================
     function debounce(func, wait) {
         let timeout;
         return function(...args) {
@@ -371,9 +352,6 @@ window.initRegVinculado = function() {
         }
     };
 
-    // ==========================================
-    // 🔹 7. ENVÍO DEL FORMULARIO
-    // ==========================================
     const form = document.getElementById('form-reg-vinculado');
     const msgForm = document.getElementById('msg-reg-vinculado');
     const btnSubmit = form?.querySelector('.btn-submit');
@@ -386,14 +364,12 @@ window.initRegVinculado = function() {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // ✅ QUITAR REQUIRED DE FOTOS PARA VALIDAR MANUALMENTE
             document.querySelectorAll('input[type="file"][id^="pv_foto_"]').forEach(input => {
                 input.removeAttribute('required');
             });
 
             if (!form.checkValidity()) { form.reportValidity(); return; }
 
-            // ✅ VALIDAR QUE HAYA AL MENOS UNA FOTO DE PERSONA Y UNA DE VEHÍCULO
             const fotosPersona = ['pv_foto_p_frontal', 'pv_foto_p_izq', 'pv_foto_p_der'];
             const fotosVehiculo = ['pv_foto_v_frontal', 'pv_foto_v_trasera', 'pv_foto_v_der', 'pv_foto_v_izq'];
             const hayFotoPersona = fotosPersona.some(id => document.getElementById(id)?.files?.length > 0);
@@ -402,7 +378,6 @@ window.initRegVinculado = function() {
             if (!hayFotoPersona) return mostrarError('Debe adjuntar al menos una (1) fotografía de la persona.');
             if (!hayFotoVehiculo) return mostrarError('Debe adjuntar al menos una (1) fotografía del vehículo.');
 
-            // ✅ VALIDAR DIRECCIÓN DE DETENCIÓN
             const dirDetencion = document.getElementById('pv_dir_detencion')?.value.trim();
             if (!dirDetencion) {
                 mostrarError('La dirección de detención es obligatoria.');
@@ -501,7 +476,6 @@ window.initRegVinculado = function() {
 
                 if (error) throw error;
 
-                // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
                 if (typeof window.registrarLog === 'function' && insertedData?.id) {
                     await window.registrarLog(
                         'CREAR',
@@ -547,7 +521,6 @@ window.initRegVinculado = function() {
         });
     }
 
-    // Validación numérica en teléfono
     const tlfNumInput = document.getElementById('pv_p_tlf_num');
     if (tlfNumInput) {
         tlfNumInput.addEventListener('input', (e) => {
@@ -555,9 +528,7 @@ window.initRegVinculado = function() {
         });
     }
 
-    // ==========================================
-    // 🔹 INICIALIZACIÓN FINAL
-    // ==========================================
+
     cargarEstaciones();
     cargarAnios();
     setupEdad();
