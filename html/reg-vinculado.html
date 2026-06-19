@@ -202,7 +202,6 @@
     <h3>🔗 Registro Vinculado: Persona + Vehículo</h3>
     <form id="form-reg-vinculado" class="registro-form" novalidate>
         
-        <!-- 🔹 SECCIÓN 1: DATOS DE LA PERSONA -->
         <div class="section-title">👤 Datos de la Persona</div>
         
         <fieldset>
@@ -234,14 +233,12 @@
                 <div class="form-group"><label>Primer Apellido</label><input type="text" id="pv_p_apellido1" required></div>
                 <div class="form-group"><label>Segundo Apellido</label><input type="text" id="pv_p_apellido2"></div>
                 
-                <!-- ✅ CÉDULA CON VALIDACIÓN -->
                 <div class="form-group">
                     <label>Cédula (7-8 dígitos)</label>
                     <input type="text" id="pv_p_cedula" maxlength="8" required>
                     <small id="pv-msg-cedula" class="status-msg"></small>
                 </div>
                 
-                <!-- ✅ MARCA CORPORAL -->
                 <div class="form-group">
                     <label>Marca Corporal</label>
                     <input type="text" id="pv_p_marca" placeholder="Cicatrices, tatuajes, etc.">
@@ -250,8 +247,7 @@
                 <div class="form-group"><label>Apodo</label><input type="text" id="pv_p_apodo"></div>
                 <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" id="pv_p_fecha_nac" required></div>
                 <div class="form-group"><label>Edad (Auto)</label><input type="number" id="pv_p_edad" readonly required></div>
-                
-                <!-- ✅ NACIONALIDAD COMPLETA -->
+  
                 <div class="form-group">
                     <label>Nacionalidad</label>
                     <select id="pv_p_nacionalidad" required>
@@ -461,7 +457,6 @@
                     </select>
                 </div>
 
-                <!-- ✅ TELÉFONO CON DROPDOWN DE BANDERAS (PAÍSES COMPLETOS) -->
                 <div class="form-group" style="grid-column: span 2;">
                     <label>Teléfono (Opcional)</label>
                     <div style="display: flex; gap: 10px; align-items: center;">
@@ -716,7 +711,7 @@
                         <option value="Calvo">Calvo</option>
                     </select>
                 </div>
-                <!-- ✅ COMPLEXIÓN -->
+
                 <div class="form-group">
                     <label>Complexión</label>
                     <select id="pv_p_complexion" required>
@@ -733,8 +728,7 @@
 
         <fieldset>
             <legend>🏥 Salud y Antecedentes</legend>
-            
-            <!-- Lentes -->
+          
             <div class="form-group">
                 <label>¿Usa Lentes?</label>
                 <select id="pv_p_lentes" required onchange="window.toggleCampo(this, 'pv_det-lentes')">
@@ -746,8 +740,6 @@
                 <label>Tipo/Descripción</label>
                 <input type="text" id="pv_txt_lentes">
             </div>
-            
-            <!-- Perforaciones -->
             <div class="form-group" style="margin-top:14px;">
                 <label>¿Perforaciones?</label>
                 <select id="pv_p_perforaciones" required onchange="window.activarCampoPerforacion(this)">
@@ -760,7 +752,6 @@
                 <input type="text" id="pv_txt_lugar_perforacion">
             </div>
             
-            <!-- ✅ CONDICIÓN MÉDICA -->
             <div class="form-grid" style="margin-top:16px; padding-top:12px; border-top:1px dashed #d4c9a8;">
                 <div class="form-group">
                     <label>¿Condición Médica?</label>
@@ -775,7 +766,6 @@
                 </div>
             </div>
             
-            <!-- ✅ CONSUME MEDICAMENTO -->
             <div class="form-grid" style="margin-top:12px;">
                 <div class="form-group">
                     <label>¿Consume Medicamento?</label>
@@ -790,7 +780,6 @@
                 </div>
             </div>
             
-            <!-- ✅ PROBLEMA JUDICIAL -->
             <div class="form-grid" style="margin-top:12px;">
                 <div class="form-group">
                     <label>¿Problema Judicial?</label>
@@ -806,7 +795,6 @@
             </div>
         </fieldset>
 
-        <!-- 🔹 SECCIÓN 2: DATOS DEL VEHÍCULO -->
         <div class="section-title">🚗 Datos del Vehículo</div>
 
         <fieldset>
@@ -821,7 +809,6 @@
                     </select>
                 </div>
                 
-                <!-- ✅ PLACA CON VALIDACIÓN -->
                 <div class="form-group">
                     <label>Placa</label>
                     <input type="text" id="pv_v_placa" style="text-transform: uppercase;" required>
@@ -928,7 +915,6 @@
             </div>
         </fieldset>
 
-        <!-- 🔹 DATOS DEL REGISTRO -->
         <div class="section-title">️ Datos del Registro</div>
 
         <fieldset>
