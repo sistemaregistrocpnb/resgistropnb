@@ -606,6 +606,11 @@ window.initRegVinculado = function() {
     setupPhotoPreview('pv_foto_v_trasera', 'prev_v_trasera');
     setupPhotoPreview('pv_foto_v_der', 'prev_v_der');
     setupPhotoPreview('pv_foto_v_izq', 'prev_v_izq');
-
+// ✅ Establecer Venezuela como valor por defecto
+nativeSelect.value = '+58';
+flagImg.src = 'https://flagcdn.com/w20/ve.png';
+codeText.textContent = '+58';
+countryText.textContent = 'Venezuela';
+    
     console.log("✅ Módulo inicializado. La validación ahora permite que motos y autos compartan seriales y guarda con 1 foto mínima.");
 };
