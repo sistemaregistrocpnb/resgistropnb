@@ -1,44 +1,5 @@
 window.initModVinculado = function() {
-    // ==========================================
-    // ✅ FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO
-    // ==========================================
-    async function registrarLog(accion, modulo, detalles) {
-        try {
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            if (!user) return;
-            let nombreUsuario = user.email || 'Sistema';
-            
-            try {
-                const { data: perfil } = await window.supabaseClient
-                    .from('perfiles_usuario')
-                    .select('nombre, apellido, email')
-                    .eq('user_id', user.id)
-                    .maybeSingle();
-                if (perfil) {
-                    nombreUsuario = [perfil.nombre, perfil.apellido].filter(Boolean).join(' ').trim() || nombreUsuario;
-                }
-            } catch (err) {
-                // Silencioso por seguridad
-            }
-
-            const logEntry = {
-                user_id: user.id,
-                user_nombre: nombreUsuario,
-                user_email: user.email || 'sistema',
-                accion: accion,
-                modulo: modulo,
-                detalles: detalles,
-                created_at: new Date().toISOString()
-            };
-            await window.supabaseClient.from('sistema_logs').insert([logEntry]);
-        } catch (err) {
-            // Silencioso por seguridad
-        }
-    }
-
-    // ==========================================
-    // 🔹 1. MAPA DE BANDERAS
-    // ==========================================
+   
     const isoMap = {
         "Afganistán": "af", "Albania": "al", "Alemania": "de", "Andorra": "ad", "Angola": "ao",
         "Antigua y Barbuda": "ag", "Arabia Saudita": "sa", "Argelia": "dz", "Argentina": "ar",
@@ -705,46 +666,29 @@ window.initModVinculado = function() {
                 const { error } = await window.supabaseClient.from('registro_vinculado').update(data).eq('id', currentData.id);
                 if (error) throw error;
                 
-                // ✅ NUEVO: REGISTRAR LOG DE MODIFICACIÓN CON ESTATUS
-                await registrarLog('MODIFICAR', 'VINCULADOS', {
-                    cedula: data.cedula,
-                    nombre_completo: `${data.primer_nombre} ${data.primer_apellido}`.trim(),
-                    placa: data.placa,
-                    tipo_vehiculo: data.tipo_vehiculo,
-                    estatus: currentData.estatus || 'Verificación',
-                    cambios: 'Datos del registro vinculado actualizados'
-                });
-                
-                mostrarMsg(msgBox, '✅ Registro actualizado correctamente.', 'success');
-                setTimeout(() => {
-                    form.style.display = 'none';
-                    inputBusqueda.value = '';
-                    msgBusqueda.style.display = 'none';
-                    msgBox.style.display = 'none';
-                    crossWarning.style.display = 'none';
-                    currentData = null;
-                    document.querySelectorAll('.img-preview').forEach(i => i.style.display = 'none');
-                    form.reset();
-                }, 4000);
-                
-            } catch (err) {
-                let msg = 'Error: ' + err.message;
-                if (err.message.includes('23505') || err.message.includes('unique_constraint')) {
-                    msg = '❌ Esa cédula o placa ya está registrada para otro registro.';
-                }
-                mostrarMsg(msgBox, msg, 'error');
-            } finally {
-                const btnSubmit = form.querySelector('.btn-submit');
-                btnSubmit.disabled = false; btnSubmit.textContent = '💾 Guardar Cambios';
-            }
-        });
-    }
-
-    const tlfNumInput = document.getElementById('pv_p_tlf_num');
-    if (tlfNumInput) {
-        tlfNumInput.addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, ''); });
-    }
-
+          // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
+if (typeof window.registrarLog === 'function' && currentData?.id) {
+    await window.registrarLog(
+        'MODIFICAR',
+        'VINCULADOS',
+        {
+            cedula: data.cedula,
+            nombre_completo: `${data.primer_nombre} ${data.primer_apellido}`.trim(),
+            placa: data.placa,
+            marca: data.marca_vehiculo,
+            modelo: data.modelo_vehiculo,
+            anio: data.anio_vehiculo,
+            color: data.color_vehiculo,
+            tipo_vehiculo: data.tipo_vehiculo,
+            estatus: 'Verificación',
+            estacion: data.estacion_policial,
+            direccion_detencion: data.direccion_detencion,
+            cambios_realizados: 'Datos del registro vinculado actualizados'
+        },
+        currentData.id
+    );
+    console.log('✅ Log de modificación de registro vinculado registrado exitosamente');
+}
     // ==========================================
     // 🔹 12. INICIALIZACIÓN
     // ==========================================
