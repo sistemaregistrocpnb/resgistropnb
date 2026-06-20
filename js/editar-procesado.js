@@ -180,11 +180,29 @@ if (input) input.click();
 }
 };
 window.eliminarArchivoActual = function(docId) {
-if (!confirm('¿Está seguro de eliminar este archivo? Se borrará permanentemente.')) return;
-archivosAEliminar[docId] = true;
-archivosNuevos[docId] = null;
-const currentDiv = document.getElementById(`current-${docId}`);
-if (currentDiv) currentDiv.innerHTML = '<p style="color: #dc2626; font-size: 0.85rem; margin-top: 10px;">🗑️ Archivo marcado para eliminar (se guardará al actualizar)</p>';
+    if (!confirm('¿Está seguro de eliminar este archivo? Se borrará permanentemente.')) return;
+    
+    archivosAEliminar[docId] = true;
+    archivosNuevos[docId] = null;
+    
+    const currentDiv = document.getElementById(`current-${docId}`);
+    const uploadArea = document.getElementById(`upload-${docId}`);
+    const statusContainer = document.getElementById(`status-${docId}`);
+    const fileInput = document.getElementById(`file_${docId}`);
+    
+    // 🔹 Mostrar "Sin archivo" en lugar del mensaje de eliminación
+    if (currentDiv) {
+        currentDiv.innerHTML = '<p style="color: #64748b; font-size: 0.85rem; margin-top: 10px;">Sin archivo</p>';
+    }
+    
+    // 🔹 Habilitar el área de carga para subir uno nuevo
+    if (uploadArea) {
+        uploadArea.classList.add('active');
+    }
+    
+    // 🔹 Limpiar el input y el status
+    if (fileInput) fileInput.value = '';
+    if (statusContainer) statusContainer.innerHTML = '';
 };
 window.eliminarArchivoMultipleActual = function(campo, index) {
 if (!confirm('¿Está seguro de eliminar este archivo?')) return;
@@ -194,25 +212,27 @@ archivosActuales[campo].splice(index, 1);
 renderizarArchivosMultiplesActuales(campo);
 };
 function renderizarArchivosMultiplesActuales(campo) {
-const listDiv = document.getElementById(`current-list-${campo}`);
-if (!listDiv) return;
-if (archivosActuales[campo].length === 0) {
-listDiv.innerHTML = '<p style="color: #64748b; font-size: 0.85rem;">No hay archivos actuales</p>';
-return;
-}
-listDiv.innerHTML = '';
-archivosActuales[campo].forEach((url, index) => {
-const item = document.createElement('div');
-item.className = 'file-item-multiple';
-item.innerHTML = `
-<span>📄 Archivo ${index + 1}</span>
-<div class="file-actions">
-<button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
-<button type="button" onclick="eliminarArchivoMultipleActual('${campo}', ${index})">❌</button>
-</div>
-`;
-listDiv.appendChild(item);
-});
+    const listDiv = document.getElementById(`current-list-${campo}`);
+    if (!listDiv) return;
+    
+    if (archivosActuales[campo].length === 0) {
+        listDiv.innerHTML = '<p style="color: #64748b; font-size: 0.85rem;">No hay archivos actuales</p>';
+        return;
+    }
+    
+    listDiv.innerHTML = '';
+    archivosActuales[campo].forEach((url, index) => {
+        const item = document.createElement('div');
+        item.className = 'file-item-multiple';
+        item.innerHTML = `
+            <span>📄 Archivo ${index + 1}</span>
+            <div class="file-actions">
+                <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
+                <button type="button" onclick="eliminarArchivoMultipleActual('${campo}', ${index})">❌</button>
+            </div>
+        `;
+        listDiv.appendChild(item);
+    });
 }
 async function cargarProcesado(valor) {
 const val = valor.trim().toUpperCase();
@@ -270,27 +290,41 @@ document.getElementById('edit_registro_id').value = proc.registro_id;
 document.getElementById('edit_tipo_delito').value = proc.tipo_delito || '';
 document.getElementById('edit_observaciones').value = proc.observaciones || '';
 docsUnicos.forEach(doc => {
-const currentDiv = document.getElementById(`current-${doc.id}`);
-const url = proc[doc.id];
-if (url) {
-archivosActuales[doc.id] = url;
-const fileName = url.split('/').pop();
-currentDiv.innerHTML = `
-<div class="doc-current">
-<div class="file-info">
-<span>📄</span>
-<span>${fileName}</span>
-</div>
-<div class="actions">
-<button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
-<button type="button" class="btn-replace" onclick="reemplazarArchivo('${doc.id}')">🔄 Reemplazar</button>
-<button type="button" class="btn-delete" onclick="eliminarArchivoActual('${doc.id}')">🗑️ Eliminar</button>
-</div>
-</div>
-`;
-} else {
-currentDiv.innerHTML = '<p style="color: #64748b; font-size: 0.85rem; margin-top: 10px;">Sin archivo</p>';
-}
+    const currentDiv = document.getElementById(`current-${doc.id}`);
+    const url = proc[doc.id];
+    
+    if (url) {
+        archivosActuales[doc.id] = url;
+        const fileName = url.split('/').pop();
+        currentDiv.innerHTML = `
+            <div class="doc-current">
+                <div class="file-info">
+                    <span>📄</span>
+                    <span>${fileName}</span>
+                </div>
+                <div class="actions">
+                    <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
+                    <button type="button" class="btn-replace" onclick="reemplazarArchivo('${doc.id}')">🔄 Reemplazar</button>
+                    <button type="button" class="btn-delete" onclick="eliminarArchivoActual('${doc.id}')">🗑️ Eliminar</button>
+                </div>
+            </div>
+        `;
+    } else {
+        // 🔹 CORRECCIÓN: Cuando NO hay archivo, mostrar "Sin archivo" y botón Ver deshabilitado
+        archivosActuales[doc.id] = null;
+        currentDiv.innerHTML = `
+            <div class="doc-current">
+                <div class="file-info">
+                    <span>📄</span>
+                    <span style="color: #94a3b8;">Sin archivo</span>
+                </div>
+                <div class="actions">
+                    <button type="button" class="btn-view" disabled style="opacity: 0.5; cursor: not-allowed;">👁️ Ver</button>
+                    <button type="button" class="btn-replace" onclick="reemplazarArchivo('${doc.id}')">🔄 Subir Archivo</button>
+                </div>
+            </div>
+        `;
+    }
 });
 docsMultiples.forEach(doc => {
 const urls = proc[doc.id] || [];
