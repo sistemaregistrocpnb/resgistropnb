@@ -198,13 +198,13 @@ window.initElimVinculados = function() {
             try {
                 const resultados = await buscarEnTodasLasTablas(val);
                 if (resultados.length === 0) {
-                    showMsg(msgBuscar, ' Registro vinculado no encontrado.', 'error');
+                showMsg(msgBuscar, '❌ Registro vinculado no encontrado.', 'error');
                 } else if (resultados.length === 1) {
                     showMsg(msgBuscar, '✅ 1 registro encontrado. Cargando...', 'success');
                     setTimeout(() => cargarDatos(resultados[0].datos, resultados[0].origen), 300);
                 } else {
                     const activo = resultados.find(r => !r.eliminado) || resultados[0];
-                    showMsg(msgBuscar, ` Se encontraron <strong>${resultados.length} coincidencias</strong>. Mostrando la principal.`, 'success');
+                    showMsg(msgBuscar, `🔎 Se encontraron <strong>${resultados.length} coincidencias</strong>. Mostrando la principal.`, 'success');
                     setTimeout(() => cargarDatos(activo.datos, activo.origen), 300);
                 }
             } catch (err) {
