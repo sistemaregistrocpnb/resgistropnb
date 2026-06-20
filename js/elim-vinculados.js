@@ -1,5 +1,8 @@
+// ✅ MARCA DE VERIFICACIÓN
+console.log("✅ VERSIÓN FINAL: elim-vinculados.js cargado (Corregido)");
+
 window.initElimVinculados = function() {
-    console.log("✅ Módulo elim-vinculados.js cargado correctamente.");
+    console.log("✅ Módulo initElimVinculados ejecutándose...");
 
     // 🔹 Referencias DOM
     const buscarInput = document.getElementById('buscar-vinc-elim');
@@ -98,17 +101,17 @@ window.initElimVinculados = function() {
         setVal('ev-p-cond', data.condicion_medica ? 'Sí' : 'No');
         const boxCond = document.getElementById('box-ev-cond-det');
         if(boxCond) boxCond.style.display = data.condicion_medica ? 'block' : 'none';
-        setVal('ev-p-cond-det', data.detalle_condicion_medica);
+        setVal('ev-p-cond-det', data.condicion_medica);
 
         setVal('ev-p-med', data.consume_medicamento ? 'Sí' : 'No');
         const boxMed = document.getElementById('box-ev-med-det');
         if(boxMed) boxMed.style.display = data.consume_medicamento ? 'block' : 'none';
-        setVal('ev-p-med-det', data.detalle_medicamento);
+        setVal('ev-p-med-det', data.consume_medicamento);
 
         setVal('ev-p-jud', data.problema_judicial ? 'Sí' : 'No');
         const boxJud = document.getElementById('box-ev-jud-det');
         if(boxJud) boxJud.style.display = data.problema_judicial ? 'block' : 'none';
-        setVal('ev-p-jud-det', data.detalle_problema_judicial);
+        setVal('ev-p-jud-det', data.problema_judicial);
 
         // Fotos Persona
         setPhoto('ev-foto-p-frontal', data.foto_frontal_persona);
@@ -157,9 +160,7 @@ window.initElimVinculados = function() {
         }
     }
 
-    // ==========================================
     // 🔍 BÚSQUEDA MULTI-TABLA
-    // ==========================================
     function detectarCoincidencias(reg, val) {
         const campos = [];
         const v = val.trim().toUpperCase();
@@ -194,6 +195,7 @@ window.initElimVinculados = function() {
                     });
                 });
             }
+
             // 2. Vinculados Archivados
             const { data: eliminados, error: errElim } = await window.supabaseClient
                 .from('eliminados_vinculados')
@@ -241,7 +243,7 @@ window.initElimVinculados = function() {
                     setTimeout(() => cargarDatos(activo.datos, activo.origen), 300);
                 }
             } catch (err) {
-                console.error(' Error general:', err);
+                console.error('❌ Error general:', err);
                 showMsg(msgBuscar, '❌ Error de conexión: ' + err.message, 'error');
             } finally {
                 buscarBtn.disabled = false;
@@ -255,9 +257,7 @@ window.initElimVinculados = function() {
         });
     }
 
-    // ==========================================
     // 🔹 MODAL DE CONFIRMACIÓN
-    // ==========================================
     function showModal(titulo, texto, accion, tipo) {
         pendingAction = accion;
         if(modalTitle) modalTitle.textContent = titulo;
@@ -284,9 +284,7 @@ window.initElimVinculados = function() {
     if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
     if (btnModalYes) btnModalYes.addEventListener('click', ejecutarAccion);
 
-    // ==========================================
     // 🔹 ELIMINAR
-    // ==========================================
     async function eliminarRegistro() {
         if (!currentData) return;
         if(btnEliminar) {
@@ -297,6 +295,7 @@ window.initElimVinculados = function() {
         try {
             const { data: { user } } = await window.supabaseClient.auth.getUser();
             const eliminadoPor = user?.email || 'usuario@sistema';
+            
             const dataToArchive = {
                 eliminado_por: eliminadoPor,
                 eliminado_en: new Date().toISOString(),
@@ -324,11 +323,8 @@ window.initElimVinculados = function() {
                 perforaciones: currentData.perforaciones,
                 detalle_perforaciones: currentData.detalle_perforaciones,
                 condicion_medica: currentData.condicion_medica,
-                detalle_condicion_medica: currentData.detalle_condicion_medica,
                 consume_medicamento: currentData.consume_medicamento,
-                detalle_medicamento: currentData.detalle_medicamento,
                 problema_judicial: currentData.problema_judicial,
-                detalle_problema_judicial: currentData.detalle_problema_judicial,
                 foto_frontal_persona: currentData.foto_frontal_persona,
                 foto_perfil_izq_persona: currentData.foto_perfil_izq_persona,
                 foto_perfil_der_persona: currentData.foto_perfil_der_persona,
@@ -350,12 +346,14 @@ window.initElimVinculados = function() {
                 direccion_detencion: currentData.direccion_detencion,
                 observaciones: currentData.observaciones
             };
+            
             const res = await window.supabaseClient.from('eliminados_vinculados').insert([dataToArchive]);
             if (res.error) throw res.error;
+            
             const delRes = await window.supabaseClient.from('registro_vinculado').delete().eq('id', currentData.id);
             if (delRes.error) throw delRes.error;
 
-            //  LOG CENTRALIZADO USANDO UTILS.JS
+            // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
             if (typeof window.registrarLog === 'function' && currentData?.id) {
                 await window.registrarLog(
                     'ELIMINAR',
@@ -399,18 +397,16 @@ window.initElimVinculados = function() {
         }
     }
 
-    // ==========================================
     // 🔹 REINTEGRAR (ÚNICA FUNCIÓN CORREGIDA)
-    // ==========================================
     async function reintegrarRegistro() {
         if (!currentData) return;
-        if (!window.supabaseClient) return showMsgElim('❌ Error: Supabase no está disponible.', 'error');
         if(btnReintegrar) {
             btnReintegrar.disabled = true;
             btnReintegrar.textContent = '⏳ Reintegrando...';
         }
         hideMsgElim();
         try {
+            // ✅ CORREGIDO: Solo columnas que SÍ existen en registro_vinculado
             const dataToRestore = {
                 primer_nombre: currentData.primer_nombre,
                 segundo_nombre: currentData.segundo_nombre,
@@ -436,11 +432,8 @@ window.initElimVinculados = function() {
                 perforaciones: currentData.perforaciones,
                 detalle_perforaciones: currentData.detalle_perforaciones,
                 condicion_medica: currentData.condicion_medica,
-                detalle_condicion_medica: currentData.detalle_condicion_medica,
                 consume_medicamento: currentData.consume_medicamento,
-                detalle_medicamento: currentData.detalle_medicamento,
                 problema_judicial: currentData.problema_judicial,
-                detalle_problema_judicial: currentData.detalle_problema_judicial,
                 foto_frontal_persona: currentData.foto_frontal_persona,
                 foto_perfil_izq_persona: currentData.foto_perfil_izq_persona,
                 foto_perfil_der_persona: currentData.foto_perfil_der_persona,
@@ -462,8 +455,10 @@ window.initElimVinculados = function() {
                 direccion_detencion: currentData.direccion_detencion,
                 observaciones: currentData.observaciones
             };
+            
             const res = await window.supabaseClient.from('registro_vinculado').insert([dataToRestore]);
             if (res.error) throw res.error;
+            
             const delRes = await window.supabaseClient.from('eliminados_vinculados').delete().eq('id', currentData.id);
             if (delRes.error) throw delRes.error;
 
@@ -516,9 +511,7 @@ window.initElimVinculados = function() {
         }
     }
 
-    // ==========================================
     // 🔹 LISTENERS DE BOTONES
-    // ==========================================
     if (btnEliminar) {
         btnEliminar.addEventListener('click', () => {
             if (!currentData) return;
@@ -528,7 +521,7 @@ window.initElimVinculados = function() {
     if (btnReintegrar) {
         btnReintegrar.addEventListener('click', () => {
             if (!currentData) return;
-            showModal('️ Confirmar Reintegración', `¿Está seguro de reintegrar este registro (C.I: ${currentData.cedula}) al sistema activo?`, 'reintegrate', 'success');
+            showModal('⚠️ Confirmar Reintegración', `¿Está seguro de reintegrar este registro (C.I: ${currentData.cedula}) al sistema activo?`, 'reintegrate', 'success');
         });
     }
 
