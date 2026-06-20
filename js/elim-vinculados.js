@@ -1,7 +1,7 @@
 window.initElimVinculados = function() {
-    console.log("✅ Módulo elim-vinculados.js cargado correctamente.");
+    console.log("🚀 [elim-vinculados] Módulo iniciado");
 
-    // 🔹 Referencias DOM (COINCIDEN CON elim-vinculado.html)
+    // 🔹 Referencias DOM
     const buscarInput = document.getElementById('buscar-vinc-elim');
     const buscarBtn = document.getElementById('btn-buscar-vinc-elim');
     const msgBuscar = document.getElementById('buscar-msg-vinc');
@@ -18,6 +18,16 @@ window.initElimVinculados = function() {
     const modalText = document.getElementById('modal-text-vinc');
     const btnModalYes = document.getElementById('btn-modal-yes-vinc');
     const btnModalNo = document.getElementById('btn-modal-no-vinc');
+
+    // Verificar elementos críticos
+    if (!buscarInput || !buscarBtn) {
+        console.error('❌ [elim-vinculados] No se encontraron los elementos de búsqueda');
+        console.log('buscarInput:', buscarInput);
+        console.log('buscarBtn:', buscarBtn);
+        return;
+    }
+
+    console.log("✅ [elim-vinculados] Todos los elementos DOM encontrados");
 
     let currentData = null;
     let isArchived = false;
@@ -52,8 +62,9 @@ window.initElimVinculados = function() {
         }
     };
 
-    // 🔹 Mostrar datos en el formulario
+    //  Mostrar datos
     function cargarDatos(data, source) {
+        console.log("📋 [elim-vinculados] Cargando datos:", data);
         currentData = data;
         isArchived = (source === 'eliminados_vinculados');
         if(dataContainer) dataContainer.style.display = 'block';
@@ -137,7 +148,7 @@ window.initElimVinculados = function() {
         setVal('ev-dir-det', data.direccion_detencion);
         setVal('ev-obs', data.observaciones);
 
-        // Estado (Activo vs Archivado)
+        // Estado
         if (isArchived) {
             if (archivedNotice) archivedNotice.style.display = 'block';
             if (archivedBanner) archivedBanner.style.display = 'block';
@@ -157,23 +168,12 @@ window.initElimVinculados = function() {
         }
     }
 
-    // 🔍 BÚSQUEDA MULTI-TABLA
-    function detectarCoincidencias(reg, val) {
-        const campos = [];
-        const v = val.trim().toUpperCase();
-        if (reg.cedula && reg.cedula.toUpperCase().includes(v)) campos.push('Cédula');
-        if (reg.placa && reg.placa.toUpperCase().includes(v)) campos.push('Placa');
-        if (reg.serial_carroceria && reg.serial_carroceria.toUpperCase().includes(v)) campos.push('Serial Carrocería');
-        if (reg.serial_motor && reg.serial_motor.toUpperCase().includes(v)) campos.push('Serial Motor');
-        return campos;
-    }
-
+    // 🔍 BÚSQUEDA
     async function buscarEnTodasLasTablas(valor) {
         const resultados = [];
         const val = valor.trim().toUpperCase();
         const query = `cedula.ilike.%${val}%,placa.ilike.%${val}%,serial_carroceria.ilike.%${val}%,serial_motor.ilike.%${val}%`;
         try {
-            // 1. Vinculados Activos
             const { data: vinculados, error: errVinc } = await window.supabaseClient
                 .from('registro_vinculado')
                 .select('*')
@@ -183,13 +183,11 @@ window.initElimVinculados = function() {
                     resultados.push({
                         origen: 'registro_vinculado',
                         datos: reg,
-                        eliminado: false,
-                        encontrado_por: detectarCoincidencias(reg, val)
+                        eliminado: false
                     });
                 });
             }
 
-            // 2. Vinculados Archivados
             const { data: eliminados, error: errElim } = await window.supabaseClient
                 .from('eliminados_vinculados')
                 .select('*')
@@ -199,8 +197,7 @@ window.initElimVinculados = function() {
                     resultados.push({
                         origen: 'eliminados_vinculados',
                         datos: reg,
-                        eliminado: true,
-                        encontrado_por: detectarCoincidencias(reg, val)
+                        eliminado: true
                     });
                 });
             }
@@ -212,11 +209,16 @@ window.initElimVinculados = function() {
     }
 
     // 🔍 LISTENER PRINCIPAL DE BÚSQUEDA
+    console.log("🔍 [elim-vinculados] Configurando listener de búsqueda");
     if (buscarBtn && buscarInput) {
         buscarBtn.addEventListener('click', async () => {
+            console.log("🖱️ [elim-vinculados] Click en buscar");
             const val = buscarInput.value.trim();
-            if (val.length < 3) return showMsg(msgBuscar, '⚠️ Ingrese un dato válido (mín. 3 caracteres).', 'error');
-            showMsg(msgBuscar, '🔍 Buscando en registros vinculados...', 'success');
+            if (val.length < 3) {
+                console.log("⚠️ [elim-vinculados] Valor muy corto:", val);
+                return showMsg(msgBuscar, '️ Ingrese un dato válido (mín. 3 caracteres).', 'error');
+            }
+            showMsg(msgBuscar, '🔍 Buscando...', 'success');
             buscarBtn.disabled = true;
             if(dataContainer) dataContainer.style.display = 'none';
             if(archivedBanner) archivedBanner.style.display = 'none';
@@ -224,19 +226,20 @@ window.initElimVinculados = function() {
             hideMsgElim();
             try {
                 const resultados = await buscarEnTodasLasTablas(val);
+                console.log("📊 [elim-vinculados] Resultados:", resultados.length);
                 if (resultados.length === 0) {
                     showMsg(msgBuscar, '❌ Registro vinculado no encontrado.', 'error');
                 } else if (resultados.length === 1) {
-                    showMsg(msgBuscar, '✅ 1 registro encontrado. Cargando...', 'success');
+                    showMsg(msgBuscar, '✅ 1 registro encontrado.', 'success');
                     setTimeout(() => cargarDatos(resultados[0].datos, resultados[0].origen), 300);
                 } else {
                     const activo = resultados.find(r => !r.eliminado) || resultados[0];
-                    showMsg(msgBuscar, `🔎 Se encontraron <strong>${resultados.length} coincidencias</strong>. Mostrando la principal.`, 'success');
+                    showMsg(msgBuscar, `🔎 ${resultados.length} coincidencias. Mostrando principal.`, 'success');
                     setTimeout(() => cargarDatos(activo.datos, activo.origen), 300);
                 }
             } catch (err) {
-                console.error('❌ Error general:', err);
-                showMsg(msgBuscar, ' Error de conexión: ' + err.message, 'error');
+                console.error('❌ Error:', err);
+                showMsg(msgBuscar, ' Error: ' + err.message, 'error');
             } finally {
                 buscarBtn.disabled = false;
             }
@@ -249,7 +252,7 @@ window.initElimVinculados = function() {
         });
     }
 
-    // 🔹 MODAL DE CONFIRMACIÓN
+    // 🔹 MODAL
     function showModal(titulo, texto, accion, tipo) {
         pendingAction = accion;
         if(modalTitle) modalTitle.textContent = titulo;
@@ -345,7 +348,6 @@ window.initElimVinculados = function() {
             const delRes = await window.supabaseClient.from('registro_vinculado').delete().eq('id', currentData.id);
             if (delRes.error) throw delRes.error;
 
-            // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
             if (typeof window.registrarLog === 'function' && currentData?.id) {
                 await window.registrarLog(
                     'ELIMINAR',
@@ -362,14 +364,13 @@ window.initElimVinculados = function() {
                         estatus: 'Eliminado',
                         estacion: currentData.estacion_policial,
                         direccion_detencion: currentData.direccion_detencion,
-                        descripcion_eliminada: `Registro vinculado (${currentData.tipo_vehiculo || 'no especificado'} ${currentData.marca_vehiculo || ''} ${currentData.modelo_vehiculo || ''}) eliminado del sistema activo por ${eliminadoPor}`
+                        descripcion_eliminada: `Registro vinculado eliminado por ${eliminadoPor}`
                     },
                     currentData.id
                 );
-                console.log('✅ Log de eliminación de registro vinculado registrado exitosamente');
             }
 
-            showMsgElim('✅ Registro vinculado eliminado y archivado correctamente.', 'success');
+            showMsgElim('✅ Registro eliminado y archivado.', 'success');
             setTimeout(() => {
                 if(dataContainer) dataContainer.style.display = 'none';
                 if(buscarInput) buscarInput.value = '';
@@ -384,7 +385,7 @@ window.initElimVinculados = function() {
         } finally {
             if(btnEliminar) {
                 btnEliminar.disabled = false;
-                btnEliminar.textContent = '️ Eliminar Registro Vinculado';
+                btnEliminar.textContent = '🗑️ Eliminar Registro Vinculado';
             }
         }
     }
@@ -394,7 +395,7 @@ window.initElimVinculados = function() {
         if (!currentData) return;
         if(btnReintegrar) {
             btnReintegrar.disabled = true;
-            btnReintegrar.textContent = '⏳ Reintegrando...';
+            btnReintegrar.textContent = ' Reintegrando...';
         }
         hideMsgElim();
         try {
@@ -454,7 +455,6 @@ window.initElimVinculados = function() {
             const delRes = await window.supabaseClient.from('eliminados_vinculados').delete().eq('id', currentData.id);
             if (delRes.error) throw delRes.error;
 
-            // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
             if (typeof window.registrarLog === 'function' && currentData?.id) {
                 await window.registrarLog(
                     'REINTEGRAR',
@@ -474,10 +474,9 @@ window.initElimVinculados = function() {
                     },
                     currentData.id
                 );
-                console.log('✅ Log de reintegración de registro vinculado registrado exitosamente');
             }
 
-            showMsgElim('✅ Registro vinculado reintegrado al sistema activo.', 'success');
+            showMsgElim('✅ Registro reintegrado al sistema activo.', 'success');
             setTimeout(() => {
                 if(dataContainer) dataContainer.style.display = 'none';
                 if(buscarInput) buscarInput.value = '';
@@ -489,8 +488,8 @@ window.initElimVinculados = function() {
         } catch (err) {
             console.error('Error reintegrando:', err);
             let msg = 'Error al reintegrar.';
-            if (err.message.includes('23505') || err.message.includes('unique') || err.message.includes('duplicate key')) {
-                msg = '❌ <strong>No se puede reintegrar:</strong> La cédula, placa o serial ya se encuentra en uso.<br><small style="color:#64748b;">Este registro se conserva como historial.</small>';
+            if (err.message.includes('23505') || err.message.includes('unique')) {
+                msg = '❌ La cédula, placa o serial ya está en uso.';
             } else {
                 msg = '❌ ' + err.message;
             }
@@ -498,7 +497,7 @@ window.initElimVinculados = function() {
         } finally {
             if(btnReintegrar) {
                 btnReintegrar.disabled = false;
-                btnReintegrar.textContent = '️ Reintegrar al Sistema Activo';
+                btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo';
             }
         }
     }
@@ -507,15 +506,15 @@ window.initElimVinculados = function() {
     if (btnEliminar) {
         btnEliminar.addEventListener('click', () => {
             if (!currentData) return;
-            showModal('⚠️ Confirmar Eliminación', `¿Está seguro de eliminar este registro vinculado (C.I: ${currentData.cedula})?`, 'delete', 'danger');
+            showModal('⚠️ Confirmar Eliminación', `¿Eliminar registro vinculado (C.I: ${currentData.cedula})?`, 'delete', 'danger');
         });
     }
     if (btnReintegrar) {
         btnReintegrar.addEventListener('click', () => {
             if (!currentData) return;
-            showModal('️ Confirmar Reintegración', `¿Está seguro de reintegrar este registro (C.I: ${currentData.cedula}) al sistema activo?`, 'reintegrate', 'success');
+            showModal('⚠️ Confirmar Reintegración', `¿Reintegrar registro (C.I: ${currentData.cedula})?`, 'reintegrate', 'success');
         });
     }
 
-    console.log("✅ Módulo elim-vinculados.js inicializado correctamente.");
+    console.log("✅ [elim-vinculados] Módulo inicializado correctamente");
 };
