@@ -1,9 +1,40 @@
-// 🔍 DIAGNÓSTICO INICIAL
-console.log("🔍 [editar-procesado.js] Archivo cargado - Iniciando diagnóstico...");
-console.log("🔍 window.supabaseClient existe:", typeof window.supabaseClient !== 'undefined');
-
 window.initEditarProcesado = function() {
-    console.log("🚀 [editar-procesado] Módulo initEditarProcesado ejecutándose...");
+    // ==========================================
+    // ✅ NUEVO: FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO
+    // ==========================================
+    async function registrarLog(accion, modulo, detalles) {
+        try {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) return;
+            let nombreUsuario = user.email || 'Sistema';
+            
+            try {
+                const { data: perfil } = await window.supabaseClient
+                    .from('perfiles_usuario')
+                    .select('nombre, apellido, email')
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+                if (perfil) {
+                    nombreUsuario = [perfil.nombre, perfil.apellido].filter(Boolean).join(' ').trim() || nombreUsuario;
+                }
+            } catch (err) {
+                // Silencioso por seguridad
+            }
+
+            const logEntry = {
+                user_id: user.id,
+                user_nombre: nombreUsuario,
+                user_email: user.email || 'sistema',
+                accion: accion,
+                modulo: modulo,
+                detalles: detalles,
+                created_at: new Date().toISOString()
+            };
+            await window.supabaseClient.from('sistema_logs').insert([logEntry]);
+        } catch (err) {
+            // Silencioso por seguridad
+        }
+    }
 
     const docsUnicos = [
         { id: 'portada', label: '📑 Portada' },
@@ -21,33 +52,29 @@ window.initEditarProcesado = function() {
         { id: 'planilla_pvr', label: '🚙 Planilla PVR' },
         { id: 'otros_documentos', label: '📎 Otros Documentos' }
     ];
-
     const docsMultiples = [
         { id: 'entrevista', label: '🎤 Entrevistas', max: 10 },
         { id: 'cadena_custodia', label: '⛓️ Cadena de Custodia', max: 10 },
         { id: 'inspecciones_tecnicas', label: '🔧 Inspecciones Técnicas', max: 10 }
     ];
-
     let procesadoActual = null;
     const archivosActuales = {};
     const archivosNuevos = {};
     const archivosAEliminar = {};
     const archivosMultiplesNuevos = {};
     const archivosMultiplesEliminados = {};
-
+    
     docsUnicos.forEach(d => {
         archivosActuales[d.id] = null;
         archivosNuevos[d.id] = null;
         archivosAEliminar[d.id] = false;
     });
-
     docsMultiples.forEach(d => {
         archivosActuales[d.id] = [];
         archivosMultiplesNuevos[d.id] = [];
         archivosMultiplesEliminados[d.id] = [];
     });
 
-    // 🔍 DIAGNÓSTICO: Verificar elementos DOM
     const btnBuscar = document.getElementById('edit_btn_buscar');
     const inputBusqueda = document.getElementById('edit_busqueda_input');
     const msgBusqueda = document.getElementById('edit_msg_busqueda');
@@ -59,17 +86,10 @@ window.initEditarProcesado = function() {
     const contenedorMultiples = document.getElementById('edit-docs-multiples-container');
     const loadingOverlay = document.getElementById('edit-loading-overlay');
 
-    console.log("🔍 Elementos DOM encontrados:");
-    console.log("  - btnBuscar:", btnBuscar);
-    console.log("  - inputBusqueda:", inputBusqueda);
-    console.log("  - msgBusqueda:", msgBusqueda);
-    console.log("  - form:", form);
-
+    // Verificación de elementos críticos (Silenciosa)
     if (!btnBuscar || !inputBusqueda) {
-        console.error('❌ [editar-procesado] No se encontraron los elementos de búsqueda. Verifica el HTML.');
         return;
     }
-    console.log('✅ [editar-procesado] Elementos DOM encontrados correctamente');
 
     const mostrarMsg = (el, txt, type) => {
         if (!el) return;
@@ -86,14 +106,14 @@ window.initEditarProcesado = function() {
             div.className = 'doc-item';
             div.id = `doc-item-${doc.id}`;
             div.innerHTML = `
-                <div class="doc-header">
-                    <label>${doc.label}</label>
-                </div>
-                <div id="current-${doc.id}"></div>
-                <div class="doc-upload-area" id="upload-${doc.id}">
-                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="mostrarNuevoArchivo('${doc.id}', this)">
-                    <div id="status-${doc.id}" class="file-status-container"></div>
-                </div>
+            <div class="doc-header">
+                <label>${doc.label}</label>
+            </div>
+            <div id="current-${doc.id}"></div>
+            <div class="doc-upload-area" id="upload-${doc.id}">
+                <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="mostrarNuevoArchivo('${doc.id}', this)">
+                <div id="status-${doc.id}" class="file-status-container"></div>
+            </div>
             `;
             contenedorUnicos.appendChild(div);
         });
@@ -107,16 +127,16 @@ window.initEditarProcesado = function() {
             div.className = 'doc-item';
             div.id = `doc-item-${doc.id}`;
             div.innerHTML = `
-                <div class="doc-header">
-                    <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Máximo ${doc.max})</span></label>
-                </div>
-                <div id="current-list-${doc.id}" style="margin-top: 10px;"></div>
-                <div class="doc-upload-area active" id="upload-${doc.id}">
-                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
-                    <button type="button" class="btn-add-file" onclick="agregarNuevosMultiples('${doc.id}', ${doc.max})">➕ Agregar más archivos</button>
-                    <div class="file-count" id="count-${doc.id}">0 archivos nuevos</div>
-                    <div class="file-list" id="new-list-${doc.id}"></div>
-                </div>
+            <div class="doc-header">
+                <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Máximo ${doc.max})</span></label>
+            </div>
+            <div id="current-list-${doc.id}" style="margin-top: 10px;"></div>
+            <div class="doc-upload-area active" id="upload-${doc.id}">
+                <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
+                <button type="button" class="btn-add-file" onclick="agregarNuevosMultiples('${doc.id}', ${doc.max})">➕ Agregar más archivos</button>
+                <div class="file-count" id="count-${doc.id}">0 archivos nuevos</div>
+                <div class="file-list" id="new-list-${doc.id}"></div>
+            </div>
             `;
             contenedorMultiples.appendChild(div);
         });
@@ -132,11 +152,11 @@ window.initEditarProcesado = function() {
             archivosNuevos[docId] = input.files[0];
             archivosAEliminar[docId] = true;
             statusContainer.innerHTML = `
-                <div class="file-loaded">
-                    <span>🔄</span>
-                    <span class="file-name">${input.files[0].name}</span>
-                    <button type="button" class="btn-remove" onclick="cancelarNuevo('${docId}')">❌ Cancelar</button>
-                </div>
+            <div class="file-loaded">
+                <span>🔄</span>
+                <span class="file-name">${input.files[0].name}</span>
+                <button type="button" class="btn-remove" onclick="cancelarNuevo('${docId}')">❌ Cancelar</button>
+            </div>
             `;
         }
     };
@@ -181,10 +201,10 @@ window.initEditarProcesado = function() {
             const item = document.createElement('div');
             item.className = 'file-item-multiple';
             item.innerHTML = `
-                <span>🆕 ${file.name}</span>
-                <div class="file-actions">
-                    <button type="button" onclick="quitarNuevoMultiple('${campo}', ${index})">❌</button>
-                </div>
+            <span>🆕 ${file.name}</span>
+            <div class="file-actions">
+                <button type="button" onclick="quitarNuevoMultiple('${campo}', ${index})">❌</button>
+            </div>
             `;
             list.appendChild(item);
         });
@@ -237,41 +257,33 @@ window.initEditarProcesado = function() {
             const item = document.createElement('div');
             item.className = 'file-item-multiple';
             item.innerHTML = `
-                <span>📄 Archivo ${index + 1}</span>
-                <div class="file-actions">
-                    <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
-                    <button type="button" onclick="eliminarArchivoMultipleActual('${campo}', ${index})">❌</button>
-                </div>
+            <span>📄 Archivo ${index + 1}</span>
+            <div class="file-actions">
+                <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
+                <button type="button" onclick="eliminarArchivoMultipleActual('${campo}', ${index})">❌</button>
+            </div>
             `;
             listDiv.appendChild(item);
         });
     }
 
     async function cargarProcesado(valor) {
-        if (!window.supabaseClient) {
-            throw new Error("Supabase no está inicializado");
-        }
-        
         const val = valor.trim().toUpperCase();
-        
         const { data: dataColumnas, error: errColumnas } = await window.supabaseClient
             .from('registro_procesados')
             .select('*')
             .or(`identificador_principal.eq.${val},cedula.eq.${val}`)
-            .order('created_at', { ascending: false })
+            .order('fecha_procesamiento', { ascending: false })
             .limit(5);
-            
         if (!errColumnas && dataColumnas && dataColumnas.length > 0) {
             return dataColumnas;
         }
-        
         const { data: dataJson, error: errJson } = await window.supabaseClient
             .from('registro_procesados')
             .select('*')
             .or(`datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
-            .order('created_at', { ascending: false })
+            .order('fecha_procesamiento', { ascending: false })
             .limit(5);
-            
         if (!errJson && dataJson && dataJson.length > 0) {
             return dataJson;
         }
@@ -312,6 +324,7 @@ window.initEditarProcesado = function() {
         document.getElementById('edit_registro_id').value = proc.registro_id;
         document.getElementById('edit_tipo_delito').value = proc.tipo_delito || '';
         document.getElementById('edit_observaciones').value = proc.observaciones || '';
+        
         docsUnicos.forEach(doc => {
             const currentDiv = document.getElementById(`current-${doc.id}`);
             const url = proc[doc.id];
@@ -319,22 +332,23 @@ window.initEditarProcesado = function() {
                 archivosActuales[doc.id] = url;
                 const fileName = url.split('/').pop();
                 currentDiv.innerHTML = `
-                    <div class="doc-current">
-                        <div class="file-info">
-                            <span>📄</span>
-                            <span>${fileName}</span>
-                        </div>
-                        <div class="actions">
-                            <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
-                            <button type="button" class="btn-replace" onclick="reemplazarArchivo('${doc.id}')">🔄 Reemplazar</button>
-                            <button type="button" class="btn-delete" onclick="eliminarArchivoActual('${doc.id}')">🗑️ Eliminar</button>
-                        </div>
+                <div class="doc-current">
+                    <div class="file-info">
+                        <span>📄</span>
+                        <span>${fileName}</span>
                     </div>
+                    <div class="actions">
+                        <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
+                        <button type="button" class="btn-replace" onclick="reemplazarArchivo('${doc.id}')">🔄 Reemplazar</button>
+                        <button type="button" class="btn-delete" onclick="eliminarArchivoActual('${doc.id}')">🗑️ Eliminar</button>
+                    </div>
+                </div>
                 `;
             } else {
                 currentDiv.innerHTML = '<p style="color: #64748b; font-size: 0.85rem; margin-top: 10px;">Sin archivo</p>';
             }
         });
+        
         docsMultiples.forEach(doc => {
             const urls = proc[doc.id] || [];
             archivosActuales[doc.id] = Array.isArray(urls) ? urls : [];
@@ -343,22 +357,17 @@ window.initEditarProcesado = function() {
         });
     }
 
-    // 🔹 LISTENER DEL BOTÓN BUSCAR
-    console.log("🔍 Registrando listener del botón buscar...");
     btnBuscar.addEventListener('click', async () => {
-        console.log('🖱️ [editar-procesado] Click en botón buscar detectado');
         const val = inputBusqueda.value.trim();
         if (val.length < 3) {
             return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 3 caracteres.', 'error');
         }
-        console.log('🔍 Buscando:', val);
         mostrarMsg(msgBusqueda, '🔍 Buscando procesado...', 'success');
         btnBuscar.disabled = true;
         form.style.display = 'none';
         datosPanel.style.display = 'none';
         try {
             const resultados = await cargarProcesado(val);
-            console.log('📊 Resultados encontrados:', resultados.length);
             if (resultados.length === 0) {
                 mostrarMsg(msgBusqueda, '❌ No se encontró ningún procesado con ese dato.', 'error');
             } else {
@@ -370,13 +379,11 @@ window.initEditarProcesado = function() {
                 window.scrollTo({ top: datosPanel.offsetTop - 20, behavior: 'smooth' });
             }
         } catch (err) {
-            console.error('❌ Error al buscar:', err);
-            mostrarMsg(msgBusqueda, '❌ Error de conexión: ' + err.message, 'error');
+            mostrarMsg(msgBusqueda, '❌ Error de conexión al buscar.', 'error');
         } finally {
             btnBuscar.disabled = false;
         }
     });
-    console.log("✅ Listener del botón buscar registrado");
 
     inputBusqueda.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -400,6 +407,7 @@ window.initEditarProcesado = function() {
             btnSubmit.disabled = true;
             btnSubmit.textContent = '⏳ Guardando cambios...';
             msgForm.style.display = 'none';
+            
             try {
                 const bucket = window.supabaseClient.storage.from('procesados_documentos');
                 const uid = sessionStorage.getItem('pnb_user_id') || 'user';
@@ -408,6 +416,7 @@ window.initEditarProcesado = function() {
                     tipo_delito: tipoDelito,
                     observaciones: document.getElementById('edit_observaciones').value.trim() || null
                 };
+                
                 for (const doc of docsUnicos) {
                     const urlActual = archivosActuales[doc.id];
                     const archivoNuevo = archivosNuevos[doc.id];
@@ -430,6 +439,7 @@ window.initEditarProcesado = function() {
                         }
                     }
                 }
+                
                 for (const doc of docsMultiples) {
                     const urlsActuales = archivosActuales[doc.id] || [];
                     const archivosNuevosCampo = archivosMultiplesNuevos[doc.id] || [];
@@ -450,6 +460,7 @@ window.initEditarProcesado = function() {
                         dataToUpdate[doc.id] = finales;
                     }
                 }
+                
                 const datosOriginales = procesadoActual.datos_originales || {};
                 if (datosOriginales.documentos_adjuntos) {
                     for (const doc of docsUnicos) {
@@ -464,41 +475,22 @@ window.initEditarProcesado = function() {
                     }
                     dataToUpdate.datos_originales = datosOriginales;
                 }
+                
                 const { error: updErr } = await window.supabaseClient
                     .from('registro_procesados')
                     .update(dataToUpdate)
                     .eq('id', procesadoActual.id);
                 if (updErr) throw new Error(`Error al actualizar: ${updErr.message}`);
-
-                // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
-                if (typeof window.registrarLog === 'function' && procesadoActual?.id) {
-                    await window.registrarLog(
-                        'MODIFICAR',
-                        'PROCESADOS',
-                        {
-                            identificador: procesadoActual.identificador_principal,
-                            tipo_registro: procesadoActual.tipo_registro || 'Procesado',
-                            tipo: 'Procesado',
-                            cedula: datosOriginales.cedula || 'N/A',
-                            nombre_completo: datosOriginales.primer_nombre ? `${datosOriginales.primer_nombre} ${datosOriginales.primer_apellido}`.trim() : 'N/A',
-                            placa: datosOriginales.placa || 'N/A',
-                            marca: datosOriginales.marca || datosOriginales.marca_vehiculo || 'N/A',
-                            modelo: datosOriginales.modelo || datosOriginales.modelo_vehiculo || 'N/A',
-                            anio: datosOriginales.anio || datosOriginales.anio_vehiculo || 'N/A',
-                            color: datosOriginales.color || datosOriginales.color_vehiculo || 'N/A',
-                            tipo_vehiculo: datosOriginales.tipo_vehiculo || 'N/A',
-                            tipo_delito: tipoDelito,
-                            estatus: 'Procesado',
-                            estacion: datosOriginales.estacion_policial || 'N/A',
-                            direccion_detencion: datosOriginales.direccion_detencion || 'N/A',
-                            observaciones: document.getElementById('edit_observaciones').value.trim() || null,
-                            cambios_realizados: 'Datos del registro procesado actualizados'
-                        },
-                        procesadoActual.id
-                    );
-                    console.log('✅ Log de modificación de procesado registrado exitosamente');
-                }
-
+                
+                // ✅ NUEVO: REGISTRAR LOG DE MODIFICACIÓN
+                await registrarLog('MODIFICAR', 'PROCESADOS', {
+                    identificador: procesadoActual.identificador_principal,
+                    tipo_registro: procesadoActual.tipo_registro,
+                    tipo_delito: tipoDelito,
+                    estatus: 'Procesado',
+                    cambios: 'Datos del registro procesado actualizados'
+                });
+                
                 mostrarMsg(msgForm, '✅ Cambios guardados exitosamente.', 'success');
                 setTimeout(() => {
                     form.style.display = 'none';
@@ -510,7 +502,6 @@ window.initEditarProcesado = function() {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 3000);
             } catch (err) {
-                console.error('❌ Error al guardar:', err);
                 mostrarMsg(msgForm, '❌ Error: ' + err.message, 'error');
             } finally {
                 if (loadingOverlay) loadingOverlay.classList.remove('active');
@@ -519,6 +510,11 @@ window.initEditarProcesado = function() {
             }
         });
     }
-
-    console.log("✅ [editar-procesado] Módulo inicializado correctamente.");
 };
+
+// 🚀 AUTO-INICIALIZACIÓN: Se ejecuta automáticamente cuando el HTML está listo
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', window.initEditarProcesado);
+} else {
+    window.initEditarProcesado();
+}
