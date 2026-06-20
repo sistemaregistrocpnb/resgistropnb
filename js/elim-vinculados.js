@@ -1,7 +1,7 @@
 window.initElimVinculados = function() {
     console.log("✅ Módulo elim-vinculados.js cargado correctamente.");
 
-    //  Referencias DOM (COINCIDEN CON elim-vinculado.html)
+    // 🔹 Referencias DOM (COINCIDEN CON elim-vinculado.html)
     const buscarInput = document.getElementById('buscar-vinc-elim');
     const buscarBtn = document.getElementById('btn-buscar-vinc-elim');
     const msgBuscar = document.getElementById('buscar-msg-vinc');
@@ -87,27 +87,27 @@ window.initElimVinculados = function() {
         // Salud y Antecedentes
         setVal('ev-p-lentes', data.usa_lentes ? 'Sí' : 'No');
         const boxLentes = document.getElementById('box-ev-lentes-det');
-        if(boxLentes) boxLentes.style.display = (data.usa_lentes && data.detalle_lentes) ? 'block' : 'none';
+        if(boxLentes) boxLentes.style.display = data.usa_lentes ? 'block' : 'none';
         setVal('ev-p-lentes-det', data.detalle_lentes);
 
         setVal('ev-p-perf', data.perforaciones ? 'Sí' : 'No');
         const boxPerf = document.getElementById('box-ev-perf-det');
-        if(boxPerf) boxPerf.style.display = (data.perforaciones && data.detalle_perforaciones) ? 'block' : 'none';
+        if(boxPerf) boxPerf.style.display = data.perforaciones ? 'block' : 'none';
         setVal('ev-p-perf-det', data.detalle_perforaciones);
 
         setVal('ev-p-cond', data.condicion_medica ? 'Sí' : 'No');
         const boxCond = document.getElementById('box-ev-cond-det');
-        if(boxCond) boxCond.style.display = (data.condicion_medica && data.detalle_condicion_medica) ? 'block' : 'none';
+        if(boxCond) boxCond.style.display = data.condicion_medica ? 'block' : 'none';
         setVal('ev-p-cond-det', data.detalle_condicion_medica);
 
         setVal('ev-p-med', data.consume_medicamento ? 'Sí' : 'No');
         const boxMed = document.getElementById('box-ev-med-det');
-        if(boxMed) boxMed.style.display = (data.consume_medicamento && data.detalle_medicamento) ? 'block' : 'none';
+        if(boxMed) boxMed.style.display = data.consume_medicamento ? 'block' : 'none';
         setVal('ev-p-med-det', data.detalle_medicamento);
 
         setVal('ev-p-jud', data.problema_judicial ? 'Sí' : 'No');
         const boxJud = document.getElementById('box-ev-jud-det');
-        if(boxJud) boxJud.style.display = (data.problema_judicial && data.detalle_problema_judicial) ? 'block' : 'none';
+        if(boxJud) boxJud.style.display = data.problema_judicial ? 'block' : 'none';
         setVal('ev-p-jud-det', data.detalle_problema_judicial);
 
         // Fotos Persona
@@ -236,7 +236,7 @@ window.initElimVinculados = function() {
                 }
             } catch (err) {
                 console.error('❌ Error general:', err);
-                showMsg(msgBuscar, '❌ Error de conexión: ' + err.message, 'error');
+                showMsg(msgBuscar, ' Error de conexión: ' + err.message, 'error');
             } finally {
                 buscarBtn.disabled = false;
             }
@@ -384,7 +384,7 @@ window.initElimVinculados = function() {
         } finally {
             if(btnEliminar) {
                 btnEliminar.disabled = false;
-                btnEliminar.textContent = '🗑️ Eliminar Registro Vinculado';
+                btnEliminar.textContent = '️ Eliminar Registro Vinculado';
             }
         }
     }
@@ -498,7 +498,7 @@ window.initElimVinculados = function() {
         } finally {
             if(btnReintegrar) {
                 btnReintegrar.disabled = false;
-                btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo';
+                btnReintegrar.textContent = '️ Reintegrar al Sistema Activo';
             }
         }
     }
@@ -513,7 +513,7 @@ window.initElimVinculados = function() {
     if (btnReintegrar) {
         btnReintegrar.addEventListener('click', () => {
             if (!currentData) return;
-            showModal('⚠️ Confirmar Reintegración', `¿Está seguro de reintegrar este registro (C.I: ${currentData.cedula}) al sistema activo?`, 'reintegrate', 'success');
+            showModal('️ Confirmar Reintegración', `¿Está seguro de reintegrar este registro (C.I: ${currentData.cedula}) al sistema activo?`, 'reintegrate', 'success');
         });
     }
 
