@@ -1,7 +1,7 @@
 window.initElimVinculados = function() {
     console.log("✅ Módulo elim-vinculados.js cargado correctamente.");
 
-    // 🔹 Referencias DOM
+    //  Referencias DOM (COINCIDEN CON elim-vinculado.html)
     const buscarInput = document.getElementById('buscar-vinc-elim');
     const buscarBtn = document.getElementById('btn-buscar-vinc-elim');
     const msgBuscar = document.getElementById('buscar-msg-vinc');
@@ -157,9 +157,7 @@ window.initElimVinculados = function() {
         }
     }
 
-    // ==========================================
     // 🔍 BÚSQUEDA MULTI-TABLA
-    // ==========================================
     function detectarCoincidencias(reg, val) {
         const campos = [];
         const v = val.trim().toUpperCase();
@@ -213,7 +211,7 @@ window.initElimVinculados = function() {
         }
     }
 
-    //  LISTENER PRINCIPAL DE BÚSQUEDA
+    // 🔍 LISTENER PRINCIPAL DE BÚSQUEDA
     if (buscarBtn && buscarInput) {
         buscarBtn.addEventListener('click', async () => {
             const val = buscarInput.value.trim();
@@ -237,7 +235,7 @@ window.initElimVinculados = function() {
                     setTimeout(() => cargarDatos(activo.datos, activo.origen), 300);
                 }
             } catch (err) {
-                console.error(' Error general:', err);
+                console.error('❌ Error general:', err);
                 showMsg(msgBuscar, '❌ Error de conexión: ' + err.message, 'error');
             } finally {
                 buscarBtn.disabled = false;
@@ -251,9 +249,7 @@ window.initElimVinculados = function() {
         });
     }
 
-    // ==========================================
     // 🔹 MODAL DE CONFIRMACIÓN
-    // ==========================================
     function showModal(titulo, texto, accion, tipo) {
         pendingAction = accion;
         if(modalTitle) modalTitle.textContent = titulo;
@@ -280,9 +276,7 @@ window.initElimVinculados = function() {
     if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
     if (btnModalYes) btnModalYes.addEventListener('click', ejecutarAccion);
 
-    // ==========================================
-    // 🔹 ELIMINAR (Activa → Archivada)
-    // ==========================================
+    // 🔹 ELIMINAR
     async function eliminarRegistro() {
         if (!currentData) return;
         if(btnEliminar) {
@@ -395,9 +389,7 @@ window.initElimVinculados = function() {
         }
     }
 
-    // ==========================================
-    // 🔹 REINTEGRAR (Archivada → Activa)
-    // ==========================================
+    // 🔹 REINTEGRAR
     async function reintegrarRegistro() {
         if (!currentData) return;
         if(btnReintegrar) {
@@ -462,7 +454,7 @@ window.initElimVinculados = function() {
             const delRes = await window.supabaseClient.from('eliminados_vinculados').delete().eq('id', currentData.id);
             if (delRes.error) throw delRes.error;
 
-            //  LOG CENTRALIZADO USANDO UTILS.JS
+            // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
             if (typeof window.registrarLog === 'function' && currentData?.id) {
                 await window.registrarLog(
                     'REINTEGRAR',
@@ -498,7 +490,7 @@ window.initElimVinculados = function() {
             console.error('Error reintegrando:', err);
             let msg = 'Error al reintegrar.';
             if (err.message.includes('23505') || err.message.includes('unique') || err.message.includes('duplicate key')) {
-                msg = ' <strong>No se puede reintegrar:</strong> La cédula, placa o serial ya se encuentra en uso.<br><small style="color:#64748b;">Este registro se conserva como historial.</small>';
+                msg = '❌ <strong>No se puede reintegrar:</strong> La cédula, placa o serial ya se encuentra en uso.<br><small style="color:#64748b;">Este registro se conserva como historial.</small>';
             } else {
                 msg = '❌ ' + err.message;
             }
@@ -511,9 +503,7 @@ window.initElimVinculados = function() {
         }
     }
 
-    // ==========================================
     // 🔹 LISTENERS DE BOTONES
-    // ==========================================
     if (btnEliminar) {
         btnEliminar.addEventListener('click', () => {
             if (!currentData) return;
