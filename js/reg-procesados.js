@@ -1,48 +1,13 @@
 window.initRegProcesados = function() {
-    // ==========================================
-    // ✅ FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO
-    // ==========================================
-    async function registrarLog(accion, modulo, detalles) {
-        try {
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            if (!user) return;
-            let nombreUsuario = user.email || 'Sistema';
-            
-            try {
-                const { data: perfil } = await window.supabaseClient
-                    .from('perfiles_usuario')
-                    .select('nombre, apellido, email')
-                    .eq('user_id', user.id)
-                    .maybeSingle();
-                if (perfil) {
-                    nombreUsuario = [perfil.nombre, perfil.apellido].filter(Boolean).join(' ').trim() || nombreUsuario;
-                }
-            } catch (err) {
-                // Silencioso por seguridad
-            }
-
-            const logEntry = {
-                user_id: user.id,
-                user_nombre: nombreUsuario,
-                user_email: user.email || 'sistema',
-                accion: accion,
-                modulo: modulo,
-                detalles: detalles,
-                created_at: new Date().toISOString()
-            };
-            await window.supabaseClient.from('sistema_logs').insert([logEntry]);
-        } catch (err) {
-            // Silencioso por seguridad
-        }
-    }
+    console.log("✅ Módulo reg-procesados.js cargado correctamente.");
 
     // ==========================================
     // LISTAS DE DOCUMENTOS
     // ==========================================
     const docsUnicos = [
         { id: 'portada', label: '📑 Portada' },
-        { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
-        { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
+        { id: 'oficio_remision', label: ' Oficio de Remisión' },
+        { id: 'acta_denuncia', label: ' Acta de Denuncia' },
         { id: 'entrevista', label: '🎤 Entrevista' },
         { id: 'datos_filiatorios', label: '📋 Datos Filiatorios' },
         { id: 'acta_policial', label: '📋 Acta Policial' },
@@ -56,11 +21,13 @@ window.initRegProcesados = function() {
         { id: 'planilla_pvr', label: '🚙 Planilla de Revisión de Vehículo (PVR)' },
         { id: 'otros_documentos', label: '📎 Otros Documentos' }
     ];
+
     const docsMultiples = [
         { id: 'entrevista_multi', label: '🎤 Entrevistas (Múltiples)', max: 10, min: 1 },
         { id: 'cadena_custodia', label: '🔗 Cadena de Custodia', max: 10, min: 1 },
         { id: 'inspecciones_tecnicas', label: '🔍 Inspecciones Técnicas', max: 10, min: 1 }
     ];
+
     const archivosMultiples = {};
     docsMultiples.forEach(d => archivosMultiples[d.id] = []);
 
@@ -73,17 +40,17 @@ window.initRegProcesados = function() {
             const div = document.createElement('div');
             div.className = 'doc-item';
             div.innerHTML = `
-            <div class="doc-header">
-                <label>${doc.label}</label>
-                <div class="doc-si-no">
-                    <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
-                    <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                <div class="doc-header">
+                    <label>${doc.label}</label>
+                    <div class="doc-si-no">
+                        <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
+                        <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                    </div>
                 </div>
-            </div>
-            <div class="doc-upload-area" id="upload-${doc.id}">
-                <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="mostrarArchivoCargado('${doc.id}', this)">
-                <div id="status-${doc.id}" class="file-status-container"></div>
-            </div>
+                <div class="doc-upload-area" id="upload-${doc.id}">
+                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="mostrarArchivoCargado('${doc.id}', this)">
+                    <div id="status-${doc.id}" class="file-status-container"></div>
+                </div>
             `;
             contenedorUnicos.appendChild(div);
         });
@@ -95,20 +62,20 @@ window.initRegProcesados = function() {
             const div = document.createElement('div');
             div.className = 'doc-item';
             div.innerHTML = `
-            <div class="doc-header">
-                <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Mínimo ${doc.min}, máximo ${doc.max})</span></label>
-                <div class="doc-si-no">
-                    <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
-                    <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                <div class="doc-header">
+                    <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Mínimo ${doc.min}, máximo ${doc.max})</span></label>
+                    <div class="doc-si-no">
+                        <label><input type="radio" name="doc_${doc.id}" value="no" checked onchange="toggleDocField('${doc.id}', false)"><span>No</span></label>
+                        <label><input type="radio" name="doc_${doc.id}" value="si" onchange="toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                    </div>
                 </div>
-            </div>
-            <div class="doc-upload-area" id="upload-${doc.id}">
-                <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
-                <button type="button" class="btn-add-file" onclick="agregarArchivo('${doc.id}', ${doc.max})">➕ Agregar</button>
-                <div class="file-count" id="count-${doc.id}">0 de ${doc.max} archivos</div>
-                <div class="file-list" id="list-${doc.id}"></div>
-                <div id="status-${doc.id}" class="file-status-container"></div>
-            </div>
+                <div class="doc-upload-area" id="upload-${doc.id}">
+                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple>
+                    <button type="button" class="btn-add-file" onclick="agregarArchivo('${doc.id}', ${doc.max})">➕ Agregar</button>
+                    <div class="file-count" id="count-${doc.id}">0 de ${doc.max} archivos</div>
+                    <div class="file-list" id="list-${doc.id}"></div>
+                    <div id="status-${doc.id}" class="file-status-container"></div>
+                </div>
             `;
             contenedorMultiples.appendChild(div);
         });
@@ -128,11 +95,11 @@ window.initRegProcesados = function() {
         if (input.files && input.files[0]) {
             const file = input.files[0];
             statusContainer.innerHTML = `
-            <div class="file-loaded">
-                <span>✅</span>
-                <span class="file-name">${file.name}</span>
-                <button type="button" class="btn-remove" onclick="removerArchivo('${docId}')">❌ Quitar</button>
-            </div>
+                <div class="file-loaded">
+                    <span>✅</span>
+                    <span class="file-name">${file.name}</span>
+                    <button type="button" class="btn-remove" onclick="removerArchivo('${docId}')">❌ Quitar</button>
+                </div>
             `;
         } else {
             statusContainer.innerHTML = '';
@@ -150,13 +117,11 @@ window.initRegProcesados = function() {
         const input = document.getElementById(`file_${campo}`);
         const statusContainer = document.getElementById(`status-${campo}`);
         if (!input || !input.files || input.files.length === 0) return;
-        
         const disponibles = max - archivosMultiples[campo].length;
         if (disponibles <= 0) {
             alert(`Máximo ${max} archivos permitidos`);
             return;
         }
-        
         let agregados = 0;
         const archivosAgregados = [];
         for (const file of input.files) {
@@ -169,7 +134,6 @@ window.initRegProcesados = function() {
         }
         actualizarListaArchivos(campo, max);
         input.value = '';
-        
         if (archivosAgregados.length > 0 && statusContainer) {
             statusContainer.innerHTML = `<div class="file-loaded"><span>✅</span><span class="file-name">${archivosAgregados.length} archivo(s) cargado(s)</span></div>`;
             setTimeout(() => { if (statusContainer) statusContainer.innerHTML = ''; }, 3000);
@@ -184,7 +148,7 @@ window.initRegProcesados = function() {
         archivosMultiples[campo].forEach((file, index) => {
             const item = document.createElement('div');
             item.className = 'file-item-multiple';
-            item.innerHTML = `<span>📄 ${file.name}</span><button type="button" onclick="eliminarArchivoMultiple('${campo}', ${max}, ${index})">❌</button>`;
+            item.innerHTML = `<span>📄 ${file.name}</span><button type="button" onclick="eliminarArchivoMultiple('${campo}', ${max}, ${index})"></button>`;
             list.appendChild(item);
         });
         count.textContent = `${archivosMultiples[campo].length} de ${max} archivos`;
@@ -196,7 +160,7 @@ window.initRegProcesados = function() {
     };
 
     // ==========================================
-    // ✅ OVERLAY DE CARGA
+    // OVERLAY DE CARGA
     // ==========================================
     const loadingOverlay = document.getElementById('loading-overlay');
     function mostrarOverlay(mensaje = '⏳ Procesando y subiendo archivos...') {
@@ -208,15 +172,12 @@ window.initRegProcesados = function() {
             loadingOverlay.classList.add('active');
         }
     }
-
     function ocultarOverlay() {
-        if (loadingOverlay) {
-            loadingOverlay.classList.remove('active');
-        }
+        if (loadingOverlay) loadingOverlay.classList.remove('active');
     }
 
     // ==========================================
-    // ✅ REFERENCIAS DOM
+    // REFERENCIAS DOM
     // ==========================================
     const btnBuscar = document.getElementById('proc_btn_buscar');
     const inputBusqueda = document.getElementById('proc_busqueda_input');
@@ -269,7 +230,7 @@ window.initRegProcesados = function() {
                     const nombre = `${reg.primer_nombre || ''} ${reg.primer_apellido || ''}`.trim();
                     resultados.push({
                         origen: 'registro_personas', id: reg.id,
-                        tipo: '👤 Persona', icono: '👤', color: '#7c3aed', colorBg: '#f5f3ff',
+                        tipo: ' Persona', icono: '👤', color: '#7c3aed', colorBg: '#f5f3ff',
                         tipoRegistro: 'persona',
                         datos: reg,
                         linea1: `${nombre} | C.I: ${reg.cedula || '-'}`,
@@ -343,9 +304,10 @@ window.initRegProcesados = function() {
                     });
                 });
             }
+
             return resultados;
         } catch (err) {
-            throw err; // Silencioso, el catch externo maneja la UI
+            throw err;
         }
     }
 
@@ -359,19 +321,19 @@ window.initRegProcesados = function() {
             const card = document.createElement('div');
             card.style.cssText = `background: ${res.colorBg}; border: 2px solid ${res.color}; border-left: 6px solid ${res.color}; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s; margin-bottom: 12px;`;
             card.innerHTML = `
-            <div style="flex: 1;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                    <span style="font-size: 1.5rem;">${res.icono}</span>
-                    <strong style="color: ${res.color}; font-size: 0.95rem;">${res.tipo}</strong>
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                        <span style="font-size: 1.5rem;">${res.icono}</span>
+                        <strong style="color: ${res.color}; font-size: 0.95rem;">${res.tipo}</strong>
+                    </div>
+                    <div style="font-size: 0.9rem; color: #334155; margin-bottom: 3px;">${res.linea1}</div>
+                    <div style="font-size: 0.85rem; color: #475569; margin-bottom: 3px;">${res.linea2}</div>
+                    <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 6px;">${res.linea3}</div>
+                    <div style="font-size: 0.75rem; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; display: inline-block;">
+                        🔎 Coincidencia en: <strong>${res.encontrado_por.join(', ')}</strong>
+                    </div>
                 </div>
-                <div style="font-size: 0.9rem; color: #334155; margin-bottom: 3px;">${res.linea1}</div>
-                <div style="font-size: 0.85rem; color: #475569; margin-bottom: 3px;">${res.linea2}</div>
-                <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 6px;">${res.linea3}</div>
-                <div style="font-size: 0.75rem; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; display: inline-block;">
-                    🔎 Coincidencia en: <strong>${res.encontrado_por.join(', ')}</strong>
-                </div>
-            </div>
-            <button class="btn-seleccionar" data-index="${index}" style="padding: 12px 24px; background: ${res.color}; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; white-space: nowrap;">⚖️ Procesar</button>
+                <button class="btn-seleccionar" data-index="${index}" style="padding: 12px 24px; background: ${res.color}; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; white-space: nowrap;">⚖️ Procesar</button>
             `;
             selectionList.appendChild(card);
         });
@@ -394,16 +356,14 @@ window.initRegProcesados = function() {
         registroSeleccionado = resultado;
         selectionPanel.style.display = 'none';
         const data = resultado.datos;
-        
         const badge = document.getElementById('tipo-vehiculo-badge');
         if (badge) {
             badge.textContent = ` ${resultado.tipo}`;
             badge.style.display = 'inline-block';
         }
-        
         let html = '';
         if (resultado.origen === 'registro_personas' || resultado.origen === 'registro_vinculado') {
-            html += `<div class="dato-fila"><span class="dato-label">👤 Nombre:</span><span class="dato-valor">${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}</span></div>`;
+            html += `<div class="dato-fila"><span class="dato-label"> Nombre:</span><span class="dato-valor">${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}</span></div>`;
             html += `<div class="dato-fila"><span class="dato-label">🆔 Cédula:</span><span class="dato-valor">${data.cedula || '-'}</span></div>`;
             html += `<div class="dato-fila"><span class="dato-label">🎂 Edad:</span><span class="dato-valor">${data.edad || '-'}</span></div>`;
             html += `<div class="dato-fila"><span class="dato-label">🌍 Nacionalidad:</span><span class="dato-valor">${data.nacionalidad || '-'}</span></div>`;
@@ -411,10 +371,9 @@ window.initRegProcesados = function() {
             html += `<div class="dato-fila"><span class="dato-label">🏛️ Estación:</span><span class="dato-valor">${data.estacion_policial || '-'}</span></div>`;
             html += `<div class="dato-fila"><span class="dato-label">📍 Detención:</span><span class="dato-valor">${data.direccion_detencion || '-'}</span></div>`;
         }
-        
         if (resultado.origen === 'registro_motos' || resultado.origen === 'registro_automoviles' || resultado.origen === 'registro_vinculado') {
             if (html) html += `<div style="margin-top: 12px; padding-top: 12px; border-top: 2px dashed #bbf7d0;"></div>`;
-            const tipoVeh = resultado.origen === 'registro_motos' ? '🏍️ Motocicleta' : resultado.origen === 'registro_automoviles' ? '🚙 Automóvil' : (data.tipo_vehiculo || '-');
+            const tipoVeh = resultado.origen === 'registro_motos' ? '️ Motocicleta' : resultado.origen === 'registro_automoviles' ? '🚙 Automóvil' : (data.tipo_vehiculo || '-');
             html += `<div class="dato-fila"><span class="dato-label">🚗 Tipo Vehículo:</span><span class="dato-valor">${tipoVeh}</span></div>`;
             html += `<div class="dato-fila"><span class="dato-label">🔢 Placa:</span><span class="dato-valor">${data.placa || '-'}</span></div>`;
             html += `<div class="dato-fila"><span class="dato-label">🔢 Serial Carrocería:</span><span class="dato-valor">${data.serial_carroceria || '-'}</span></div>`;
@@ -428,15 +387,12 @@ window.initRegProcesados = function() {
             html += `<div class="dato-fila"><span class="dato-label">📅 Año:</span><span class="dato-valor">${anio || '-'}</span></div>`;
             html += `<div class="dato-fila"><span class="dato-label">🎨 Color:</span><span class="dato-valor">${color || '-'}</span></div>`;
         }
-        
         datosContenido.innerHTML = html;
         datosPanel.style.display = 'block';
-        
         document.getElementById('proc_tabla_origen').value = resultado.origen;
         document.getElementById('proc_registro_id').value = resultado.id;
         document.getElementById('proc_tipo_registro').value = resultado.tipoRegistro || '';
         document.getElementById('proc_identificador').value = resultado.origen === 'registro_personas' ? (data.cedula || '') : (data.placa || '');
-        
         form.style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -455,7 +411,6 @@ window.initRegProcesados = function() {
             form.style.display = 'none';
             datosPanel.style.display = 'none';
             selectionPanel.style.display = 'none';
-            
             try {
                 const resultados = await buscarEnTodasLasTablas(val);
                 if (resultados.length === 0) {
@@ -488,7 +443,7 @@ window.initRegProcesados = function() {
     }
 
     // ==========================================
-    // ✅ ENVÍO DEL FORMULARIO CON OVERLAY Y LOGS
+    // ENVÍO DEL FORMULARIO CON LOGS CORREGIDOS
     // ==========================================
     if (form) {
         form.addEventListener('submit', async (e) => {
@@ -496,12 +451,10 @@ window.initRegProcesados = function() {
             if (!registroSeleccionado) {
                 return mostrarMsg(msgForm, '❌ Debe buscar y seleccionar un registro primero.', 'error');
             }
-            
             const tipoDelito = document.getElementById('proc_tipo_delito').value.trim();
             if (!tipoDelito) {
                 return mostrarMsg(msgForm, '⚠️ El tipo de delito es obligatorio.', 'error');
             }
-            
             // Validar documentos únicos
             for (const doc of docsUnicos) {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
@@ -512,7 +465,6 @@ window.initRegProcesados = function() {
                     }
                 }
             }
-            
             // Validar documentos múltiples
             for (const doc of docsMultiples) {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
@@ -522,17 +474,14 @@ window.initRegProcesados = function() {
                     }
                 }
             }
-            
-            // ✅ MOSTRAR OVERLAY DE CARGA
+            // MOSTRAR OVERLAY DE CARGA
             mostrarOverlay('⏳ Procesando y subiendo archivos...');
-            
             try {
                 const { data: { user } } = await window.supabaseClient.auth.getUser();
                 const procesadoPor = user?.email || 'usuario@sistema';
                 const bucket = window.supabaseClient.storage.from('procesados_documentos');
                 const uid = sessionStorage.getItem('pnb_user_id') || 'user';
                 const ts = Date.now();
-                
                 // Subir PDF único
                 const subirPDF = async (fileInputId, suffix) => {
                     const fileInput = document.getElementById(fileInputId);
@@ -545,7 +494,6 @@ window.initRegProcesados = function() {
                     }
                     return null;
                 };
-                
                 // Subir PDFs múltiples
                 const subirPDFsMultiples = async (campo) => {
                     const urls = [];
@@ -558,17 +506,14 @@ window.initRegProcesados = function() {
                     }
                     return urls;
                 };
-                
                 const dataOriginal = registroSeleccionado.datos;
                 const documentosMultiplesSubidos = {};
-                
                 const radioEntrevistaMulti = document.querySelector(`input[name="doc_entrevista_multi"]:checked`);
                 if (radioEntrevistaMulti && radioEntrevistaMulti.value === 'si' && archivosMultiples['entrevista_multi'].length > 0) {
                     documentosMultiplesSubidos['entrevista_multi'] = await subirPDFsMultiples('entrevista_multi');
                 } else {
                     documentosMultiplesSubidos['entrevista_multi'] = [];
                 }
-                
                 const dataToInsert = {
                     tabla_origen: registroSeleccionado.origen,
                     registro_id: registroSeleccionado.id,
@@ -583,11 +528,9 @@ window.initRegProcesados = function() {
                     },
                     estatus: 'Procesado'
                 };
-                
                 if (registroSeleccionado.origen === 'registro_personas' || registroSeleccionado.origen === 'registro_vinculado') {
                     dataToInsert.cedula = dataOriginal.cedula;
                 }
-                
                 for (const doc of docsUnicos) {
                     const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                     if (radio && radio.value === 'si') {
@@ -597,47 +540,58 @@ window.initRegProcesados = function() {
                         dataToInsert[doc.id] = [];
                     }
                 }
-                
                 const radioCadena = document.querySelector(`input[name="doc_cadena_custodia"]:checked`);
                 if (radioCadena && radioCadena.value === 'si' && archivosMultiples['cadena_custodia'].length > 0) {
                     dataToInsert.cadena_custodia = await subirPDFsMultiples('cadena_custodia');
                 } else {
                     dataToInsert.cadena_custodia = [];
                 }
-                
                 const radioInspeccion = document.querySelector(`input[name="doc_inspecciones_tecnicas"]:checked`);
                 if (radioInspeccion && radioInspeccion.value === 'si' && archivosMultiples['inspecciones_tecnicas'].length > 0) {
                     dataToInsert.inspecciones_tecnicas = await subirPDFsMultiples('inspecciones_tecnicas');
                 } else {
                     dataToInsert.inspecciones_tecnicas = [];
                 }
-                
                 // 1. Insertar en registro_procesados
                 const { error: insErr } = await window.supabaseClient
                     .from('registro_procesados')
                     .insert([dataToInsert]);
                 if (insErr) throw new Error(`Error al registrar procesado: ${insErr.message}`);
-                
                 // 2. Cambiar estatus del registro original
                 const { error: updErr } = await window.supabaseClient
                     .from(registroSeleccionado.origen)
                     .update({ estatus: 'Procesado' })
                     .eq('id', registroSeleccionado.id);
                 if (updErr) throw new Error(`Error al cambiar estatus: ${updErr.message}`);
-                
-                // ✅ NUEVO: REGISTRAR LOG DE PROCESAMIENTO
-                await registrarLog('PROCESAR', 'PROCESADOS', {
-                    identificador: document.getElementById('proc_identificador').value,
-                    tipo_registro: registroSeleccionado.tipoRegistro || '',
-                    tipo_delito: tipoDelito,
-                    estatus: 'Procesado',
-                    observaciones: document.getElementById('proc_observaciones').value.trim() || null
-                });
-                
-                // ✅ OCULTAR OVERLAY - ÉXITO
+                // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
+                if (typeof window.registrarLog === 'function' && registroSeleccionado?.id) {
+                    await window.registrarLog(
+                        'PROCESAR',
+                        'PROCESADOS',
+                        {
+                            cedula: dataOriginal.cedula || 'N/A',
+                            nombre_completo: dataOriginal.primer_nombre ? `${dataOriginal.primer_nombre} ${dataOriginal.primer_apellido}`.trim() : 'N/A',
+                            placa: dataOriginal.placa || 'N/A',
+                            marca: dataOriginal.marca || dataOriginal.marca_vehiculo || 'N/A',
+                            modelo: dataOriginal.modelo || dataOriginal.modelo_vehiculo || 'N/A',
+                            anio: dataOriginal.anio || dataOriginal.anio_vehiculo || 'N/A',
+                            color: dataOriginal.color || dataOriginal.color_vehiculo || 'N/A',
+                            tipo_vehiculo: dataOriginal.tipo_vehiculo || registroSeleccionado.tipoRegistro || 'N/A',
+                            tipo: 'Procesado',
+                            tipo_delito: tipoDelito,
+                            estatus: 'Procesado',
+                            estacion: dataOriginal.estacion_policial || 'N/A',
+                            direccion_detencion: dataOriginal.direccion_detencion || 'N/A',
+                            observaciones: document.getElementById('proc_observaciones').value.trim() || null,
+                            procesado_por: procesadoPor
+                        },
+                        registroSeleccionado.id
+                    );
+                    console.log('✅ Log de procesamiento registrado exitosamente');
+                }
+                // OCULTAR OVERLAY - ÉXITO
                 ocultarOverlay();
                 mostrarMsg(msgForm, '✅ Procesado registrado exitosamente. El estatus del registro original cambió a "Procesado".', 'success');
-                
                 setTimeout(() => {
                     form.style.display = 'none';
                     datosPanel.style.display = 'none';
@@ -653,12 +607,13 @@ window.initRegProcesados = function() {
                     document.querySelectorAll('.file-status-container').forEach(c => c.innerHTML = '');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 5000);
-                
             } catch (err) {
-                // ✅ OCULTAR OVERLAY - ERROR
+                // OCULTAR OVERLAY - ERROR
                 ocultarOverlay();
                 mostrarMsg(msgForm, '❌ Error: ' + err.message, 'error');
             }
         });
     }
+
+    console.log("✅ Módulo reg-procesados.js inicializado correctamente.");
 };
