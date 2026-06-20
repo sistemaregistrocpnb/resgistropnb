@@ -1,18 +1,18 @@
 window.initEditarProcesado = function() {
-    // ✅ ELIMINADA la función local registrarLog (ahora usa utils.js)
-    
+    console.log("✅ Módulo editar-procesado.js cargado correctamente.");
+
     const docsUnicos = [
         { id: 'portada', label: '📑 Portada' },
         { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
         { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
         { id: 'datos_filiatorios', label: '👤 Datos Filiatorios' },
-        { id: 'acta_policial', label: '📋 Acta Policial' },
-        { id: 'derechos_imputado', label: '⚖️ Derechos del Imputado' },
-        { id: 'evaluacion_medica', label: '🏥 Evaluación Médica' },
-        { id: 'identificacion_cedula', label: '🆔 Identificación (Cédula)' },
+        { id: 'acta_policial', label: ' Acta Policial' },
+        { id: 'derechos_imputado', label: '️ Derechos del Imputado' },
+        { id: 'evaluacion_medica', label: ' Evaluación Médica' },
+        { id: 'identificacion_cedula', label: ' Identificación (Cédula)' },
         { id: 'solicitud_examen_forense', label: '🔬 Solicitud de Examen Forense' },
         { id: 'resultados_examen_forense', label: '🔬 Resultados del Examen Forense' },
-        { id: 'asistencia_comdepro', label: '🤝 Asistencia de Comdepro' },
+        { id: 'asistencia_comdepro', label: ' Asistencia de Comdepro' },
         { id: 'remision_estacionamiento', label: '🚗 Remisión a Estacionamiento' },
         { id: 'planilla_pvr', label: '🚙 Planilla PVR' },
         { id: 'otros_documentos', label: '📎 Otros Documentos' }
@@ -55,8 +55,10 @@ window.initEditarProcesado = function() {
     const loadingOverlay = document.getElementById('edit-loading-overlay');
 
     if (!btnBuscar || !inputBusqueda) {
+        console.error(' No se encontraron los elementos de búsqueda');
         return;
     }
+    console.log('✅ Elementos DOM encontrados');
 
     const mostrarMsg = (el, txt, type) => {
         if (!el) return;
@@ -122,7 +124,7 @@ window.initEditarProcesado = function() {
                 <div class="file-loaded">
                     <span>🔄</span>
                     <span class="file-name">${input.files[0].name}</span>
-                    <button type="button" class="btn-remove" onclick="cancelarNuevo('${docId}')">❌ Cancelar</button>
+                    <button type="button" class="btn-remove" onclick="cancelarNuevo('${docId}')"> Cancelar</button>
                 </div>
             `;
         }
@@ -234,24 +236,32 @@ window.initEditarProcesado = function() {
         });
     }
 
-    // ✅ ESTA FUNCIÓN SE MANTIENE IGUAL A COMO LA TENÍAS
+    // ✅ CORREGIDO: Usa created_at en lugar de fecha_procesamiento
     async function cargarProcesado(valor) {
+        if (!window.supabaseClient) {
+            throw new Error("Supabase no está inicializado");
+        }
+        
         const val = valor.trim().toUpperCase();
+        
         const { data: dataColumnas, error: errColumnas } = await window.supabaseClient
             .from('registro_procesados')
             .select('*')
             .or(`identificador_principal.eq.${val},cedula.eq.${val}`)
-            .order('fecha_procesamiento', { ascending: false })
+            .order('created_at', { ascending: false })
             .limit(5);
+            
         if (!errColumnas && dataColumnas && dataColumnas.length > 0) {
             return dataColumnas;
         }
+        
         const { data: dataJson, error: errJson } = await window.supabaseClient
             .from('registro_procesados')
             .select('*')
             .or(`datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
-            .order('fecha_procesamiento', { ascending: false })
+            .order('created_at', { ascending: false })
             .limit(5);
+            
         if (!errJson && dataJson && dataJson.length > 0) {
             return dataJson;
         }
@@ -261,7 +271,7 @@ window.initEditarProcesado = function() {
     function mostrarDatosProcesado(proc) {
         const data = proc.datos_originales || {};
         let html = '';
-        html += `<div class="dato-fila"><span class="dato-label">🆔 ID Procesado:</span><span class="dato-valor">${proc.id}</span></div>`;
+        html += `<div class="dato-fila"><span class="dato-label"> ID Procesado:</span><span class="dato-valor">${proc.id}</span></div>`;
         html += `<div class="dato-fila"><span class="dato-label">📋 Tabla Origen:</span><span class="dato-valor">${proc.tabla_origen}</span></div>`;
         html += `<div class="dato-fila"><span class="dato-label">🔍 Identificador:</span><span class="dato-valor">${proc.identificador_principal || '-'}</span></div>`;
         if (data.cedula) html += `<div class="dato-fila"><span class="dato-label">👤 Cédula:</span><span class="dato-valor">${data.cedula}</span></div>`;
@@ -324,16 +334,19 @@ window.initEditarProcesado = function() {
     }
 
     btnBuscar.addEventListener('click', async () => {
+        console.log('🖱️ Click en buscar');
         const val = inputBusqueda.value.trim();
         if (val.length < 3) {
             return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 3 caracteres.', 'error');
         }
-        mostrarMsg(msgBusqueda, '🔍 Buscando procesado...', 'success');
+        console.log('🔍 Buscando:', val);
+        mostrarMsg(msgBusqueda, ' Buscando procesado...', 'success');
         btnBuscar.disabled = true;
         form.style.display = 'none';
         datosPanel.style.display = 'none';
         try {
             const resultados = await cargarProcesado(val);
+            console.log(' Resultados:', resultados.length);
             if (resultados.length === 0) {
                 mostrarMsg(msgBusqueda, '❌ No se encontró ningún procesado con ese dato.', 'error');
             } else {
@@ -345,7 +358,8 @@ window.initEditarProcesado = function() {
                 window.scrollTo({ top: datosPanel.offsetTop - 20, behavior: 'smooth' });
             }
         } catch (err) {
-            mostrarMsg(msgBusqueda, '❌ Error de conexión al buscar.', 'error');
+            console.error('❌ Error al buscar:', err);
+            mostrarMsg(msgBusqueda, '❌ Error de conexión: ' + err.message, 'error');
         } finally {
             btnBuscar.disabled = false;
         }
@@ -443,7 +457,7 @@ window.initEditarProcesado = function() {
                     .eq('id', procesadoActual.id);
                 if (updErr) throw new Error(`Error al actualizar: ${updErr.message}`);
 
-                // 🔹 ÚNICO CAMBIO: Ahora usa window.registrarLog de utils.js con datos completos
+                // ✅ USA window.registrarLog DE UTILS.JS
                 if (typeof window.registrarLog === 'function' && procesadoActual?.id) {
                     await window.registrarLog(
                         'MODIFICAR',
@@ -469,7 +483,7 @@ window.initEditarProcesado = function() {
                         },
                         procesadoActual.id
                     );
-                    console.log('✅ Log de modificación registrado');
+                    console.log('✅ Log registrado con utils.js');
                 }
 
                 mostrarMsg(msgForm, '✅ Cambios guardados exitosamente.', 'success');
@@ -483,6 +497,7 @@ window.initEditarProcesado = function() {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 3000);
             } catch (err) {
+                console.error('❌ Error al guardar:', err);
                 mostrarMsg(msgForm, '❌ Error: ' + err.message, 'error');
             } finally {
                 if (loadingOverlay) loadingOverlay.classList.remove('active');
@@ -491,4 +506,7 @@ window.initEditarProcesado = function() {
             }
         });
     }
+
+    console.log("✅ Módulo editar-procesado.js inicializado correctamente.");
 };
+// ✅ SIN auto-inicialización al final
