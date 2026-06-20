@@ -1,6 +1,6 @@
 window.initEditarProcesado = function() {
-    console.log("✅ Módulo editar-procesado.js cargado correctamente.");
-
+    // ✅ ELIMINADA la función local registrarLog (ahora usa utils.js)
+    
     const docsUnicos = [
         { id: 'portada', label: '📑 Portada' },
         { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
@@ -43,7 +43,6 @@ window.initEditarProcesado = function() {
         archivosMultiplesEliminados[d.id] = [];
     });
 
-    // 🔹 Referencias DOM
     const btnBuscar = document.getElementById('edit_btn_buscar');
     const inputBusqueda = document.getElementById('edit_busqueda_input');
     const msgBusqueda = document.getElementById('edit_msg_busqueda');
@@ -55,12 +54,9 @@ window.initEditarProcesado = function() {
     const contenedorMultiples = document.getElementById('edit-docs-multiples-container');
     const loadingOverlay = document.getElementById('edit-loading-overlay');
 
-    // 🔍 DIAGNÓSTICO
     if (!btnBuscar || !inputBusqueda) {
-        console.error('❌ No se encontraron los elementos de búsqueda. Verifica el HTML.');
         return;
     }
-    console.log('✅ Elementos DOM encontrados correctamente');
 
     const mostrarMsg = (el, txt, type) => {
         if (!el) return;
@@ -238,33 +234,24 @@ window.initEditarProcesado = function() {
         });
     }
 
-    // 🔹 BÚSQUEDA DE PROCESADO (CORREGIDO: usa created_at en lugar de fecha_procesamiento)
+    // ✅ ESTA FUNCIÓN SE MANTIENE IGUAL A COMO LA TENÍAS
     async function cargarProcesado(valor) {
-        if (!window.supabaseClient) {
-            throw new Error("Supabase no está inicializado");
-        }
-        
         const val = valor.trim().toUpperCase();
-        
-        // ✅ CORRECCIÓN: Usar created_at en lugar de fecha_procesamiento
         const { data: dataColumnas, error: errColumnas } = await window.supabaseClient
             .from('registro_procesados')
             .select('*')
             .or(`identificador_principal.eq.${val},cedula.eq.${val}`)
-            .order('created_at', { ascending: false })
+            .order('fecha_procesamiento', { ascending: false })
             .limit(5);
-            
         if (!errColumnas && dataColumnas && dataColumnas.length > 0) {
             return dataColumnas;
         }
-        
         const { data: dataJson, error: errJson } = await window.supabaseClient
             .from('registro_procesados')
             .select('*')
             .or(`datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
-            .order('created_at', { ascending: false })
+            .order('fecha_procesamiento', { ascending: false })
             .limit(5);
-            
         if (!errJson && dataJson && dataJson.length > 0) {
             return dataJson;
         }
@@ -336,22 +323,17 @@ window.initEditarProcesado = function() {
         });
     }
 
-    // 🔹 LISTENER DEL BOTÓN BUSCAR (con logs de depuración)
-    console.log("🔍 Registrando listener del botón buscar...");
     btnBuscar.addEventListener('click', async () => {
-        console.log('🖱️ [editar-procesado] Click en botón buscar detectado');
         const val = inputBusqueda.value.trim();
         if (val.length < 3) {
             return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 3 caracteres.', 'error');
         }
-        console.log('🔍 Buscando:', val);
         mostrarMsg(msgBusqueda, '🔍 Buscando procesado...', 'success');
         btnBuscar.disabled = true;
         form.style.display = 'none';
         datosPanel.style.display = 'none';
         try {
             const resultados = await cargarProcesado(val);
-            console.log('📊 Resultados encontrados:', resultados.length);
             if (resultados.length === 0) {
                 mostrarMsg(msgBusqueda, '❌ No se encontró ningún procesado con ese dato.', 'error');
             } else {
@@ -363,13 +345,11 @@ window.initEditarProcesado = function() {
                 window.scrollTo({ top: datosPanel.offsetTop - 20, behavior: 'smooth' });
             }
         } catch (err) {
-            console.error('❌ Error al buscar:', err);
-            mostrarMsg(msgBusqueda, '❌ Error de conexión: ' + err.message, 'error');
+            mostrarMsg(msgBusqueda, '❌ Error de conexión al buscar.', 'error');
         } finally {
             btnBuscar.disabled = false;
         }
     });
-    console.log("✅ Listener del botón buscar registrado");
 
     inputBusqueda.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -463,7 +443,7 @@ window.initEditarProcesado = function() {
                     .eq('id', procesadoActual.id);
                 if (updErr) throw new Error(`Error al actualizar: ${updErr.message}`);
 
-                // 🔹 LOG CENTRALIZADO USANDO UTILS.JS (CORREGIDO)
+                // 🔹 ÚNICO CAMBIO: Ahora usa window.registrarLog de utils.js con datos completos
                 if (typeof window.registrarLog === 'function' && procesadoActual?.id) {
                     await window.registrarLog(
                         'MODIFICAR',
@@ -489,7 +469,7 @@ window.initEditarProcesado = function() {
                         },
                         procesadoActual.id
                     );
-                    console.log('✅ Log de modificación de procesado registrado exitosamente');
+                    console.log('✅ Log de modificación registrado');
                 }
 
                 mostrarMsg(msgForm, '✅ Cambios guardados exitosamente.', 'success');
@@ -503,7 +483,6 @@ window.initEditarProcesado = function() {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 3000);
             } catch (err) {
-                console.error('❌ Error al guardar:', err);
                 mostrarMsg(msgForm, '❌ Error: ' + err.message, 'error');
             } finally {
                 if (loadingOverlay) loadingOverlay.classList.remove('active');
@@ -512,7 +491,4 @@ window.initEditarProcesado = function() {
             }
         });
     }
-
-    console.log("✅ Módulo editar-procesado.js inicializado correctamente.");
 };
-// ✅ ELIMINADA la auto-inicialización que causaba doble carga
