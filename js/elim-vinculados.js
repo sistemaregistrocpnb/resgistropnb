@@ -1,10 +1,7 @@
-// ✅ MARCA DE VERIFICACIÓN: Si ves este mensaje, el archivo se actualizó correctamente.
-console.log("✅ VERSIÓN FINAL: elim-vinculado.js cargado (IDs corregidos y SIN AWAIT ERRÓNEO)");
-
 window.initElimVinculados = function() {
-    console.log("✅ Módulo initElimVinculados ejecutándose...");
+    console.log("✅ Módulo elim-vinculados.js cargado correctamente.");
 
-    // 🔹 Referencias DOM (CORREGIDAS para coincidir con elim-vinculado.html)
+    // 🔹 Referencias DOM
     const buscarInput = document.getElementById('buscar-vinc-elim');
     const buscarBtn = document.getElementById('btn-buscar-vinc-elim');
     const msgBuscar = document.getElementById('buscar-msg-vinc');
@@ -13,11 +10,9 @@ window.initElimVinculados = function() {
     const archivedBanner = document.getElementById('archived-banner-vinc');
     const archivedDate = document.getElementById('archived-date-vinc');
     const archivedBy = document.getElementById('archived-by-vinc');
-    
     const btnEliminar = document.getElementById('btn-eliminar-vinc');
     const btnReintegrar = document.getElementById('btn-reintegrar-vinc');
     const msgElim = document.getElementById('msg-vinc');
-    
     const modal = document.getElementById('vinc-modal');
     const modalTitle = document.getElementById('modal-title-vinc');
     const modalText = document.getElementById('modal-text-vinc');
@@ -29,42 +24,38 @@ window.initElimVinculados = function() {
     let pendingAction = null;
 
     // 🔹 Helpers UI
-    const showMsg = (el, txt, type) => { 
-        if(el) { 
-            el.innerHTML = txt; 
-            el.className = `search-msg ${type}`; 
-            el.style.display = 'block'; 
-        } 
+    const showMsg = (el, txt, type) => {
+        if(el) {
+            el.innerHTML = txt;
+            el.className = `search-msg ${type}`;
+            el.style.display = 'block';
+        }
     };
     const hideMsg = (el) => { if(el) el.style.display = 'none'; };
-    
-    const showMsgElim = (txt, type) => { 
+    const showMsgElim = (txt, type) => {
         if(msgElim) {
-            msgElim.innerHTML = txt; 
-            msgElim.className = `msg ${type}`; 
-            msgElim.style.display = 'block'; 
+            msgElim.innerHTML = txt;
+            msgElim.className = `msg ${type}`;
+            msgElim.style.display = 'block';
         }
     };
     const hideMsgElim = () => { if(msgElim) msgElim.style.display = 'none'; };
-    
-    const setVal = (id, val) => { 
-        const el = document.getElementById(id); 
-        if(el) el.value = (val !== null && val !== undefined && val !== '') ? val : '-'; 
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if(el) el.value = (val !== null && val !== undefined && val !== '') ? val : '-';
     };
-    
-    const setPhoto = (imgId, url) => { 
-        const img = document.getElementById(imgId); 
-        if (img) { 
-            img.src = url || ''; 
-            img.style.display = url ? 'block' : 'none'; 
-        } 
+    const setPhoto = (imgId, url) => {
+        const img = document.getElementById(imgId);
+        if (img) {
+            img.src = url || '';
+            img.style.display = url ? 'block' : 'none';
+        }
     };
 
     // 🔹 Mostrar datos en el formulario
     function cargarDatos(data, source) {
         currentData = data;
         isArchived = (source === 'eliminados_vinculados');
-        
         if(dataContainer) dataContainer.style.display = 'block';
         hideMsg(msgBuscar);
         hideMsgElim();
@@ -93,30 +84,30 @@ window.initElimVinculados = function() {
         setVal('ev-p-cabello', data.color_cabello);
         setVal('ev-p-comp', data.complexion);
 
-        // Salud y Antecedentes (con lógica para mostrar/ocultar detalles)
-        setVal('ev-p-lentes', data.usa_lentes);
+        // Salud y Antecedentes
+        setVal('ev-p-lentes', data.usa_lentes ? 'Sí' : 'No');
         const boxLentes = document.getElementById('box-ev-lentes-det');
-        if(boxLentes) boxLentes.style.display = (data.usa_lentes === 'Sí' || data.usa_lentes === 'Si') ? 'block' : 'none';
+        if(boxLentes) boxLentes.style.display = (data.usa_lentes && data.detalle_lentes) ? 'block' : 'none';
         setVal('ev-p-lentes-det', data.detalle_lentes);
 
-        setVal('ev-p-perf', data.perforaciones);
+        setVal('ev-p-perf', data.perforaciones ? 'Sí' : 'No');
         const boxPerf = document.getElementById('box-ev-perf-det');
-        if(boxPerf) boxPerf.style.display = (data.perforaciones === 'Sí' || data.perforaciones === 'Si') ? 'block' : 'none';
+        if(boxPerf) boxPerf.style.display = (data.perforaciones && data.detalle_perforaciones) ? 'block' : 'none';
         setVal('ev-p-perf-det', data.detalle_perforaciones);
 
-        setVal('ev-p-cond', data.condicion_medica);
+        setVal('ev-p-cond', data.condicion_medica ? 'Sí' : 'No');
         const boxCond = document.getElementById('box-ev-cond-det');
-        if(boxCond) boxCond.style.display = (data.condicion_medica === 'Sí' || data.condicion_medica === 'Si') ? 'block' : 'none';
+        if(boxCond) boxCond.style.display = (data.condicion_medica && data.detalle_condicion_medica) ? 'block' : 'none';
         setVal('ev-p-cond-det', data.detalle_condicion_medica);
 
-        setVal('ev-p-med', data.consume_medicamento);
+        setVal('ev-p-med', data.consume_medicamento ? 'Sí' : 'No');
         const boxMed = document.getElementById('box-ev-med-det');
-        if(boxMed) boxMed.style.display = (data.consume_medicamento === 'Sí' || data.consume_medicamento === 'Si') ? 'block' : 'none';
+        if(boxMed) boxMed.style.display = (data.consume_medicamento && data.detalle_medicamento) ? 'block' : 'none';
         setVal('ev-p-med-det', data.detalle_medicamento);
 
-        setVal('ev-p-jud', data.problema_judicial);
+        setVal('ev-p-jud', data.problema_judicial ? 'Sí' : 'No');
         const boxJud = document.getElementById('box-ev-jud-det');
-        if(boxJud) boxJud.style.display = (data.problema_judicial === 'Sí' || data.problema_judicial === 'Si') ? 'block' : 'none';
+        if(boxJud) boxJud.style.display = (data.problema_judicial && data.detalle_problema_judicial) ? 'block' : 'none';
         setVal('ev-p-jud-det', data.detalle_problema_judicial);
 
         // Fotos Persona
@@ -156,7 +147,6 @@ window.initElimVinculados = function() {
                 archivedDate.textContent = '-';
             }
             if (archivedBy) archivedBy.textContent = data.eliminado_por || 'Sistema';
-            
             if (btnEliminar) btnEliminar.style.display = 'none';
             if (btnReintegrar) btnReintegrar.style.display = 'block';
         } else {
@@ -168,7 +158,7 @@ window.initElimVinculados = function() {
     }
 
     // ==========================================
-    // 🔍 BÚSQUEDA MULTI-TABLA (ASYNC)
+    // 🔍 BÚSQUEDA MULTI-TABLA
     // ==========================================
     function detectarCoincidencias(reg, val) {
         const campos = [];
@@ -183,21 +173,18 @@ window.initElimVinculados = function() {
     async function buscarEnTodasLasTablas(valor) {
         const resultados = [];
         const val = valor.trim().toUpperCase();
-        // Consulta OR de Supabase para búsqueda parcial
         const query = `cedula.ilike.%${val}%,placa.ilike.%${val}%,serial_carroceria.ilike.%${val}%,serial_motor.ilike.%${val}%`;
-        
         try {
             // 1. Vinculados Activos
             const { data: vinculados, error: errVinc } = await window.supabaseClient
                 .from('registro_vinculado')
                 .select('*')
                 .or(query);
-                
             if (!errVinc && vinculados && vinculados.length > 0) {
                 vinculados.forEach(reg => {
                     resultados.push({
-                        origen: 'registro_vinculado', 
-                        datos: reg, 
+                        origen: 'registro_vinculado',
+                        datos: reg,
                         eliminado: false,
                         encontrado_por: detectarCoincidencias(reg, val)
                     });
@@ -209,12 +196,11 @@ window.initElimVinculados = function() {
                 .from('eliminados_vinculados')
                 .select('*')
                 .or(query);
-                
             if (!errElim && eliminados && eliminados.length > 0) {
                 eliminados.forEach(reg => {
                     resultados.push({
-                        origen: 'eliminados_vinculados', 
-                        datos: reg, 
+                        origen: 'eliminados_vinculados',
+                        datos: reg,
                         eliminado: true,
                         encontrado_por: detectarCoincidencias(reg, val)
                     });
@@ -227,19 +213,17 @@ window.initElimVinculados = function() {
         }
     }
 
-    // 🔍 LISTENER PRINCIPAL DE BÚSQUEDA (ASYNC)
+    //  LISTENER PRINCIPAL DE BÚSQUEDA
     if (buscarBtn && buscarInput) {
         buscarBtn.addEventListener('click', async () => {
             const val = buscarInput.value.trim();
             if (val.length < 3) return showMsg(msgBuscar, '⚠️ Ingrese un dato válido (mín. 3 caracteres).', 'error');
-            
             showMsg(msgBuscar, '🔍 Buscando en registros vinculados...', 'success');
             buscarBtn.disabled = true;
             if(dataContainer) dataContainer.style.display = 'none';
             if(archivedBanner) archivedBanner.style.display = 'none';
             if(archivedNotice) archivedNotice.style.display = 'none';
             hideMsgElim();
-
             try {
                 const resultados = await buscarEnTodasLasTablas(val);
                 if (resultados.length === 0) {
@@ -248,23 +232,21 @@ window.initElimVinculados = function() {
                     showMsg(msgBuscar, '✅ 1 registro encontrado. Cargando...', 'success');
                     setTimeout(() => cargarDatos(resultados[0].datos, resultados[0].origen), 300);
                 } else {
-                    // Si hay múltiples, priorizamos mostrar el que esté activo
                     const activo = resultados.find(r => !r.eliminado) || resultados[0];
                     showMsg(msgBuscar, `🔎 Se encontraron <strong>${resultados.length} coincidencias</strong>. Mostrando la principal.`, 'success');
                     setTimeout(() => cargarDatos(activo.datos, activo.origen), 300);
                 }
             } catch (err) {
-                console.error('❌ Error general:', err);
+                console.error(' Error general:', err);
                 showMsg(msgBuscar, '❌ Error de conexión: ' + err.message, 'error');
             } finally {
                 buscarBtn.disabled = false;
             }
         });
-
         buscarInput.addEventListener('keydown', e => {
-            if (e.key === 'Enter') { 
-                e.preventDefault(); 
-                buscarBtn.click(); 
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                buscarBtn.click();
             }
         });
     }
@@ -299,7 +281,7 @@ window.initElimVinculados = function() {
     if (btnModalYes) btnModalYes.addEventListener('click', ejecutarAccion);
 
     // ==========================================
-    // 🔹 ELIMINAR (ASYNC)
+    // 🔹 ELIMINAR (Activa → Archivada)
     // ==========================================
     async function eliminarRegistro() {
         if (!currentData) return;
@@ -308,11 +290,9 @@ window.initElimVinculados = function() {
             btnEliminar.textContent = '⏳ Archivando...';
         }
         hideMsgElim();
-
         try {
             const { data: { user } } = await window.supabaseClient.auth.getUser();
             const eliminadoPor = user?.email || 'usuario@sistema';
-            
             const dataToArchive = {
                 eliminado_por: eliminadoPor,
                 eliminado_en: new Date().toISOString(),
@@ -366,12 +346,34 @@ window.initElimVinculados = function() {
                 direccion_detencion: currentData.direccion_detencion,
                 observaciones: currentData.observaciones
             };
-
             const res = await window.supabaseClient.from('eliminados_vinculados').insert([dataToArchive]);
             if (res.error) throw res.error;
-
             const delRes = await window.supabaseClient.from('registro_vinculado').delete().eq('id', currentData.id);
             if (delRes.error) throw delRes.error;
+
+            // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
+            if (typeof window.registrarLog === 'function' && currentData?.id) {
+                await window.registrarLog(
+                    'ELIMINAR',
+                    'VINCULADOS',
+                    {
+                        cedula: currentData.cedula,
+                        nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
+                        placa: currentData.placa,
+                        marca: currentData.marca_vehiculo,
+                        modelo: currentData.modelo_vehiculo,
+                        anio: currentData.anio_vehiculo,
+                        color: currentData.color_vehiculo,
+                        tipo_vehiculo: currentData.tipo_vehiculo,
+                        estatus: 'Eliminado',
+                        estacion: currentData.estacion_policial,
+                        direccion_detencion: currentData.direccion_detencion,
+                        descripcion_eliminada: `Registro vinculado (${currentData.tipo_vehiculo || 'no especificado'} ${currentData.marca_vehiculo || ''} ${currentData.modelo_vehiculo || ''}) eliminado del sistema activo por ${eliminadoPor}`
+                    },
+                    currentData.id
+                );
+                console.log('✅ Log de eliminación de registro vinculado registrado exitosamente');
+            }
 
             showMsgElim('✅ Registro vinculado eliminado y archivado correctamente.', 'success');
             setTimeout(() => {
@@ -394,7 +396,7 @@ window.initElimVinculados = function() {
     }
 
     // ==========================================
-    // 🔹 REINTEGRAR (ASYNC)
+    // 🔹 REINTEGRAR (Archivada → Activa)
     // ==========================================
     async function reintegrarRegistro() {
         if (!currentData) return;
@@ -403,7 +405,6 @@ window.initElimVinculados = function() {
             btnReintegrar.textContent = '⏳ Reintegrando...';
         }
         hideMsgElim();
-
         try {
             const dataToRestore = {
                 estatus: currentData.estatus,
@@ -456,12 +457,33 @@ window.initElimVinculados = function() {
                 foto_lado_der_vehiculo: currentData.foto_lado_der_vehiculo,
                 foto_lado_izq_vehiculo: currentData.foto_lado_izq_vehiculo
             };
-
             const res = await window.supabaseClient.from('registro_vinculado').insert([dataToRestore]);
             if (res.error) throw res.error;
-
             const delRes = await window.supabaseClient.from('eliminados_vinculados').delete().eq('id', currentData.id);
             if (delRes.error) throw delRes.error;
+
+            //  LOG CENTRALIZADO USANDO UTILS.JS
+            if (typeof window.registrarLog === 'function' && currentData?.id) {
+                await window.registrarLog(
+                    'REINTEGRAR',
+                    'VINCULADOS',
+                    {
+                        cedula: currentData.cedula,
+                        nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
+                        placa: currentData.placa,
+                        marca: currentData.marca_vehiculo,
+                        modelo: currentData.modelo_vehiculo,
+                        anio: currentData.anio_vehiculo,
+                        color: currentData.color_vehiculo,
+                        tipo_vehiculo: currentData.tipo_vehiculo,
+                        estatus: 'Reintegrado',
+                        estacion: currentData.estacion_policial,
+                        direccion_detencion: currentData.direccion_detencion
+                    },
+                    currentData.id
+                );
+                console.log('✅ Log de reintegración de registro vinculado registrado exitosamente');
+            }
 
             showMsgElim('✅ Registro vinculado reintegrado al sistema activo.', 'success');
             setTimeout(() => {
@@ -476,7 +498,7 @@ window.initElimVinculados = function() {
             console.error('Error reintegrando:', err);
             let msg = 'Error al reintegrar.';
             if (err.message.includes('23505') || err.message.includes('unique') || err.message.includes('duplicate key')) {
-                msg = '❌ <strong>No se puede reintegrar:</strong> La cédula, placa o serial ya se encuentra en uso.<br><small style="color:#64748b;">Este registro se conserva como historial.</small>';
+                msg = ' <strong>No se puede reintegrar:</strong> La cédula, placa o serial ya se encuentra en uso.<br><small style="color:#64748b;">Este registro se conserva como historial.</small>';
             } else {
                 msg = '❌ ' + err.message;
             }
@@ -498,7 +520,6 @@ window.initElimVinculados = function() {
             showModal('⚠️ Confirmar Eliminación', `¿Está seguro de eliminar este registro vinculado (C.I: ${currentData.cedula})?`, 'delete', 'danger');
         });
     }
-
     if (btnReintegrar) {
         btnReintegrar.addEventListener('click', () => {
             if (!currentData) return;
@@ -506,5 +527,5 @@ window.initElimVinculados = function() {
         });
     }
 
-    console.log("✅ Módulo elim-vinculado.js inicializado correctamente.");
+    console.log("✅ Módulo elim-vinculados.js inicializado correctamente.");
 };
