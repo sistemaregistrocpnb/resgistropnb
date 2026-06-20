@@ -1,10 +1,7 @@
-// ✅ MARCA DE VERIFICACIÓN
-console.log("✅ VERSIÓN FINAL: elim-vinculados.js cargado (Corregido)");
-
+console.log("✅ VERSIÓN FINAL: elim-vinculados.js cargado");
 window.initElimVinculados = function() {
     console.log("✅ Módulo initElimVinculados ejecutándose...");
 
-    // 🔹 Referencias DOM
     const buscarInput = document.getElementById('buscar-vinc-elim');
     const buscarBtn = document.getElementById('btn-buscar-vinc-elim');
     const msgBuscar = document.getElementById('buscar-msg-vinc');
@@ -26,21 +23,12 @@ window.initElimVinculados = function() {
     let isArchived = false;
     let pendingAction = null;
 
-    // 🔹 Helpers UI
     const showMsg = (el, txt, type) => {
-        if(el) {
-            el.innerHTML = txt;
-            el.className = `search-msg ${type}`;
-            el.style.display = 'block';
-        }
+        if(el) { el.innerHTML = txt; el.className = `search-msg ${type}`; el.style.display = 'block'; }
     };
     const hideMsg = (el) => { if(el) el.style.display = 'none'; };
     const showMsgElim = (txt, type) => {
-        if(msgElim) {
-            msgElim.innerHTML = txt;
-            msgElim.className = `msg ${type}`;
-            msgElim.style.display = 'block';
-        }
+        if(msgElim) { msgElim.innerHTML = txt; msgElim.className = `msg ${type}`; msgElim.style.display = 'block'; }
     };
     const hideMsgElim = () => { if(msgElim) msgElim.style.display = 'none'; };
     const setVal = (id, val) => {
@@ -49,13 +37,9 @@ window.initElimVinculados = function() {
     };
     const setPhoto = (imgId, url) => {
         const img = document.getElementById(imgId);
-        if (img) {
-            img.src = url || '';
-            img.style.display = url ? 'block' : 'none';
-        }
+        if (img) { img.src = url || ''; img.style.display = url ? 'block' : 'none'; }
     };
 
-    // 🔹 Mostrar datos en el formulario
     function cargarDatos(data, source) {
         currentData = data;
         isArchived = (source === 'eliminados_vinculados');
@@ -64,7 +48,6 @@ window.initElimVinculados = function() {
         hideMsgElim();
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        // Persona
         setVal('ev-p-n1', data.primer_nombre);
         setVal('ev-p-n2', data.segundo_nombre);
         setVal('ev-p-a1', data.primer_apellido);
@@ -79,15 +62,12 @@ window.initElimVinculados = function() {
         setVal('ev-p-tlf-pais', data.tlf_pais);
         setVal('ev-p-tlf-num', data.tlf_numero);
         setVal('ev-p-dir', data.direccion);
-
-        // Características Físicas
         setVal('ev-p-est', data.estatura_cm);
         setVal('ev-p-piel', data.color_piel);
         setVal('ev-p-ojos', data.color_ojos);
         setVal('ev-p-cabello', data.color_cabello);
         setVal('ev-p-comp', data.complexion);
 
-        // Salud y Antecedentes
         setVal('ev-p-lentes', data.usa_lentes ? 'Sí' : 'No');
         const boxLentes = document.getElementById('box-ev-lentes-det');
         if(boxLentes) boxLentes.style.display = data.usa_lentes ? 'block' : 'none';
@@ -113,12 +93,10 @@ window.initElimVinculados = function() {
         if(boxJud) boxJud.style.display = data.problema_judicial ? 'block' : 'none';
         setVal('ev-p-jud-det', data.problema_judicial);
 
-        // Fotos Persona
         setPhoto('ev-foto-p-frontal', data.foto_frontal_persona);
         setPhoto('ev-foto-p-izq', data.foto_perfil_izq_persona);
         setPhoto('ev-foto-p-der', data.foto_perfil_der_persona);
 
-        // Vehículo
         setVal('ev-v-tipo', data.tipo_vehiculo);
         setVal('ev-v-placa', data.placa);
         setVal('ev-v-serial-carro', data.serial_carroceria);
@@ -129,18 +107,15 @@ window.initElimVinculados = function() {
         setVal('ev-v-anio', data.anio_vehiculo);
         setVal('ev-v-color', data.color_vehiculo);
 
-        // Fotos Vehículo
         setPhoto('ev-foto-v-frontal', data.foto_frontal_vehiculo);
         setPhoto('ev-foto-v-trasera', data.foto_trasera_vehiculo);
         setPhoto('ev-foto-v-der', data.foto_lado_der_vehiculo);
         setPhoto('ev-foto-v-izq', data.foto_lado_izq_vehiculo);
 
-        // Registro
         setVal('ev-estacion', data.estacion_policial);
         setVal('ev-dir-det', data.direccion_detencion);
         setVal('ev-obs', data.observaciones);
 
-        // Estado (Activo vs Archivado)
         if (isArchived) {
             if (archivedNotice) archivedNotice.style.display = 'block';
             if (archivedBanner) archivedBanner.style.display = 'block';
@@ -160,7 +135,6 @@ window.initElimVinculados = function() {
         }
     }
 
-    // 🔍 BÚSQUEDA MULTI-TABLA
     function detectarCoincidencias(reg, val) {
         const campos = [];
         const v = val.trim().toUpperCase();
@@ -172,54 +146,34 @@ window.initElimVinculados = function() {
     }
 
     async function buscarEnTodasLasTablas(valor) {
-        if (!window.supabaseClient) {
-            throw new Error("El cliente de Supabase no está inicializado.");
-        }
+        if (!window.supabaseClient) throw new Error("Supabase no inicializado.");
         const resultados = [];
         const val = valor.trim().toUpperCase();
         const query = `cedula.ilike.%${val}%,placa.ilike.%${val}%,serial_carroceria.ilike.%${val}%,serial_motor.ilike.%${val}%`;
         try {
-            // 1. Vinculados Activos
             const { data: vinculados, error: errVinc } = await window.supabaseClient
-                .from('registro_vinculado')
-                .select('*')
-                .or(query);
-            if (errVinc) throw new Error("Error en tabla Activos: " + errVinc.message);
+                .from('registro_vinculado').select('*').or(query);
+            if (errVinc) throw new Error("Error en Activos: " + errVinc.message);
             if (vinculados && vinculados.length > 0) {
                 vinculados.forEach(reg => {
-                    resultados.push({
-                        origen: 'registro_vinculado',
-                        datos: reg,
-                        eliminado: false,
-                        encontrado_por: detectarCoincidencias(reg, val)
-                    });
+                    resultados.push({ origen: 'registro_vinculado', datos: reg, eliminado: false, encontrado_por: detectarCoincidencias(reg, val) });
                 });
             }
-
-            // 2. Vinculados Archivados
             const { data: eliminados, error: errElim } = await window.supabaseClient
-                .from('eliminados_vinculados')
-                .select('*')
-                .or(query);
-            if (errElim) throw new Error("Error en tabla Archivados: " + errElim.message);
+                .from('eliminados_vinculados').select('*').or(query);
+            if (errElim) throw new Error("Error en Archivados: " + errElim.message);
             if (eliminados && eliminados.length > 0) {
                 eliminados.forEach(reg => {
-                    resultados.push({
-                        origen: 'eliminados_vinculados',
-                        datos: reg,
-                        eliminado: true,
-                        encontrado_por: detectarCoincidencias(reg, val)
-                    });
+                    resultados.push({ origen: 'eliminados_vinculados', datos: reg, eliminado: true, encontrado_por: detectarCoincidencias(reg, val) });
                 });
             }
             return resultados;
         } catch (err) {
-            console.error('❌ Error detallado en búsqueda:', err);
+            console.error('❌ Error en búsqueda:', err);
             throw err;
         }
     }
 
-    // 🔍 LISTENER PRINCIPAL DE BÚSQUEDA
     if (buscarBtn && buscarInput) {
         buscarBtn.addEventListener('click', async () => {
             const val = buscarInput.value.trim();
@@ -243,21 +197,16 @@ window.initElimVinculados = function() {
                     setTimeout(() => cargarDatos(activo.datos, activo.origen), 300);
                 }
             } catch (err) {
-                console.error('❌ Error general:', err);
                 showMsg(msgBuscar, '❌ Error de conexión: ' + err.message, 'error');
             } finally {
                 buscarBtn.disabled = false;
             }
         });
         buscarInput.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                buscarBtn.click();
-            }
+            if (e.key === 'Enter') { e.preventDefault(); buscarBtn.click(); }
         });
     }
 
-    // 🔹 MODAL DE CONFIRMACIÓN
     function showModal(titulo, texto, accion, tipo) {
         pendingAction = accion;
         if(modalTitle) modalTitle.textContent = titulo;
@@ -284,80 +233,49 @@ window.initElimVinculados = function() {
     if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
     if (btnModalYes) btnModalYes.addEventListener('click', ejecutarAccion);
 
-    // 🔹 ELIMINAR
     async function eliminarRegistro() {
         if (!currentData) return;
-        if(btnEliminar) {
-            btnEliminar.disabled = true;
-            btnEliminar.textContent = '⏳ Archivando...';
-        }
+        if(btnEliminar) { btnEliminar.disabled = true; btnEliminar.textContent = '⏳ Archivando...'; }
         hideMsgElim();
         try {
             const { data: { user } } = await window.supabaseClient.auth.getUser();
             const eliminadoPor = user?.email || 'usuario@sistema';
-            
             const dataToArchive = {
                 eliminado_por: eliminadoPor,
                 eliminado_en: new Date().toISOString(),
-                primer_nombre: currentData.primer_nombre,
-                segundo_nombre: currentData.segundo_nombre,
-                primer_apellido: currentData.primer_apellido,
-                segundo_apellido: currentData.segundo_apellido,
-                cedula: currentData.cedula,
-                fecha_nacimiento: currentData.fecha_nacimiento,
-                edad: currentData.edad,
-                apodo: currentData.apodo,
-                marca_corporal: currentData.marca_corporal,
-                nacionalidad: currentData.nacionalidad,
-                sexo: currentData.sexo,
-                direccion: currentData.direccion,
-                tlf_pais: currentData.tlf_pais,
-                tlf_numero: currentData.tlf_numero,
-                estatura_cm: currentData.estatura_cm,
-                color_piel: currentData.color_piel,
-                color_ojos: currentData.color_ojos,
-                color_cabello: currentData.color_cabello,
-                complexion: currentData.complexion,
-                usa_lentes: currentData.usa_lentes,
-                detalle_lentes: currentData.detalle_lentes,
-                perforaciones: currentData.perforaciones,
-                detalle_perforaciones: currentData.detalle_perforaciones,
-                condicion_medica: currentData.condicion_medica,
-                consume_medicamento: currentData.consume_medicamento,
+                primer_nombre: currentData.primer_nombre, segundo_nombre: currentData.segundo_nombre,
+                primer_apellido: currentData.primer_apellido, segundo_apellido: currentData.segundo_apellido,
+                cedula: currentData.cedula, fecha_nacimiento: currentData.fecha_nacimiento, edad: currentData.edad,
+                apodo: currentData.apodo, marca_corporal: currentData.marca_corporal,
+                nacionalidad: currentData.nacionalidad, sexo: currentData.sexo,
+                direccion: currentData.direccion, tlf_pais: currentData.tlf_pais, tlf_numero: currentData.tlf_numero,
+                estatura_cm: currentData.estatura_cm, color_piel: currentData.color_piel,
+                color_ojos: currentData.color_ojos, color_cabello: currentData.color_cabello, complexion: currentData.complexion,
+                usa_lentes: currentData.usa_lentes, detalle_lentes: currentData.detalle_lentes,
+                perforaciones: currentData.perforaciones, detalle_perforaciones: currentData.detalle_perforaciones,
+                condicion_medica: currentData.condicion_medica, consume_medicamento: currentData.consume_medicamento,
                 problema_judicial: currentData.problema_judicial,
-                foto_frontal_persona: currentData.foto_frontal_persona,
-                foto_perfil_izq_persona: currentData.foto_perfil_izq_persona,
+                foto_frontal_persona: currentData.foto_frontal_persona, foto_perfil_izq_persona: currentData.foto_perfil_izq_persona,
                 foto_perfil_der_persona: currentData.foto_perfil_der_persona,
-                tipo_vehiculo: currentData.tipo_vehiculo,
-                placa: currentData.placa,
-                serial_carroceria: currentData.serial_carroceria,
-                serial_motor: currentData.serial_motor,
-                cilindraje: currentData.cilindraje,
-                color_vehiculo: currentData.color_vehiculo,
-                anio_vehiculo: currentData.anio_vehiculo,
-                marca_vehiculo: currentData.marca_vehiculo,
+                tipo_vehiculo: currentData.tipo_vehiculo, placa: currentData.placa,
+                serial_carroceria: currentData.serial_carroceria, serial_motor: currentData.serial_motor,
+                cilindraje: currentData.cilindraje, color_vehiculo: currentData.color_vehiculo,
+                anio_vehiculo: currentData.anio_vehiculo, marca_vehiculo: currentData.marca_vehiculo,
                 modelo_vehiculo: currentData.modelo_vehiculo,
-                foto_frontal_vehiculo: currentData.foto_frontal_vehiculo,
-                foto_trasera_vehiculo: currentData.foto_trasera_vehiculo,
-                foto_lado_der_vehiculo: currentData.foto_lado_der_vehiculo,
-                foto_lado_izq_vehiculo: currentData.foto_lado_izq_vehiculo,
-                estatus: currentData.estatus,
-                estacion_policial: currentData.estacion_policial,
-                direccion_detencion: currentData.direccion_detencion,
-                observaciones: currentData.observaciones
+                foto_frontal_vehiculo: currentData.foto_frontal_vehiculo, foto_trasera_vehiculo: currentData.foto_trasera_vehiculo,
+                foto_lado_der_vehiculo: currentData.foto_lado_der_vehiculo, foto_lado_izq_vehiculo: currentData.foto_lado_izq_vehiculo,
+                estatus: currentData.estatus, estacion_policial: currentData.estacion_policial,
+                direccion_detencion: currentData.direccion_detencion, observaciones: currentData.observaciones
             };
-            
             const res = await window.supabaseClient.from('eliminados_vinculados').insert([dataToArchive]);
             if (res.error) throw res.error;
-            
             const delRes = await window.supabaseClient.from('registro_vinculado').delete().eq('id', currentData.id);
             if (delRes.error) throw delRes.error;
 
-            // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
+            // 🔹 LOG CENTRALIZADO
             if (typeof window.registrarLog === 'function' && currentData?.id) {
                 await window.registrarLog(
-                    'ELIMINAR',
-                    'VINCULADOS',
+                    'ELIMINAR', 'VINCULADOS',
                     {
                         cedula: currentData.cedula,
                         nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
@@ -367,22 +285,22 @@ window.initElimVinculados = function() {
                         anio: currentData.anio_vehiculo,
                         color: currentData.color_vehiculo,
                         tipo_vehiculo: currentData.tipo_vehiculo,
+                        tipo: 'Vinculado',
                         estatus: 'Eliminado',
                         estacion: currentData.estacion_policial,
                         direccion_detencion: currentData.direccion_detencion,
-                        descripcion_eliminada: `Registro vinculado (${currentData.tipo_vehiculo || 'no especificado'} ${currentData.marca_vehiculo || ''} ${currentData.modelo_vehiculo || ''}) eliminado del sistema activo por ${eliminadoPor}`
+                        descripcion_eliminada: `Registro vinculado (${currentData.tipo_vehiculo || ''} ${currentData.marca_vehiculo || ''} ${currentData.modelo_vehiculo || ''}) eliminado por ${eliminadoPor}`
                     },
                     currentData.id
                 );
-                console.log('✅ Log de eliminación de registro vinculado registrado exitosamente');
+                console.log('✅ Log de eliminación de registro vinculado');
             }
 
             showMsgElim('✅ Registro vinculado eliminado y archivado correctamente.', 'success');
             setTimeout(() => {
                 if(dataContainer) dataContainer.style.display = 'none';
                 if(buscarInput) buscarInput.value = '';
-                hideMsg(msgBuscar);
-                hideMsgElim();
+                hideMsg(msgBuscar); hideMsgElim();
                 if(archivedBanner) archivedBanner.style.display = 'none';
                 if(archivedNotice) archivedNotice.style.display = 'none';
             }, 4000);
@@ -390,83 +308,49 @@ window.initElimVinculados = function() {
             console.error('❌ Error eliminando:', err);
             showMsgElim('❌ ' + err.message, 'error');
         } finally {
-            if(btnEliminar) {
-                btnEliminar.disabled = false;
-                btnEliminar.textContent = '🗑️ Eliminar Registro Vinculado';
-            }
+            if(btnEliminar) { btnEliminar.disabled = false; btnEliminar.textContent = '🗑️ Eliminar Registro Vinculado'; }
         }
     }
 
-    // 🔹 REINTEGRAR (ÚNICA FUNCIÓN CORREGIDA)
     async function reintegrarRegistro() {
         if (!currentData) return;
-        if(btnReintegrar) {
-            btnReintegrar.disabled = true;
-            btnReintegrar.textContent = '⏳ Reintegrando...';
-        }
+        if(btnReintegrar) { btnReintegrar.disabled = true; btnReintegrar.textContent = '⏳ Reintegrando...'; }
         hideMsgElim();
         try {
-            // ✅ CORREGIDO: Solo columnas que SÍ existen en registro_vinculado
             const dataToRestore = {
-                primer_nombre: currentData.primer_nombre,
-                segundo_nombre: currentData.segundo_nombre,
-                primer_apellido: currentData.primer_apellido,
-                segundo_apellido: currentData.segundo_apellido,
-                cedula: currentData.cedula,
-                fecha_nacimiento: currentData.fecha_nacimiento,
-                edad: currentData.edad,
-                apodo: currentData.apodo,
-                marca_corporal: currentData.marca_corporal,
-                nacionalidad: currentData.nacionalidad,
-                sexo: currentData.sexo,
-                direccion: currentData.direccion,
-                tlf_pais: currentData.tlf_pais,
-                tlf_numero: currentData.tlf_numero,
-                estatura_cm: currentData.estatura_cm,
-                color_piel: currentData.color_piel,
-                color_ojos: currentData.color_ojos,
-                color_cabello: currentData.color_cabello,
-                complexion: currentData.complexion,
-                usa_lentes: currentData.usa_lentes,
-                detalle_lentes: currentData.detalle_lentes,
-                perforaciones: currentData.perforaciones,
-                detalle_perforaciones: currentData.detalle_perforaciones,
-                condicion_medica: currentData.condicion_medica,
-                consume_medicamento: currentData.consume_medicamento,
+                primer_nombre: currentData.primer_nombre, segundo_nombre: currentData.segundo_nombre,
+                primer_apellido: currentData.primer_apellido, segundo_apellido: currentData.segundo_apellido,
+                cedula: currentData.cedula, fecha_nacimiento: currentData.fecha_nacimiento, edad: currentData.edad,
+                apodo: currentData.apodo, marca_corporal: currentData.marca_corporal,
+                nacionalidad: currentData.nacionalidad, sexo: currentData.sexo,
+                direccion: currentData.direccion, tlf_pais: currentData.tlf_pais, tlf_numero: currentData.tlf_numero,
+                estatura_cm: currentData.estatura_cm, color_piel: currentData.color_piel,
+                color_ojos: currentData.color_ojos, color_cabello: currentData.color_cabello, complexion: currentData.complexion,
+                usa_lentes: currentData.usa_lentes, detalle_lentes: currentData.detalle_lentes,
+                perforaciones: currentData.perforaciones, detalle_perforaciones: currentData.detalle_perforaciones,
+                condicion_medica: currentData.condicion_medica, consume_medicamento: currentData.consume_medicamento,
                 problema_judicial: currentData.problema_judicial,
-                foto_frontal_persona: currentData.foto_frontal_persona,
-                foto_perfil_izq_persona: currentData.foto_perfil_izq_persona,
+                foto_frontal_persona: currentData.foto_frontal_persona, foto_perfil_izq_persona: currentData.foto_perfil_izq_persona,
                 foto_perfil_der_persona: currentData.foto_perfil_der_persona,
-                tipo_vehiculo: currentData.tipo_vehiculo,
-                placa: currentData.placa,
-                serial_carroceria: currentData.serial_carroceria,
-                serial_motor: currentData.serial_motor || '',
-                cilindraje: currentData.cilindraje,
-                color_vehiculo: currentData.color_vehiculo,
-                anio_vehiculo: currentData.anio_vehiculo,
-                marca_vehiculo: currentData.marca_vehiculo,
+                tipo_vehiculo: currentData.tipo_vehiculo, placa: currentData.placa,
+                serial_carroceria: currentData.serial_carroceria, serial_motor: currentData.serial_motor || '',
+                cilindraje: currentData.cilindraje, color_vehiculo: currentData.color_vehiculo,
+                anio_vehiculo: currentData.anio_vehiculo, marca_vehiculo: currentData.marca_vehiculo,
                 modelo_vehiculo: currentData.modelo_vehiculo,
-                foto_frontal_vehiculo: currentData.foto_frontal_vehiculo,
-                foto_trasera_vehiculo: currentData.foto_trasera_vehiculo,
-                foto_lado_der_vehiculo: currentData.foto_lado_der_vehiculo,
-                foto_lado_izq_vehiculo: currentData.foto_lado_izq_vehiculo,
-                estatus: currentData.estatus,
-                estacion_policial: currentData.estacion_policial,
-                direccion_detencion: currentData.direccion_detencion,
-                observaciones: currentData.observaciones
+                foto_frontal_vehiculo: currentData.foto_frontal_vehiculo, foto_trasera_vehiculo: currentData.foto_trasera_vehiculo,
+                foto_lado_der_vehiculo: currentData.foto_lado_der_vehiculo, foto_lado_izq_vehiculo: currentData.foto_lado_izq_vehiculo,
+                estatus: currentData.estatus, estacion_policial: currentData.estacion_policial,
+                direccion_detencion: currentData.direccion_detencion, observaciones: currentData.observaciones
             };
-            
             const res = await window.supabaseClient.from('registro_vinculado').insert([dataToRestore]);
             if (res.error) throw res.error;
-            
             const delRes = await window.supabaseClient.from('eliminados_vinculados').delete().eq('id', currentData.id);
             if (delRes.error) throw delRes.error;
 
-            // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
+            // 🔹 LOG CENTRALIZADO
             if (typeof window.registrarLog === 'function' && currentData?.id) {
                 await window.registrarLog(
-                    'REINTEGRAR',
-                    'VINCULADOS',
+                    'REINTEGRAR', 'VINCULADOS',
                     {
                         cedula: currentData.cedula,
                         nombre_completo: `${currentData.primer_nombre} ${currentData.primer_apellido}`.trim(),
@@ -476,21 +360,21 @@ window.initElimVinculados = function() {
                         anio: currentData.anio_vehiculo,
                         color: currentData.color_vehiculo,
                         tipo_vehiculo: currentData.tipo_vehiculo,
+                        tipo: 'Vinculado',
                         estatus: 'Reintegrado',
                         estacion: currentData.estacion_policial,
                         direccion_detencion: currentData.direccion_detencion
                     },
                     currentData.id
                 );
-                console.log('✅ Log de reintegración de registro vinculado registrado exitosamente');
+                console.log('✅ Log de reintegración de registro vinculado');
             }
 
             showMsgElim('✅ Registro vinculado reintegrado al sistema activo.', 'success');
             setTimeout(() => {
                 if(dataContainer) dataContainer.style.display = 'none';
                 if(buscarInput) buscarInput.value = '';
-                hideMsg(msgBuscar);
-                hideMsgElim();
+                hideMsg(msgBuscar); hideMsgElim();
                 if(archivedBanner) archivedBanner.style.display = 'none';
                 if(archivedNotice) archivedNotice.style.display = 'none';
             }, 4000);
@@ -504,14 +388,10 @@ window.initElimVinculados = function() {
             }
             showMsgElim(msg, 'error');
         } finally {
-            if(btnReintegrar) {
-                btnReintegrar.disabled = false;
-                btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo';
-            }
+            if(btnReintegrar) { btnReintegrar.disabled = false; btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo'; }
         }
     }
 
-    // 🔹 LISTENERS DE BOTONES
     if (btnEliminar) {
         btnEliminar.addEventListener('click', () => {
             if (!currentData) return;
