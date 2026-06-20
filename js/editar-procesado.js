@@ -334,7 +334,6 @@ window.initEditarProcesado = function() {
         });
     }
 
-    // 🔹 LISTENER DEL BOTÓN BUSCAR (con logs de depuración)
     btnBuscar.addEventListener('click', async () => {
         console.log('🖱️ Click en botón buscar');
         const val = inputBusqueda.value.trim();
