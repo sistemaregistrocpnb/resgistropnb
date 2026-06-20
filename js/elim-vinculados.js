@@ -2,8 +2,8 @@ window.initElimVinculados = function() {
     console.log("🚀 [elim-vinculados] Módulo iniciado");
 
     // 🔹 Referencias DOM
-    const buscarInput = document.getElementById('buscar-vinc-elim');
-    const buscarBtn = document.getElementById('btn-buscar-vinc-elim');
+const buscarInput = document.getElementById('buscar-input-elim-vinc');
+const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
     const msgBuscar = document.getElementById('buscar-msg-vinc');
     const archivedNotice = document.getElementById('archived-notice-vinc');
     const dataContainer = document.getElementById('vinc-data-container');
