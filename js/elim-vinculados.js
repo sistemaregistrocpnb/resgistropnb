@@ -2,8 +2,8 @@ window.initElimVinculados = function() {
     console.log("🚀 [elim-vinculados] Módulo iniciado");
 
     // 🔹 Referencias DOM
-const buscarInput = document.getElementById('buscar-input-elim-vinc');
-const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
+    const buscarInput = document.getElementById('buscar-vinc-elim');
+    const buscarBtn = document.getElementById('btn-buscar-vinc-elim');
     const msgBuscar = document.getElementById('buscar-msg-vinc');
     const archivedNotice = document.getElementById('archived-notice-vinc');
     const dataContainer = document.getElementById('vinc-data-container');
@@ -18,16 +18,6 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
     const modalText = document.getElementById('modal-text-vinc');
     const btnModalYes = document.getElementById('btn-modal-yes-vinc');
     const btnModalNo = document.getElementById('btn-modal-no-vinc');
-
-    // Verificar elementos críticos
-    if (!buscarInput || !buscarBtn) {
-        console.error('❌ [elim-vinculados] No se encontraron los elementos de búsqueda');
-        console.log('buscarInput:', buscarInput);
-        console.log('buscarBtn:', buscarBtn);
-        return;
-    }
-
-    console.log("✅ [elim-vinculados] Todos los elementos DOM encontrados");
 
     let currentData = null;
     let isArchived = false;
@@ -52,7 +42,9 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
     const hideMsgElim = () => { if(msgElim) msgElim.style.display = 'none'; };
     const setVal = (id, val) => {
         const el = document.getElementById(id);
-        if(el) el.value = (val !== null && val !== undefined && val !== '') ? val : '-';
+        if(el) {
+            el.value = (val !== null && val !== undefined && val !== '') ? val : '-';
+        }
     };
     const setPhoto = (imgId, url) => {
         const img = document.getElementById(imgId);
@@ -62,12 +54,16 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
         }
     };
 
-    //  Mostrar datos
+    // 🔹 Mostrar datos en el formulario
     function cargarDatos(data, source) {
-        console.log("📋 [elim-vinculados] Cargando datos:", data);
+        console.log("📋 [elim-vinculados] Iniciando cargarDatos");
         currentData = data;
         isArchived = (source === 'eliminados_vinculados');
-        if(dataContainer) dataContainer.style.display = 'block';
+        
+        if(dataContainer) {
+            dataContainer.style.display = 'block';
+            console.log("✅ Contenedor mostrado");
+        }
         hideMsg(msgBuscar);
         hideMsgElim();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -95,7 +91,7 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
         setVal('ev-p-cabello', data.color_cabello);
         setVal('ev-p-comp', data.complexion);
 
-        // Salud y Antecedentes
+        // Salud y Antecedentes (CORREGIDO: booleanos a 'Sí'/'No')
         setVal('ev-p-lentes', data.usa_lentes ? 'Sí' : 'No');
         const boxLentes = document.getElementById('box-ev-lentes-det');
         if(boxLentes) boxLentes.style.display = data.usa_lentes ? 'block' : 'none';
@@ -121,6 +117,8 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
         if(boxJud) boxJud.style.display = data.problema_judicial ? 'block' : 'none';
         setVal('ev-p-jud-det', data.detalle_problema_judicial);
 
+        console.log("✅ Campos de persona cargados");
+
         // Fotos Persona
         setPhoto('ev-foto-p-frontal', data.foto_frontal_persona);
         setPhoto('ev-foto-p-izq', data.foto_perfil_izq_persona);
@@ -137,6 +135,8 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
         setVal('ev-v-anio', data.anio_vehiculo);
         setVal('ev-v-color', data.color_vehiculo);
 
+        console.log("✅ Campos de vehículo cargados");
+
         // Fotos Vehículo
         setPhoto('ev-foto-v-frontal', data.foto_frontal_vehiculo);
         setPhoto('ev-foto-v-trasera', data.foto_trasera_vehiculo);
@@ -148,7 +148,9 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
         setVal('ev-dir-det', data.direccion_detencion);
         setVal('ev-obs', data.observaciones);
 
-        // Estado
+        console.log("✅ Todos los campos cargados, configurando estado");
+
+        // Estado (Activo vs Archivado)
         if (isArchived) {
             if (archivedNotice) archivedNotice.style.display = 'block';
             if (archivedBanner) archivedBanner.style.display = 'block';
@@ -160,20 +162,37 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
             if (archivedBy) archivedBy.textContent = data.eliminado_por || 'Sistema';
             if (btnEliminar) btnEliminar.style.display = 'none';
             if (btnReintegrar) btnReintegrar.style.display = 'block';
+            console.log("✅ Estado: Archivado");
         } else {
             if (archivedNotice) archivedNotice.style.display = 'none';
             if (archivedBanner) archivedBanner.style.display = 'none';
             if (btnEliminar) btnEliminar.style.display = 'block';
             if (btnReintegrar) btnReintegrar.style.display = 'none';
+            console.log("✅ Estado: Activo");
         }
+
+        console.log("✅ cargarDatos completado");
     }
 
-    // 🔍 BÚSQUEDA
+    // ==========================================
+    // 🔍 BÚSQUEDA MULTI-TABLA
+    // ==========================================
+    function detectarCoincidencias(reg, val) {
+        const campos = [];
+        const v = val.trim().toUpperCase();
+        if (reg.cedula && reg.cedula.toUpperCase().includes(v)) campos.push('Cédula');
+        if (reg.placa && reg.placa.toUpperCase().includes(v)) campos.push('Placa');
+        if (reg.serial_carroceria && reg.serial_carroceria.toUpperCase().includes(v)) campos.push('Serial Carrocería');
+        if (reg.serial_motor && reg.serial_motor.toUpperCase().includes(v)) campos.push('Serial Motor');
+        return campos;
+    }
+
     async function buscarEnTodasLasTablas(valor) {
         const resultados = [];
         const val = valor.trim().toUpperCase();
         const query = `cedula.ilike.%${val}%,placa.ilike.%${val}%,serial_carroceria.ilike.%${val}%,serial_motor.ilike.%${val}%`;
         try {
+            // 1. Vinculados Activos
             const { data: vinculados, error: errVinc } = await window.supabaseClient
                 .from('registro_vinculado')
                 .select('*')
@@ -183,11 +202,13 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
                     resultados.push({
                         origen: 'registro_vinculado',
                         datos: reg,
-                        eliminado: false
+                        eliminado: false,
+                        encontrado_por: detectarCoincidencias(reg, val)
                     });
                 });
             }
 
+            // 2. Vinculados Archivados
             const { data: eliminados, error: errElim } = await window.supabaseClient
                 .from('eliminados_vinculados')
                 .select('*')
@@ -197,7 +218,8 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
                     resultados.push({
                         origen: 'eliminados_vinculados',
                         datos: reg,
-                        eliminado: true
+                        eliminado: true,
+                        encontrado_por: detectarCoincidencias(reg, val)
                     });
                 });
             }
@@ -209,16 +231,11 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
     }
 
     // 🔍 LISTENER PRINCIPAL DE BÚSQUEDA
-    console.log("🔍 [elim-vinculados] Configurando listener de búsqueda");
     if (buscarBtn && buscarInput) {
         buscarBtn.addEventListener('click', async () => {
-            console.log("🖱️ [elim-vinculados] Click en buscar");
             const val = buscarInput.value.trim();
-            if (val.length < 3) {
-                console.log("⚠️ [elim-vinculados] Valor muy corto:", val);
-                return showMsg(msgBuscar, '️ Ingrese un dato válido (mín. 3 caracteres).', 'error');
-            }
-            showMsg(msgBuscar, '🔍 Buscando...', 'success');
+            if (val.length < 3) return showMsg(msgBuscar, '⚠️ Ingrese un dato válido (mín. 3 caracteres).', 'error');
+            showMsg(msgBuscar, '🔍 Buscando en registros vinculados...', 'success');
             buscarBtn.disabled = true;
             if(dataContainer) dataContainer.style.display = 'none';
             if(archivedBanner) archivedBanner.style.display = 'none';
@@ -226,20 +243,19 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
             hideMsgElim();
             try {
                 const resultados = await buscarEnTodasLasTablas(val);
-                console.log("📊 [elim-vinculados] Resultados:", resultados.length);
                 if (resultados.length === 0) {
                     showMsg(msgBuscar, '❌ Registro vinculado no encontrado.', 'error');
                 } else if (resultados.length === 1) {
-                    showMsg(msgBuscar, '✅ 1 registro encontrado.', 'success');
+                    showMsg(msgBuscar, '✅ 1 registro encontrado. Cargando...', 'success');
                     setTimeout(() => cargarDatos(resultados[0].datos, resultados[0].origen), 300);
                 } else {
                     const activo = resultados.find(r => !r.eliminado) || resultados[0];
-                    showMsg(msgBuscar, `🔎 ${resultados.length} coincidencias. Mostrando principal.`, 'success');
+                    showMsg(msgBuscar, `🔎 Se encontraron <strong>${resultados.length} coincidencias</strong>. Mostrando la principal.`, 'success');
                     setTimeout(() => cargarDatos(activo.datos, activo.origen), 300);
                 }
             } catch (err) {
-                console.error('❌ Error:', err);
-                showMsg(msgBuscar, ' Error: ' + err.message, 'error');
+                console.error('❌ Error general:', err);
+                showMsg(msgBuscar, '❌ Error de conexión: ' + err.message, 'error');
             } finally {
                 buscarBtn.disabled = false;
             }
@@ -252,7 +268,9 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
         });
     }
 
-    // 🔹 MODAL
+    // ==========================================
+    // 🔹 MODAL DE CONFIRMACIÓN
+    // ==========================================
     function showModal(titulo, texto, accion, tipo) {
         pendingAction = accion;
         if(modalTitle) modalTitle.textContent = titulo;
@@ -279,7 +297,9 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
     if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
     if (btnModalYes) btnModalYes.addEventListener('click', ejecutarAccion);
 
+    // ==========================================
     // 🔹 ELIMINAR
+    // ==========================================
     async function eliminarRegistro() {
         if (!currentData) return;
         if(btnEliminar) {
@@ -348,6 +368,7 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
             const delRes = await window.supabaseClient.from('registro_vinculado').delete().eq('id', currentData.id);
             if (delRes.error) throw delRes.error;
 
+            // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
             if (typeof window.registrarLog === 'function' && currentData?.id) {
                 await window.registrarLog(
                     'ELIMINAR',
@@ -364,13 +385,13 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
                         estatus: 'Eliminado',
                         estacion: currentData.estacion_policial,
                         direccion_detencion: currentData.direccion_detencion,
-                        descripcion_eliminada: `Registro vinculado eliminado por ${eliminadoPor}`
+                        descripcion_eliminada: `Registro vinculado (${currentData.tipo_vehiculo || 'no especificado'} ${currentData.marca_vehiculo || ''} ${currentData.modelo_vehiculo || ''}) eliminado del sistema activo por ${eliminadoPor}`
                     },
                     currentData.id
                 );
             }
 
-            showMsgElim('✅ Registro eliminado y archivado.', 'success');
+            showMsgElim('✅ Registro vinculado eliminado y archivado correctamente.', 'success');
             setTimeout(() => {
                 if(dataContainer) dataContainer.style.display = 'none';
                 if(buscarInput) buscarInput.value = '';
@@ -385,12 +406,14 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
         } finally {
             if(btnEliminar) {
                 btnEliminar.disabled = false;
-                btnEliminar.textContent = '🗑️ Eliminar Registro Vinculado';
+                btnEliminar.textContent = '️ Eliminar Registro Vinculado';
             }
         }
     }
 
+    // ==========================================
     // 🔹 REINTEGRAR
+    // ==========================================
     async function reintegrarRegistro() {
         if (!currentData) return;
         if(btnReintegrar) {
@@ -455,6 +478,7 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
             const delRes = await window.supabaseClient.from('eliminados_vinculados').delete().eq('id', currentData.id);
             if (delRes.error) throw delRes.error;
 
+            // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
             if (typeof window.registrarLog === 'function' && currentData?.id) {
                 await window.registrarLog(
                     'REINTEGRAR',
@@ -476,7 +500,7 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
                 );
             }
 
-            showMsgElim('✅ Registro reintegrado al sistema activo.', 'success');
+            showMsgElim('✅ Registro vinculado reintegrado al sistema activo.', 'success');
             setTimeout(() => {
                 if(dataContainer) dataContainer.style.display = 'none';
                 if(buscarInput) buscarInput.value = '';
@@ -488,8 +512,8 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
         } catch (err) {
             console.error('Error reintegrando:', err);
             let msg = 'Error al reintegrar.';
-            if (err.message.includes('23505') || err.message.includes('unique')) {
-                msg = '❌ La cédula, placa o serial ya está en uso.';
+            if (err.message.includes('23505') || err.message.includes('unique') || err.message.includes('duplicate key')) {
+                msg = '❌ <strong>No se puede reintegrar:</strong> La cédula, placa o serial ya se encuentra en uso.<br><small style="color:#64748b;">Este registro se conserva como historial.</small>';
             } else {
                 msg = '❌ ' + err.message;
             }
@@ -502,17 +526,19 @@ const buscarBtn = document.getElementById('btn-buscar-elim-vinc');
         }
     }
 
+    // ==========================================
     // 🔹 LISTENERS DE BOTONES
+    // ==========================================
     if (btnEliminar) {
         btnEliminar.addEventListener('click', () => {
             if (!currentData) return;
-            showModal('⚠️ Confirmar Eliminación', `¿Eliminar registro vinculado (C.I: ${currentData.cedula})?`, 'delete', 'danger');
+            showModal('⚠️ Confirmar Eliminación', `¿Está seguro de eliminar este registro vinculado (C.I: ${currentData.cedula})?`, 'delete', 'danger');
         });
     }
     if (btnReintegrar) {
         btnReintegrar.addEventListener('click', () => {
             if (!currentData) return;
-            showModal('⚠️ Confirmar Reintegración', `¿Reintegrar registro (C.I: ${currentData.cedula})?`, 'reintegrate', 'success');
+            showModal('️ Confirmar Reintegración', `¿Está seguro de reintegrar este registro (C.I: ${currentData.cedula}) al sistema activo?`, 'reintegrate', 'success');
         });
     }
 
