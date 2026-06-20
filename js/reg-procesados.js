@@ -14,11 +14,11 @@ window.initRegProcesados = function() {
         { id: 'derechos_imputado', label: '⚖️ Derechos del Imputado' },
         { id: 'evaluacion_medica', label: '🏥 Evaluación Médica' },
         { id: 'identificacion_cedula', label: '🆔 Identificación (Cédula)' },
-        { id: 'solicitud_examen_forense', label: ' Solicitud de Examen Forense' },
+        { id: 'solicitud_examen_forense', label: '🔬 Solicitud de Examen Forense' },
         { id: 'resultados_examen_forense', label: '🔬 Resultados del Examen Forense' },
         { id: 'asistencia_comdepro', label: '🤝 Asistencia de Comdepro' },
-        { id: 'remision_estacionamiento', label: ' Remisión a Estacionamiento' },
-        { id: 'planilla_pvr', label: ' Planilla de Revisión de Vehículo (PVR)' },
+        { id: 'remision_estacionamiento', label: '🚗 Remisión a Estacionamiento' },
+        { id: 'planilla_pvr', label: '🚙 Planilla de Revisión de Vehículo (PVR)' },
         { id: 'otros_documentos', label: '📎 Otros Documentos' }
     ];
 
@@ -148,7 +148,7 @@ window.initRegProcesados = function() {
         archivosMultiples[campo].forEach((file, index) => {
             const item = document.createElement('div');
             item.className = 'file-item-multiple';
-            item.innerHTML = `<span>📄 ${file.name}</span><button type="button" onclick="eliminarArchivoMultiple('${campo}', ${max}, ${index})"></button>`;
+            item.innerHTML = `<span>📄 ${file.name}</span><button type="button" onclick="eliminarArchivoMultiple('${campo}', ${max}, ${index})">❌</button>`;
             list.appendChild(item);
         });
         count.textContent = `${archivosMultiples[campo].length} de ${max} archivos`;
@@ -234,7 +234,7 @@ window.initRegProcesados = function() {
                         tipoRegistro: 'persona',
                         datos: reg,
                         linea1: `${nombre} | C.I: ${reg.cedula || '-'}`,
-                        linea2: `Sexo: ${reg.sexo || '-'} | Edad: ${reg.edad || '-'}`,
+                        linea2: `Sexo: ${reg.sexo || '-'}`,
                         linea3: `Estación: ${reg.estacion_policial || '-'}`,
                         encontrado_por: ['Cédula']
                     });
@@ -365,7 +365,6 @@ window.initRegProcesados = function() {
         if (resultado.origen === 'registro_personas' || resultado.origen === 'registro_vinculado') {
             html += `<div class="dato-fila"><span class="dato-label">👤 Nombre:</span><span class="dato-valor">${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}</span></div>`;
             html += `<div class="dato-fila"><span class="dato-label">🆔 Cédula:</span><span class="dato-valor">${data.cedula || '-'}</span></div>`;
-            html += `<div class="dato-fila"><span class="dato-label">🎂 Edad:</span><span class="dato-valor">${data.edad || '-'}</span></div>`;
             html += `<div class="dato-fila"><span class="dato-label">🌍 Nacionalidad:</span><span class="dato-valor">${data.nacionalidad || '-'}</span></div>`;
             html += `<div class="dato-fila"><span class="dato-label">⚧ Sexo:</span><span class="dato-valor">${data.sexo || '-'}</span></div>`;
             html += `<div class="dato-fila"><span class="dato-label">🏛️ Estación:</span><span class="dato-valor">${data.estacion_policial || '-'}</span></div>`;
@@ -461,7 +460,7 @@ window.initRegProcesados = function() {
                 if (radio && radio.value === 'si') {
                     const fileInput = document.getElementById(`file_${doc.id}`);
                     if (!fileInput.files || fileInput.files.length === 0) {
-                        return mostrarMsg(msgForm, `️ Debe subir un PDF para: ${doc.label}`, 'error');
+                        return mostrarMsg(msgForm, `⚠️ Debe subir un PDF para: ${doc.label}`, 'error');
                     }
                 }
             }
@@ -477,8 +476,6 @@ window.initRegProcesados = function() {
             // MOSTRAR OVERLAY DE CARGA
             mostrarOverlay('⏳ Procesando y subiendo archivos...');
             try {
-                const { data: { user } } = await window.supabaseClient.auth.getUser();
-                const procesadoPor = user?.email || 'usuario@sistema';
                 const bucket = window.supabaseClient.storage.from('procesados_documentos');
                 const uid = sessionStorage.getItem('pnb_user_id') || 'user';
                 const ts = Date.now();
@@ -520,7 +517,6 @@ window.initRegProcesados = function() {
                     tipo_registro: registroSeleccionado.tipoRegistro || '',
                     identificador_principal: document.getElementById('proc_identificador').value,
                     tipo_delito: tipoDelito,
-                    procesado_por: procesadoPor,
                     observaciones: document.getElementById('proc_observaciones').value.trim() || null,
                     datos_originales: {
                         ...dataOriginal,
@@ -564,23 +560,21 @@ window.initRegProcesados = function() {
                     .eq('id', registroSeleccionado.id);
                 if (updErr) throw new Error(`Error al cambiar estatus: ${updErr.message}`);
 
-                // 🔹 LOG CENTRALIZADO USANDO UTILS.JS - CON TODOS LOS DATOS
-             // 🔹 LOG CENTRALIZADO USANDO UTILS.JS - CON TODOS LOS DATOS
-if (typeof window.registrarLog === 'function' && registroSeleccionado?.id) {
-    const logDetalles = {
-        tipo_delito: tipoDelito,
-        estatus: 'Procesado',
-        estacion: dataOriginal.estacion_policial || 'N/A',
-        direccion_detencion: dataOriginal.direccion_detencion || 'N/A',
-        observaciones: document.getElementById('proc_observaciones').value.trim() || null
-        // ✅ Se quitó 'procesado_por' porque utils.js ya registra el nombre del usuario automáticamente
-    };
+                // 🔹 LOG CENTRALIZADO USANDO UTILS.JS (SIN EDAD, SIN PROCESADO_POR)
+                if (typeof window.registrarLog === 'function' && registroSeleccionado?.id) {
+                    const logDetalles = {
+                        tipo_delito: tipoDelito,
+                        estatus: 'Procesado',
+                        estacion: dataOriginal.estacion_policial || 'N/A',
+                        direccion_detencion: dataOriginal.direccion_detencion || 'N/A',
+                        observaciones: document.getElementById('proc_observaciones').value.trim() || null
+                    };
+
                     // Agregar datos según el tipo de registro
                     if (registroSeleccionado.tipoRegistro === 'persona') {
                         logDetalles.tipo = 'Persona';
                         logDetalles.cedula = dataOriginal.cedula || 'N/A';
                         logDetalles.nombre_completo = `${dataOriginal.primer_nombre || ''} ${dataOriginal.primer_apellido || ''}`.trim() || 'N/A';
-                        logDetalles.edad = dataOriginal.edad || 'N/A';
                     } else if (registroSeleccionado.tipoRegistro === 'moto' || registroSeleccionado.tipoRegistro === 'auto') {
                         logDetalles.tipo = registroSeleccionado.tipoRegistro === 'moto' ? 'Motocicleta' : 'Automóvil';
                         logDetalles.placa = dataOriginal.placa || 'N/A';
@@ -592,7 +586,6 @@ if (typeof window.registrarLog === 'function' && registroSeleccionado?.id) {
                         logDetalles.tipo = 'Vinculado';
                         logDetalles.cedula = dataOriginal.cedula || 'N/A';
                         logDetalles.nombre_completo = `${dataOriginal.primer_nombre || ''} ${dataOriginal.primer_apellido || ''}`.trim() || 'N/A';
-                        logDetalles.edad = dataOriginal.edad || 'N/A';
                         logDetalles.placa = dataOriginal.placa || 'N/A';
                         logDetalles.marca = dataOriginal.marca_vehiculo || 'N/A';
                         logDetalles.modelo = dataOriginal.modelo_vehiculo || 'N/A';
