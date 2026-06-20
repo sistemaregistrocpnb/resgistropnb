@@ -3,8 +3,7 @@ console.log("✅ VERSIÓN FINAL: elim-vinculados.js cargado (Con validaciones de
 
 window.initElimVinculados = function() {
     console.log("✅ Módulo initElimVinculados ejecutándose...");
-    
-    // 🔹 Referencias DOM
+
     const buscarInput = document.getElementById('buscar-vinc-elim');
     const buscarBtn = document.getElementById('btn-buscar-vinc-elim');
     const msgBuscar = document.getElementById('buscar-msg-vinc');
