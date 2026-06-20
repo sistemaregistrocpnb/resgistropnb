@@ -43,7 +43,6 @@ window.initEditarProcesado = function() {
         archivosMultiplesEliminados[d.id] = [];
     });
 
-    // 🔹 Referencias DOM
     const btnBuscar = document.getElementById('edit_btn_buscar');
     const inputBusqueda = document.getElementById('edit_busqueda_input');
     const msgBusqueda = document.getElementById('edit_msg_busqueda');
@@ -55,7 +54,6 @@ window.initEditarProcesado = function() {
     const contenedorMultiples = document.getElementById('edit-docs-multiples-container');
     const loadingOverlay = document.getElementById('edit-loading-overlay');
 
-    // 🔹 DIAGNÓSTICO: Verificar elementos críticos
     if (!btnBuscar || !inputBusqueda) {
         console.error('❌ No se encontraron los elementos de búsqueda. Verifica el HTML.');
         return;
@@ -461,7 +459,7 @@ window.initEditarProcesado = function() {
                     .eq('id', procesadoActual.id);
                 if (updErr) throw new Error(`Error al actualizar: ${updErr.message}`);
 
-                // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
+                // 🔹 LOG CENTRALIZADO USANDO UTILS.JS (CORREGIDO)
                 if (typeof window.registrarLog === 'function' && procesadoActual?.id) {
                     await window.registrarLog(
                         'MODIFICAR',
