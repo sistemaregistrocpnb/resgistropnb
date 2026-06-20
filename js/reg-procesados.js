@@ -6,19 +6,19 @@ window.initRegProcesados = function() {
     // ==========================================
     const docsUnicos = [
         { id: 'portada', label: '📑 Portada' },
-        { id: 'oficio_remision', label: ' Oficio de Remisión' },
-        { id: 'acta_denuncia', label: ' Acta de Denuncia' },
+        { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
+        { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
         { id: 'entrevista', label: '🎤 Entrevista' },
         { id: 'datos_filiatorios', label: '📋 Datos Filiatorios' },
         { id: 'acta_policial', label: '📋 Acta Policial' },
         { id: 'derechos_imputado', label: '⚖️ Derechos del Imputado' },
         { id: 'evaluacion_medica', label: '🏥 Evaluación Médica' },
         { id: 'identificacion_cedula', label: '🆔 Identificación (Cédula)' },
-        { id: 'solicitud_examen_forense', label: '🔬 Solicitud de Examen Forense' },
+        { id: 'solicitud_examen_forense', label: ' Solicitud de Examen Forense' },
         { id: 'resultados_examen_forense', label: '🔬 Resultados del Examen Forense' },
         { id: 'asistencia_comdepro', label: '🤝 Asistencia de Comdepro' },
-        { id: 'remision_estacionamiento', label: '🚗 Remisión a Estacionamiento' },
-        { id: 'planilla_pvr', label: '🚙 Planilla de Revisión de Vehículo (PVR)' },
+        { id: 'remision_estacionamiento', label: ' Remisión a Estacionamiento' },
+        { id: 'planilla_pvr', label: ' Planilla de Revisión de Vehículo (PVR)' },
         { id: 'otros_documentos', label: '📎 Otros Documentos' }
     ];
 
@@ -230,7 +230,7 @@ window.initRegProcesados = function() {
                     const nombre = `${reg.primer_nombre || ''} ${reg.primer_apellido || ''}`.trim();
                     resultados.push({
                         origen: 'registro_personas', id: reg.id,
-                        tipo: ' Persona', icono: '👤', color: '#7c3aed', colorBg: '#f5f3ff',
+                        tipo: '👤 Persona', icono: '👤', color: '#7c3aed', colorBg: '#f5f3ff',
                         tipoRegistro: 'persona',
                         datos: reg,
                         linea1: `${nombre} | C.I: ${reg.cedula || '-'}`,
@@ -363,7 +363,7 @@ window.initRegProcesados = function() {
         }
         let html = '';
         if (resultado.origen === 'registro_personas' || resultado.origen === 'registro_vinculado') {
-            html += `<div class="dato-fila"><span class="dato-label"> Nombre:</span><span class="dato-valor">${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}</span></div>`;
+            html += `<div class="dato-fila"><span class="dato-label">👤 Nombre:</span><span class="dato-valor">${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}</span></div>`;
             html += `<div class="dato-fila"><span class="dato-label">🆔 Cédula:</span><span class="dato-valor">${data.cedula || '-'}</span></div>`;
             html += `<div class="dato-fila"><span class="dato-label">🎂 Edad:</span><span class="dato-valor">${data.edad || '-'}</span></div>`;
             html += `<div class="dato-fila"><span class="dato-label">🌍 Nacionalidad:</span><span class="dato-valor">${data.nacionalidad || '-'}</span></div>`;
@@ -373,7 +373,7 @@ window.initRegProcesados = function() {
         }
         if (resultado.origen === 'registro_motos' || resultado.origen === 'registro_automoviles' || resultado.origen === 'registro_vinculado') {
             if (html) html += `<div style="margin-top: 12px; padding-top: 12px; border-top: 2px dashed #bbf7d0;"></div>`;
-            const tipoVeh = resultado.origen === 'registro_motos' ? '️ Motocicleta' : resultado.origen === 'registro_automoviles' ? '🚙 Automóvil' : (data.tipo_vehiculo || '-');
+            const tipoVeh = resultado.origen === 'registro_motos' ? '🏍️ Motocicleta' : resultado.origen === 'registro_automoviles' ? '🚙 Automóvil' : (data.tipo_vehiculo || '-');
             html += `<div class="dato-fila"><span class="dato-label">🚗 Tipo Vehículo:</span><span class="dato-valor">${tipoVeh}</span></div>`;
             html += `<div class="dato-fila"><span class="dato-label">🔢 Placa:</span><span class="dato-valor">${data.placa || '-'}</span></div>`;
             html += `<div class="dato-fila"><span class="dato-label">🔢 Serial Carrocería:</span><span class="dato-valor">${data.serial_carroceria || '-'}</span></div>`;
@@ -461,7 +461,7 @@ window.initRegProcesados = function() {
                 if (radio && radio.value === 'si') {
                     const fileInput = document.getElementById(`file_${doc.id}`);
                     if (!fileInput.files || fileInput.files.length === 0) {
-                        return mostrarMsg(msgForm, `⚠️ Debe subir un PDF para: ${doc.label}`, 'error');
+                        return mostrarMsg(msgForm, `️ Debe subir un PDF para: ${doc.label}`, 'error');
                     }
                 }
             }
@@ -563,32 +563,53 @@ window.initRegProcesados = function() {
                     .update({ estatus: 'Procesado' })
                     .eq('id', registroSeleccionado.id);
                 if (updErr) throw new Error(`Error al cambiar estatus: ${updErr.message}`);
-                // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
+
+                // 🔹 LOG CENTRALIZADO USANDO UTILS.JS - CON TODOS LOS DATOS
                 if (typeof window.registrarLog === 'function' && registroSeleccionado?.id) {
+                    const logDetalles = {
+                        tipo_delito: tipoDelito,
+                        estatus: 'Procesado',
+                        estacion: dataOriginal.estacion_policial || 'N/A',
+                        direccion_detencion: dataOriginal.direccion_detencion || 'N/A',
+                        observaciones: document.getElementById('proc_observaciones').value.trim() || null,
+                        procesado_por: procesadoPor
+                    };
+
+                    // Agregar datos según el tipo de registro
+                    if (registroSeleccionado.tipoRegistro === 'persona') {
+                        logDetalles.tipo = 'Persona';
+                        logDetalles.cedula = dataOriginal.cedula || 'N/A';
+                        logDetalles.nombre_completo = `${dataOriginal.primer_nombre || ''} ${dataOriginal.primer_apellido || ''}`.trim() || 'N/A';
+                        logDetalles.edad = dataOriginal.edad || 'N/A';
+                    } else if (registroSeleccionado.tipoRegistro === 'moto' || registroSeleccionado.tipoRegistro === 'auto') {
+                        logDetalles.tipo = registroSeleccionado.tipoRegistro === 'moto' ? 'Motocicleta' : 'Automóvil';
+                        logDetalles.placa = dataOriginal.placa || 'N/A';
+                        logDetalles.marca = dataOriginal.marca || 'N/A';
+                        logDetalles.modelo = dataOriginal.modelo || 'N/A';
+                        logDetalles.anio = dataOriginal.anio || 'N/A';
+                        logDetalles.color = dataOriginal.color || 'N/A';
+                    } else if (registroSeleccionado.tipoRegistro === 'vinculado') {
+                        logDetalles.tipo = 'Vinculado';
+                        logDetalles.cedula = dataOriginal.cedula || 'N/A';
+                        logDetalles.nombre_completo = `${dataOriginal.primer_nombre || ''} ${dataOriginal.primer_apellido || ''}`.trim() || 'N/A';
+                        logDetalles.edad = dataOriginal.edad || 'N/A';
+                        logDetalles.placa = dataOriginal.placa || 'N/A';
+                        logDetalles.marca = dataOriginal.marca_vehiculo || 'N/A';
+                        logDetalles.modelo = dataOriginal.modelo_vehiculo || 'N/A';
+                        logDetalles.anio = dataOriginal.anio_vehiculo || 'N/A';
+                        logDetalles.color = dataOriginal.color_vehiculo || 'N/A';
+                        logDetalles.tipo_vehiculo = dataOriginal.tipo_vehiculo || 'N/A';
+                    }
+
                     await window.registrarLog(
                         'PROCESAR',
                         'PROCESADOS',
-                        {
-                            cedula: dataOriginal.cedula || 'N/A',
-                            nombre_completo: dataOriginal.primer_nombre ? `${dataOriginal.primer_nombre} ${dataOriginal.primer_apellido}`.trim() : 'N/A',
-                            placa: dataOriginal.placa || 'N/A',
-                            marca: dataOriginal.marca || dataOriginal.marca_vehiculo || 'N/A',
-                            modelo: dataOriginal.modelo || dataOriginal.modelo_vehiculo || 'N/A',
-                            anio: dataOriginal.anio || dataOriginal.anio_vehiculo || 'N/A',
-                            color: dataOriginal.color || dataOriginal.color_vehiculo || 'N/A',
-                            tipo_vehiculo: dataOriginal.tipo_vehiculo || registroSeleccionado.tipoRegistro || 'N/A',
-                            tipo: 'Procesado',
-                            tipo_delito: tipoDelito,
-                            estatus: 'Procesado',
-                            estacion: dataOriginal.estacion_policial || 'N/A',
-                            direccion_detencion: dataOriginal.direccion_detencion || 'N/A',
-                            observaciones: document.getElementById('proc_observaciones').value.trim() || null,
-                            procesado_por: procesadoPor
-                        },
+                        logDetalles,
                         registroSeleccionado.id
                     );
                     console.log('✅ Log de procesamiento registrado exitosamente');
                 }
+
                 // OCULTAR OVERLAY - ÉXITO
                 ocultarOverlay();
                 mostrarMsg(msgForm, '✅ Procesado registrado exitosamente. El estatus del registro original cambió a "Procesado".', 'success');
