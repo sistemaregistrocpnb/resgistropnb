@@ -237,7 +237,7 @@ window.initEditarProcesado = function() {
         });
     }
 
-    // ✅ CORREGIDO: Usa created_at en lugar de fecha_procesamiento
+    // ✅ CORREGIDO: Usa cre
     async function cargarProcesado(valor) {
         console.log("🔍 Buscando:", valor);
         if (!window.supabaseClient) {
