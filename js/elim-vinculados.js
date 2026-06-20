@@ -306,13 +306,11 @@ window.initElimVinculados = function() {
     if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
     if (btnModalYes) btnModalYes.addEventListener('click', ejecutarAccion);
 
- // ==========================================
-// 🔹 ELIMINAR (CORREGIDO - Excluye created_at)
+// ==========================================
+// 🔹 ELIMINAR (CORREGIDO - Sin columnas inexistentes)
 // ==========================================
 async function eliminarRegistro() {
     if (!currentData) return;
-    if (!window.supabaseClient) return showMsgElim('❌ Error: Supabase no está disponible.', 'error');
-
     if(btnEliminar) {
         btnEliminar.disabled = true;
         btnEliminar.textContent = '⏳ Archivando...';
@@ -323,7 +321,7 @@ async function eliminarRegistro() {
         const { data: { user } } = await window.supabaseClient.auth.getUser();
         const eliminadoPor = user?.email || 'usuario@sistema';
         
-        // 🔹 CORRECCIÓN: Copiar solo los campos necesarios, excluyendo id, created_at, updated_at
+        // 🔹 CORRECCIÓN: Solo columnas que SÍ existen en la base de datos
         const dataToArchive = {
             eliminado_por: eliminadoPor,
             eliminado_en: new Date().toISOString(),
@@ -352,11 +350,8 @@ async function eliminarRegistro() {
             perforaciones: currentData.perforaciones,
             detalle_perforaciones: currentData.detalle_perforaciones,
             condicion_medica: currentData.condicion_medica,
-            detalle_condicion_medica: currentData.detalle_condicion_medica,
             consume_medicamento: currentData.consume_medicamento,
-            detalle_medicamento: currentData.detalle_medicamento,
             problema_judicial: currentData.problema_judicial,
-            detalle_problema_judicial: currentData.detalle_problema_judicial,
             foto_frontal_persona: currentData.foto_frontal_persona,
             foto_perfil_izq_persona: currentData.foto_perfil_izq_persona,
             foto_perfil_der_persona: currentData.foto_perfil_der_persona,
@@ -403,6 +398,103 @@ async function eliminarRegistro() {
         if(btnEliminar) {
             btnEliminar.disabled = false;
             btnEliminar.textContent = '🗑️ Eliminar Registro Vinculado';
+        }
+    }
+}
+
+// ==========================================
+// 🔹 REINTEGRAR (CORREGIDO - Sin columnas inexistentes)
+// ==========================================
+async function reintegrarRegistro() {
+    if (!currentData) return;
+    if(btnReintegrar) {
+        btnReintegrar.disabled = true;
+        btnReintegrar.textContent = '⏳ Reintegrando...';
+    }
+    hideMsgElim();
+
+    try {
+        // 🔹 CORRECCIÓN: Solo columnas que SÍ existen en la base de datos
+        const dataToRestore = {
+            // Datos de persona
+            primer_nombre: currentData.primer_nombre,
+            segundo_nombre: currentData.segundo_nombre,
+            primer_apellido: currentData.primer_apellido,
+            segundo_apellido: currentData.segundo_apellido,
+            cedula: currentData.cedula,
+            fecha_nacimiento: currentData.fecha_nacimiento,
+            edad: currentData.edad,
+            apodo: currentData.apodo,
+            marca_corporal: currentData.marca_corporal,
+            nacionalidad: currentData.nacionalidad,
+            sexo: currentData.sexo,
+            direccion: currentData.direccion,
+            tlf_pais: currentData.tlf_pais,
+            tlf_numero: currentData.tlf_numero,
+            estatura_cm: currentData.estatura_cm,
+            color_piel: currentData.color_piel,
+            color_ojos: currentData.color_ojos,
+            color_cabello: currentData.color_cabello,
+            complexion: currentData.complexion,
+            usa_lentes: currentData.usa_lentes,
+            detalle_lentes: currentData.detalle_lentes,
+            perforaciones: currentData.perforaciones,
+            detalle_perforaciones: currentData.detalle_perforaciones,
+            condicion_medica: currentData.condicion_medica,
+            consume_medicamento: currentData.consume_medicamento,
+            problema_judicial: currentData.problema_judicial,
+            foto_frontal_persona: currentData.foto_frontal_persona,
+            foto_perfil_izq_persona: currentData.foto_perfil_izq_persona,
+            foto_perfil_der_persona: currentData.foto_perfil_der_persona,
+            // Datos de vehículo
+            tipo_vehiculo: currentData.tipo_vehiculo,
+            placa: currentData.placa,
+            serial_carroceria: currentData.serial_carroceria,
+            serial_motor: currentData.serial_motor || '',
+            cilindraje: currentData.cilindraje,
+            color_vehiculo: currentData.color_vehiculo,
+            anio_vehiculo: currentData.anio_vehiculo,
+            marca_vehiculo: currentData.marca_vehiculo,
+            modelo_vehiculo: currentData.modelo_vehiculo,
+            foto_frontal_vehiculo: currentData.foto_frontal_vehiculo,
+            foto_trasera_vehiculo: currentData.foto_trasera_vehiculo,
+            foto_lado_der_vehiculo: currentData.foto_lado_der_vehiculo,
+            foto_lado_izq_vehiculo: currentData.foto_lado_izq_vehiculo,
+            // Datos del registro
+            estatus: currentData.estatus,
+            estacion_policial: currentData.estacion_policial,
+            direccion_detencion: currentData.direccion_detencion,
+            observaciones: currentData.observaciones
+        };
+
+        const res = await window.supabaseClient.from('registro_vinculado').insert([dataToRestore]);
+        if (res.error) throw res.error;
+
+        const delRes = await window.supabaseClient.from('eliminados_vinculados').delete().eq('id', currentData.id);
+        if (delRes.error) throw delRes.error;
+
+        showMsgElim('✅ Registro vinculado reintegrado al sistema activo.', 'success');
+        setTimeout(() => {
+            if(dataContainer) dataContainer.style.display = 'none';
+            if(buscarInput) buscarInput.value = '';
+            hideMsg(msgBuscar);
+            hideMsgElim();
+            if(archivedBanner) archivedBanner.style.display = 'none';
+            if(archivedNotice) archivedNotice.style.display = 'none';
+        }, 4000);
+    } catch (err) {
+        console.error('Error reintegrando:', err);
+        let msg = 'Error al reintegrar.';
+        if (err.message.includes('23505') || err.message.includes('unique') || err.message.includes('duplicate key')) {
+            msg = '❌ <strong>No se puede reintegrar:</strong> La cédula, placa o serial ya se encuentra en uso.<br><small style="color:#64748b;">Este registro se conserva como historial.</small>';
+        } else {
+            msg = '❌ ' + err.message;
+        }
+        showMsgElim(msg, 'error');
+    } finally {
+        if(btnReintegrar) {
+            btnReintegrar.disabled = false;
+            btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo';
         }
     }
 }
