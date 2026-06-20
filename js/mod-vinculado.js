@@ -1,5 +1,9 @@
 window.initModVinculado = function() {
-   
+    console.log("✅ Módulo mod-vinculado.js cargado correctamente.");
+
+    // ==========================================
+    // 🔹 1. MAPA DE BANDERAS
+    // ==========================================
     const isoMap = {
         "Afganistán": "af", "Albania": "al", "Alemania": "de", "Andorra": "ad", "Angola": "ao",
         "Antigua y Barbuda": "ag", "Arabia Saudita": "sa", "Argelia": "dz", "Argentina": "ar",
@@ -224,7 +228,7 @@ window.initModVinculado = function() {
     };
 
     // ==========================================
-    // 🔹 6. DROPDOWN BANDERAS
+    // 🔹 6. DROPDOWN BANDERAS CON VENEZUELA POR DEFECTO
     // ==========================================
     const initPhoneDropdown = () => {
         const nativeSelect = document.getElementById('pv_p_tlf_pais');
@@ -233,6 +237,7 @@ window.initModVinculado = function() {
         const flagImg = document.getElementById('pv_tlf-flag-img');
         const codeText = document.getElementById('pv_tlf-code-text');
         const countryText = document.getElementById('pv_tlf-country-text');
+
         if (optionsBox && nativeSelect && displayBox) {
             optionsBox.innerHTML = '';
             Array.from(nativeSelect.options).forEach(opt => {
@@ -250,13 +255,21 @@ window.initModVinculado = function() {
                 });
                 optionsBox.appendChild(div);
             });
+
             displayBox.addEventListener('click', (e) => {
                 e.stopPropagation();
                 optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block';
             });
+
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('.phone-dropdown-wrapper')) optionsBox.style.display = 'none';
             });
+
+            // ✅ ESTABLECER VENEZUELA COMO VALOR POR DEFECTO
+            nativeSelect.value = '+58';
+            flagImg.src = 'https://flagcdn.com/w20/ve.png';
+            codeText.textContent = '+58';
+            countryText.textContent = 'Venezuela';
         }
     };
 
@@ -297,6 +310,7 @@ window.initModVinculado = function() {
                 .from('registro_vinculado')
                 .select('*')
                 .or(`cedula.eq.${val},placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`);
+
             if (!errVinc && vinculados && vinculados.length > 0) {
                 vinculados.forEach(reg => {
                     resultados.push({
@@ -314,10 +328,12 @@ window.initModVinculado = function() {
                     });
                 });
             }
+
             const { data: motos, error: errMoto } = await window.supabaseClient
                 .from('registro_motos')
                 .select('*')
                 .or(`placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`);
+
             if (!errMoto && motos && motos.length > 0) {
                 motos.forEach(reg => {
                     resultados.push({
@@ -335,10 +351,12 @@ window.initModVinculado = function() {
                     });
                 });
             }
+
             const { data: autos, error: errAuto } = await window.supabaseClient
                 .from('registro_automoviles')
                 .select('*')
                 .or(`placa.eq.${val},serial_carroceria.eq.${val},serial_motor.eq.${val}`);
+
             if (!errAuto && autos && autos.length > 0) {
                 autos.forEach(reg => {
                     resultados.push({
@@ -356,6 +374,7 @@ window.initModVinculado = function() {
                     });
                 });
             }
+
             return resultados;
         } catch (err) {
             throw err;
@@ -368,6 +387,7 @@ window.initModVinculado = function() {
         const tieneMoto = resultados.some(r => r.origen === 'registro_motos');
         const tieneAuto = resultados.some(r => r.origen === 'registro_automoviles');
         const tieneVinculado = resultados.some(r => r.origen === 'registro_vinculado');
+
         if (crossWarning) {
             if ((tieneMoto && tieneAuto) || (tieneVinculado && (tieneMoto || tieneAuto))) {
                 crossWarning.innerHTML = `<strong>⚠️ ALERTA CRUZADA DETECTADA:</strong><br>El dato "<strong>${valorBuscado}</strong>" aparece en más de un tipo de registro. Esto puede indicar un caso de clonación de placas/seriales. Revise cuidadosamente.`;
@@ -376,6 +396,7 @@ window.initModVinculado = function() {
                 crossWarning.style.display = 'none';
             }
         }
+
         resultados.forEach((res, index) => {
             const card = document.createElement('div');
             card.style.cssText = `background: ${res.colorBg}; border: 2px solid ${res.color}; border-left: 6px solid ${res.color}; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s; margin-bottom: 12px;`;
@@ -398,12 +419,14 @@ window.initModVinculado = function() {
             `;
             selectionList.appendChild(card);
         });
+
         document.querySelectorAll('.btn-seleccionar').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const idx = parseInt(e.target.dataset.index);
                 cargarResultado(resultados[idx]);
             });
         });
+
         selectionPanel.style.display = 'block';
         form.style.display = 'none';
         msgBusqueda.style.display = 'none';
@@ -440,32 +463,40 @@ window.initModVinculado = function() {
         document.getElementById('pv_p_nacionalidad').value = data.nacionalidad || '';
         document.getElementById('pv_p_sexo').value = data.sexo || '';
         document.getElementById('pv_p_direccion').value = data.direccion || '';
-        document.getElementById('pv_p_tlf_pais').value = data.tlf_pais || '';
+        document.getElementById('pv_p_tlf_pais').value = data.tlf_pais || '+58';
         document.getElementById('pv_p_tlf_num').value = data.tlf_numero || '';
         document.getElementById('pv_p_fecha_nac').dispatchEvent(new Event('change'));
+
         if (data.foto_frontal_persona) { const p = document.getElementById('prev_p_frontal'); p.src = data.foto_frontal_persona; p.style.display = 'block'; }
         if (data.foto_perfil_izq_persona) { const p = document.getElementById('prev_p_izq'); p.src = data.foto_perfil_izq_persona; p.style.display = 'block'; }
         if (data.foto_perfil_der_persona) { const p = document.getElementById('prev_p_der'); p.src = data.foto_perfil_der_persona; p.style.display = 'block'; }
+
         document.getElementById('pv_p_estatura').value = data.estatura_cm ? (data.estatura_cm / 100).toFixed(2) : '';
         document.getElementById('pv_p_color_piel').value = data.color_piel || '';
         document.getElementById('pv_p_color_ojos').value = data.color_ojos || '';
         document.getElementById('pv_p_color_cabello').value = data.color_cabello || '';
         document.getElementById('pv_p_complexion').value = data.complexion || '';
+
         document.getElementById('pv_p_lentes').value = data.usa_lentes ? 'true' : 'false';
         window.toggleCampo(document.getElementById('pv_p_lentes'), 'pv_det-lentes');
         document.getElementById('pv_txt_lentes').value = data.detalle_lentes || '';
+
         document.getElementById('pv_p_perforaciones').value = data.perforaciones ? 'true' : 'false';
         window.activarCampoPerforacion(document.getElementById('pv_p_perforaciones'));
         document.getElementById('pv_txt_lugar_perforacion').value = data.detalle_perforaciones || '';
+
         document.getElementById('pv_p_cond_medica').value = data.condicion_medica ? 'true' : 'false';
         window.toggleCampo(document.getElementById('pv_p_cond_medica'), 'pv_det-cond');
         document.getElementById('pv_txt_cond').value = data.condicion_medica || '';
+
         document.getElementById('pv_p_medicamento').value = data.consume_medicamento ? 'true' : 'false';
         window.toggleCampo(document.getElementById('pv_p_medicamento'), 'pv_det-med');
         document.getElementById('pv_txt_med').value = data.consume_medicamento || '';
+
         document.getElementById('pv_p_judicial').value = data.problema_judicial ? 'true' : 'false';
         window.toggleCampo(document.getElementById('pv_p_judicial'), 'pv_det-jud');
         document.getElementById('pv_txt_jud').value = data.problema_judicial || '';
+
         document.getElementById('pv_v_tipo').value = data.tipo_vehiculo || '';
         window.cargarMarcasPV();
         document.getElementById('pv_v_placa').value = data.placa || '';
@@ -477,13 +508,16 @@ window.initModVinculado = function() {
         document.getElementById('pv_v_modelo').value = data.modelo_vehiculo || '';
         document.getElementById('pv_v_anio').value = data.anio_vehiculo || '';
         document.getElementById('pv_v_color').value = data.color_vehiculo || '';
+
         if (data.foto_frontal_vehiculo) { const p = document.getElementById('prev_v_frontal'); p.src = data.foto_frontal_vehiculo; p.style.display = 'block'; }
         if (data.foto_trasera_vehiculo) { const p = document.getElementById('prev_v_trasera'); p.src = data.foto_trasera_vehiculo; p.style.display = 'block'; }
         if (data.foto_lado_der_vehiculo) { const p = document.getElementById('prev_v_der'); p.src = data.foto_lado_der_vehiculo; p.style.display = 'block'; }
         if (data.foto_lado_izq_vehiculo) { const p = document.getElementById('prev_v_izq'); p.src = data.foto_lado_izq_vehiculo; p.style.display = 'block'; }
+
         document.getElementById('pv_estacion').value = data.estacion_policial || '';
         document.getElementById('pv_dir_detencion').value = data.direccion_detencion || '';
         document.getElementById('pv_observaciones').value = data.observaciones || '';
+
         setTimeout(() => {
             form.style.display = 'block';
             msgBusqueda.style.display = 'none';
@@ -523,6 +557,7 @@ window.initModVinculado = function() {
                 btnBuscar.disabled = false;
             }
         });
+
         inputBusqueda.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') { e.preventDefault(); btnBuscar.click(); }
         });
@@ -586,23 +621,23 @@ window.initModVinculado = function() {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentData) return mostrarMsg(msgBox, 'Primero debe buscar y seleccionar un registro.', 'error');
-            
+
             let hasError = false;
             document.querySelectorAll('.registro-form input').forEach(i => { if (i.classList.contains('input-error')) hasError = true; });
             if (hasError) return mostrarMsg(msgBox, 'Por favor corrija los campos marcados en rojo.', 'error');
-            
+
             const cedula = document.getElementById('pv_p_cedula').value.trim();
             if (cedula.length < 7) return mostrarMsg(msgBox, 'La cédula debe tener entre 7 y 8 dígitos.', 'error');
-            
+
             const btnSubmit = form.querySelector('.btn-submit');
             btnSubmit.disabled = true; btnSubmit.textContent = '⏳ Guardando...';
             msgBox.style.display = 'none';
-            
+
             try {
                 const bucket = window.supabaseClient.storage.from('fotos_personas');
                 const uid = sessionStorage.getItem('pnb_user_id') || 'user';
                 const ts = Date.now();
-                
+
                 const uploadIfNeeded = async (inputId, currentUrl, suffix) => {
                     const file = document.getElementById(inputId).files[0];
                     if (!file) return currentUrl;
@@ -611,7 +646,7 @@ window.initModVinculado = function() {
                     if (error) throw new Error('Error subiendo foto.');
                     return bucket.getPublicUrl(path).data.publicUrl;
                 };
-                
+
                 const n1 = await uploadIfNeeded('pv_foto_p_frontal', currentData.foto_frontal_persona, 'p_f');
                 const n2 = await uploadIfNeeded('pv_foto_p_izq', currentData.foto_perfil_izq_persona, 'p_i');
                 const n3 = await uploadIfNeeded('pv_foto_p_der', currentData.foto_perfil_der_persona, 'p_d');
@@ -619,7 +654,7 @@ window.initModVinculado = function() {
                 const n5 = await uploadIfNeeded('pv_foto_v_trasera', currentData.foto_trasera_vehiculo, 'v_t');
                 const n6 = await uploadIfNeeded('pv_foto_v_der', currentData.foto_lado_der_vehiculo, 'v_rd');
                 const n7 = await uploadIfNeeded('pv_foto_v_izq', currentData.foto_lado_izq_vehiculo, 'v_ri');
-                
+
                 const data = {
                     primer_nombre: document.getElementById('pv_p_nombre1').value.trim(),
                     segundo_nombre: document.getElementById('pv_p_nombre2').value.trim() || null,
@@ -649,7 +684,7 @@ window.initModVinculado = function() {
                     detalle_perforaciones: document.getElementById('pv_p_perforaciones').value === 'true' ? document.getElementById('pv_txt_lugar_perforacion').value.trim() : null,
                     tipo_vehiculo: document.getElementById('pv_v_tipo').value,
                     placa: document.getElementById('pv_v_placa').value.trim().toUpperCase(),
-                    serial_carroceria: document.getElementById('pv_v_serial_carro').value.trim(),
+                    serial_carroceria: document.getElementById('pv_v_serial_carro').value.trim() || null,
                     serial_motor: document.getElementById('pv_v_serial_motor').value.trim() || null,
                     cilindraje: document.getElementById('pv_v_cilindraje').value || null,
                     color_vehiculo: document.getElementById('pv_v_color').value,
@@ -662,33 +697,63 @@ window.initModVinculado = function() {
                     direccion_detencion: document.getElementById('pv_dir_detencion').value.trim() || null,
                     observaciones: document.getElementById('pv_observaciones').value.trim() || null
                 };
-                
+
                 const { error } = await window.supabaseClient.from('registro_vinculado').update(data).eq('id', currentData.id);
                 if (error) throw error;
-                
-          // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
-if (typeof window.registrarLog === 'function' && currentData?.id) {
-    await window.registrarLog(
-        'MODIFICAR',
-        'VINCULADOS',
-        {
-            cedula: data.cedula,
-            nombre_completo: `${data.primer_nombre} ${data.primer_apellido}`.trim(),
-            placa: data.placa,
-            marca: data.marca_vehiculo,
-            modelo: data.modelo_vehiculo,
-            anio: data.anio_vehiculo,
-            color: data.color_vehiculo,
-            tipo_vehiculo: data.tipo_vehiculo,
-            estatus: 'Verificación',
-            estacion: data.estacion_policial,
-            direccion_detencion: data.direccion_detencion,
-            cambios_realizados: 'Datos del registro vinculado actualizados'
-        },
-        currentData.id
-    );
-    console.log('✅ Log de modificación de registro vinculado registrado exitosamente');
-}
+
+                // 🔹 LOG CENTRALIZADO USANDO UTILS.JS
+                if (typeof window.registrarLog === 'function' && currentData?.id) {
+                    await window.registrarLog(
+                        'MODIFICAR',
+                        'VINCULADOS',
+                        {
+                            cedula: data.cedula,
+                            nombre_completo: `${data.primer_nombre} ${data.primer_apellido}`.trim(),
+                            placa: data.placa,
+                            marca: data.marca_vehiculo,
+                            modelo: data.modelo_vehiculo,
+                            anio: data.anio_vehiculo,
+                            color: data.color_vehiculo,
+                            tipo_vehiculo: data.tipo_vehiculo,
+                            estatus: 'Verificación',
+                            estacion: data.estacion_policial,
+                            direccion_detencion: data.direccion_detencion,
+                            cambios_realizados: 'Datos del registro vinculado actualizados'
+                        },
+                        currentData.id
+                    );
+                    console.log('✅ Log de modificación de registro vinculado registrado exitosamente');
+                }
+
+                mostrarMsg(msgBox, '✅ Registro actualizado correctamente.', 'success');
+                setTimeout(() => {
+                    form.style.display = 'none';
+                    inputBusqueda.value = '';
+                    msgBusqueda.style.display = 'none';
+                    msgBox.style.display = 'none';
+                    crossWarning.style.display = 'none';
+                    currentData = null;
+                    document.querySelectorAll('.img-preview').forEach(i => i.style.display = 'none');
+                    form.reset();
+                }, 4000);
+            } catch (err) {
+                let msg = 'Error: ' + err.message;
+                if (err.message.includes('23505') || err.message.includes('unique_constraint')) {
+                    msg = '❌ Esa cédula o placa ya está registrada para otro registro.';
+                }
+                mostrarMsg(msgBox, msg, 'error');
+            } finally {
+                const btnSubmit = form.querySelector('.btn-submit');
+                btnSubmit.disabled = false; btnSubmit.textContent = '💾 Guardar Cambios';
+            }
+        });
+    }
+
+    const tlfNumInput = document.getElementById('pv_p_tlf_num');
+    if (tlfNumInput) {
+        tlfNumInput.addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, ''); });
+    }
+
     // ==========================================
     // 🔹 12. INICIALIZACIÓN
     // ==========================================
@@ -703,4 +768,6 @@ if (typeof window.registrarLog === 'function' && currentData?.id) {
     setupPhotoPreview('pv_foto_v_trasera', 'prev_v_trasera');
     setupPhotoPreview('pv_foto_v_der', 'prev_v_der');
     setupPhotoPreview('pv_foto_v_izq', 'prev_v_izq');
+
+    console.log("✅ Módulo mod-vinculado.js inicializado correctamente.");
 };
