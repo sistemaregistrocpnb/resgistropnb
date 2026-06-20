@@ -565,16 +565,16 @@ window.initRegProcesados = function() {
                 if (updErr) throw new Error(`Error al cambiar estatus: ${updErr.message}`);
 
                 // 🔹 LOG CENTRALIZADO USANDO UTILS.JS - CON TODOS LOS DATOS
-                if (typeof window.registrarLog === 'function' && registroSeleccionado?.id) {
-                    const logDetalles = {
-                        tipo_delito: tipoDelito,
-                        estatus: 'Procesado',
-                        estacion: dataOriginal.estacion_policial || 'N/A',
-                        direccion_detencion: dataOriginal.direccion_detencion || 'N/A',
-                        observaciones: document.getElementById('proc_observaciones').value.trim() || null,
-                        procesado_por: procesadoPor
-                    };
-
+             // 🔹 LOG CENTRALIZADO USANDO UTILS.JS - CON TODOS LOS DATOS
+if (typeof window.registrarLog === 'function' && registroSeleccionado?.id) {
+    const logDetalles = {
+        tipo_delito: tipoDelito,
+        estatus: 'Procesado',
+        estacion: dataOriginal.estacion_policial || 'N/A',
+        direccion_detencion: dataOriginal.direccion_detencion || 'N/A',
+        observaciones: document.getElementById('proc_observaciones').value.trim() || null
+        // ✅ Se quitó 'procesado_por' porque utils.js ya registra el nombre del usuario automáticamente
+    };
                     // Agregar datos según el tipo de registro
                     if (registroSeleccionado.tipoRegistro === 'persona') {
                         logDetalles.tipo = 'Persona';
