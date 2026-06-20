@@ -272,7 +272,6 @@ window.initElimVinculados = function() {
             const delRes = await window.supabaseClient.from('registro_vinculado').delete().eq('id', currentData.id);
             if (delRes.error) throw delRes.error;
 
-            // 🔹 LOG CENTRALIZADO
             if (typeof window.registrarLog === 'function' && currentData?.id) {
                 await window.registrarLog(
                     'ELIMINAR', 'VINCULADOS',
@@ -347,7 +346,6 @@ window.initElimVinculados = function() {
             const delRes = await window.supabaseClient.from('eliminados_vinculados').delete().eq('id', currentData.id);
             if (delRes.error) throw delRes.error;
 
-            // 🔹 LOG CENTRALIZADO
             if (typeof window.registrarLog === 'function' && currentData?.id) {
                 await window.registrarLog(
                     'REINTEGRAR', 'VINCULADOS',
