@@ -49,7 +49,7 @@ if (window._regDenunciasInit) {
                 } catch (e) { inputNum.value = 'Error'; }
             }
 
-            // Configuración de documentos
+    
             const docsUnicos = [
                 { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
                 { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
