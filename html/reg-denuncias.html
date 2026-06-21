@@ -133,7 +133,7 @@ fieldset, .registro-form, .card, .form-grid, .phone-dropdown-wrapper {
     <fieldset>
         <legend>👤 Datos del Denunciante</legend>
         <div class="form-grid">
-            <div class="form-group"><label>Cédula de Identidad <span style="color:#ef4444;">*</span></label><input type="text" id="d_cedula" required placeholder="Ej: V-12345678"></div>
+            <div class="form-group"><label>Cédula de Identidad <span style="color:#ef4444;">*</span></label><input type="text" id="d_cedula" required placeholder="Ej: 12345678" inputmode="numeric" pattern="[0-9]{7,8}" maxlength="8" title="Debe tener 7 u 8 dígitos numéricos"></div>
             <div class="form-group"><label>Primer Nombre <span style="color:#ef4444;">*</span></label><input type="text" id="d_nombre1" required></div>
             <div class="form-group"><label>Segundo Nombre</label><input type="text" id="d_nombre2"></div>
             <div class="form-group"><label>Primer Apellido <span style="color:#ef4444;">*</span></label><input type="text" id="d_apellido1" required></div>
@@ -157,8 +157,7 @@ fieldset, .registro-form, .card, .form-grid, .phone-dropdown-wrapper {
                         </div>
                         <div class="phone-options" id="d-phone-options" style="display: none;"></div>
                     </div>
-                    <input type="text" id="d_tlf_num" placeholder="Escriba el número aquí" style="flex: 1; min-width: 120px; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; background: #fff; font-size: 0.9rem;">
-                </div>
+                    <input type="text" id="d_tlf_num" placeholder="Ej: 04121234567" inputmode="numeric" pattern="[0-9]*" maxlength="11" style="flex: 1; min-width: 120px; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; background: #fff; font-size: 0.9rem;">
             </div>
         </div>
         <div class="form-grid" style="margin-top: 14px;">
