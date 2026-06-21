@@ -2,13 +2,13 @@ window.initEditarProcesado = function() {
     console.log("✅ Módulo editar-procesado.js cargado correctamente.");
 
     // ==========================================
-    // LISTAS DE DOCUMENTOS (Igual que reg-procesados.js)
+    // LISTAS DE DOCUMENTOS (CORREGIDO: Sin 'entrevista' en Únicos)
     // ==========================================
     const docsUnicos = [
         { id: 'portada', label: '📑 Portada' },
         { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
         { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
-        { id: 'entrevista', label: '🎤 Entrevista' },
+        // ❌ ELIMINADO: { id: 'entrevista', label: '🎤 Entrevista' },
         { id: 'datos_filiatorios', label: '📋 Datos Filiatorios' },
         { id: 'acta_policial', label: '📋 Acta Policial' },
         { id: 'derechos_imputado', label: '⚖️ Derechos del Imputado' },
@@ -23,6 +23,7 @@ window.initEditarProcesado = function() {
     ];
 
     const docsMultiples = [
+        { id: 'entrevista_multi', label: '🎤 Entrevistas (Múltiples)', max: 10, min: 1 },
         { id: 'cadena_custodia', label: '🔗 Cadena de Custodia', max: 10, min: 1 },
         { id: 'inspecciones_tecnicas', label: '🔍 Inspecciones Técnicas', max: 10, min: 1 }
     ];
@@ -30,8 +31,8 @@ window.initEditarProcesado = function() {
     // ==========================================
     // ESTADO Y VARIABLES GLOBALES
     // ==========================================
-    let archivosNuevos = {}; // Archivos nuevos seleccionados para subir
-    let docsEliminados = {}; // Índices de archivos existentes marcados para eliminar
+    let archivosNuevos = {}; 
+    let docsEliminados = {}; 
     let currentData = null;
     let registroIdActual = null;
     let personaData = null;
@@ -47,7 +48,7 @@ window.initEditarProcesado = function() {
         contenedorUnicos.innerHTML = '';
         contenedorMultiples.innerHTML = '';
 
-        // Generar Docs Únicos
+        // ✅ DOCS ÚNICOS (SIN atributo 'multiple', solo 1 archivo)
         docsUnicos.forEach(doc => {
             const div = document.createElement('div');
             div.className = 'doc-item';
@@ -58,14 +59,14 @@ window.initEditarProcesado = function() {
                 </div>
                 <div class="doc-current-list" id="current-${doc.id}"></div>
                 <div class="doc-upload-area active">
-                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple onchange="agregarArchivosNuevos('${doc.id}', this)">
+                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="agregarArchivosNuevos('${doc.id}', this)">
                     <div id="status-${doc.id}" class="file-status-container"></div>
                 </div>
             `;
             contenedorUnicos.appendChild(div);
         });
 
-        // Generar Docs Múltiples
+        // ✅ DOCS MÚLTIPLES (CON atributo 'multiple')
         docsMultiples.forEach(doc => {
             const div = document.createElement('div');
             div.className = 'doc-item';
@@ -77,9 +78,6 @@ window.initEditarProcesado = function() {
                 <div class="doc-current-list" id="current-${doc.id}"></div>
                 <div class="doc-upload-area active">
                     <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" multiple onchange="agregarArchivosNuevos('${doc.id}', this)">
-                    <button type="button" class="btn-add-file" onclick="confirmarArchivosNuevos('${doc.id}')">➕ Agregar Seleccionados</button>
-                    <div class="file-count" id="count-${doc.id}">0 archivos nuevos</div>
-                    <div class="file-list" id="list-${doc.id}"></div>
                     <div id="status-${doc.id}" class="file-status-container"></div>
                 </div>
             `;
@@ -92,28 +90,28 @@ window.initEditarProcesado = function() {
     // ==========================================
     window.agregarArchivosNuevos = function(campo, input) {
         if (!input.files || input.files.length === 0) return;
-        if (!archivosNuevos[campo]) archivosNuevos[campo] = [];
         
-        let agregados = 0;
-        for (const file of input.files) {
-            if (file.type === 'application/pdf') {
-                archivosNuevos[campo].push(file);
-                agregados++;
+        const esUnico = docsUnicos.some(d => d.id === campo);
+        
+        if (esUnico) {
+            // ✅ ÚNICO: Solo guarda 1 archivo
+            archivosNuevos[campo] = [input.files[0]];
+        } else {
+            // ✅ MÚLTIPLE: Agrega a la lista
+            if (!archivosNuevos[campo]) archivosNuevos[campo] = [];
+            for (const file of input.files) {
+                if (file.type === 'application/pdf') {
+                    archivosNuevos[campo].push(file);
+                }
             }
         }
         
         const statusContainer = document.getElementById(`status-${campo}`);
-        if (statusContainer && agregados > 0) {
-            statusContainer.innerHTML = `<div class="file-loaded"><span>✅</span><span class="file-name">${agregados} archivo(s) listo(s) para subir al guardar</span></div>`;
+        if (statusContainer) {
+            const count = archivosNuevos[campo].length;
+            statusContainer.innerHTML = `<div class="file-loaded"><span>✅</span><span class="file-name">${count} archivo(s) listo(s) para subir al guardar</span></div>`;
         }
-        input.value = ''; // Limpiar input para poder volver a seleccionar
-    };
-
-    window.confirmarArchivosNuevos = function(campo) {
-        const countEl = document.getElementById(`count-${campo}`);
-        if (countEl && archivosNuevos[campo]) {
-            countEl.textContent = `${archivosNuevos[campo].length} archivos nuevos listos`;
-        }
+        input.value = ''; // Limpiar input
     };
 
     window.marcarDocEliminacion = function(campo, index, btn) {
@@ -135,19 +133,16 @@ window.initEditarProcesado = function() {
     function mostrarOverlay(mensaje = '⏳ Actualizando registro...') {
         if (loadingOverlay) {
             const loadingText = loadingOverlay.querySelector('.loading-text');
-            if (loadingText) {
-                loadingText.innerHTML = `${mensaje}<br><small>Por favor, no cierre ni recargue esta ventana.</small>`;
-            }
+            if (loadingText) loadingText.innerHTML = `${mensaje}<br><small>Por favor, no cierre ni recargue esta ventana.</small>`;
             loadingOverlay.classList.add('active');
         }
     }
-
     function ocultarOverlay() {
         if (loadingOverlay) loadingOverlay.classList.remove('active');
     }
 
     // ==========================================
-    // REFERENCIAS DOM
+    // REFERENCIAS DOM Y HELPERS
     // ==========================================
     const btnBuscar = document.getElementById('edit_btn_buscar');
     const inputBusqueda = document.getElementById('edit_busqueda_input');
@@ -163,12 +158,8 @@ window.initEditarProcesado = function() {
         el.className = `msg ${type}`;
         el.style.display = 'block';
     };
-
     const ocultarMsg = (el) => { if (el) el.style.display = 'none'; };
 
-    // ==========================================
-    // HELPERS Y VALIDACIONES
-    // ==========================================
     function convertirAArray(valor) {
         if (Array.isArray(valor)) return valor;
         if (typeof valor === 'string') {
@@ -191,13 +182,9 @@ window.initEditarProcesado = function() {
         const val = valor.trim();
         let query;
         
-        if (esUUID(val)) {
-            query = `id.eq.${val}`;
-        } else if (/^\d+$/.test(val)) {
-            query = `cedula.eq.${val}`;
-        } else {
-            query = `cedula.ilike.%${val}%`;
-        }
+        if (esUUID(val)) query = `id.eq.${val}`;
+        else if (/^\d+$/.test(val)) query = `cedula.eq.${val}`;
+        else query = `cedula.ilike.%${val}%`;
 
         try {
             const { data, error } = await window.supabaseClient
@@ -207,9 +194,8 @@ window.initEditarProcesado = function() {
                 .limit(1);
 
             if (error) throw error;
-
             if (!data || data.length === 0) {
-                mostrarMsg(msgBusqueda, '❌ No se encontró ningún procesado con ese dato.', 'error');
+                mostrarMsg(msgBusqueda, '❌ No se encontró ningún procesado.', 'error');
                 datosPanel.style.display = 'none';
                 form.style.display = 'none';
                 return;
@@ -220,8 +206,8 @@ window.initEditarProcesado = function() {
 
             try {
                 personaData = typeof currentData.datos_originales === 'string' 
-                    ? JSON.parse(currentData.datos_originales) 
-                    : currentData.datos_originales;
+                    ? JSON.parse(currentData.datos_originales || '{}') 
+                    : (currentData.datos_originales || {});
             } catch (e) { personaData = {}; }
 
             mostrarMsg(msgBusqueda, '✅ Registro encontrado. Puede editarlo a continuación.', 'success');
@@ -252,34 +238,42 @@ window.initEditarProcesado = function() {
             <div class="dato-fila"><span class="dato-label">Nombre Completo:</span> <span class="dato-valor">${nombreCompleto}</span></div>
             <div class="dato-fila"><span class="dato-label">Estatus:</span> <span class="dato-valor">${currentData.estatus || '-'}</span></div>
             <div class="dato-fila"><span class="dato-label">Fecha Procesamiento:</span> <span class="dato-valor">${currentData.fecha_procesamiento ? new Date(currentData.fecha_procesamiento).toLocaleDateString('es-VE') : '-'}</span></div>
-            <div class="dato-fila"><span class="dato-label">ID Registro:</span> <span class="dato-valor">${currentData.id}</span></div>
         `;
     }
 
     function cargarFormulario() {
         document.getElementById('edit_procesado_id').value = currentData.id;
-        document.getElementById('edit_tabla_origen').value = currentData.tabla_origen || '';
-        document.getElementById('edit_registro_id').value = currentData.registro_id || '';
         document.getElementById('edit_tipo_delito').value = currentData.tipo_delito || '';
         document.getElementById('edit_observaciones').value = currentData.observaciones || '';
     }
 
+    // ==========================================
+    // CARGAR DOCUMENTOS EXISTENTES
+    // ==========================================
     function cargarDocumentosExistentes() {
         const todasLasColumnas = [...docsUnicos, ...docsMultiples];
         
+        // Extraer documentos multiples adicionales del JSON
+        const multiplesAdicionales = personaData.documentos_multiples_adicionales || {};
+
         todasLasColumnas.forEach(doc => {
             const currentList = document.getElementById(`current-${doc.id}`);
             if (!currentList) return;
             currentList.innerHTML = '';
 
-            const urls = convertirAArray(currentData[doc.id]);
+            let urls = [];
+            if (doc.id === 'entrevista_multi') {
+                // ✅ Leer 'entrevista_multi' desde el JSON anidado
+                urls = convertirAArray(multiplesAdicionales.entrevista_multi);
+            } else {
+                // Leer el resto desde columnas top-level
+                urls = convertirAArray(currentData[doc.id]);
+            }
             
             urls.forEach((url, index) => {
                 const nombreArchivo = url.split('/').pop();
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'doc-current';
-                itemDiv.dataset.index = index;
-                itemDiv.dataset.url = url;
                 itemDiv.innerHTML = `
                     <div class="file-info">📎 <span title="${nombreArchivo}">${nombreArchivo}</span></div>
                     <div class="actions">
@@ -303,7 +297,6 @@ window.initEditarProcesado = function() {
         btnBuscar.addEventListener('click', () => {
             const val = inputBusqueda.value.trim();
             if (val.length < 3) return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 3 caracteres.', 'error');
-            
             ocultarMsg(msgBusqueda);
             archivosNuevos = {};
             docsEliminados = {};
@@ -335,38 +328,56 @@ window.initEditarProcesado = function() {
                     observaciones: document.getElementById('edit_observaciones').value.trim()
                 };
 
-                // 1. Procesar eliminaciones de documentos existentes
-                for (const [campo, indices] of Object.entries(docsEliminados)) {
-                    const urlsActuales = convertirAArray(currentData[campo]);
-                    datosActualizar[campo] = urlsActuales.filter((_, idx) => !indices.includes(idx));
-                }
+                // Preparar JSON de datos originales
+                let datosOriginales = typeof currentData.datos_originales === 'string' 
+                    ? JSON.parse(currentData.datos_originales || '{}') 
+                    : (currentData.datos_originales || {});
+                if (!datosOriginales.documentos_multiples_adicionales) datosOriginales.documentos_multiples_adicionales = {};
 
-                // 2. Subir archivos nuevos al Storage
                 const bucket = window.supabaseClient.storage.from('procesados_documentos');
                 const uid = sessionStorage.getItem('pnb_user_id') || 'user';
                 const ts = Date.now();
 
-                for (const [campo, files] of Object.entries(archivosNuevos)) {
-                    if (files.length === 0) continue;
-                    
-                    const urlsNuevas = [];
+                // Función auxiliar para subir archivos
+                const subirArchivos = async (campo, files) => {
+                    const urls = [];
                     for (let i = 0; i < files.length; i++) {
                         const file = files[i];
                         const path = `${uid}/${ts}_${campo}_${i}.pdf`;
-                        
-                        const { error } = await bucket.upload(path, file, { 
-                            cacheControl: '3600', 
-                            contentType: 'application/pdf' 
-                        });
-                        
+                        const { error } = await bucket.upload(path, file, { cacheControl: '3600', contentType: 'application/pdf' });
                         if (error) throw new Error(`Error subiendo ${campo}[${i}]: ${error.message}`);
-                        urlsNuevas.push(bucket.getPublicUrl(path).data.publicUrl);
+                        urls.push(bucket.getPublicUrl(path).data.publicUrl);
                     }
+                    return urls;
+                };
 
-                    // Combinar URLs existentes (sin las eliminadas) con las nuevas
-                    const urlsExistentes = datosActualizar[campo] || convertirAArray(currentData[campo]);
-                    datosActualizar[campo] = [...urlsExistentes, ...urlsNuevas];
+                // 1. Procesar Campos Top (Únicos + Cadena + Inspecciones)
+                // ✅ 'entrevista' ya no está en docsUnicos, por lo que no se procesará aquí
+                const camposTop = [...docsUnicos.map(d=>d.id), 'cadena_custodia', 'inspecciones_tecnicas'];
+                for (const campo of camposTop) {
+                    let urlsActuales = convertirAArray(currentData[campo]);
+                    
+                    if (docsEliminados[campo]) {
+                        urlsActuales = urlsActuales.filter((_, idx) => !docsEliminados[campo].includes(idx));
+                    }
+                    if (archivosNuevos[campo] && archivosNuevos[campo].length > 0) {
+                        const urlsNuevas = await subirArchivos(campo, archivosNuevos[campo]);
+                        urlsActuales = [...urlsActuales, ...urlsNuevas];
+                    }
+                    datosActualizar[campo] = urlsActuales;
                 }
+
+                // 2. Procesar entrevista_multi (Dentro de datos_originales)
+                let urlsEntrevista = convertirAArray(datosOriginales.documentos_multiples_adicionales.entrevista_multi || []);
+                if (docsEliminados['entrevista_multi']) {
+                    urlsEntrevista = urlsEntrevista.filter((_, idx) => !docsEliminados['entrevista_multi'].includes(idx));
+                }
+                if (archivosNuevos['entrevista_multi'] && archivosNuevos['entrevista_multi'].length > 0) {
+                    const urlsNuevas = await subirArchivos('entrevista_multi', archivosNuevos['entrevista_multi']);
+                    urlsEntrevista = [...urlsEntrevista, ...urlsNuevas];
+                }
+                datosOriginales.documentos_multiples_adicionales.entrevista_multi = urlsEntrevista;
+                datosActualizar.datos_originales = datosOriginales; // Actualizar el JSONB
 
                 // 3. Actualizar Base de Datos
                 const { error: updateError } = await window.supabaseClient
@@ -376,10 +387,22 @@ window.initEditarProcesado = function() {
 
                 if (updateError) throw updateError;
 
+                // 4. ✅ REGISTRAR LOG USANDO UTILS.JS
+                if (typeof window.registrarLog === 'function') {
+                    const logDetalles = {
+                        tipo_delito: tipoDelito,
+                        cedula: currentData.cedula || personaData?.cedula || 'N/A',
+                        nombre_completo: `${personaData?.primer_nombre || ''} ${personaData?.primer_apellido || ''}`.trim() || 'N/A',
+                        documentos_eliminados: Object.keys(docsEliminados).length,
+                        documentos_agregados: Object.keys(archivosNuevos).length
+                    };
+                    await window.registrarLog('EDITAR_PROCESADO', 'PROCESADOS', logDetalles, registroIdActual);
+                    console.log('✅ Log de edición registrado en sistema_logs');
+                }
+
                 ocultarOverlay();
                 mostrarMsg(msgForm, '✅ Cambios guardados exitosamente.', 'success');
                 
-                // Resetear estado
                 archivosNuevos = {};
                 docsEliminados = {};
                 
@@ -407,7 +430,6 @@ window.initEditarProcesado = function() {
     console.log("✅ Módulo editar-procesado.js inicializado correctamente.");
 };
 
-// Ejecutar al cargar
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.initEditarProcesado);
 } else {
