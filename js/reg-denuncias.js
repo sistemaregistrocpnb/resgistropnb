@@ -162,6 +162,9 @@ if (window._regDenunciasInit) {
 
             actualizarProximoNumero();
 
+            // ==========================================
+            // 🔹 ENVÍO DEL FORMULARIO (UN SOLO INSERT)
+            // ==========================================
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 if (!form.checkValidity()) { form.reportValidity(); return; }
@@ -178,6 +181,7 @@ if (window._regDenunciasInit) {
 
                     const uid = user.id; const ts = Date.now();
 
+                    // Calcular próximo número
                     const { data: ultima } = await window.supabaseClient.from('denuncias').select('numero_denuncia').order('numero_denuncia', { ascending: false }).limit(1).maybeSingle();
                     let nuevoNumero = 'CPNB-00000001';
                     if (ultima && ultima.numero_denuncia) {
@@ -185,6 +189,7 @@ if (window._regDenunciasInit) {
                         if (p.length === 2) nuevoNumero = `CPNB-${(parseInt(p[1], 10) + 1).toString().padStart(8, '0')}`;
                     }
 
+                    // Subir documentos únicos
                     const docsUnicosUrls = {};
                     for (const doc of docsUnicos) {
                         const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
@@ -196,6 +201,7 @@ if (window._regDenunciasInit) {
                         } else docsUnicosUrls[doc.id] = null;
                     }
 
+                    // Subir documentos múltiples
                     const docsMultiplesUrls = {};
                     for (const doc of docsMultiples) {
                         const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
@@ -213,6 +219,8 @@ if (window._regDenunciasInit) {
 
                     const tlfPais = document.getElementById('d_tlf_pais')?.value || null;
                     const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '') || null;
+                    
+                    // Preparar data
                     const data = {
                         numero_denuncia: nuevoNumero,
                         estacion_policial: document.getElementById('d_estacion')?.value,
@@ -237,9 +245,11 @@ if (window._regDenunciasInit) {
                         email_registrante: user.email
                     };
 
+                    // ✅ UN SOLO INSERT
                     const { data: insertedData, error } = await window.supabaseClient.from('denuncias').insert([data]).select('id').single();
                     if (error) throw error;
 
+                    // ✅ UN SOLO LOG
                     if (typeof window.registrarLog === 'function') {
                         const nombreComp = `${data.primer_nombre} ${data.segundo_nombre || ''} ${data.primer_apellido} ${data.segundo_apellido || ''}`.trim();
                         await window.registrarLog('CREAR', 'DENUNCIAS', {
@@ -253,6 +263,7 @@ if (window._regDenunciasInit) {
 
                     if (msg) { msg.textContent = `✅ Denuncia registrada. N°: ${nuevoNumero}`; msg.className = 'msg success'; msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 5000); }
 
+                    // Resetear UI
                     form.reset();
                     if (fechaInput) fechaInput.value = new Date().toLocaleString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
                     docsUnicos.forEach(d => toggleDocField(d.id, false));
