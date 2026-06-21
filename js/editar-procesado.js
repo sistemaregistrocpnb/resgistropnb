@@ -2,18 +2,18 @@ window.initEditarProcesado = function() {
     const docsUnicos = [
         { id: 'portada', label: '📑 Portada' },
         { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
-        { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
-        { id: 'datos_filiatorios', label: '👤 Datos Filiatorios' },
+        { id: 'acta_denuncia', label: ' Acta de Denuncia' },
+        { id: 'datos_filiatorios', label: ' Datos Filiatorios' },
         { id: 'acta_policial', label: '📋 Acta Policial' },
         { id: 'derechos_imputado', label: '⚖️ Derechos del Imputado' },
-        { id: 'evaluacion_medica', label: '🏥 Evaluación Médica' },
+        { id: 'evaluacion_medica', label: ' Evaluación Médica' },
         { id: 'identificacion_cedula', label: '🆔 Identificación (Cédula)' },
         { id: 'solicitud_examen_forense', label: '🔬 Solicitud de Examen Forense' },
         { id: 'resultados_examen_forense', label: '🔬 Resultados del Examen Forense' },
-        { id: 'asistencia_comdepro', label: '🤝 Asistencia de Comdepro' },
+        { id: 'asistencia_comdepro', label: ' Asistencia de Comdepro' },
         { id: 'remision_estacionamiento', label: '🚗 Remisión a Estacionamiento' },
         { id: 'planilla_pvr', label: '🚙 Planilla PVR' },
-        { id: 'otros_documentos', label: '📎 Otros Documentos' }
+        { id: 'otros_documentos', label: ' Otros Documentos' }
     ];
     
     const docsMultiples = [
@@ -61,6 +61,16 @@ window.initEditarProcesado = function() {
         el.style.display = 'block';
     };
     
+    // 🔹🔹 VALIDACIÓN ULTRA ESTRICTA - Detecta null, undefined, "", [], " ", etc.
+    function esUrlValida(url) {
+        if (!url) return false;
+        if (typeof url !== 'string') return false;
+        if (url.trim() === '') return false;
+        if (url === '[]') return false;
+        if (url.startsWith('[')) return false;
+        return true;
+    }
+    
     function generarDocsUnicos() {
         if (!contenedorUnicos) return;
         contenedorUnicos.innerHTML = '';
@@ -106,7 +116,6 @@ window.initEditarProcesado = function() {
     generarDocsUnicos();
     generarDocsMultiples();
     
-    // 🔹 AL SELECCIONAR UN NUEVO ARCHIVO (Aún no se guarda, por ende NO hay botón Ver)
     window.mostrarNuevoArchivo = function(docId, input) {
         const statusContainer = document.getElementById(`status-${docId}`);
         const currentDiv = document.getElementById(`current-${docId}`);
@@ -125,7 +134,6 @@ window.initEditarProcesado = function() {
             `;
             
             if (currentDiv) {
-                // 🔹 NO SE RENDERIZA EL BOTÓN VER PORQUE AÚN NO ESTÁ GUARDADO EN EL SERVIDOR
                 currentDiv.innerHTML = `
                     <div class="doc-current">
                         <div class="file-info">
@@ -141,7 +149,6 @@ window.initEditarProcesado = function() {
         }
     };
     
-    // 🔹 AL CANCELAR UN NUEVO ARCHIVO
     window.cancelarNuevo = function(docId) {
         const input = document.getElementById(`file_${docId}`);
         const statusContainer = document.getElementById(`status-${docId}`);
@@ -153,7 +160,7 @@ window.initEditarProcesado = function() {
         archivosNuevos[docId] = null;
         archivosAEliminar[docId] = false;
         
-        if (currentDiv && archivosActuales[docId]) {
+        if (currentDiv && archivosActuales[docId] && esUrlValida(archivosActuales[docId])) {
             const url = archivosActuales[docId];
             const fileName = url.split('/').pop();
             currentDiv.innerHTML = `
@@ -167,7 +174,6 @@ window.initEditarProcesado = function() {
                 </div>
             `;
         } else if (currentDiv) {
-            // 🔹 SI NO HABÍA ARCHIVO ORIGINAL, NO SE MUESTRA EL BOTÓN VER
             currentDiv.innerHTML = `
                 <div class="doc-current">
                     <div class="file-info">
@@ -212,7 +218,7 @@ window.initEditarProcesado = function() {
             item.innerHTML = `
                 <span>🆕 ${file.name}</span>
                 <div class="file-actions">
-                    <button type="button" onclick="quitarNuevoMultiple('${campo}', ${index})">❌</button>
+                    <button type="button" onclick="quitarNuevoMultiple('${campo}', ${index})"></button>
                 </div>
             `;
             list.appendChild(item);
@@ -225,7 +231,13 @@ window.initEditarProcesado = function() {
         actualizarListaNuevos(campo, docsMultiples.find(d => d.id === campo).max);
     };
     
-    window.verArchivo = function(url) { window.open(url, '_blank'); };
+    window.verArchivo = function(url) {
+        if (!esUrlValida(url)) {
+            alert('No hay archivo disponible para visualizar.');
+            return;
+        }
+        window.open(url, '_blank');
+    };
     
     window.reemplazarArchivo = function(docId) {
         const area = document.getElementById(`upload-${docId}`);
@@ -236,7 +248,6 @@ window.initEditarProcesado = function() {
         }
     };
     
-    // 🔹 AL ELIMINAR UN ARCHIVO ACTUAL
     window.eliminarArchivoActual = function(docId) {
         if (!confirm('¿Está seguro de eliminar este archivo?')) return;
         archivosAEliminar[docId] = true;
@@ -247,7 +258,6 @@ window.initEditarProcesado = function() {
         const statusContainer = document.getElementById(`status-${docId}`);
         const fileInput = document.getElementById(`file_${docId}`);
         
-        // 🔹 NO SE RENDERIZA EL BOTÓN VER
         if (currentDiv) {
             currentDiv.innerHTML = `
                 <div class="doc-current">
@@ -274,41 +284,30 @@ window.initEditarProcesado = function() {
         renderizarArchivosMultiplesActuales(campo);
     };
     
-    // 🔹 RENDERIZAR ARCHIVOS MÚLTIPLES (OCULTANDO BOTÓN VER SI ESTÁ VACÍO)
     function renderizarArchivosMultiplesActuales(campo) {
         const listDiv = document.getElementById(`current-list-${campo}`);
         if (!listDiv) return;
 
         const urls = archivosActuales[campo];
-        if (urls.length === 0) {
-            listDiv.innerHTML = '<p style="color: #64748b; font-size: 0.85rem;">📄 No hay archivos actuales</p>';
+        const urlsValidas = urls.filter(u => esUrlValida(u));
+        
+        if (urlsValidas.length === 0) {
+            listDiv.innerHTML = '<p style="color: #64748b; font-size: 0.85rem;"> No hay archivos actuales</p>';
             return;
         }
 
         listDiv.innerHTML = '';
         urls.forEach((url, index) => {
-            const tieneArchivoValido = url && typeof url === 'string' && url.trim() !== '';
+            if (!esUrlValida(url)) return;
             const item = document.createElement('div');
             item.className = 'file-item-multiple';
-
-            if (tieneArchivoValido) {
-                // ✅ HAY URL: Se muestra el botón Ver
-                item.innerHTML = `
-                    <span>📄 Archivo ${index + 1}</span>
-                    <div class="file-actions">
-                        <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
-                        <button type="button" onclick="eliminarArchivoMultipleActual('${campo}', ${index})">❌</button>
-                    </div>
-                `;
-            } else {
-                // ❌ NO HAY URL (NULL O VACÍO): NO SE MUESTRA EL BOTÓN VER
-                item.innerHTML = `
-                    <span style="color: #94a3b8;">📄 Archivo ${index + 1} (Sin archivo)</span>
-                    <div class="file-actions">
-                        <button type="button" onclick="eliminarArchivoMultipleActual('${campo}', ${index})">❌</button>
-                    </div>
-                `;
-            }
+            item.innerHTML = `
+                <span>📄 Archivo ${index + 1}</span>
+                <div class="file-actions">
+                    <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
+                    <button type="button" onclick="eliminarArchivoMultipleActual('${campo}', ${index})">❌</button>
+                </div>
+            `;
             listDiv.appendChild(item);
         });
     }
@@ -341,13 +340,13 @@ window.initEditarProcesado = function() {
             html += `<div class="dato-fila"><span class="dato-label">👤 Nombre:</span><span class="dato-valor">${nombre}</span></div>`;
         }
         if (data.placa) html += `<div class="dato-fila"><span class="dato-label">🚗 Placa:</span><span class="dato-valor">${data.placa}</span></div>`;
-        html += `<div class="dato-fila"><span class="dato-label">⚖️ Delito:</span><span class="dato-valor">${proc.tipo_delito || '-'}</span></div>`;
+        html += `<div class="dato-fila"><span class="dato-label">️ Delito:</span><span class="dato-valor">${proc.tipo_delito || '-'}</span></div>`;
         html += `<div class="dato-fila"><span class="dato-label">📅 Fecha:</span><span class="dato-valor">${new Date(proc.created_at).toLocaleString()}</span></div>`;
         datosContenido.innerHTML = html;
         datosPanel.style.display = 'block';
     }
     
-    // 🔹 CARGAR ARCHIVOS EN EL FORMULARIO (OCULTANDO BOTÓN VER SI ESTÁ VACÍO)
+    // 🔹🔹🔹 FUNCIÓN CRÍTICA: Cargar archivos con validación ultra estricta
     function cargarArchivosEnForm(proc) {
         docsUnicos.forEach(d => { archivosActuales[d.id] = null; archivosNuevos[d.id] = null; archivosAEliminar[d.id] = false; });
         docsMultiples.forEach(d => { archivosActuales[d.id] = []; archivosMultiplesNuevos[d.id] = []; archivosMultiplesEliminados[d.id] = []; });
@@ -361,9 +360,11 @@ window.initEditarProcesado = function() {
         docsUnicos.forEach(doc => {
             const currentDiv = document.getElementById(`current-${doc.id}`);
             const url = proc[doc.id];
-            const tieneArchivoValido = url && typeof url === 'string' && url.trim() !== '';
             
-            if (tieneArchivoValido) {
+            //  DEBUG: Ver qué valor exacto viene de la base de datos
+            console.log(`📄 [${doc.label}] Valor recibido:`, JSON.stringify(url), '| Tipo:', typeof url, '| Es válido:', esUrlValida(url));
+            
+            if (esUrlValida(url)) {
                 archivosActuales[doc.id] = url;
                 const fileName = url.split('/').pop();
                 currentDiv.innerHTML = `
@@ -377,7 +378,7 @@ window.initEditarProcesado = function() {
                     </div>
                 `;
             } else {
-                // 🔹 NO HAY URL VÁLIDA: NO SE RENDERIZA EL BOTÓN VER
+                // 🔹 NO HAY ARCHIVO VÁLIDO: Solo botón "Subir Archivo"
                 archivosActuales[doc.id] = null;
                 currentDiv.innerHTML = `
                     <div class="doc-current">
@@ -395,7 +396,7 @@ window.initEditarProcesado = function() {
         
         docsMultiples.forEach(doc => {
             const urls = proc[doc.id] || [];
-            archivosActuales[doc.id] = Array.isArray(urls) ? urls : [];
+            archivosActuales[doc.id] = Array.isArray(urls) ? urls.filter(u => esUrlValida(u)) : [];
             renderizarArchivosMultiplesActuales(doc.id);
             actualizarListaNuevos(doc.id, doc.max);
         });
@@ -463,13 +464,13 @@ window.initEditarProcesado = function() {
                         if (error) throw new Error(`Error subiendo ${doc.id}: ${error.message}`);
                         const newUrl = bucket.getPublicUrl(path).data.publicUrl;
                         dataToUpdate[doc.id] = newUrl;
-                        if (urlActual) {
+                        if (urlActual && esUrlValida(urlActual)) {
                             const oldPath = urlActual.split('/procesados_documentos/')[1];
                             if (oldPath) await bucket.remove([oldPath]);
                         }
                     } else if (marcadoEliminar) {
                         dataToUpdate[doc.id] = null;
-                        if (urlActual) {
+                        if (urlActual && esUrlValida(urlActual)) {
                             const oldPath = urlActual.split('/procesados_documentos/')[1];
                             if (oldPath) await bucket.remove([oldPath]);
                         }
@@ -489,8 +490,10 @@ window.initEditarProcesado = function() {
                             nuevasUrls.push(bucket.getPublicUrl(path).data.publicUrl);
                         }
                         for (const oldUrl of urlsEliminadas) {
-                            const oldPath = oldUrl.split('/procesados_documentos/')[1];
-                            if (oldPath) await bucket.remove([oldPath]);
+                            if (esUrlValida(oldUrl)) {
+                                const oldPath = oldUrl.split('/procesados_documentos/')[1];
+                                if (oldPath) await bucket.remove([oldPath]);
+                            }
                         }
                         dataToUpdate[doc.id] = [...urlsActuales, ...nuevasUrls];
                     }
