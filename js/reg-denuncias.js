@@ -1,12 +1,12 @@
 window.initRegDenuncias = function() {
     console.log("⚙️ Iniciando módulo reg-denuncias.js...");
-    
+
     function iniciarModulo(intentos = 0) {
         const form = document.getElementById('form-reg-denuncias');
         const btn = form?.querySelector('.btn-submit');
         const msg = document.getElementById('msg-reg-denuncias');
         const loadingOverlay = document.getElementById('loading-overlay');
-        
+
         // Elementos del teléfono
         const nativeSelect = document.getElementById('d_tlf_pais');
         const displayBox = document.querySelector('.phone-display');
@@ -38,7 +38,6 @@ window.initRegDenuncias = function() {
         async function actualizarProximoNumero() {
             const inputNum = document.getElementById('d_numero_denuncia');
             if (!inputNum || !window.supabaseClient) return;
-            
             inputNum.value = 'Calculando...';
             try {
                 const { data: ultimaDenuncia } = await window.supabaseClient
@@ -47,7 +46,7 @@ window.initRegDenuncias = function() {
                     .order('numero_denuncia', { ascending: false })
                     .limit(1)
                     .maybeSingle();
-                
+
                 let proximo = 'CPNB-00000001';
                 if (ultimaDenuncia && ultimaDenuncia.numero_denuncia) {
                     const partes = ultimaDenuncia.numero_denuncia.split('-');
@@ -69,6 +68,7 @@ window.initRegDenuncias = function() {
             { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
             { id: 'medida_proteccion', label: '🛡️ Medida de Protección' }
         ];
+
         const docsMultiples = [
             { id: 'acta_entrevista', label: '🎤 Acta de Entrevista', max: 10 },
             { id: 'datos_filiatorios', label: '👤 Datos Filiatorios', max: 10 },
@@ -141,7 +141,6 @@ window.initRegDenuncias = function() {
                     area.classList.add('active');
                 } else {
                     area.classList.remove('active');
-                    // Limpiar datos si se oculta
                     if (archivosUnicos[campo] !== undefined) {
                         archivosUnicos[campo] = null;
                         const status = document.getElementById(`status-${campo}`);
@@ -162,7 +161,6 @@ window.initRegDenuncias = function() {
             const statusDiv = document.getElementById(`status-${docId}`);
             if (input.files && input.files[0]) {
                 const file = input.files[0];
-                // Validación robusta de PDF
                 if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
                     archivosUnicos[docId] = file;
                     statusDiv.innerHTML = `
@@ -192,7 +190,6 @@ window.initRegDenuncias = function() {
 
             const actuales = archivosMultiples[docId].length;
             const disponibles = max - actuales;
-
             if (disponibles <= 0) {
                 alert(`⚠️ Ya has alcanzado el máximo de ${max} archivos permitidos.`);
                 return;
@@ -240,13 +237,12 @@ window.initRegDenuncias = function() {
         };
 
         // ==========================================
-        // 🔹 DROPDOWN DE BANDERAS (COMPLETO Y CORREGIDO)
+        // 🔹 DROPDOWN DE BANDERAS
         // ==========================================
         const flagImg = document.getElementById('d-tlf-flag-img');
         const codeText = document.getElementById('d-tlf-code-text');
         const countryText = document.getElementById('d-tlf-country-text');
-        
-        // ✅ MAPEO COMPLETO DE TODOS LOS PAÍSES DEL HTML
+
         const isoMap = {
             "Afganistán":"af","Albania":"al","Alemania":"de","Andorra":"ad","Angola":"ao",
             "Antigua y Barbuda":"ag","Arabia Saudita":"sa","Argelia":"dz","Argentina":"ar",
@@ -300,12 +296,10 @@ window.initRegDenuncias = function() {
 
         if (nativeSelect && displayBox && optionsBox) {
             console.log("✅ Generando dropdown de banderas...");
-            
-            // Función para renderizar opciones
+
             function renderOptions(filterText = '') {
                 optionsBox.innerHTML = '';
-                
-                // Añadir input de búsqueda si no existe
+
                 if (!optionsBox.querySelector('.phone-search-input')) {
                     const searchInput = document.createElement('input');
                     searchInput.type = 'text';
@@ -317,42 +311,34 @@ window.initRegDenuncias = function() {
                     });
                     optionsBox.appendChild(searchInput);
                 }
-                
+
                 let opcionesGeneradas = 0;
                 Array.from(nativeSelect.options).forEach(opt => {
                     if (!opt.value) return;
-                    
-                    // Filtrar por texto de búsqueda
                     if (filterText && !opt.text.toLowerCase().includes(filterText) && !opt.value.includes(filterText)) {
                         return;
                     }
-                    
-                    // Buscar ISO en el mapa completo
+
                     let iso = isoMap[opt.text] || 'xx';
-                    
                     const div = document.createElement('div');
                     div.className = 'phone-option';
-                    // ✅ onerror garantiza que NUNCA se vea un icono de imagen rota
                     div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;" onerror="this.src='https://flagcdn.com/w20/xx.png'"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.85rem;">${opt.text}</span>`;
                     div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:0.15s;';
                     div.onmouseenter = () => div.style.background = '#f8fafc';
                     div.onmouseleave = () => div.style.background = '';
-                    
                     div.addEventListener('click', () => {
                         nativeSelect.value = opt.value;
                         flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
                         codeText.textContent = opt.value;
                         countryText.textContent = opt.text;
                         optionsBox.style.display = 'none';
-                        // Limpiar búsqueda
                         const search = optionsBox.querySelector('.phone-search-input');
                         if (search) search.value = '';
                     });
-                    
                     optionsBox.appendChild(div);
                     opcionesGeneradas++;
                 });
-                
+
                 if (opcionesGeneradas === 0 && filterText) {
                     const noResult = document.createElement('div');
                     noResult.className = 'phone-option';
@@ -362,23 +348,19 @@ window.initRegDenuncias = function() {
                     optionsBox.appendChild(noResult);
                 }
             }
-            
-            // Renderizar inicial
+
             renderOptions();
-            
+
             displayBox.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const isHidden = optionsBox.style.display === 'none' || optionsBox.style.display === '';
                 optionsBox.style.display = isHidden ? 'block' : 'none';
                 if (isHidden) {
                     const search = optionsBox.querySelector('.phone-search-input');
-                    if (search) {
-                        search.value = '';
-                        search.focus();
-                    }
+                    if (search) { search.value = ''; search.focus(); }
                 }
             });
-            
+
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('.phone-dropdown-wrapper')) {
                     optionsBox.style.display = 'none';
@@ -390,20 +372,12 @@ window.initRegDenuncias = function() {
         actualizarProximoNumero();
 
         // ==========================================
-        // ENVÍO DEL FORMULARIO
+        // ENVÍO DEL FORMULARIO (CON LOGS INTEGRADOS)
         // ==========================================
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            if (!form.checkValidity()) {
-                form.reportValidity();
-                return;
-            }
-
-            if (!window.supabaseClient) {
-                alert("❌ Error: Cliente de Supabase no inicializado.");
-                return;
-            }
+            if (!form.checkValidity()) { form.reportValidity(); return; }
+            if (!window.supabaseClient) { alert("❌ Error: Cliente de Supabase no inicializado."); return; }
 
             // Validar documentos únicos
             for (const doc of docsUnicos) {
@@ -431,20 +405,18 @@ window.initRegDenuncias = function() {
             try {
                 const bucket = window.supabaseClient.storage.from('denuncias_documentos');
                 const { data: { user } } = await window.supabaseClient.auth.getUser();
-                
                 if (!user) throw new Error('Debe iniciar sesión para registrar una denuncia.');
-                
                 const uid = user.id;
                 const ts = Date.now();
 
-                // Recalcular número justo antes de guardar para evitar duplicados
+                // Recalcular número justo antes de guardar
                 const { data: ultimaDenuncia } = await window.supabaseClient
                     .from('denuncias')
                     .select('numero_denuncia')
                     .order('numero_denuncia', { ascending: false })
                     .limit(1)
                     .maybeSingle();
-                
+
                 let nuevoNumeroDenuncia = 'CPNB-00000001';
                 if (ultimaDenuncia && ultimaDenuncia.numero_denuncia) {
                     const partes = ultimaDenuncia.numero_denuncia.split('-');
@@ -514,8 +486,41 @@ window.initRegDenuncias = function() {
                     email_registrante: user.email
                 };
 
-                const { error } = await window.supabaseClient.from('denuncias').insert([data]);
+                const { data: insertedData, error } = await window.supabaseClient.from('denuncias').insert([data]).select('id').single();
                 if (error) throw error;
+
+                // ✅ ✅ ✅ LOG AGREGADO - REGISTRAR EN SISTEMA_LOGS USANDO UTILS.JS ✅ ✅ ✅
+                if (typeof window.registrarLog === 'function') {
+                    const nombreDenunciante = `${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}`.trim() || 'No especificado';
+                    const telefonoCompleto = tlfPais && tlfNum ? `${tlfPais} ${tlfNum}` : (tlfNum || 'N/A');
+
+                    // Contar documentos subidos
+                    let totalDocs = 0;
+                    Object.values(docsUnicosUrls).forEach(v => { if (v) totalDocs++; });
+                    Object.values(docsMultiplesUrls).forEach(arr => { if (Array.isArray(arr)) totalDocs += arr.length; });
+
+                    const logDetalles = {
+                        registro: 'Denuncia Registrada',
+                        estatus: 'Activa',
+                        numero_denuncia: nuevoNumeroDenuncia,
+                        estacion_policial: data.estacion_policial || 'N/A',
+                        cedula_denunciante: data.cedula || 'N/A',
+                        nombre_denunciante: nombreDenunciante,
+                        telefono: telefonoCompleto,
+                        direccion: data.direccion || 'N/A',
+                        motivo: data.motivo_denuncia || 'N/A',
+                        documentos_subidos: totalDocs,
+                        email_registrante: user.email
+                    };
+
+                    await window.registrarLog(
+                        'REGISTRAR',
+                        'DENUNCIAS',
+                        logDetalles,
+                        insertedData?.id || null
+                    );
+                    console.log('✅ Log de denuncia registrado exitosamente en sistema_logs');
+                }
 
                 if (msg) {
                     msg.textContent = `✅ Denuncia registrada exitosamente. N°: ${nuevoNumeroDenuncia}`;
@@ -530,18 +535,15 @@ window.initRegDenuncias = function() {
                     const ahora = new Date();
                     fechaInput.value = ahora.toLocaleString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 }
-                
-                // Forzar reset de UI de documentos
+
                 docsUnicos.forEach(d => toggleDocField(d.id, false));
                 docsMultiples.forEach(d => toggleDocField(d.id, false));
-                
-                // Resetear teléfono
+
                 if (nativeSelect) nativeSelect.value = '';
                 if (flagImg) flagImg.src = 'https://flagcdn.com/w20/xx.png';
                 if (codeText) codeText.textContent = '+XX';
                 if (countryText) countryText.textContent = 'País';
-                
-                // Actualizar el próximo número para el siguiente registro
+
                 actualizarProximoNumero();
 
             } catch (err) {
