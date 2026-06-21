@@ -1,4 +1,4 @@
-// ✅ MÓDULO EDITAR PROCESADO - CORREGIDO PARA UUID
+// ✅ MÓDULO EDITAR PROCESADO - CON TODOS LOS CAMPOS Y SUBIDA DE ARCHIVOS
 window.initEditarProcesado = function() {
     console.log("✅ Módulo editar-procesado.js inicializado correctamente.");
 
@@ -17,8 +17,9 @@ window.initEditarProcesado = function() {
     let currentData = null;
     let registroIdActual = null;
     let personaData = null;
+    let archivosNuevos = {}; // Para guardar archivos nuevos por columna
 
-    // 🔹 Columnas de documentos PDF
+    // 🔹 Columnas de documentos PDF en tu tabla registro_procesados
     const COLUMNAS_DOCS = [
         'portada', 'oficio_remision', 'acta_denuncia', 'datos_filiatorios',
         'acta_policial', 'derechos_imputado', 'evaluacion_medica', 'identificacion_cedula',
@@ -50,25 +51,20 @@ window.initEditarProcesado = function() {
     }
 
     // ==========================================
-    // 🔍 1. BÚSQUEDA DE PROCESADO (CORREGIDO)
+    // 🔍 1. BÚSQUEDA DE PROCESADO
     // ==========================================
     async function buscarProcesado(valor) {
         const val = valor.trim();
         const tabla = 'registro_procesados';
         
         let query;
-        
-        // ✅ CORREGIDO: Separar búsqueda por tipo de dato
         if (esUUID(val)) {
-            // Si es un UUID válido, buscar por ID
             query = `id.eq.${val}`;
             console.log('🔍 Buscando por UUID:', val);
         } else if (/^\d+$/.test(val)) {
-            // Si es solo números, buscar SOLO por cédula (NO por id)
             query = `cedula.eq.${val}`;
             console.log('🔍 Buscando por cédula:', val);
         } else {
-            // Si tiene letras y no es UUID, buscar por cédula (por si acaso)
             query = `cedula.ilike.%${val}%`;
             console.log('🔍 Buscando por cédula (parcial):', val);
         }
@@ -92,7 +88,6 @@ window.initEditarProcesado = function() {
             currentData = data[0];
             registroIdActual = currentData.id;
 
-            // Extraer datos de la persona del JSON
             try {
                 personaData = typeof currentData.datos_originales === 'string' 
                     ? JSON.parse(currentData.datos_originales) 
@@ -145,13 +140,12 @@ window.initEditarProcesado = function() {
     }
 
     // ==========================================
-    // 📁 3. MANEJO DE DOCUMENTOS PDF
+    // 📁 3. MANEJO DE DOCUMENTOS PDF (TODOS LOS CAMPOS)
     // ==========================================
     function renderizarDocumentos() {
         docsUnicosContainer.innerHTML = '';
         docsMultiplesContainer.innerHTML = '';
-
-        let totalDocs = 0;
+        archivosNuevos = {}; // Resetear archivos nuevos
 
         COLUMNAS_DOCS.forEach(campo => {
             const urls = currentData[campo] || [];
@@ -167,42 +161,73 @@ window.initEditarProcesado = function() {
                 }
             }
 
-            if (urlsArray.length > 0) {
-                totalDocs += urlsArray.length;
-                docsUnicosContainer.innerHTML += crearItemDoc(campo, urlsArray);
-            }
+            // ✅ MOSTRAR TODOS LOS CAMPOS, incluso si están vacíos
+            docsUnicosContainer.innerHTML += crearItemDocCompleto(campo, urlsArray);
         });
-
-        if (totalDocs === 0) {
-            docsUnicosContainer.innerHTML = '<p style="color:#64748b; font-size:0.85rem; text-align:center; padding:20px;">📭 No se encontraron documentos cargados en este registro.</p>';
-        }
     }
 
-    function crearItemDoc(campo, urls) {
+    function crearItemDocCompleto(campo, urls) {
         const nombreCampo = campo.replace(/_/g, ' ').toUpperCase();
         let html = `
             <div class="doc-item" data-campo="${campo}">
                 <div class="doc-header">
-                    <label>📄 ${nombreCampo} (${urls.length} archivo${urls.length > 1 ? 's' : ''})</label>
+                    <label>📄 ${nombreCampo}</label>
                 </div>
         `;
 
-        urls.forEach((url, index) => {
-            const nombreArchivo = url.split('/').pop();
-            html += `
-                <div class="doc-current" data-index="${index}" data-url="${url}">
-                    <div class="file-info">📎 <span title="${nombreArchivo}">${nombreArchivo}</span></div>
-                    <div class="actions">
-                        <button type="button" class="btn-view" onclick="window.open('${url}', '_blank')">👁️ Ver</button>
-                        <button type="button" class="btn-delete" onclick="marcarDocEliminacion(this, '${campo}', ${index})">🗑️</button>
+        if (urls.length > 0) {
+            html += `<div class="doc-current-count">${urls.length} archivo${urls.length > 1 ? 's' : ''} cargado${urls.length > 1 ? 's' : ''}</div>`;
+            
+            urls.forEach((url, index) => {
+                const nombreArchivo = url.split('/').pop();
+                html += `
+                    <div class="doc-current" data-index="${index}" data-url="${url}">
+                        <div class="file-info">📎 <span title="${nombreArchivo}">${nombreArchivo}</span></div>
+                        <div class="actions">
+                            <button type="button" class="btn-view" onclick="window.open('${url}', '_blank')">👁️ Ver</button>
+                            <button type="button" class="btn-delete" onclick="marcarDocEliminacion(this, '${campo}', ${index})">🗑️</button>
+                        </div>
                     </div>
-                </div>
-            `;
-        });
+                `;
+            });
+        } else {
+            html += `<div class="doc-empty">📭 Sin documentos cargados</div>`;
+        }
+
+        // ✅ ÁREA PARA SUBIR ARCHIVOS NUEVOS
+        html += `
+            <div class="doc-upload-area active">
+                <input type="file" id="file-${campo}" accept=".pdf" multiple onchange="agregarArchivosNuevos(this, '${campo}')">
+                <div id="file-list-${campo}" class="file-count"></div>
+            </div>
+        `;
 
         html += `</div>`;
         return html;
     }
+
+    // ✅ FUNCIÓN PARA AGREGAR ARCHIVOS NUEVOS
+    window.agregarArchivosNuevos = function(input, campo) {
+        const files = Array.from(input.files);
+        if (files.length === 0) return;
+
+        if (!archivosNuevos[campo]) {
+            archivosNuevos[campo] = [];
+        }
+
+        files.forEach(file => {
+            archivosNuevos[campo].push(file);
+        });
+
+        // Mostrar lista de archivos seleccionados
+        const fileList = document.getElementById(`file-list-${campo}`);
+        if (fileList) {
+            const fileNames = archivosNuevos[campo].map(f => f.name).join(', ');
+            fileList.innerHTML = `<div class="file-loaded">📎 ${archivosNuevos[campo].length} archivo(s) seleccionado(s): ${fileNames}</div>`;
+        }
+
+        console.log(`✅ Archivos agregados para ${campo}:`, archivosNuevos[campo]);
+    };
 
     window.marcarDocEliminacion = function(btn, campo, index) {
         if(confirm('¿Eliminar este documento? Se marcará para eliminación al guardar.')) {
@@ -218,13 +243,13 @@ window.initEditarProcesado = function() {
     };
 
     // ==========================================
-    // 💾 4. GUARDAR CAMBIOS
+    // 💾 4. GUARDAR CAMBIOS (CON SUBIDA DE ARCHIVOS)
     // ==========================================
     formEditar.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!registroIdActual) return;
 
-        toggleLoading(true);
+        toggleLoading(true, '⏳ Guardando cambios...');
         hideMsg(msgForm);
 
         try {
@@ -241,6 +266,7 @@ window.initEditarProcesado = function() {
                 observaciones: observaciones
             };
 
+            // ✅ PROCESAR ELIMINACIONES DE DOCUMENTOS
             if (window.docsEliminados && Object.keys(window.docsEliminados).length > 0) {
                 for (const [campo, indices] of Object.entries(window.docsEliminados)) {
                     const urlsActuales = currentData[campo] || [];
@@ -249,6 +275,52 @@ window.initEditarProcesado = function() {
                 }
             }
 
+            // ✅ SUBIR ARCHIVOS NUEVOS AL STORAGE
+            if (Object.keys(archivosNuevos).length > 0) {
+                toggleLoading(true, '⏳ Subiendo documentos nuevos...');
+                
+                for (const [campo, files] of Object.entries(archivosNuevos)) {
+                    const urlsNuevas = [];
+                    
+                    for (const file of files) {
+                        // Generar nombre único para el archivo
+                        const timestamp = Date.now();
+                        const fileName = `${timestamp}_${campo}_${file.name}`;
+                        const userId = personaData.id || currentData.registro_id || 'unknown';
+                        const filePath = `${userId}/${fileName}`;
+
+                        // Subir al Storage de Supabase
+                        const { data: uploadData, error: uploadError } = await window.supabaseClient
+                            .storage
+                            .from('procesados_documentos')
+                            .upload(filePath, file, {
+                                cacheControl: '3600',
+                                upsert: false
+                            });
+
+                        if (uploadError) {
+                            console.error(`❌ Error subiendo ${file.name}:`, uploadError);
+                            throw new Error(`Error subiendo ${file.name}: ${uploadError.message}`);
+                        }
+
+                        // Obtener URL pública
+                        const { data: urlData } = window.supabaseClient
+                            .storage
+                            .from('procesados_documentos')
+                            .getPublicUrl(filePath);
+
+                        urlsNuevas.push(urlData.publicUrl);
+                        console.log(`✅ Archivo subido: ${file.name}`);
+                    }
+
+                    // Combinar URLs existentes (sin las eliminadas) con las nuevas
+                    const urlsExistentes = datosActualizar[campo] || currentData[campo] || [];
+                    datosActualizar[campo] = [...urlsExistentes, ...urlsNuevas];
+                }
+            }
+
+            // ✅ ACTUALIZAR BASE DE DATOS
+            toggleLoading(true, '⏳ Actualizando registro...');
             const { error: updateError } = await window.supabaseClient
                 .from('registro_procesados')
                 .update(datosActualizar)
@@ -259,7 +331,9 @@ window.initEditarProcesado = function() {
             toggleLoading(false);
             showMsg(msgForm, '✅ Cambios guardados exitosamente.', 'success');
             
+            // Limpiar estado
             window.docsEliminados = {};
+            archivosNuevos = {};
             
             setTimeout(() => {
                 formEditar.reset();
@@ -285,6 +359,7 @@ window.initEditarProcesado = function() {
             if (val.length < 3) return showMsg(msgBusqueda, '⚠️ Ingrese al menos 3 caracteres.', 'error');
             hideMsg(msgBusqueda);
             window.docsEliminados = {};
+            archivosNuevos = {};
             buscarProcesado(val);
         });
 
