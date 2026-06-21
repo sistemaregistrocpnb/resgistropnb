@@ -1,4 +1,4 @@
-// ✅ MÓDULO EDITAR PROCESADO - CON TODOS LOS CAMPOS Y SUBIDA DE ARCHIVOS
+// ✅ MÓDULO EDITAR PROCESADO - CORREGIDO PARA STRINGS JSON
 window.initEditarProcesado = function() {
     console.log("✅ Módulo editar-procesado.js inicializado correctamente.");
 
@@ -17,9 +17,9 @@ window.initEditarProcesado = function() {
     let currentData = null;
     let registroIdActual = null;
     let personaData = null;
-    let archivosNuevos = {}; // Para guardar archivos nuevos por columna
+    let archivosNuevos = {};
 
-    // 🔹 Columnas de documentos PDF en tu tabla registro_procesados
+    // 🔹 Columnas de documentos PDF
     const COLUMNAS_DOCS = [
         'portada', 'oficio_remision', 'acta_denuncia', 'datos_filiatorios',
         'acta_policial', 'derechos_imputado', 'evaluacion_medica', 'identificacion_cedula',
@@ -43,6 +43,23 @@ window.initEditarProcesado = function() {
         if (loadingText) loadingText.innerHTML = `${text}<small>Por favor, no cierre ni recargue esta ventana.</small>`;
         loadingOverlay.classList.toggle('active', show);
     };
+
+    // 🔹 Función para convertir a array (maneja strings JSON y arrays)
+    function convertirAArray(valor) {
+        if (Array.isArray(valor)) {
+            return valor;
+        }
+        if (typeof valor === 'string') {
+            try {
+                const parsed = JSON.parse(valor);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                console.warn('⚠️ No se pudo parsear como JSON:', valor);
+                return [];
+            }
+        }
+        return [];
+    }
 
     // 🔹 Función para detectar si es un UUID válido
     function esUUID(valor) {
@@ -145,23 +162,10 @@ window.initEditarProcesado = function() {
     function renderizarDocumentos() {
         docsUnicosContainer.innerHTML = '';
         docsMultiplesContainer.innerHTML = '';
-        archivosNuevos = {}; // Resetear archivos nuevos
+        archivosNuevos = {};
 
         COLUMNAS_DOCS.forEach(campo => {
-            const urls = currentData[campo] || [];
-            
-            let urlsArray = [];
-            if (Array.isArray(urls)) {
-                urlsArray = urls;
-            } else if (typeof urls === 'string' && urls.startsWith('[')) {
-                try {
-                    urlsArray = JSON.parse(urls);
-                } catch (e) {
-                    urlsArray = [];
-                }
-            }
-
-            // ✅ MOSTRAR TODOS LOS CAMPOS, incluso si están vacíos
+            const urlsArray = convertirAArray(currentData[campo]);
             docsUnicosContainer.innerHTML += crearItemDocCompleto(campo, urlsArray);
         });
     }
@@ -194,7 +198,6 @@ window.initEditarProcesado = function() {
             html += `<div class="doc-empty">📭 Sin documentos cargados</div>`;
         }
 
-        // ✅ ÁREA PARA SUBIR ARCHIVOS NUEVOS
         html += `
             <div class="doc-upload-area active">
                 <input type="file" id="file-${campo}" accept=".pdf" multiple onchange="agregarArchivosNuevos(this, '${campo}')">
@@ -206,7 +209,6 @@ window.initEditarProcesado = function() {
         return html;
     }
 
-    // ✅ FUNCIÓN PARA AGREGAR ARCHIVOS NUEVOS
     window.agregarArchivosNuevos = function(input, campo) {
         const files = Array.from(input.files);
         if (files.length === 0) return;
@@ -219,7 +221,6 @@ window.initEditarProcesado = function() {
             archivosNuevos[campo].push(file);
         });
 
-        // Mostrar lista de archivos seleccionados
         const fileList = document.getElementById(`file-list-${campo}`);
         if (fileList) {
             const fileNames = archivosNuevos[campo].map(f => f.name).join(', ');
@@ -243,7 +244,7 @@ window.initEditarProcesado = function() {
     };
 
     // ==========================================
-    // 💾 4. GUARDAR CAMBIOS (CON SUBIDA DE ARCHIVOS)
+    // 💾 4. GUARDAR CAMBIOS (CORREGIDO)
     // ==========================================
     formEditar.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -266,10 +267,11 @@ window.initEditarProcesado = function() {
                 observaciones: observaciones
             };
 
-            // ✅ PROCESAR ELIMINACIONES DE DOCUMENTOS
+            // ✅ PROCESAR ELIMINACIONES DE DOCUMENTOS (CORREGIDO)
             if (window.docsEliminados && Object.keys(window.docsEliminados).length > 0) {
                 for (const [campo, indices] of Object.entries(window.docsEliminados)) {
-                    const urlsActuales = currentData[campo] || [];
+                    // ✅ CORREGIDO: Usar convertirAArray para asegurar que sea un array
+                    const urlsActuales = convertirAArray(currentData[campo]);
                     const urlsFiltradas = urlsActuales.filter((_, idx) => !indices.includes(idx));
                     datosActualizar[campo] = urlsFiltradas;
                 }
@@ -283,13 +285,11 @@ window.initEditarProcesado = function() {
                     const urlsNuevas = [];
                     
                     for (const file of files) {
-                        // Generar nombre único para el archivo
                         const timestamp = Date.now();
                         const fileName = `${timestamp}_${campo}_${file.name}`;
                         const userId = personaData.id || currentData.registro_id || 'unknown';
                         const filePath = `${userId}/${fileName}`;
 
-                        // Subir al Storage de Supabase
                         const { data: uploadData, error: uploadError } = await window.supabaseClient
                             .storage
                             .from('procesados_documentos')
@@ -303,7 +303,6 @@ window.initEditarProcesado = function() {
                             throw new Error(`Error subiendo ${file.name}: ${uploadError.message}`);
                         }
 
-                        // Obtener URL pública
                         const { data: urlData } = window.supabaseClient
                             .storage
                             .from('procesados_documentos')
@@ -313,8 +312,8 @@ window.initEditarProcesado = function() {
                         console.log(`✅ Archivo subido: ${file.name}`);
                     }
 
-                    // Combinar URLs existentes (sin las eliminadas) con las nuevas
-                    const urlsExistentes = datosActualizar[campo] || currentData[campo] || [];
+                    // ✅ CORREGIDO: Combinar URLs existentes (convertidas a array) con las nuevas
+                    const urlsExistentes = datosActualizar[campo] || convertirAArray(currentData[campo]);
                     datosActualizar[campo] = [...urlsExistentes, ...urlsNuevas];
                 }
             }
@@ -331,7 +330,6 @@ window.initEditarProcesado = function() {
             toggleLoading(false);
             showMsg(msgForm, '✅ Cambios guardados exitosamente.', 'success');
             
-            // Limpiar estado
             window.docsEliminados = {};
             archivosNuevos = {};
             
