@@ -1,8 +1,6 @@
-
 window.initEditarProcesado = function() {
     console.log("✅ Módulo editar-procesado.js inicializado correctamente.");
 
-    // 🔹 Referencias DOM
     const buscarInput = document.getElementById('edit_busqueda_input');
     const buscarBtn = document.getElementById('edit_btn_buscar');
     const msgBusqueda = document.getElementById('edit_msg_busqueda');
