@@ -16,7 +16,6 @@ if (window._regDenunciasInit) {
                 else { console.error("❌ ERROR: No se encontró el formulario."); return; }
             }
 
-            // Configurar fecha actual
             const fechaInput = document.getElementById('d_fecha_hora');
             if (fechaInput) {
                 const ahora = new Date();
