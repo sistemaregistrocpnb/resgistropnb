@@ -14,7 +14,11 @@
 .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 
 /* Dropdown de banderas MEJORADO */
-.phone-dropdown-wrapper { position: relative; width: 100%; z-index: 100 !important; }
+.phone-dropdown-wrapper { 
+    position: relative; 
+    width: 100%; 
+    z-index: 100 !important; 
+}
 .phone-options { 
     max-height: 350px !important; 
     overflow-y: auto !important; 
@@ -57,21 +61,22 @@
 .phone-option .code { font-weight: 600; min-width: 35px; color: #334155; }
 .phone-option .country { color: #475569; font-size: 0.85rem; }
 
-.phone-display { 
-    border: 1.5px solid var(--beige-border); 
-    border-radius: 5px; 
-    padding: 9px 10px; 
-    background: #fff; 
-    display: flex; 
-    align-items: center; 
-    gap: 8px; 
-    cursor: pointer; 
-    font-size: 0.9rem; 
-    user-select: none; 
-    height: 42px; 
-    box-sizing: border-box; 
+.phone-display {
+    border: 1.5px solid var(--beige-border);
+    border-radius: 5px;
+    padding: 9px 10px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    user-select: none;
+    height: 42px;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 2;
 }
-
 /* Scrollbar personalizada */
 .phone-options::-webkit-scrollbar { width: 8px; }
 .phone-options::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
