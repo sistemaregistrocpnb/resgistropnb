@@ -231,91 +231,113 @@ window.initModDenuncias = function() {
         });
     }
 
-    btnBuscar?.addEventListener('click', async () => {
-        const cedulaRaw = cedulaInput?.value.trim().toUpperCase().replace(/\s/g, '') || '';
-        const msgBusqueda = document.getElementById('mod_msg_busqueda');
-        const formContainer = document.getElementById('mod_form_container');
-        const listaContainer = document.getElementById('mod_denuncias_lista');
-        
-        // ✅ VALIDACIÓN MEJORADA DE CÉDULA
-        const cedulaRegex = /^[VE]-\d{7,8}$/;
-        
-        if (!cedulaRaw) {
-            if (msgBusqueda) { msgBusqueda.textContent = '⚠️ El campo de cédula no puede estar vacío.'; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
-            return;
+ btnBuscar?.addEventListener('click', async () => {
+    const cedulaInputValue = cedulaInput?.value.trim() || '';
+    const cedulaRaw = cedulaInputValue.toUpperCase().replace(/\s/g, '');
+    const msgBusqueda = document.getElementById('mod_msg_busqueda');
+    const formContainer = document.getElementById('mod_form_container');
+    const listaContainer = document.getElementById('mod_denuncias_lista');
+    
+    // ✅ VALIDACIÓN MEJORADA - Acepta V- o E- con 6 a 8 dígitos
+    const cedulaRegex = /^[VE]-\d{6,8}$/;
+    
+    console.log('🔍 Buscando cédula:', cedulaRaw);
+    console.log('📝 Valor original:', cedulaInputValue);
+    
+    if (!cedulaRaw) {
+        if (msgBusqueda) { msgBusqueda.textContent = '⚠️ El campo de cédula no puede estar vacío.'; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
+        return;
+    }
+    if (!cedulaRegex.test(cedulaRaw)) {
+        if (msgBusqueda) { msgBusqueda.textContent = '⚠️ Formato incorrecto. Use: V-12345678 o E-12345678 (6-8 dígitos)'; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
+        console.error('❌ Cédula no válida:', cedulaRaw);
+        return;
+    }
+
+    if (msgBusqueda) { msgBusqueda.textContent = '⏳ Buscando...'; msgBusqueda.className = 'msg'; msgBusqueda.style.display = 'block'; }
+    if (formContainer) formContainer.style.display = 'none';
+    if (listaContainer) listaContainer.style.display = 'none';
+
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('denuncias')
+            .select('*')
+            .eq('cedula', cedulaRaw)
+            .order('created_at', { ascending: false });
+
+        console.log('📊 Resultado de búsqueda:', { 
+            cedula_buscada: cedulaRaw, 
+            encontrados: data ? data.length : 0, 
+            error: error 
+        });
+
+        if (error) {
+            console.error('❌ Error de Supabase:', error);
+            throw error;
         }
-        if (!cedulaRegex.test(cedulaRaw)) {
-            if (msgBusqueda) { msgBusqueda.textContent = '⚠️ Formato incorrecto. Debe colocar V- o E- seguido de 7 u 8 dígitos (Ej: V-12345678).'; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
-            return;
-        }
 
-        if (msgBusqueda) { msgBusqueda.textContent = '⏳ Buscando...'; msgBusqueda.className = 'msg'; msgBusqueda.style.display = 'block'; }
-        if (formContainer) formContainer.style.display = 'none';
-        if (listaContainer) listaContainer.style.display = 'none';
-
-        try {
-            const { data, error } = await window.supabaseClient
-                .from('denuncias')
-                .select('*')
-                .eq('cedula', cedulaRaw)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-
-            // ✅ LOG DE BÚSQUEDA
-            await logModDenuncias('BUSCAR', {
+        // ✅ LOG DE BÚSQUEDA
+        if (typeof window.registrarLog === 'function') {
+            await window.registrarLog('BUSCAR', 'MOD_DENUNCIAS', {
                 cedula_buscada: cedulaRaw,
                 resultados_encontrados: data ? data.length : 0
             });
+        }
 
-            if (!data || data.length === 0) {
-                if (msgBusqueda) { msgBusqueda.textContent = '❌ No se encontró ninguna denuncia registrada con esa cédula.'; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
-                return;
+        if (!data || data.length === 0) {
+            if (msgBusqueda) { 
+                msgBusqueda.textContent = `❌ No se encontró ninguna denuncia con cédula ${cedulaRaw}. Verifique que la cédula esté bien escrita.`; 
+                msgBusqueda.className = 'msg error'; 
+                msgBusqueda.style.display = 'block'; 
             }
+            console.warn('⚠️ No se encontraron resultados para:', cedulaRaw);
+            return;
+        }
 
-            // Mostrar lista de denuncias
-            if (msgBusqueda) { msgBusqueda.textContent = `✅ Se encontraron ${data.length} denuncia(s). Seleccione una para editar.`; msgBusqueda.className = 'msg success'; msgBusqueda.style.display = 'block'; }
-            
-            if (listaContainer) {
-                listaContainer.innerHTML = `<div class="denuncias-lista-header">📋 Denuncias encontradas (${data.length})</div>`;
-                data.forEach((denuncia, index) => {
-                    const fecha = new Date(denuncia.created_at).toLocaleString('es-VE', {
-                        year: 'numeric', month: '2-digit', day: '2-digit',
-                        hour: '2-digit', minute: '2-digit'
-                    });
-                    const item = document.createElement('div');
-                    item.className = 'denuncia-item';
-                    item.innerHTML = `
-                        <div class="denuncia-item-info">
-                            <div class="denuncia-item-numero">${denuncia.numero_denuncia || 'N/A'}</div>
-                            <div class="denuncia-item-detalles">
-                                <strong>Estación:</strong> ${denuncia.estacion_policial || 'N/A'} |
-                                <strong>Motivo:</strong> ${denuncia.motivo_denuncia ? denuncia.motivo_denuncia.substring(0, 80) + (denuncia.motivo_denuncia.length > 80 ? '...' : '') : 'N/A'}
-                            </div>
-                        </div>
-                        <div class="denuncia-item-fecha">${fecha}</div>
-                        <button type="button" class="denuncia-item-btn" data-index="${index}">✏️ Editar</button>
-                    `;
-                    item.querySelector('.denuncia-item-btn').addEventListener('click', () => {
-                        cargarDenunciaEnFormulario(denuncia);
-                    });
-                    listaContainer.appendChild(item);
+        // Mostrar lista de denuncias
+        if (msgBusqueda) { msgBusqueda.textContent = `✅ Se encontraron ${data.length} denuncia(s). Seleccione una para editar.`; msgBusqueda.className = 'msg success'; msgBusqueda.style.display = 'block'; }
+        
+        if (listaContainer) {
+            listaContainer.innerHTML = `<div class="denuncias-lista-header">📋 Denuncias encontradas (${data.length})</div>`;
+            data.forEach((denuncia, index) => {
+                const fecha = new Date(denuncia.created_at).toLocaleString('es-VE', {
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit'
                 });
-                listaContainer.style.display = 'block';
-            }
-        } catch (err) {
-            console.error('Error en búsqueda:', err);
-            if (msgBusqueda) { msgBusqueda.textContent = '❌ Error al buscar: ' + err.message; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
-            
-            // ✅ LOG DE ERROR EN BÚSQUEDA
-            await logModDenuncias('ERROR', {
+                const item = document.createElement('div');
+                item.className = 'denuncia-item';
+                item.innerHTML = `
+                    <div class="denuncia-item-info">
+                        <div class="denuncia-item-numero">${denuncia.numero_denuncia || 'N/A'}</div>
+                        <div class="denuncia-item-detalles">
+                            <strong>Estación:</strong> ${denuncia.estacion_policial || 'N/A'} |
+                            <strong>Motivo:</strong> ${denuncia.motivo_denuncia ? denuncia.motivo_denuncia.substring(0, 80) + (denuncia.motivo_denuncia.length > 80 ? '...' : '') : 'N/A'}
+                        </div>
+                    </div>
+                    <div class="denuncia-item-fecha">${fecha}</div>
+                    <button type="button" class="denuncia-item-btn" data-index="${index}">✏️ Editar</button>
+                `;
+                item.querySelector('.denuncia-item-btn').addEventListener('click', () => {
+                    cargarDenunciaEnFormulario(denuncia);
+                });
+                listaContainer.appendChild(item);
+            });
+            listaContainer.style.display = 'block';
+        }
+    } catch (err) {
+        console.error('❌ Error en búsqueda:', err);
+        if (msgBusqueda) { msgBusqueda.textContent = '❌ Error al buscar: ' + err.message; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
+        
+        // ✅ LOG DE ERROR
+        if (typeof window.registrarLog === 'function') {
+            await window.registrarLog('ERROR', 'MOD_DENUNCIAS', {
                 accion: 'BUSCAR',
                 error: err.message,
                 cedula_buscada: cedulaRaw
             });
         }
-    });
-
+    }
+});
     // ==========================================
     // CARGAR DENUNCIA SELECCIONADA EN EL FORMULARIO
     // ==========================================
