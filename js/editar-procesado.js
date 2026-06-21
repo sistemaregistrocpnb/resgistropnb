@@ -66,47 +66,24 @@ window.initEditarProcesado = function() {
     function generarDocsUnicos() {
         if (!contenedorUnicos) return;
         contenedorUnicos.innerHTML = '';
-      docsUnicos.forEach(doc => {
-    const currentDiv = document.getElementById(`current-${doc.id}`);
-    const url = proc[doc.id];
-    
-    // 🔹 VALIDACIÓN: ¿Existe una URL real y no es un string vacío?
-    const tieneArchivoValido = url && typeof url === 'string' && url.trim() !== '';
-    
-    if (tieneArchivoValido) {
-        archivosActuales[doc.id] = url;
-        const fileName = url.split('/').pop();
-        currentDiv.innerHTML = `
-            <div class="doc-current">
-                <div class="file-info">
-                    <span>📄</span>
-                    <span>${fileName}</span>
+        docsUnicos.forEach(doc => {
+            const div = document.createElement('div');
+            div.className = 'doc-item';
+            div.id = `doc-item-${doc.id}`;
+            div.innerHTML = `
+                <div class="doc-header">
+                    <label>${doc.label}</label>
                 </div>
-                <div class="actions">
-                    <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
-                    <button type="button" class="btn-replace" onclick="reemplazarArchivo('${doc.id}')">🔄 Reemplazar</button>
-                    <button type="button" class="btn-delete" onclick="eliminarArchivoActual('${doc.id}')">🗑️ Eliminar</button>
+                <div id="current-${doc.id}"></div>
+                <div class="doc-upload-area" id="upload-${doc.id}">
+                    <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="mostrarNuevoArchivo('${doc.id}', this)">
+                    <div id="status-${doc.id}" class="file-status-container"></div>
                 </div>
-            </div>
-        `;
-    } else {
-        // 🔹 SI ESTÁ VACÍO: Se guarda como null y el botón VER se deshabilita
-        archivosActuales[doc.id] = null;
-        currentDiv.innerHTML = `
-            <div class="doc-current">
-                <div class="file-info">
-                    <span>📄</span>
-                    <span style="color: #94a3b8;">Sin archivo</span>
-                </div>
-                <div class="actions">
-                    <!-- BOTÓN VER DESHABILITADO -->
-                    <button type="button" class="btn-view" disabled style="opacity: 0.5; cursor: not-allowed; background-color: #e2e8f0; color: #94a3b8;">👁️ Ver</button>
-                    <button type="button" class="btn-replace" onclick="reemplazarArchivo('${doc.id}')">🔄 Subir Archivo</button>
-                </div>
-            </div>
-        `;
+            `;
+            contenedorUnicos.appendChild(div);
+        });
     }
-});
+    
     function generarDocsMultiples() {
         if (!contenedorMultiples) return;
         contenedorMultiples.innerHTML = '';
@@ -323,46 +300,43 @@ window.initEditarProcesado = function() {
     };
     
     function renderizarArchivosMultiplesActuales(campo) {
-    const listDiv = document.getElementById(`current-list-${campo}`);
-    if (!listDiv) return;
+        const listDiv = document.getElementById(`current-list-${campo}`);
+        if (!listDiv) return;
 
-    const urls = archivosActuales[campo];
-    
-    // Si el array completo está vacío o no tiene URLs válidas
-    const tieneAlgunoValido = urls.some(u => u && typeof u === 'string' && u.trim() !== '');
-    if (!tieneAlgunoValido) {
-        listDiv.innerHTML = '<p style="color: #64748b; font-size: 0.85rem;">📄 No hay archivos actuales</p>';
-        return;
-    }
-
-    listDiv.innerHTML = '';
-    urls.forEach((url, index) => {
-        const tieneArchivoValido = url && typeof url === 'string' && url.trim() !== '';
-        const item = document.createElement('div');
-        item.className = 'file-item-multiple';
-
-        if (tieneArchivoValido) {
-            // ✅ HAY ARCHIVO: Botón Ver normal
-            item.innerHTML = `
-                <span>📄 Archivo ${index + 1}</span>
-                <div class="file-actions">
-                    <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
-                    <button type="button" onclick="eliminarArchivoMultipleActual('${campo}', ${index})">❌</button>
-                </div>
-            `;
-        } else {
-            // ❌ ESTÁ VACÍO: Botón Ver deshabilitado para evitar 404
-            item.innerHTML = `
-                <span style="color: #94a3b8;">📄 Archivo ${index + 1} (Sin archivo)</span>
-                <div class="file-actions">
-                    <button type="button" class="btn-view" disabled style="opacity: 0.5; cursor: not-allowed; background-color: #e2e8f0; color: #94a3b8;">👁️ Ver</button>
-                    <button type="button" onclick="eliminarArchivoMultipleActual('${campo}', ${index})">❌</button>
-                </div>
-            `;
+        const urls = archivosActuales[campo];
+        const tieneAlgunoValido = urls.some(u => u && typeof u === 'string' && u.trim() !== '');
+        
+        if (!tieneAlgunoValido) {
+            listDiv.innerHTML = '<p style="color: #64748b; font-size: 0.85rem;">📄 No hay archivos actuales</p>';
+            return;
         }
-        listDiv.appendChild(item);
-    });
-}
+
+        listDiv.innerHTML = '';
+        urls.forEach((url, index) => {
+            const tieneArchivoValido = url && typeof url === 'string' && url.trim() !== '';
+            const item = document.createElement('div');
+            item.className = 'file-item-multiple';
+
+            if (tieneArchivoValido) {
+                item.innerHTML = `
+                    <span>📄 Archivo ${index + 1}</span>
+                    <div class="file-actions">
+                        <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
+                        <button type="button" onclick="eliminarArchivoMultipleActual('${campo}', ${index})">❌</button>
+                    </div>
+                `;
+            } else {
+                item.innerHTML = `
+                    <span style="color: #94a3b8;">📄 Archivo ${index + 1} (Sin archivo)</span>
+                    <div class="file-actions">
+                        <button type="button" class="btn-view" disabled style="opacity: 0.5; cursor: not-allowed;">👁️ Ver</button>
+                        <button type="button" onclick="eliminarArchivoMultipleActual('${campo}', ${index})">❌</button>
+                    </div>
+                `;
+            }
+            listDiv.appendChild(item);
+        });
+    }
     
     async function cargarProcesado(valor) {
         const val = valor.trim().toUpperCase();
@@ -438,8 +412,9 @@ window.initEditarProcesado = function() {
         docsUnicos.forEach(doc => {
             const currentDiv = document.getElementById(`current-${doc.id}`);
             const url = proc[doc.id];
+            const tieneArchivoValido = url && typeof url === 'string' && url.trim() !== '';
             
-            if (url) {
+            if (tieneArchivoValido) {
                 archivosActuales[doc.id] = url;
                 const fileName = url.split('/').pop();
                 currentDiv.innerHTML = `
@@ -640,7 +615,7 @@ window.initEditarProcesado = function() {
                     msgBusqueda.style.display = 'none';
                     procesadoActual = null;
                     form.reset();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    window.scrollTo({ top: 0, behavior: 'smooth');
                 }, 3000);
             } catch (err) {
                 mostrarMsg(msgForm, '❌ Error: ' + err.message, 'error');
