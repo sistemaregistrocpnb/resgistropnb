@@ -271,8 +271,7 @@ window.initEditarProcesado = function() {
     });
 
     // ==========================================
-    // 🔹 LISTENERS INICIALES
-    // ==========================================
+
     if (buscarBtn && buscarInput) {
         buscarBtn.addEventListener('click', () => {
             const val = buscarInput.value.trim();
