@@ -1,4 +1,4 @@
-// ✅ MÓDULO CORRECTO PARA EDITAR PROCESADO
+
 window.initEditarProcesado = function() {
     console.log("✅ Módulo editar-procesado.js inicializado correctamente.");
 
