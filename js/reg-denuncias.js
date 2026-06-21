@@ -49,7 +49,6 @@ if (window._regDenunciasInit) {
                 } catch (e) { inputNum.value = 'Error'; }
             }
 
-    
             const docsUnicos = [
                 { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
                 { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
@@ -87,7 +86,6 @@ if (window._regDenunciasInit) {
                 });
             }
 
-            // Funciones Globales UI
             window.toggleDocField = function(campo, mostrar) {
                 const area = document.getElementById(`upload-${campo}`);
                 if (area) {
@@ -134,9 +132,6 @@ if (window._regDenunciasInit) {
             }
             window.quitarMultiple = function(docId, index, max) { archivosMultiples[docId].splice(index, 1); actualizarListaMultiples(docId, max); };
 
-            // ==========================================
-            // 🔹 DROPDOWN DE BANDERAS
-            // ==========================================
             const nativeSelect = document.getElementById('d_tlf_pais');
             const displayBox = document.getElementById('d-phone-display');
             const optionsBox = document.getElementById('d-phone-options');
@@ -172,7 +167,6 @@ if (window._regDenunciasInit) {
                 document.addEventListener('click', (e) => { if (!e.target.closest('.phone-dropdown-wrapper')) optionsBox.style.display = 'none'; });
             }
 
-            // Inicializar valores por defecto
             if (nativeSelect) nativeSelect.value = '+58';
             if (flagImg) flagImg.src = 'https://flagcdn.com/w20/ve.png';
             if (codeText) codeText.textContent = '+58';
@@ -180,9 +174,6 @@ if (window._regDenunciasInit) {
 
             actualizarProximoNumero();
 
-            // ==========================================
-            // 🔹 ENVÍO DEL FORMULARIO CON REINTENTOS
-            // ==========================================
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 if (!form.checkValidity()) { form.reportValidity(); return; }
@@ -199,7 +190,6 @@ if (window._regDenunciasInit) {
 
                     const uid = user.id; const ts = Date.now();
 
-                    // ✅ SUBIDA DE DOCUMENTOS ÚNICOS
                     const docsUnicosUrls = {};
                     for (const doc of docsUnicos) {
                         const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
@@ -211,7 +201,6 @@ if (window._regDenunciasInit) {
                         } else docsUnicosUrls[doc.id] = null;
                     }
 
-                    // ✅ SUBIDA DE DOCUMENTOS MÚLTIPLES
                     const docsMultiplesUrls = {};
                     for (const doc of docsMultiples) {
                         const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
@@ -227,7 +216,6 @@ if (window._regDenunciasInit) {
                         } else docsMultiplesUrls[doc.id] = null;
                     }
 
-                    // ✅ PREPARAR DATA (SIN numero_denuncia aún)
                     const tlfPais = document.getElementById('d_tlf_pais')?.value || null;
                     const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '') || null;
                     const data = {
@@ -254,7 +242,7 @@ if (window._regDenunciasInit) {
                     };
 
                     // ==========================================
-                    // 🔹 INSERCIÓN CON REINTENTOS (Anti-Duplicados)
+                    // 🔹 INSERCIÓN CON REINTENTOS (Anti-Duplicados) - ÚNICO INSERT
                     // ==========================================
                     let intentos = 0;
                     const maxIntentos = 3;
@@ -293,22 +281,19 @@ if (window._regDenunciasInit) {
 
                     if (insertError) throw insertError;
 
-                    // ==========================================
-                    // 🔹 REGISTRO DE LOG MEJORADO (Integración con utils.js)
-                    // ==========================================
-  const nombreComp = `${data.primer_nombre} ${data.segundo_nombre || ''} ${data.primer_apellido} ${data.segundo_apellido || ''}`.trim();
-
-const detallesLog = {
-    numero_denuncia: nuevoNumero,
-    estacion: data.estacion_policial,
-    cedula: data.cedula || 'N/A',
-    nombre_completo: nombreComp || 'N/A'
-};
-                    await logDenuncias('REGISTRAR', detallesLog, insertedData.id);
+                    // ✅ LOG SIMPLIFICADO (Solo 4 campos + estatus)
+                    const nombreComp = `${data.primer_nombre} ${data.segundo_nombre || ''} ${data.primer_apellido} ${data.segundo_apellido || ''}`.trim();
+                    
+                    await logDenuncias('REGISTRAR', {
+                        numero_denuncia: nuevoNumero,
+                        estacion: data.estacion_policial,
+                        cedula: data.cedula || 'N/A',
+                        nombre_completo: nombreComp || 'N/A',
+                        estatus: 'Registrado'
+                    }, insertedData.id);
 
                     if (msg) { msg.textContent = `✅ Denuncia registrada. N°: ${nuevoNumero}`; msg.className = 'msg success'; msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 5000); }
 
-                    // Resetear UI
                     form.reset();
                     if (fechaInput) fechaInput.value = new Date().toLocaleString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
                     docsUnicos.forEach(d => toggleDocField(d.id, false));
@@ -323,10 +308,8 @@ const detallesLog = {
                     console.error('Error:', err);
                     if (msg) { msg.textContent = '❌ ' + err.message; msg.className = 'msg error'; msg.style.display = 'block'; }
                     
-                    // 🔹 LOG DE ERROR
                     await logDenuncias('ERROR', {
                         mensaje_error: err.message,
-                        codigo_error: err.code || 'N/A',
                         hora: new Date().toLocaleString('es-VE')
                     });
                 } finally {
@@ -336,27 +319,27 @@ const detallesLog = {
             });
             console.log("✅ Módulo reg-denuncias.js inicializado correctamente");
             
-            // 🔹 LOG DE INICIO DE MÓDULO
             logDenuncias('INICIAR', {
                 mensaje: 'Usuario abrió el módulo de registro de denuncias',
                 hora: new Date().toLocaleString('es-VE')
             });
         }
-        iniciarModulo();
         // 🔹 REFUERZO DE EVENTO CLICK (Por si el DOM dinámico lo pierde)
-        setTimeout(() => {
-            const displayBoxFix = document.getElementById('d-phone-display');
-            const optionsBoxFix = document.getElementById('d-phone-options');
-            if (displayBoxFix && optionsBoxFix && !displayBoxFix.dataset.clickBound) {
-                displayBoxFix.dataset.clickBound = 'true';
-                displayBoxFix.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const isHidden = optionsBoxFix.style.display === 'none' || optionsBoxFix.style.display === '';
-                    optionsBoxFix.style.display = isHidden ? 'block' : 'none';
-                });
-                console.log("✅ Evento click del dropdown de países reforzado.");
-            }
-        }, 500);
+setTimeout(() => {
+    const displayBoxFix = document.getElementById('d-phone-display');
+    const optionsBoxFix = document.getElementById('d-phone-options');
+    if (displayBoxFix && optionsBoxFix && !displayBoxFix.dataset.clickBound) {
+        displayBoxFix.dataset.clickBound = 'true';
+        displayBoxFix.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = optionsBoxFix.style.display === 'none' || optionsBoxFix.style.display === '';
+            optionsBoxFix.style.display = isHidden ? 'block' : 'none';
+        });
+        console.log("✅ Evento click del dropdown de países reforzado.");
+    }
+}, 500);
+        
+        iniciarModulo();
     };
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.initRegDenuncias);
