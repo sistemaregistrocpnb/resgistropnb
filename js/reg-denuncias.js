@@ -237,142 +237,112 @@ window.initRegDenuncias = function() {
         };
 
         // ==========================================
-        // 🔹 DROPDOWN DE BANDERAS
+        // 🔹 DROPDOWN DE BANDERAS (COPIADO DE REG-PERSONAS.JS)
         // ==========================================
         const flagImg = document.getElementById('d-tlf-flag-img');
         const codeText = document.getElementById('d-tlf-code-text');
         const countryText = document.getElementById('d-tlf-country-text');
 
+        // ✅ MAPEO COMPLETO DE PAÍSES (igual que reg-personas.js)
         const isoMap = {
             "Afganistán":"af","Albania":"al","Alemania":"de","Andorra":"ad","Angola":"ao",
             "Antigua y Barbuda":"ag","Arabia Saudita":"sa","Argelia":"dz","Argentina":"ar",
-            "Armenia":"am","Aruba":"aw","Australia":"au","Austria":"at","Azerbaiyán":"az",
-            "Bahamas":"bs","Baréin":"bh","Bangladés":"bd","Barbados":"bb","Bélgica":"be",
-            "Belice":"bz","Benín":"bj","Bermudas":"bm","Bielorrusia":"by","Birmania":"mm",
-            "Bolivia":"bo","Bosnia y Herzegovina":"ba","Botsuana":"bw","Brasil":"br",
-            "Brunéi":"bn","Bulgaria":"bg","Burkina Faso":"bf","Burundi":"bi","Bután":"bt",
-            "Cabo Verde":"cv","Camboya":"kh","Camerún":"cm","Canadá":"ca","Catar":"qa",
-            "Rep. Centroafricana":"cf","Chad":"td","Chile":"cl","China":"cn","Chipre":"cy",
-            "Colombia":"co","Comoras":"km","Congo":"cg","Corea del Norte":"kp",
-            "Corea del Sur":"kr","Costa de Marfil":"ci","Costa Rica":"cr","Croacia":"hr",
-            "Cuba":"cu","Curazao":"cw","Dinamarca":"dk","Dominica":"dm","Ecuador":"ec",
-            "Egipto":"eg","El Salvador":"sv","Emiratos Árabes":"ae","Eritrea":"er",
-            "Eslovaquia":"sk","Eslovenia":"si","España":"es","Estados Unidos":"us",
-            "Estonia":"ee","Etiopía":"et","Filipinas":"ph","Finlandia":"fi","Fiyi":"fj",
-            "Francia":"fr","Gabón":"ga","Gambia":"gm","Georgia":"ge","Ghana":"gh",
-            "Gibraltar":"gi","Granada":"gd","Grecia":"gr","Groenlandia":"gl",
-            "Guadalupe":"gp","Guam":"gu","Guatemala":"gt","Guayana Francesa":"gf",
-            "Guinea":"gn","Guinea Ecuatorial":"gq","Guinea-Bisáu":"gw","Guyana":"gy",
-            "Haití":"ht","Honduras":"hn","Hong Kong":"hk","Hungría":"hu","India":"in",
-            "Indonesia":"id","Irak":"iq","Irán":"ir","Irlanda":"ie","Isla de Man":"im",
-            "Islas Feroe":"fo","Islas Salomón":"sb","Israel":"il","Italia":"it",
-            "Jamaica":"jm","Japón":"jp","Jordania":"jo","Kazajistán":"kz","Kenia":"ke",
-            "Kirguistán":"kg","Kiribati":"ki","Kuwait":"kw","Laos":"la","Letonia":"lv",
-            "Líbano":"lb","Lesoto":"ls","Liberia":"lr","Libia":"ly","Liechtenstein":"li",
-            "Lituania":"lt","Luxemburgo":"lu","Macao":"mo","Macedonia del Norte":"mk",
-            "Madagascar":"mg","Malasia":"my","Malaui":"mw","Maldivas":"mv","Malí":"ml",
-            "Malta":"mt","Marruecos":"ma","Martinica":"mq","Mauricio":"mu",
-            "Mauritania":"mr","Mayotte":"yt","México":"mx","Micronesia":"fm",
-            "Moldavia":"md","Mónaco":"mc","Mongolia":"mn","Montenegro":"me",
-            "Montserrat":"ms","Mozambique":"mz","Namibia":"na","Nauru":"nr","Nepal":"np",
-            "Nicaragua":"ni","Níger":"ne","Nigeria":"ng","Niue":"nu","Noruega":"no",
-            "Nueva Caledonia":"nc","Nueva Zelanda":"nz","Omán":"om","Países Bajos":"nl",
-            "Pakistán":"pk","Palaos":"pw","Palestina":"ps","Panamá":"pa",
-            "Papúa Nueva Guinea":"pg","Paraguay":"py","Perú":"pe","Polinesia Francesa":"pf",
-            "Polonia":"pl","Portugal":"pt","Reino Unido":"gb","Puerto Rico":"pr",
-            "Rep. Checa":"cz","Reunión":"re","Ruanda":"rw","Rumania":"ro","Rusia":"ru",
-            "Samoa":"ws","San Marino":"sm","Santa Lucía":"lc","Santo Tomé y Príncipe":"st",
-            "San Vicente y las Granadinas":"vc","Senegal":"sn","Serbia":"rs",
-            "Seychelles":"sc","Sierra Leona":"sl","Singapur":"sg","Siria":"sy",
-            "Somalia":"so","Sudáfrica":"za","Sudán":"sd","Sudán del Sur":"ss",
+            "Armenia":"am","Australia":"au","Austria":"at","Azerbaiyán":"az","Bahamas":"bs",
+            "Baréin":"bh","Bangladés":"bd","Barbados":"bb","Bélgica":"be","Belice":"bz",
+            "Benín":"bj","Bielorrusia":"by","Birmania":"mm","Bolivia":"bo","Bosnia y Herzegovina":"ba",
+            "Botsuana":"bw","Brasil":"br","Brunéi":"bn","Bulgaria":"bg","Burkina Faso":"bf",
+            "Burundi":"bi","Bután":"bt","Cabo Verde":"cv","Camboya":"kh","Camerún":"cm",
+            "Canadá":"ca","Catar":"qa","Rep. Centroafricana":"cf","Chad":"td","Rep. Checa":"cz",
+            "Chile":"cl","China":"cn","Chipre":"cy","Colombia":"co","Comoras":"km",
+            "Congo (Rep.)":"cg","Congo (R.D.)":"cd","Corea del Norte":"kp","Corea del Sur":"kr",
+            "Costa de Marfil":"ci","Costa Rica":"cr","Croacia":"hr","Cuba":"cu","Dinamarca":"dk",
+            "Dominica":"dm","Ecuador":"ec","Egipto":"eg","El Salvador":"sv",
+            "Emiratos Árabes":"ae","Eritrea":"er","Eslovaquia":"sk","Eslovenia":"si","España":"es",
+            "Estados Unidos":"us","Estonia":"ee","Etiopía":"et","Filipinas":"ph","Finlandia":"fi",
+            "Fiyi":"fj","Francia":"fr","Gabón":"ga","Gambia":"gm","Georgia":"ge","Ghana":"gh",
+            "Granada":"gd","Grecia":"gr","Guatemala":"gt","Guinea":"gn","Guinea Ecuatorial":"gq",
+            "Guinea-Bisáu":"gw","Guyana":"gy","Haití":"ht","Honduras":"hn","Hungría":"hu",
+            "India":"in","Indonesia":"id","Irak":"iq","Irán":"ir","Irlanda":"ie","Islandia":"is",
+            "Israel":"il","Italia":"it","Jamaica":"jm","Japón":"jp","Jordania":"jo",
+            "Kazajistán":"kz","Kenia":"ke","Kirguistán":"kg","Kiribati":"ki","Kuwait":"kw",
+            "Laos":"la","Lesoto":"ls","Letonia":"lv","Líbano":"lb","Liberia":"lr","Libia":"ly",
+            "Liechtenstein":"li","Lituania":"lt","Luxemburgo":"lu","Macedonia del Norte":"mk",
+            "Madagascar":"mg","Malasia":"my","Malaui":"mw","Maldivas":"mv","Malí":"ml","Malta":"mt",
+            "Marruecos":"ma","Mauricio":"mu","Mauritania":"mr","México":"mx","Micronesia":"fm",
+            "Moldavia":"md","Mónaco":"mc","Mongolia":"mn","Montenegro":"me","Mozambique":"mz",
+            "Namibia":"na","Nauru":"nr","Nepal":"np","Nicaragua":"ni","Níger":"ne","Nigeria":"ng",
+            "Nueva Zelanda":"nz","Noruega":"no","Omán":"om","Países Bajos":"nl","Pakistán":"pk",
+            "Palaos":"pw","Palestina":"ps","Panamá":"pa","Papúa Nueva Guinea":"pg","Paraguay":"py",
+            "Perú":"pe","Polonia":"pl","Portugal":"pt","Reino Unido":"gb","Puerto Rico":"pr",
+            "Ruanda":"rw","Rumania":"ro","Rusia":"ru","Samoa":"ws","San Marino":"sm",
+            "Santa Lucía":"lc","Santo Tomé y Príncipe":"st","San Vicente y las Granadinas":"vc",
+            "Senegal":"sn","Serbia":"rs","Seychelles":"sc","Sierra Leona":"sl","Singapur":"sg",
+            "Siria":"sy","Somalia":"so","Sudáfrica":"za","Sudán":"sd","Sudán del Sur":"ss",
             "Suecia":"se","Suiza":"ch","Surinam":"sr","Esuatini":"sz","Tayikistán":"tj",
-            "Tanzania":"tz","Tailandia":"th","Timor Oriental":"tl","Togo":"tg",
-            "Tonga":"to","Trinidad y Tobago":"tt","Túnez":"tn","Turquía":"tr",
-            "Turkmenistán":"tm","Tuvalu":"tv","Ucrania":"ua","Uganda":"ug","Uruguay":"uy",
-            "Uzbekistán":"uz","Vanuatu":"vu","Vaticano":"va","Venezuela":"ve",
-            "Vietnam":"vn","Wallis y Futuna":"wf","Yemen":"ye","Yibuti":"dj",
+            "Tanzania":"tz","Tailandia":"th","Timor Oriental":"tl","Togo":"tg","Tonga":"to",
+            "Trinidad y Tobago":"tt","Túnez":"tn","Turquía":"tr","Turkmenistán":"tm","Tuvalu":"tv",
+            "Ucrania":"ua","Uganda":"ug","Uruguay":"uy","Uzbekistán":"uz","Vanuatu":"vu",
+            "Vaticano":"va","Venezuela":"ve","Vietnam":"vn","Yemen":"ye","Yibuti":"dj",
             "Zambia":"zm","Zimbabue":"zw"
         };
 
-        if (nativeSelect && displayBox && optionsBox) {
-            console.log("✅ Generando dropdown de banderas...");
+        // ✅ LÓGICA EXACTA DE REG-PERSONAS.JS (FUNCIONA PERFECTAMENTE)
+        if (optionsBox && nativeSelect && displayBox) {
+            console.log("✅ Generando dropdown de banderas (lógica reg-personas.js)...");
+            
+            // Limpiar opciones previas
+            optionsBox.innerHTML = '';
 
-            function renderOptions(filterText = '') {
-                optionsBox.innerHTML = '';
-
-                if (!optionsBox.querySelector('.phone-search-input')) {
-                    const searchInput = document.createElement('input');
-                    searchInput.type = 'text';
-                    searchInput.className = 'phone-search-input';
-                    searchInput.placeholder = 'Buscar país...';
-                    searchInput.addEventListener('input', (e) => {
-                        e.stopPropagation();
-                        renderOptions(e.target.value.toLowerCase());
-                    });
-                    optionsBox.appendChild(searchInput);
-                }
-
-                let opcionesGeneradas = 0;
-                Array.from(nativeSelect.options).forEach(opt => {
-                    if (!opt.value) return;
-                    if (filterText && !opt.text.toLowerCase().includes(filterText) && !opt.value.includes(filterText)) {
-                        return;
-                    }
-
-                    let iso = isoMap[opt.text] || 'xx';
-                    const div = document.createElement('div');
-                    div.className = 'phone-option';
-                    div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;" onerror="this.src='https://flagcdn.com/w20/xx.png'"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.85rem;">${opt.text}</span>`;
-                    div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:0.15s;';
-                    div.onmouseenter = () => div.style.background = '#f8fafc';
-                    div.onmouseleave = () => div.style.background = '';
-                    div.addEventListener('click', () => {
-                        nativeSelect.value = opt.value;
-                        flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
-                        codeText.textContent = opt.value;
-                        countryText.textContent = opt.text;
-                        optionsBox.style.display = 'none';
-                        const search = optionsBox.querySelector('.phone-search-input');
-                        if (search) search.value = '';
-                    });
-                    optionsBox.appendChild(div);
-                    opcionesGeneradas++;
+            // Renderizar todas las opciones del select nativo
+            Array.from(nativeSelect.options).forEach(opt => {
+                if (!opt.value) return;
+                
+                // Buscar código ISO del país
+                const iso = isoMap[opt.text] || opt.value.replace('+','').toLowerCase();
+                
+                const div = document.createElement('div');
+                div.className = 'phone-option';
+                div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;" onerror="this.src='https://flagcdn.com/w20/xx.png'"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.8rem;">${opt.text}</span>`;
+                div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;';
+                div.onmouseenter = () => div.style.background = '#f8fafc';
+                div.onmouseleave = () => div.style.background = '';
+                
+                div.addEventListener('click', () => {
+                    nativeSelect.value = opt.value;
+                    flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
+                    codeText.textContent = opt.value;
+                    countryText.textContent = opt.text;
+                    optionsBox.style.display = 'none';
                 });
-
-                if (opcionesGeneradas === 0 && filterText) {
-                    const noResult = document.createElement('div');
-                    noResult.className = 'phone-option';
-                    noResult.textContent = 'No se encontraron países';
-                    noResult.style.color = '#94a3b8';
-                    noResult.style.cursor = 'default';
-                    optionsBox.appendChild(noResult);
-                }
-            }
-
-            renderOptions();
-
-            displayBox.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const isHidden = optionsBox.style.display === 'none' || optionsBox.style.display === '';
-                optionsBox.style.display = isHidden ? 'block' : 'none';
-                if (isHidden) {
-                    const search = optionsBox.querySelector('.phone-search-input');
-                    if (search) { search.value = ''; search.focus(); }
-                }
+                
+                optionsBox.appendChild(div);
             });
 
-            document.addEventListener('click', (e) => {
+            // ✅ Click en el display abre/cierra el dropdown
+            displayBox.addEventListener('click', (e) => { 
+                e.stopPropagation(); 
+                optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block'; 
+            });
+
+            // ✅ Click fuera cierra el dropdown
+            document.addEventListener('click', (e) => { 
                 if (!e.target.closest('.phone-dropdown-wrapper')) {
-                    optionsBox.style.display = 'none';
+                    optionsBox.style.display = 'none'; 
                 }
             });
         }
+
+        // ✅ Configurar valores iniciales por defecto (Venezuela)
+        if (nativeSelect) nativeSelect.value = '+58';
+        if (flagImg) flagImg.src = 'https://flagcdn.com/w20/ve.png';
+        if (codeText) codeText.textContent = '+58';
+        if (countryText) countryText.textContent = 'Venezuela';
 
         // Cargar el próximo número al iniciar
         actualizarProximoNumero();
 
         // ==========================================
-        // ENVÍO DEL FORMULARIO (CON LOGS INTEGRADOS)
+        // ENVÍO DEL FORMULARIO (CON LOGS)
         // ==========================================
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -494,7 +464,6 @@ window.initRegDenuncias = function() {
                     const nombreDenunciante = `${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}`.trim() || 'No especificado';
                     const telefonoCompleto = tlfPais && tlfNum ? `${tlfPais} ${tlfNum}` : (tlfNum || 'N/A');
 
-                    // Contar documentos subidos
                     let totalDocs = 0;
                     Object.values(docsUnicosUrls).forEach(v => { if (v) totalDocs++; });
                     Object.values(docsMultiplesUrls).forEach(arr => { if (Array.isArray(arr)) totalDocs += arr.length; });
@@ -539,10 +508,11 @@ window.initRegDenuncias = function() {
                 docsUnicos.forEach(d => toggleDocField(d.id, false));
                 docsMultiples.forEach(d => toggleDocField(d.id, false));
 
-                if (nativeSelect) nativeSelect.value = '';
-                if (flagImg) flagImg.src = 'https://flagcdn.com/w20/xx.png';
-                if (codeText) codeText.textContent = '+XX';
-                if (countryText) countryText.textContent = 'País';
+                // ✅ Resetear teléfono a Venezuela por defecto
+                if (nativeSelect) nativeSelect.value = '+58';
+                if (flagImg) flagImg.src = 'https://flagcdn.com/w20/ve.png';
+                if (codeText) codeText.textContent = '+58';
+                if (countryText) countryText.textContent = 'Venezuela';
 
                 actualizarProximoNumero();
 
