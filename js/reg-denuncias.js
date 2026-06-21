@@ -174,73 +174,117 @@ if (window._regDenunciasInit) {
 
             actualizarProximoNumero();
 
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                if (!form.checkValidity()) { form.reportValidity(); return; }
-                if (!window.supabaseClient) { alert("❌ Supabase no inicializado."); return; }
+          form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+    if (!window.supabaseClient) { alert("❌ Supabase no inicializado."); return; }
 
-                btn.disabled = true; btn.textContent = '⏳ Registrando...';
-                if (msg) msg.style.display = 'none';
-                if (loadingOverlay) loadingOverlay.classList.add('active');
+    btn.disabled = true; btn.textContent = '⏳ Registrando...';
+    if (msg) msg.style.display = 'none';
+    if (loadingOverlay) loadingOverlay.classList.add('active');
 
-                try {
-                    const bucket = window.supabaseClient.storage.from('denuncias_documentos');
-                    const { data: { user } } = await window.supabaseClient.auth.getUser();
-                    if (!user) throw new Error('Debe iniciar sesión.');
+    try {
+        const bucket = window.supabaseClient.storage.from('denuncias_documentos');
+        const { data: { user } } = await window.supabaseClient.auth.getUser();
+        if (!user) throw new Error('Debe iniciar sesión.');
 
-                    const uid = user.id; const ts = Date.now();
+        const uid = user.id; const ts = Date.now();
 
-                    const docsUnicosUrls = {};
-                    for (const doc of docsUnicos) {
-                        const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-                        if (radio?.value === 'si' && archivosUnicos[doc.id]) {
-                            const path = `${uid}/${ts}_${doc.id}.pdf`;
-                            const { error } = await bucket.upload(path, archivosUnicos[doc.id], { contentType: 'application/pdf' });
-                            if (error) throw new Error(`Error subiendo ${doc.label}`);
-                            docsUnicosUrls[doc.id] = bucket.getPublicUrl(path).data.publicUrl;
-                        } else docsUnicosUrls[doc.id] = null;
-                    }
+        const { data: ultima } = await window.supabaseClient.from('denuncias').select('numero_denuncia').order('numero_denuncia', { ascending: false }).limit(1).maybeSingle();
+        let nuevoNumero = 'CPNB-00000001';
+        if (ultima && ultima.numero_denuncia) {
+            const p = ultima.numero_denuncia.split('-');
+            if (p.length === 2) nuevoNumero = `CPNB-${(parseInt(p[1], 10) + 1).toString().padStart(8, '0')}`;
+        }
 
-                    const docsMultiplesUrls = {};
-                    for (const doc of docsMultiples) {
-                        const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
-                        if (radio?.value === 'si' && archivosMultiples[doc.id].length > 0) {
-                            const urls = [];
-                            for (let i = 0; i < archivosMultiples[doc.id].length; i++) {
-                                const path = `${uid}/${ts}_${doc.id}_${i}.pdf`;
-                                const { error } = await bucket.upload(path, archivosMultiples[doc.id][i], { contentType: 'application/pdf' });
-                                if (error) throw new Error(`Error subiendo ${doc.label}[${i}]`);
-                                urls.push(bucket.getPublicUrl(path).data.publicUrl);
-                            }
-                            docsMultiplesUrls[doc.id] = urls;
-                        } else docsMultiplesUrls[doc.id] = null;
-                    }
+        const docsUnicosUrls = {};
+        for (const doc of docsUnicos) {
+            const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+            if (radio?.value === 'si' && archivosUnicos[doc.id]) {
+                const path = `${uid}/${ts}_${doc.id}.pdf`;
+                const { error } = await bucket.upload(path, archivosUnicos[doc.id], { contentType: 'application/pdf' });
+                if (error) throw new Error(`Error subiendo ${doc.label}`);
+                docsUnicosUrls[doc.id] = bucket.getPublicUrl(path).data.publicUrl;
+            } else docsUnicosUrls[doc.id] = null;
+        }
 
-                    const tlfPais = document.getElementById('d_tlf_pais')?.value || null;
-                    const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '') || null;
-                    const data = {
-                        estacion_policial: document.getElementById('d_estacion')?.value,
-                        primer_nombre: document.getElementById('d_nombre1')?.value.trim(),
-                        segundo_nombre: document.getElementById('d_nombre2')?.value.trim() || null,
-                        primer_apellido: document.getElementById('d_apellido1')?.value.trim(),
-                        segundo_apellido: document.getElementById('d_apellido2')?.value.trim() || null,
-                        cedula: document.getElementById('d_cedula')?.value.trim() || null,
-                        tlf_pais: tlfPais,
-                        tlf_numero: tlfNum,
-                        direccion: document.getElementById('d_direccion')?.value.trim() || null,
-                        motivo_denuncia: document.getElementById('d_motivo')?.value.trim(),
-                        oficio_remision: docsUnicosUrls.oficio_remision,
-                        acta_denuncia: docsUnicosUrls.acta_denuncia,
-                        medida_proteccion: docsUnicosUrls.medida_proteccion,
-                        acta_entrevista: docsMultiplesUrls.acta_entrevista,
-                        datos_filiatorios: docsMultiplesUrls.datos_filiatorios,
-                        evidencias: docsMultiplesUrls.evidencias,
-                        solicitud_senamecf: docsMultiplesUrls.solicitud_senamecf,
-                        observaciones: document.getElementById('d_observaciones')?.value.trim() || null,
-                        registrado_por: uid,
-                        email_registrante: user.email
-                    };
+        const docsMultiplesUrls = {};
+        for (const doc of docsMultiples) {
+            const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
+            if (radio?.value === 'si' && archivosMultiples[doc.id].length > 0) {
+                const urls = [];
+                for (let i = 0; i < archivosMultiples[doc.id].length; i++) {
+                    const path = `${uid}/${ts}_${doc.id}_${i}.pdf`;
+                    const { error } = await bucket.upload(path, archivosMultiples[doc.id][i], { contentType: 'application/pdf' });
+                    if (error) throw new Error(`Error subiendo ${doc.label}[${i}]`);
+                    urls.push(bucket.getPublicUrl(path).data.publicUrl);
+                }
+                docsMultiplesUrls[doc.id] = urls;
+            } else docsMultiplesUrls[doc.id] = null;
+        }
 
+        const tlfPais = document.getElementById('d_tlf_pais')?.value || null;
+        const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '') || null;
+        const data = {
+            numero_denuncia: nuevoNumero,
+            estacion_policial: document.getElementById('d_estacion')?.value,
+            primer_nombre: document.getElementById('d_nombre1')?.value.trim(),
+            segundo_nombre: document.getElementById('d_nombre2')?.value.trim() || null,
+            primer_apellido: document.getElementById('d_apellido1')?.value.trim(),
+            segundo_apellido: document.getElementById('d_apellido2')?.value.trim() || null,
+            cedula: document.getElementById('d_cedula')?.value.trim() || null,
+            tlf_pais: tlfPais,
+            tlf_numero: tlfNum,
+            direccion: document.getElementById('d_direccion')?.value.trim() || null,
+            motivo_denuncia: document.getElementById('d_motivo')?.value.trim(),
+            oficio_remision: docsUnicosUrls.oficio_remision,
+            acta_denuncia: docsUnicosUrls.acta_denuncia,
+            medida_proteccion: docsUnicosUrls.medida_proteccion,
+            acta_entrevista: docsMultiplesUrls.acta_entrevista,
+            datos_filiatorios: docsMultiplesUrls.datos_filiatorios,
+            evidencias: docsMultiplesUrls.evidencias,
+            solicitud_senamecf: docsMultiplesUrls.solicitud_senamecf,
+            observaciones: document.getElementById('d_observaciones')?.value.trim() || null,
+            registrado_por: uid,
+            email_registrante: user.email
+        };
+
+        const { data: insertedData, error } = await window.supabaseClient.from('denuncias').insert([data]).select('id').single();
+        if (error) throw error;
+
+        // ✅ UN SOLO LOG CON DATOS CORRECTOS
+        const nombreComp = `${data.primer_nombre} ${data.segundo_nombre || ''} ${data.primer_apellido} ${data.segundo_apellido || ''}`.trim();
+        
+        if (typeof window.registrarLog === 'function') {
+            await window.registrarLog('CREAR', 'DENUNCIAS', {
+                numero_denuncia: nuevoNumero,
+                estacion: data.estacion_policial,
+                cedula: data.cedula || 'N/A',
+                nombre_completo: nombreComp || 'N/A',
+                estatus: 'Registro'
+            }, insertedData.id);
+        }
+
+        if (msg) { msg.textContent = `✅ Denuncia registrada. N°: ${nuevoNumero}`; msg.className = 'msg success'; msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 5000); }
+
+        form.reset();
+        if (fechaInput) fechaInput.value = new Date().toLocaleString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        docsUnicos.forEach(d => toggleDocField(d.id, false));
+        docsMultiples.forEach(d => toggleDocField(d.id, false));
+        if (nativeSelect) nativeSelect.value = '+58';
+        if (flagImg) flagImg.src = 'https://flagcdn.com/w20/ve.png';
+        if (codeText) codeText.textContent = '+58';
+        if (countryText) countryText.textContent = 'Venezuela';
+        actualizarProximoNumero();
+
+    } catch (err) {
+        console.error('Error:', err);
+        if (msg) { msg.textContent = '❌ ' + err.message; msg.className = 'msg error'; msg.style.display = 'block'; }
+    } finally {
+        btn.disabled = false; btn.textContent = '✅ Registrar Denuncia';
+        if (loadingOverlay) loadingOverlay.classList.remove('active');
+    }
+});
                     // ==========================================
                     // 🔹 INSERCIÓN CON REINTENTOS (Anti-Duplicados) - ÚNICO INSERT
                     // ==========================================
