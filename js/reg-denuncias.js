@@ -284,13 +284,13 @@ if (window._regDenunciasInit) {
                     // ✅ LOG SIMPLIFICADO (Solo 4 campos + estatus)
                     const nombreComp = `${data.primer_nombre} ${data.segundo_nombre || ''} ${data.primer_apellido} ${data.segundo_apellido || ''}`.trim();
                     
-                    await logDenuncias('REGISTRAR', {
-                        numero_denuncia: nuevoNumero,
-                        estacion: data.estacion_policial,
-                        cedula: data.cedula || 'N/A',
-                        nombre_completo: nombreComp || 'N/A',
-                        estatus: 'Registrado'
-                    }, insertedData.id);
+                 await logDenuncias('CREAR', {
+    numero_denuncia: nuevoNumero,
+    estacion: data.estacion_policial,
+    cedula: data.cedula || 'N/A',
+    nombre_completo: nombreComp || 'N/A',
+    estatus: 'Registrado'
+}, insertedData.id);
 
                     if (msg) { msg.textContent = `✅ Denuncia registrada. N°: ${nuevoNumero}`; msg.className = 'msg success'; msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 5000); }
 
@@ -319,10 +319,6 @@ if (window._regDenunciasInit) {
             });
             console.log("✅ Módulo reg-denuncias.js inicializado correctamente");
             
-            logDenuncias('INICIAR', {
-                mensaje: 'Usuario abrió el módulo de registro de denuncias',
-                hora: new Date().toLocaleString('es-VE')
-            });
         }
         // 🔹 REFUERZO DE EVENTO CLICK (Por si el DOM dinámico lo pierde)
 setTimeout(() => {
