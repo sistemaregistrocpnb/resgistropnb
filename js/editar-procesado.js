@@ -615,7 +615,7 @@ window.initEditarProcesado = function() {
                     msgBusqueda.style.display = 'none';
                     procesadoActual = null;
                     form.reset();
-                    window.scrollTo({ top: 0, behavior: 'smooth');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 3000);
             } catch (err) {
                 mostrarMsg(msgForm, '❌ Error: ' + err.message, 'error');
