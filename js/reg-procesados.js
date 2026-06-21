@@ -1,12 +1,5 @@
 window.initRegProcesados = function() {
     console.log("✅ Módulo reg-procesados.js cargado correctamente.");
-
-    // ==========================================
-    // LISTAS DE DOCUMENTOS
-    // ==========================================
-    // ==========================================
-    // LISTAS DE DOCUMENTOS (CORREGIDO: Sin 'entrevista' en Únicos)
-    // ==========================================
     const docsUnicos = [
         { id: 'portada', label: '📑 Portada' },
         { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
@@ -31,10 +24,6 @@ window.initRegProcesados = function() {
     ];
     const archivosMultiples = {};
     docsMultiples.forEach(d => archivosMultiples[d.id] = []);
-
-    // ==========================================
-    // GENERAR DOCUMENTOS EN DOM
-    // ==========================================
     const contenedorUnicos = document.getElementById('docs-unicos-container');
     if (contenedorUnicos) {
         docsUnicos.forEach(doc => {
@@ -82,9 +71,6 @@ window.initRegProcesados = function() {
         });
     }
 
-    // ==========================================
-    // FUNCIONES GLOBALES DE UI
-    // ==========================================
     window.toggleDocField = function(campo, mostrar) {
         const area = document.getElementById(`upload-${campo}`);
         if (area) area.classList.toggle('active', mostrar);
@@ -160,9 +146,6 @@ window.initRegProcesados = function() {
         actualizarListaArchivos(campo, max);
     };
 
-    // ==========================================
-    // OVERLAY DE CARGA
-    // ==========================================
     const loadingOverlay = document.getElementById('loading-overlay');
     function mostrarOverlay(mensaje = '⏳ Procesando y subiendo archivos...') {
         if (loadingOverlay) {
@@ -177,9 +160,6 @@ window.initRegProcesados = function() {
         if (loadingOverlay) loadingOverlay.classList.remove('active');
     }
 
-    // ==========================================
-    // REFERENCIAS DOM
-    // ==========================================
     const btnBuscar = document.getElementById('proc_btn_buscar');
     const inputBusqueda = document.getElementById('proc_busqueda_input');
     const msgBusqueda = document.getElementById('proc_msg_busqueda');
@@ -200,9 +180,6 @@ window.initRegProcesados = function() {
         el.style.display = 'block';
     };
 
-    // ==========================================
-    // DETECTAR COINCIDENCIAS
-    // ==========================================
     function detectarCoincidencias(reg, val, tabla) {
         const campos = [];
         const v = val.trim().toUpperCase();
@@ -213,9 +190,6 @@ window.initRegProcesados = function() {
         return campos;
     }
 
-    // ==========================================
-    // BÚSQUEDA EN LAS 4 TABLAS
-    // ==========================================
     async function buscarEnTodasLasTablas(valor) {
         const resultados = [];
         const val = valor.trim().toUpperCase();
@@ -241,8 +215,7 @@ window.initRegProcesados = function() {
                     });
                 });
             }
-
-            // 2. REGISTRO_MOTOS
+            
             const { data: motos, error: errMoto } = await window.supabaseClient
                 .from('registro_motos')
                 .select('*')
@@ -262,8 +235,6 @@ window.initRegProcesados = function() {
                     });
                 });
             }
-
-            // 3. REGISTRO_AUTOMOVILES
             const { data: autos, error: errAuto } = await window.supabaseClient
                 .from('registro_automoviles')
                 .select('*')
@@ -284,7 +255,6 @@ window.initRegProcesados = function() {
                 });
             }
 
-            // 4. REGISTRO_VINCULADO
             const { data: vinculados, error: errVinc } = await window.supabaseClient
                 .from('registro_vinculado')
                 .select('*')
@@ -312,9 +282,6 @@ window.initRegProcesados = function() {
         }
     }
 
-    // ==========================================
-    // MOSTRAR PANEL DE SELECCIÓN
-    // ==========================================
     function mostrarPanelSeleccion(resultados, valorBuscado) {
         selectionList.innerHTML = '';
         resultCount.textContent = resultados.length;
@@ -350,9 +317,6 @@ window.initRegProcesados = function() {
         msgBusqueda.style.display = 'none';
     }
 
-    // ==========================================
-    // SELECCIONAR REGISTRO Y MOSTRAR DATOS
-    // ==========================================
     function seleccionarRegistro(resultado) {
         registroSeleccionado = resultado;
         selectionPanel.style.display = 'none';
@@ -397,9 +361,6 @@ window.initRegProcesados = function() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // ==========================================
-    // LISTENER BÚSQUEDA
-    // ==========================================
     if (btnBuscar && inputBusqueda) {
         btnBuscar.addEventListener('click', async () => {
             const val = inputBusqueda.value.trim();
@@ -442,9 +403,6 @@ window.initRegProcesados = function() {
         });
     }
 
-    // ==========================================
-    // ENVÍO DEL FORMULARIO CON LOGS CORREGIDOS
-    // ==========================================
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -455,7 +413,7 @@ window.initRegProcesados = function() {
             if (!tipoDelito) {
                 return mostrarMsg(msgForm, '⚠️ El tipo de delito es obligatorio.', 'error');
             }
-            // Validar documentos únicos
+
             for (const doc of docsUnicos) {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                 if (radio && radio.value === 'si') {
@@ -465,7 +423,7 @@ window.initRegProcesados = function() {
                     }
                 }
             }
-            // Validar documentos múltiples
+ 
             for (const doc of docsMultiples) {
                 const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
                 if (radio && radio.value === 'si') {
@@ -474,13 +432,13 @@ window.initRegProcesados = function() {
                     }
                 }
             }
-            // MOSTRAR OVERLAY DE CARGA
+
             mostrarOverlay('⏳ Procesando y subiendo archivos...');
             try {
                 const bucket = window.supabaseClient.storage.from('procesados_documentos');
                 const uid = sessionStorage.getItem('pnb_user_id') || 'user';
                 const ts = Date.now();
-                // Subir PDF único
+
                 const subirPDF = async (fileInputId, suffix) => {
                     const fileInput = document.getElementById(fileInputId);
                     if (fileInput && fileInput.files && fileInput.files[0]) {
@@ -492,7 +450,7 @@ window.initRegProcesados = function() {
                     }
                     return null;
                 };
-                // Subir PDFs múltiples
+
                 const subirPDFsMultiples = async (campo) => {
                     const urls = [];
                     for (let i = 0; i < archivosMultiples[campo].length; i++) {
@@ -549,19 +507,18 @@ window.initRegProcesados = function() {
                 } else {
                     dataToInsert.inspecciones_tecnicas = [];
                 }
-                // 1. Insertar en registro_procesados
+
                 const { error: insErr } = await window.supabaseClient
                     .from('registro_procesados')
                     .insert([dataToInsert]);
                 if (insErr) throw new Error(`Error al registrar procesado: ${insErr.message}`);
-                // 2. Cambiar estatus del registro original
+
                 const { error: updErr } = await window.supabaseClient
                     .from(registroSeleccionado.origen)
                     .update({ estatus: 'Procesado' })
                     .eq('id', registroSeleccionado.id);
                 if (updErr) throw new Error(`Error al cambiar estatus: ${updErr.message}`);
 
-                // 🔹 LOG CENTRALIZADO USANDO UTILS.JS (SIN EDAD, SIN PROCESADO_POR)
                 if (typeof window.registrarLog === 'function' && registroSeleccionado?.id) {
                     const logDetalles = {
                         tipo_delito: tipoDelito,
@@ -571,7 +528,7 @@ window.initRegProcesados = function() {
                         observaciones: document.getElementById('proc_observaciones').value.trim() || null
                     };
 
-                    // Agregar datos según el tipo de registro
+
                     if (registroSeleccionado.tipoRegistro === 'persona') {
                         logDetalles.tipo = 'Persona';
                         logDetalles.cedula = dataOriginal.cedula || 'N/A';
@@ -604,7 +561,6 @@ window.initRegProcesados = function() {
                     console.log('✅ Log de procesamiento registrado exitosamente');
                 }
 
-                // OCULTAR OVERLAY - ÉXITO
                 ocultarOverlay();
                 mostrarMsg(msgForm, '✅ Procesado registrado exitosamente. El estatus del registro original cambió a "Procesado".', 'success');
                 setTimeout(() => {
@@ -623,7 +579,6 @@ window.initRegProcesados = function() {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 5000);
             } catch (err) {
-                // OCULTAR OVERLAY - ERROR
                 ocultarOverlay();
                 mostrarMsg(msgForm, '❌ Error: ' + err.message, 'error');
             }
