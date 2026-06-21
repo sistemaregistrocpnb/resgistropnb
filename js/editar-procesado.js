@@ -52,9 +52,7 @@ window.initEditarProcesado = function() {
     const contenedorMultiples = document.getElementById('edit-docs-multiples-container');
     const loadingOverlay = document.getElementById('edit-loading-overlay');
     
-    if (!btnBuscar || !inputBusqueda) {
-        return;
-    }
+    if (!btnBuscar || !inputBusqueda) return;
     
     const mostrarMsg = (el, txt, type) => {
         if (!el) return;
@@ -71,9 +69,7 @@ window.initEditarProcesado = function() {
             div.className = 'doc-item';
             div.id = `doc-item-${doc.id}`;
             div.innerHTML = `
-                <div class="doc-header">
-                    <label>${doc.label}</label>
-                </div>
+                <div class="doc-header"><label>${doc.label}</label></div>
                 <div id="current-${doc.id}"></div>
                 <div class="doc-upload-area" id="upload-${doc.id}">
                     <input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="mostrarNuevoArchivo('${doc.id}', this)">
@@ -110,10 +106,10 @@ window.initEditarProcesado = function() {
     generarDocsUnicos();
     generarDocsMultiples();
     
+    // 🔹 AL SELECCIONAR UN NUEVO ARCHIVO (Aún no se guarda, por ende NO hay botón Ver)
     window.mostrarNuevoArchivo = function(docId, input) {
         const statusContainer = document.getElementById(`status-${docId}`);
         const currentDiv = document.getElementById(`current-${docId}`);
-        
         if (!statusContainer) return;
         
         if (input.files && input.files[0]) {
@@ -129,14 +125,14 @@ window.initEditarProcesado = function() {
             `;
             
             if (currentDiv) {
+                // 🔹 NO SE RENDERIZA EL BOTÓN VER PORQUE AÚN NO ESTÁ GUARDADO EN EL SERVIDOR
                 currentDiv.innerHTML = `
                     <div class="doc-current">
                         <div class="file-info">
                             <span>📄</span>
-                            <span style="color: #059669;">🆕 ${input.files[0].name} (Nuevo)</span>
+                            <span style="color: #059669;">🆕 ${input.files[0].name} (Pendiente de guardar)</span>
                         </div>
                         <div class="actions">
-                            <button type="button" class="btn-view" disabled style="opacity: 0.5; cursor: not-allowed;" title="Se habilitará al guardar">👁️ Ver</button>
                             <button type="button" class="btn-replace" onclick="reemplazarArchivo('${docId}')">🔄 Cambiar</button>
                         </div>
                     </div>
@@ -145,9 +141,11 @@ window.initEditarProcesado = function() {
         }
     };
     
+    // 🔹 AL CANCELAR UN NUEVO ARCHIVO
     window.cancelarNuevo = function(docId) {
         const input = document.getElementById(`file_${docId}`);
         const statusContainer = document.getElementById(`status-${docId}`);
+        const currentDiv = document.getElementById(`current-${docId}`);
         
         if (input) input.value = '';
         if (statusContainer) statusContainer.innerHTML = '';
@@ -155,16 +153,12 @@ window.initEditarProcesado = function() {
         archivosNuevos[docId] = null;
         archivosAEliminar[docId] = false;
         
-        const currentDiv = document.getElementById(`current-${docId}`);
         if (currentDiv && archivosActuales[docId]) {
             const url = archivosActuales[docId];
             const fileName = url.split('/').pop();
             currentDiv.innerHTML = `
                 <div class="doc-current">
-                    <div class="file-info">
-                        <span>📄</span>
-                        <span>${fileName}</span>
-                    </div>
+                    <div class="file-info"><span>📄</span><span>${fileName}</span></div>
                     <div class="actions">
                         <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
                         <button type="button" class="btn-replace" onclick="reemplazarArchivo('${docId}')">🔄 Reemplazar</button>
@@ -173,6 +167,7 @@ window.initEditarProcesado = function() {
                 </div>
             `;
         } else if (currentDiv) {
+            // 🔹 SI NO HABÍA ARCHIVO ORIGINAL, NO SE MUESTRA EL BOTÓN VER
             currentDiv.innerHTML = `
                 <div class="doc-current">
                     <div class="file-info">
@@ -180,7 +175,6 @@ window.initEditarProcesado = function() {
                         <span style="color: #94a3b8;">Sin archivo</span>
                     </div>
                     <div class="actions">
-                        <button type="button" class="btn-view" disabled style="opacity: 0.5; cursor: not-allowed;">👁️ Ver</button>
                         <button type="button" class="btn-replace" onclick="reemplazarArchivo('${docId}')">🔄 Subir Archivo</button>
                     </div>
                 </div>
@@ -191,16 +185,10 @@ window.initEditarProcesado = function() {
     window.agregarNuevosMultiples = function(campo, max) {
         const input = document.getElementById(`file_${campo}`);
         if (!input || !input.files || input.files.length === 0) return;
-        
         const actuales = archivosActuales[campo].length;
         const nuevos = archivosMultiplesNuevos[campo].length;
         const disponibles = max - actuales - nuevos;
-        
-        if (disponibles <= 0) {
-            alert(`Máximo ${max} archivos permitidos en total`);
-            return;
-        }
-        
+        if (disponibles <= 0) return alert(`Máximo ${max} archivos permitidos`);
         let agregados = 0;
         for (const file of input.files) {
             if (agregados >= disponibles) break;
@@ -209,7 +197,6 @@ window.initEditarProcesado = function() {
                 agregados++;
             }
         }
-        
         actualizarListaNuevos(campo, max);
         input.value = '';
     };
@@ -217,9 +204,7 @@ window.initEditarProcesado = function() {
     function actualizarListaNuevos(campo, max) {
         const list = document.getElementById(`new-list-${campo}`);
         const count = document.getElementById(`count-${campo}`);
-        
         if (!list || !count) return;
-        
         list.innerHTML = '';
         archivosMultiplesNuevos[campo].forEach((file, index) => {
             const item = document.createElement('div');
@@ -232,7 +217,6 @@ window.initEditarProcesado = function() {
             `;
             list.appendChild(item);
         });
-        
         count.textContent = `${archivosMultiplesNuevos[campo].length} archivos nuevos por subir`;
     }
     
@@ -241,31 +225,29 @@ window.initEditarProcesado = function() {
         actualizarListaNuevos(campo, docsMultiples.find(d => d.id === campo).max);
     };
     
-    window.verArchivo = function(url) {
-        window.open(url, '_blank');
-    };
+    window.verArchivo = function(url) { window.open(url, '_blank'); };
     
     window.reemplazarArchivo = function(docId) {
         const area = document.getElementById(`upload-${docId}`);
         if (area) {
-            area.classList.toggle('active');
+            area.classList.add('active');
             const input = document.getElementById(`file_${docId}`);
             if (input) input.click();
         }
     };
     
+    // 🔹 AL ELIMINAR UN ARCHIVO ACTUAL
     window.eliminarArchivoActual = function(docId) {
-        if (!confirm('¿Está seguro de eliminar este archivo? Se borrará permanentemente.')) return;
-        
+        if (!confirm('¿Está seguro de eliminar este archivo?')) return;
         archivosAEliminar[docId] = true;
         archivosNuevos[docId] = null;
         archivosActuales[docId] = null;
-        
         const currentDiv = document.getElementById(`current-${docId}`);
         const uploadArea = document.getElementById(`upload-${docId}`);
         const statusContainer = document.getElementById(`status-${docId}`);
         const fileInput = document.getElementById(`file_${docId}`);
         
+        // 🔹 NO SE RENDERIZA EL BOTÓN VER
         if (currentDiv) {
             currentDiv.innerHTML = `
                 <div class="doc-current">
@@ -274,39 +256,31 @@ window.initEditarProcesado = function() {
                         <span style="color: #94a3b8;">Sin archivo</span>
                     </div>
                     <div class="actions">
-                        <button type="button" class="btn-view" disabled style="opacity: 0.5; cursor: not-allowed;">👁️ Ver</button>
                         <button type="button" class="btn-replace" onclick="reemplazarArchivo('${docId}')">🔄 Subir Archivo</button>
                     </div>
                 </div>
             `;
         }
-        
-        if (uploadArea) {
-            uploadArea.classList.add('active');
-        }
-        
+        if (uploadArea) uploadArea.classList.add('active');
         if (fileInput) fileInput.value = '';
         if (statusContainer) statusContainer.innerHTML = '';
     };
     
     window.eliminarArchivoMultipleActual = function(campo, index) {
         if (!confirm('¿Está seguro de eliminar este archivo?')) return;
-        
         const url = archivosActuales[campo][index];
         archivosMultiplesEliminados[campo].push(url);
         archivosActuales[campo].splice(index, 1);
-        
         renderizarArchivosMultiplesActuales(campo);
     };
     
+    // 🔹 RENDERIZAR ARCHIVOS MÚLTIPLES (OCULTANDO BOTÓN VER SI ESTÁ VACÍO)
     function renderizarArchivosMultiplesActuales(campo) {
         const listDiv = document.getElementById(`current-list-${campo}`);
         if (!listDiv) return;
 
         const urls = archivosActuales[campo];
-        const tieneAlgunoValido = urls.some(u => u && typeof u === 'string' && u.trim() !== '');
-        
-        if (!tieneAlgunoValido) {
+        if (urls.length === 0) {
             listDiv.innerHTML = '<p style="color: #64748b; font-size: 0.85rem;">📄 No hay archivos actuales</p>';
             return;
         }
@@ -318,6 +292,7 @@ window.initEditarProcesado = function() {
             item.className = 'file-item-multiple';
 
             if (tieneArchivoValido) {
+                // ✅ HAY URL: Se muestra el botón Ver
                 item.innerHTML = `
                     <span>📄 Archivo ${index + 1}</span>
                     <div class="file-actions">
@@ -326,10 +301,10 @@ window.initEditarProcesado = function() {
                     </div>
                 `;
             } else {
+                // ❌ NO HAY URL (NULL O VACÍO): NO SE MUESTRA EL BOTÓN VER
                 item.innerHTML = `
                     <span style="color: #94a3b8;">📄 Archivo ${index + 1} (Sin archivo)</span>
                     <div class="file-actions">
-                        <button type="button" class="btn-view" disabled style="opacity: 0.5; cursor: not-allowed;">👁️ Ver</button>
                         <button type="button" onclick="eliminarArchivoMultipleActual('${campo}', ${index})">❌</button>
                     </div>
                 `;
@@ -340,68 +315,42 @@ window.initEditarProcesado = function() {
     
     async function cargarProcesado(valor) {
         const val = valor.trim().toUpperCase();
-        
         const { data: dataColumnas, error: errColumnas } = await window.supabaseClient
-            .from('registro_procesados')
-            .select('*')
+            .from('registro_procesados').select('*')
             .or(`identificador_principal.eq.${val},cedula.eq.${val}`)
-            .order('fecha_procesamiento', { ascending: false })
-            .limit(5);
-        
-        if (!errColumnas && dataColumnas && dataColumnas.length > 0) {
-            return dataColumnas;
-        }
+            .order('fecha_procesamiento', { ascending: false }).limit(5);
+        if (!errColumnas && dataColumnas && dataColumnas.length > 0) return dataColumnas;
         
         const { data: dataJson, error: errJson } = await window.supabaseClient
-            .from('registro_procesados')
-            .select('*')
+            .from('registro_procesados').select('*')
             .or(`datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
-            .order('fecha_procesamiento', { ascending: false })
-            .limit(5);
-        
-        if (!errJson && dataJson && dataJson.length > 0) {
-            return dataJson;
-        }
-        
+            .order('fecha_procesamiento', { ascending: false }).limit(5);
+        if (!errJson && dataJson && dataJson.length > 0) return dataJson;
         return [];
     }
     
     function mostrarDatosProcesado(proc) {
         const data = proc.datos_originales || {};
         let html = '';
-        
-        html += `<div class="dato-fila"><span class="dato-label">🆔 ID Procesado:</span><span class="dato-valor">${proc.id}</span></div>`;
-        html += `<div class="dato-fila"><span class="dato-label">📋 Tabla Origen:</span><span class="dato-valor">${proc.tabla_origen}</span></div>`;
+        html += `<div class="dato-fila"><span class="dato-label">🆔 ID:</span><span class="dato-valor">${proc.id}</span></div>`;
+        html += `<div class="dato-fila"><span class="dato-label">📋 Tabla:</span><span class="dato-valor">${proc.tabla_origen}</span></div>`;
         html += `<div class="dato-fila"><span class="dato-label">🔍 Identificador:</span><span class="dato-valor">${proc.identificador_principal || '-'}</span></div>`;
-        
         if (data.cedula) html += `<div class="dato-fila"><span class="dato-label">👤 Cédula:</span><span class="dato-valor">${data.cedula}</span></div>`;
-        
         if (data.primer_nombre) {
             const nombre = `${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}`.trim();
             html += `<div class="dato-fila"><span class="dato-label">👤 Nombre:</span><span class="dato-valor">${nombre}</span></div>`;
         }
-        
         if (data.placa) html += `<div class="dato-fila"><span class="dato-label">🚗 Placa:</span><span class="dato-valor">${data.placa}</span></div>`;
-        
-        html += `<div class="dato-fila"><span class="dato-label">⚖️ Tipo Delito:</span><span class="dato-valor">${proc.tipo_delito || '-'}</span></div>`;
+        html += `<div class="dato-fila"><span class="dato-label">⚖️ Delito:</span><span class="dato-valor">${proc.tipo_delito || '-'}</span></div>`;
         html += `<div class="dato-fila"><span class="dato-label">📅 Fecha:</span><span class="dato-valor">${new Date(proc.created_at).toLocaleString()}</span></div>`;
-        
         datosContenido.innerHTML = html;
         datosPanel.style.display = 'block';
     }
     
+    // 🔹 CARGAR ARCHIVOS EN EL FORMULARIO (OCULTANDO BOTÓN VER SI ESTÁ VACÍO)
     function cargarArchivosEnForm(proc) {
-        docsUnicos.forEach(d => {
-            archivosActuales[d.id] = null;
-            archivosNuevos[d.id] = null;
-            archivosAEliminar[d.id] = false;
-        });
-        
-        docsMultiples.forEach(d => {
-            archivosActuales[d.id] = [];
-            archivosMultiplesNuevos[d.id] = [];
-            archivosMultiplesEliminados[d.id] = [];
-        });
+        docsUnicos.forEach(d => { archivosActuales[d.id] = null; archivosNuevos[d.id] = null; archivosAEliminar[d.id] = false; });
+        docsMultiples.forEach(d => { archivosActuales[d.id] = []; archivosMultiplesNuevos[d.id] = []; archivosMultiplesEliminados[d.id] = []; });
         
         document.getElementById('edit_procesado_id').value = proc.id;
         document.getElementById('edit_tabla_origen').value = proc.tabla_origen;
@@ -419,10 +368,7 @@ window.initEditarProcesado = function() {
                 const fileName = url.split('/').pop();
                 currentDiv.innerHTML = `
                     <div class="doc-current">
-                        <div class="file-info">
-                            <span>📄</span>
-                            <span>${fileName}</span>
-                        </div>
+                        <div class="file-info"><span>📄</span><span>${fileName}</span></div>
                         <div class="actions">
                             <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
                             <button type="button" class="btn-replace" onclick="reemplazarArchivo('${doc.id}')">🔄 Reemplazar</button>
@@ -431,6 +377,7 @@ window.initEditarProcesado = function() {
                     </div>
                 `;
             } else {
+                // 🔹 NO HAY URL VÁLIDA: NO SE RENDERIZA EL BOTÓN VER
                 archivosActuales[doc.id] = null;
                 currentDiv.innerHTML = `
                     <div class="doc-current">
@@ -439,7 +386,6 @@ window.initEditarProcesado = function() {
                             <span style="color: #94a3b8;">Sin archivo</span>
                         </div>
                         <div class="actions">
-                            <button type="button" class="btn-view" disabled style="opacity: 0.5; cursor: not-allowed;">👁️ Ver</button>
                             <button type="button" class="btn-replace" onclick="reemplazarArchivo('${doc.id}')">🔄 Subir Archivo</button>
                         </div>
                     </div>
@@ -457,24 +403,18 @@ window.initEditarProcesado = function() {
     
     btnBuscar.addEventListener('click', async () => {
         const val = inputBusqueda.value.trim();
-        
-        if (val.length < 3) {
-            return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 3 caracteres.', 'error');
-        }
-        
+        if (val.length < 3) return mostrarMsg(msgBusqueda, '⚠️ Ingrese al menos 3 caracteres.', 'error');
         mostrarMsg(msgBusqueda, '🔍 Buscando procesado...', 'success');
         btnBuscar.disabled = true;
         form.style.display = 'none';
         datosPanel.style.display = 'none';
-        
         try {
             const resultados = await cargarProcesado(val);
-            
             if (resultados.length === 0) {
-                mostrarMsg(msgBusqueda, '❌ No se encontró ningún procesado con ese dato.', 'error');
+                mostrarMsg(msgBusqueda, '❌ No se encontró ningún procesado.', 'error');
             } else {
                 procesadoActual = resultados[0];
-                mostrarMsg(msgBusqueda, `✅ ${resultados.length} procesado(s) encontrado(s). Mostrando el más reciente.`, 'success');
+                mostrarMsg(msgBusqueda, `✅ ${resultados.length} procesado(s) encontrado(s).`, 'success');
                 mostrarDatosProcesado(procesadoActual);
                 cargarArchivosEnForm(procesadoActual);
                 form.style.display = 'block';
@@ -488,27 +428,17 @@ window.initEditarProcesado = function() {
     });
     
     inputBusqueda.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            btnBuscar.click();
-        }
+        if (e.key === 'Enter') { e.preventDefault(); btnBuscar.click(); }
     });
     
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            if (!procesadoActual) {
-                return mostrarMsg(msgForm, '❌ Debe buscar un procesado primero.', 'error');
-            }
-            
+            if (!procesadoActual) return mostrarMsg(msgForm, '❌ Debe buscar un procesado primero.', 'error');
             const tipoDelito = document.getElementById('edit_tipo_delito').value.trim();
-            if (!tipoDelito) {
-                return mostrarMsg(msgForm, '⚠️ El tipo de delito es obligatorio.', 'error');
-            }
+            if (!tipoDelito) return mostrarMsg(msgForm, '⚠️ El tipo de delito es obligatorio.', 'error');
             
             if (loadingOverlay) loadingOverlay.classList.add('active');
-            
             const btnSubmit = form.querySelector('.btn-submit');
             btnSubmit.disabled = true;
             btnSubmit.textContent = '⏳ Guardando cambios...';
@@ -518,7 +448,6 @@ window.initEditarProcesado = function() {
                 const bucket = window.supabaseClient.storage.from('procesados_documentos');
                 const uid = sessionStorage.getItem('pnb_user_id') || 'user';
                 const ts = Date.now();
-                
                 const dataToUpdate = {
                     tipo_delito: tipoDelito,
                     observaciones: document.getElementById('edit_observaciones').value.trim() || null
@@ -528,22 +457,18 @@ window.initEditarProcesado = function() {
                     const urlActual = archivosActuales[doc.id];
                     const archivoNuevo = archivosNuevos[doc.id];
                     const marcadoEliminar = archivosAEliminar[doc.id];
-                    
                     if (archivoNuevo) {
                         const path = `${uid}/${ts}_${doc.id}.pdf`;
                         const { error } = await bucket.upload(path, archivoNuevo, { contentType: 'application/pdf' });
                         if (error) throw new Error(`Error subiendo ${doc.id}: ${error.message}`);
-                        
                         const newUrl = bucket.getPublicUrl(path).data.publicUrl;
                         dataToUpdate[doc.id] = newUrl;
-                        
                         if (urlActual) {
                             const oldPath = urlActual.split('/procesados_documentos/')[1];
                             if (oldPath) await bucket.remove([oldPath]);
                         }
                     } else if (marcadoEliminar) {
                         dataToUpdate[doc.id] = null;
-                        
                         if (urlActual) {
                             const oldPath = urlActual.split('/procesados_documentos/')[1];
                             if (oldPath) await bucket.remove([oldPath]);
@@ -555,47 +480,34 @@ window.initEditarProcesado = function() {
                     const urlsActuales = archivosActuales[doc.id] || [];
                     const archivosNuevosCampo = archivosMultiplesNuevos[doc.id] || [];
                     const urlsEliminadas = archivosMultiplesEliminados[doc.id] || [];
-                    
                     if (archivosNuevosCampo.length > 0 || urlsEliminadas.length > 0) {
                         const nuevasUrls = [];
-                        
                         for (let i = 0; i < archivosNuevosCampo.length; i++) {
                             const path = `${uid}/${ts}_${doc.id}_${Date.now()}_${i}.pdf`;
                             const { error } = await bucket.upload(path, archivosNuevosCampo[i], { contentType: 'application/pdf' });
                             if (error) throw new Error(`Error subiendo ${doc.id}[${i}]: ${error.message}`);
                             nuevasUrls.push(bucket.getPublicUrl(path).data.publicUrl);
                         }
-                        
                         for (const oldUrl of urlsEliminadas) {
                             const oldPath = oldUrl.split('/procesados_documentos/')[1];
                             if (oldPath) await bucket.remove([oldPath]);
                         }
-                        
-                        const finales = [...urlsActuales, ...nuevasUrls];
-                        dataToUpdate[doc.id] = finales;
+                        dataToUpdate[doc.id] = [...urlsActuales, ...nuevasUrls];
                     }
                 }
                 
                 const datosOriginales = procesadoActual.datos_originales || {};
                 if (datosOriginales.documentos_adjuntos) {
                     for (const doc of docsUnicos) {
-                        if (dataToUpdate[doc.id] !== undefined) {
-                            datosOriginales.documentos_adjuntos[doc.id] = dataToUpdate[doc.id];
-                        }
+                        if (dataToUpdate[doc.id] !== undefined) datosOriginales.documentos_adjuntos[doc.id] = dataToUpdate[doc.id];
                     }
                     for (const doc of docsMultiples) {
-                        if (dataToUpdate[doc.id] !== undefined) {
-                            datosOriginales.documentos_adjuntos[doc.id] = dataToUpdate[doc.id];
-                        }
+                        if (dataToUpdate[doc.id] !== undefined) datosOriginales.documentos_adjuntos[doc.id] = dataToUpdate[doc.id];
                     }
                     dataToUpdate.datos_originales = datosOriginales;
                 }
                 
-                const { error: updErr } = await window.supabaseClient
-                    .from('registro_procesados')
-                    .update(dataToUpdate)
-                    .eq('id', procesadoActual.id);
-                
+                const { error: updErr } = await window.supabaseClient.from('registro_procesados').update(dataToUpdate).eq('id', procesadoActual.id);
                 if (updErr) throw new Error(`Error al actualizar: ${updErr.message}`);
                 
                 await window.registrarLog('MODIFICAR', 'PROCESADOS', {
@@ -607,7 +519,6 @@ window.initEditarProcesado = function() {
                 }, procesadoActual.id);
                 
                 mostrarMsg(msgForm, '✅ Cambios guardados exitosamente.', 'success');
-                
                 setTimeout(() => {
                     form.style.display = 'none';
                     datosPanel.style.display = 'none';
