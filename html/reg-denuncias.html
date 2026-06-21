@@ -13,54 +13,54 @@
 .msg.success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
 .msg.error { background: #fde2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 
-/* Dropdown de banderas MEJORADO */
-.phone-dropdown-wrapper { 
-    position: relative; 
-    width: 100%; 
-    z-index: 100 !important; 
+/* 🔧 DROPDOWN DE BANDERAS CORREGIDO */
+.phone-dropdown-wrapper {
+    position: relative;
+    width: 100%;
+    z-index: 1000 !important;
+    overflow: visible !important;
 }
-.phone-options { 
-    max-height: 350px !important; 
-    overflow-y: auto !important; 
-    position: absolute !important; 
-    top: 100% !important; 
-    left: 0 !important; 
-    right: 0 !important; 
-    background: #fff !important; 
-    border: 2px solid var(--beige-border) !important; 
-    border-radius: 0 0 8px 8px !important; 
-    z-index: 9999 !important; 
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important; 
-    display: none; 
-    margin-top: 2px; 
+.phone-options {
+    max-height: 350px !important;
+    overflow-y: auto !important;
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: #fff !important;
+    border: 2px solid var(--beige-border) !important;
+    border-radius: 0 0 8px 8px !important;
+    z-index: 99999 !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important;
+    display: none;
+    margin-top: 2px;
 }
-.phone-search-input { 
-    width: 100%; 
-    padding: 10px; 
-    border: none; 
-    border-bottom: 2px solid var(--beige-border); 
-    font-size: 0.9rem; 
-    outline: none; 
-    box-sizing: border-box; 
-    position: sticky; 
-    top: 0; 
-    background: white; 
-    z-index: 10; 
+.phone-search-input {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-bottom: 2px solid var(--beige-border);
+    font-size: 0.9rem;
+    outline: none;
+    box-sizing: border-box;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
 }
-.phone-option { 
-    display: flex; 
-    align-items: center; 
-    gap: 8px; 
-    padding: 10px 12px; 
-    cursor: pointer; 
-    border-bottom: 1px solid #f1f5f9; 
-    transition: background 0.15s; 
+.phone-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s;
 }
 .phone-option:hover { background: #f0f4f8; }
 .phone-option img { width: 20px; height: 14px; object-fit: contain; border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
 .phone-option .code { font-weight: 600; min-width: 35px; color: #334155; }
 .phone-option .country { color: #475569; font-size: 0.85rem; }
-
 .phone-display {
     border: 1.5px solid var(--beige-border);
     border-radius: 5px;
@@ -77,7 +77,6 @@
     position: relative;
     z-index: 2;
 }
-/* Scrollbar personalizada */
 .phone-options::-webkit-scrollbar { width: 8px; }
 .phone-options::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
 .phone-options::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
@@ -110,143 +109,157 @@
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 .loading-text { font-size: 1.1rem; font-weight: 600; color: var(--primary); text-align: center; }
 
-/* Asegurar que los contenedores padres no corten el dropdown */
-fieldset, .registro-form, .card, .form-grid { overflow: visible !important; }
+/* 🔧 Asegurar que TODOS los contenedores padres no corten el dropdown */
+fieldset, .registro-form, .card, .form-grid, .form-group, 
+[style*="display: flex"], [style*="display:flex"] { 
+    overflow: visible !important; 
+}
+
 @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
 </style>
 
 <div class="card">
-    <h3>📝 Registro de Denuncias</h3>
-    <form id="form-reg-denuncias" class="registro-form" novalidate>
-        <!-- Número de Denuncia -->
-        <fieldset>
-            <legend>🔖 Identificación de la Denuncia</legend>
-            <div class="form-grid">
-                <div class="form-group" style="grid-column: span 2;">
-                    <label>Número de Denuncia</label>
-                    <input type="text" id="d_numero_denuncia" readonly style="background: #f1f5f9; cursor: not-allowed; font-weight: bold; color: var(--primary); font-size: 1.1rem; letter-spacing: 1px;">
-                </div>
+<h3>📝 Registro de Denuncias</h3>
+<form id="form-reg-denuncias" class="registro-form" novalidate>
+    <!-- Número de Denuncia -->
+    <fieldset>
+        <legend>🔖 Identificación de la Denuncia</legend>
+        <div class="form-grid">
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Número de Denuncia</label>
+                <input type="text" id="d_numero_denuncia" readonly style="background: #f1f5f9; cursor: not-allowed; font-weight: bold; color: var(--primary); font-size: 1.1rem; letter-spacing: 1px;">
             </div>
-        </fieldset>
+        </div>
+    </fieldset>
 
-        <fieldset>
-            <legend>📅 Fecha y Estación</legend>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Fecha y Hora</label>
-                    <input type="text" id="d_fecha_hora" readonly style="background: #f1f5f9; cursor: not-allowed;">
-                </div>
-                <div class="form-group" style="grid-column: span 2;">
-                    <label>Estación Policial <span style="color:#ef4444;">*</span></label>
-                    <select id="d_estacion" required>
-                        <option value="">Seleccione estación...</option>
-                        <option value="EPM MARACAIBO">EPM MARACAIBO</option>
-                        <option value="EPM SAN FRANCISCO">EPM SAN FRANCISCO</option>
-                        <option value="EPM LA CAÑADA">EPM LA CAÑADA</option>
-                        <option value="EPP CRISTO DE ARANZA">EPP CRISTO DE ARANZA</option>
-                        <option value="EPP LUIS HURTADO">EPP LUIS HURTADO</option>
-                        <option value="EPP DAGNINO">EPP DAGNINO</option>
-                        <option value="EPP OLEGARIO VILLALOBOS">EPP OLEGARIO VILLALOBOS</option>
-                        <option value="EPP CHIQUINQUIRA">EPP CHIQUINQUIRA</option>
-                        <option value="EPP FRANCISCO EUGENIO">EPP FRANCISCO EUGENIO</option>
-                        <option value="EPP CARACCIOLO">EPP CARACCIOLO</option>
-                        <option value="EPP IDELFONSO">EPP IDELFONSO</option>
-                        <option value="EPP VENANCIO PULGAR">EPP VENANCIO PULGAR</option>
-                        <option value="EPP COQUIVACOA-ZAPARA">EPP COQUIVACOA-ZAPARA</option>
-                        <option value="EPP RAUL LEONI">EPP RAUL LEONI</option>
-                        <option value="EPP ANTONIO BORJAS ROMERO">EPP ANTONIO BORJAS ROMERO</option>
-                        <option value="EPP JUANA DE AVILA">EPP JUANA DE AVILA</option>
-                        <option value="EPP SAN ISIDRO">EPP SAN ISIDRO</option>
-                        <option value="EPP CASIQUE MARA">EPP CASIQUE MARA</option>
-                        <option value="EPP BOLIVAR">EPP BOLIVAR</option>
-                        <option value="EPP EL BAJO">EPP EL BAJO</option>
-                        <option value="EPP DOMITILA">EPP DOMITILA</option>
-                        <option value="EPP CORTIJOS">EPP CORTIJOS</option>
-                        <option value="EPP MARCIAL HERNANDEZ">EPP MARCIAL HERNANDEZ</option>
-                        <option value="EPP POTRERITO">EPP POTRERITO</option>
-                        <option value="EPP ANDRES BELLO">EPP ANDRES BELLO</option>
-                        <option value="EPP SANTA LUCIA">EPP SANTA LUCIA</option>
-                    </select>
-                </div>
-            </div>
-        </fieldset>
-
-        <fieldset>
-            <legend>👤 Datos del Denunciante</legend>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Cédula de Identidad <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="d_cedula" required placeholder="Ej: V-12345678" pattern="[VEve]-?[0-9]{6,9}" title="Formato: V-12345678 o E-12345678">
-                </div>
-                <div class="form-group">
-                    <label>Primer Nombre <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="d_nombre1" required>
-                </div>
-                <div class="form-group">
-                    <label>Segundo Nombre</label>
-                    <input type="text" id="d_nombre2">
-                </div>
-                <div class="form-group">
-                    <label>Primer Apellido <span style="color:#ef4444;">*</span></label>
-                    <input type="text" id="d_apellido1" required>
-                </div>
-                <div class="form-group">
-                    <label>Segundo Apellido</label>
-                    <input type="text" id="d_apellido2">
-                </div>
-            </div>
-            
-            <div class="form-grid" style="margin-top: 14px;">
-                <div class="form-group" style="grid-column: span 2;">
-                    <label>Teléfono <span style="color:#64748b; font-weight:400;">(Opcional)</span></label>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                       <div class="phone-dropdown-wrapper" style="width: 210px; flex-shrink: 0;">
-    <input type="hidden" id="d_tlf_pais" value="+58">
-    <div class="phone-display" id="phone-display-btn">
-        <img id="d-tlf-flag-img" src="https://flagcdn.com/w20/ve.png" style="width: 18px; height: 13px; object-fit: contain; border-radius: 2px;">
-        <span id="d-tlf-code-text" style="font-weight: 600; min-width: 30px;">+58</span>
-        <span style="color: #cbd5e1;">|</span>
-        <span id="d-tlf-country-text" style="color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.8rem;">Venezuela</span>
-        <span style="margin-left: auto; font-size: 0.5rem; color: #94a3b8;">▼</span>
-    </div>
-    <div class="phone-options" id="phone-options-list" style="display: none;"></div>
-</div>
-                <div class="form-group" style="grid-column: span 2;">
-                    <label>Dirección</label>
-                    <input type="text" id="d_direccion" placeholder="Dirección completa">
-                </div>
-            </div>
-        </fieldset>
-
-        <!-- Motivo de la Denuncia -->
-        <fieldset>
-            <legend>📌 Motivo de la Denuncia</legend>
+    <fieldset>
+        <legend>📅 Fecha y Estación</legend>
+        <div class="form-grid">
             <div class="form-group">
-                <label>Motivo <span style="color:#ef4444;">*</span></label>
-                <textarea id="d_motivo" rows="3" required placeholder="Describa brevemente el motivo principal de la denuncia..."></textarea>
+                <label>Fecha y Hora</label>
+                <input type="text" id="d_fecha_hora" readonly style="background: #f1f5f9; cursor: not-allowed;">
             </div>
-        </fieldset>
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Estación Policial <span style="color:#ef4444;">*</span></label>
+                <select id="d_estacion" required>
+                    <option value="">Seleccione estación...</option>
+                    <option value="EPM MARACAIBO">EPM MARACAIBO</option>
+                    <option value="EPM SAN FRANCISCO">EPM SAN FRANCISCO</option>
+                    <option value="EPM LA CAÑADA">EPM LA CAÑADA</option>
+                    <option value="EPP CRISTO DE ARANZA">EPP CRISTO DE ARANZA</option>
+                    <option value="EPP LUIS HURTADO">EPP LUIS HURTADO</option>
+                    <option value="EPP DAGNINO">EPP DAGNINO</option>
+                    <option value="EPP OLEGARIO VILLALOBOS">EPP OLEGARIO VILLALOBOS</option>
+                    <option value="EPP CHIQUINQUIRA">EPP CHIQUINQUIRA</option>
+                    <option value="EPP FRANCISCO EUGENIO">EPP FRANCISCO EUGENIO</option>
+                    <option value="EPP CARACCIOLO">EPP CARACCIOLO</option>
+                    <option value="EPP IDELFONSO">EPP IDELFONSO</option>
+                    <option value="EPP VENANCIO PULGAR">EPP VENANCIO PULGAR</option>
+                    <option value="EPP COQUIVACOA-ZAPARA">EPP COQUIVACOA-ZAPARA</option>
+                    <option value="EPP RAUL LEONI">EPP RAUL LEONI</option>
+                    <option value="EPP ANTONIO BORJAS ROMERO">EPP ANTONIO BORJAS ROMERO</option>
+                    <option value="EPP JUANA DE AVILA">EPP JUANA DE AVILA</option>
+                    <option value="EPP SAN ISIDRO">EPP SAN ISIDRO</option>
+                    <option value="EPP CASIQUE MARA">EPP CASIQUE MARA</option>
+                    <option value="EPP BOLIVAR">EPP BOLIVAR</option>
+                    <option value="EPP EL BAJO">EPP EL BAJO</option>
+                    <option value="EPP DOMITILA">EPP DOMITILA</option>
+                    <option value="EPP CORTIJOS">EPP CORTIJOS</option>
+                    <option value="EPP MARCIAL HERNANDEZ">EPP MARCIAL HERNANDEZ</option>
+                    <option value="EPP POTRERITO">EPP POTRERITO</option>
+                    <option value="EPP ANDRES BELLO">EPP ANDRES BELLO</option>
+                    <option value="EPP SANTA LUCIA">EPP SANTA LUCIA</option>
+                </select>
+            </div>
+        </div>
+    </fieldset>
 
-        <fieldset>
-            <legend>📄 Documentos Únicos (PDF)</legend>
-            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Seleccione "Sí" para habilitar la carga.</p>
-            <div id="docs-unicos-container"></div>
-        </fieldset>
+    <fieldset>
+        <legend>👤 Datos del Denunciante</legend>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Cédula de Identidad <span style="color:#ef4444;">*</span></label>
+                <input type="text" id="d_cedula" required placeholder="Ej: V-12345678" pattern="[VEve]-?[0-9]{6,9}" title="Formato: V-12345678 o E-12345678">
+            </div>
+            <div class="form-group">
+                <label>Primer Nombre <span style="color:#ef4444;">*</span></label>
+                <input type="text" id="d_nombre1" required>
+            </div>
+            <div class="form-group">
+                <label>Segundo Nombre</label>
+                <input type="text" id="d_nombre2">
+            </div>
+            <div class="form-group">
+                <label>Primer Apellido <span style="color:#ef4444;">*</span></label>
+                <input type="text" id="d_apellido1" required>
+            </div>
+            <div class="form-group">
+                <label>Segundo Apellido</label>
+                <input type="text" id="d_apellido2">
+            </div>
+        </div>
 
-        <fieldset>
-            <legend>📁 Documentos Múltiples (PDF)</legend>
-            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Seleccione "Sí" para habilitar la carga (Máximo 10 archivos).</p>
-            <div id="docs-multiples-container"></div>
-        </fieldset>
+        <!-- 🔧 TELÉFONO - ESTRUCTURA CORREGIDA -->
+        <div class="form-grid" style="margin-top: 14px;">
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Teléfono <span style="color:#64748b; font-weight:400;">(Opcional)</span></label>
+                <div style="display: flex; gap: 10px; align-items: center; overflow: visible !important;">
+                    <div class="phone-dropdown-wrapper" style="width: 210px; flex-shrink: 0;">
+                        <input type="hidden" id="d_tlf_pais" value="+58">
+                        <div class="phone-display" id="phone-display-btn">
+                            <img id="d-tlf-flag-img" src="https://flagcdn.com/w20/ve.png" style="width: 18px; height: 13px; object-fit: contain; border-radius: 2px;">
+                            <span id="d-tlf-code-text" style="font-weight: 600; min-width: 30px;">+58</span>
+                            <span style="color: #cbd5e1;">|</span>
+                            <span id="d-tlf-country-text" style="color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.8rem;">Venezuela</span>
+                            <span style="margin-left: auto; font-size: 0.5rem; color: #94a3b8;">▼</span>
+                        </div>
+                        <!-- 🔧 SIN style="display: none;" inline -->
+                        <div class="phone-options" id="phone-options-list"></div>
+                    </div>
+                    <!-- 🔧 INPUT DEL NÚMERO AGREGADO -->
+                    <input type="text" id="d_tlf_num" placeholder="Ej: 04121234567" pattern="[0-9]{10,11}" title="Solo números (10-11 dígitos)" style="flex: 1; padding: 9px 10px; border: 1.5px solid var(--beige-border); border-radius: 5px; font-size: 0.9rem;">
+                </div>
+            </div>
+        </div>
 
-        <fieldset>
-            <legend>📝 Observaciones</legend>
-            <textarea id="d_observaciones" rows="4" placeholder="Detalles adicionales de la denuncia..."></textarea>
-        </fieldset>
+        <!-- 🔧 DIRECCIÓN FUERA DEL DIV FLEX DEL TELÉFONO -->
+        <div class="form-grid" style="margin-top: 14px;">
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Dirección</label>
+                <input type="text" id="d_direccion" placeholder="Dirección completa">
+            </div>
+        </div>
+    </fieldset>
 
-        <button type="submit" class="btn-submit">✅ Registrar Denuncia</button>
-        <div id="msg-reg-denuncias" class="msg"></div>
-    </form>
+    <!-- Motivo de la Denuncia -->
+    <fieldset>
+        <legend>📌 Motivo de la Denuncia</legend>
+        <div class="form-group">
+            <label>Motivo <span style="color:#ef4444;">*</span></label>
+            <textarea id="d_motivo" rows="3" required placeholder="Describa brevemente el motivo principal de la denuncia..."></textarea>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>📄 Documentos Únicos (PDF)</legend>
+        <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Seleccione "Sí" para habilitar la carga.</p>
+        <div id="docs-unicos-container"></div>
+    </fieldset>
+
+    <fieldset>
+        <legend>📁 Documentos Múltiples (PDF)</legend>
+        <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 12px;">Seleccione "Sí" para habilitar la carga (Máximo 10 archivos).</p>
+        <div id="docs-multiples-container"></div>
+    </fieldset>
+
+    <fieldset>
+        <legend>📝 Observaciones</legend>
+        <textarea id="d_observaciones" rows="4" placeholder="Detalles adicionales de la denuncia..."></textarea>
+    </fieldset>
+
+    <button type="submit" class="btn-submit">✅ Registrar Denuncia</button>
+    <div id="msg-reg-denuncias" class="msg"></div>
+</form>
 </div>
 
 <div id="loading-overlay" class="loading-overlay">
