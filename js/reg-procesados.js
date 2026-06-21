@@ -4,11 +4,13 @@ window.initRegProcesados = function() {
     // ==========================================
     // LISTAS DE DOCUMENTOS
     // ==========================================
+    // ==========================================
+    // LISTAS DE DOCUMENTOS (CORREGIDO: Sin 'entrevista' en Únicos)
+    // ==========================================
     const docsUnicos = [
         { id: 'portada', label: '📑 Portada' },
         { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
         { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
-        { id: 'entrevista', label: '🎤 Entrevista' },
         { id: 'datos_filiatorios', label: '📋 Datos Filiatorios' },
         { id: 'acta_policial', label: '📋 Acta Policial' },
         { id: 'derechos_imputado', label: '⚖️ Derechos del Imputado' },
@@ -27,7 +29,6 @@ window.initRegProcesados = function() {
         { id: 'cadena_custodia', label: '🔗 Cadena de Custodia', max: 10, min: 1 },
         { id: 'inspecciones_tecnicas', label: '🔍 Inspecciones Técnicas', max: 10, min: 1 }
     ];
-
     const archivosMultiples = {};
     docsMultiples.forEach(d => archivosMultiples[d.id] = []);
 
