@@ -1,4 +1,4 @@
-// ✅ MÓDULO EDITAR PROCESADO - ADAPTADO A ESTRUCTURA REAL DE SUPABASE
+// ✅ MÓDULO EDITAR PROCESADO - CORREGIDO PARA UUID
 window.initEditarProcesado = function() {
     console.log("✅ Módulo editar-procesado.js inicializado correctamente.");
 
@@ -16,9 +16,9 @@ window.initEditarProcesado = function() {
 
     let currentData = null;
     let registroIdActual = null;
-    let personaData = null; // Datos de la persona extraídos del JSON
+    let personaData = null;
 
-    // 🔹 Columnas de documentos PDF en tu tabla registro_procesados
+    // 🔹 Columnas de documentos PDF
     const COLUMNAS_DOCS = [
         'portada', 'oficio_remision', 'acta_denuncia', 'datos_filiatorios',
         'acta_policial', 'derechos_imputado', 'evaluacion_medica', 'identificacion_cedula',
@@ -43,21 +43,34 @@ window.initEditarProcesado = function() {
         loadingOverlay.classList.toggle('active', show);
     };
 
+    // 🔹 Función para detectar si es un UUID válido
+    function esUUID(valor) {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(valor);
+    }
+
     // ==========================================
-    // 🔍 1. BÚSQUEDA DE PROCESADO
+    // 🔍 1. BÚSQUEDA DE PROCESADO (CORREGIDO)
     // ==========================================
     async function buscarProcesado(valor) {
         const val = valor.trim();
         const tabla = 'registro_procesados';
         
-        // Buscar por cédula (columna real) o por ID
         let query;
-        if (/^\d+$/.test(val)) {
-            // Si es solo números, buscar por cédula o ID
-            query = `cedula.eq.${val},id.eq.${val}`;
-        } else {
-            // Si tiene letras, buscar solo por ID (UUID)
+        
+        // ✅ CORREGIDO: Separar búsqueda por tipo de dato
+        if (esUUID(val)) {
+            // Si es un UUID válido, buscar por ID
             query = `id.eq.${val}`;
+            console.log('🔍 Buscando por UUID:', val);
+        } else if (/^\d+$/.test(val)) {
+            // Si es solo números, buscar SOLO por cédula (NO por id)
+            query = `cedula.eq.${val}`;
+            console.log('🔍 Buscando por cédula:', val);
+        } else {
+            // Si tiene letras y no es UUID, buscar por cédula (por si acaso)
+            query = `cedula.ilike.%${val}%`;
+            console.log('🔍 Buscando por cédula (parcial):', val);
         }
 
         try {
@@ -143,7 +156,6 @@ window.initEditarProcesado = function() {
         COLUMNAS_DOCS.forEach(campo => {
             const urls = currentData[campo] || [];
             
-            // Asegurar que sea un array
             let urlsArray = [];
             if (Array.isArray(urls)) {
                 urlsArray = urls;
@@ -192,7 +204,6 @@ window.initEditarProcesado = function() {
         return html;
     }
 
-    // Función global para marcar documento para eliminación
     window.marcarDocEliminacion = function(btn, campo, index) {
         if(confirm('¿Eliminar este documento? Se marcará para eliminación al guardar.')) {
             const docCurrent = btn.closest('.doc-current');
@@ -200,7 +211,6 @@ window.initEditarProcesado = function() {
             docCurrent.style.textDecoration = 'line-through';
             docCurrent.dataset.action = 'delete';
             
-            // Guardar en un objeto global las eliminaciones pendientes
             if (!window.docsEliminados) window.docsEliminados = {};
             if (!window.docsEliminados[campo]) window.docsEliminados[campo] = [];
             window.docsEliminados[campo].push(index);
@@ -226,17 +236,14 @@ window.initEditarProcesado = function() {
                 return showMsg(msgForm, '⚠️ El Tipo de Delito es obligatorio.', 'error');
             }
 
-            // Preparar datos a actualizar
             const datosActualizar = { 
                 tipo_delito: tipoDelito,
                 observaciones: observaciones
             };
 
-            // Procesar eliminaciones de documentos
             if (window.docsEliminados && Object.keys(window.docsEliminados).length > 0) {
                 for (const [campo, indices] of Object.entries(window.docsEliminados)) {
                     const urlsActuales = currentData[campo] || [];
-                    // Filtrar las URLs eliminadas (de atrás hacia adelante para no afectar los índices)
                     const urlsFiltradas = urlsActuales.filter((_, idx) => !indices.includes(idx));
                     datosActualizar[campo] = urlsFiltradas;
                 }
@@ -252,7 +259,6 @@ window.initEditarProcesado = function() {
             toggleLoading(false);
             showMsg(msgForm, '✅ Cambios guardados exitosamente.', 'success');
             
-            // Limpiar estado
             window.docsEliminados = {};
             
             setTimeout(() => {
@@ -271,7 +277,8 @@ window.initEditarProcesado = function() {
     });
 
     // ==========================================
-
+    // 🔹 LISTENERS INICIALES
+    // ==========================================
     if (buscarBtn && buscarInput) {
         buscarBtn.addEventListener('click', () => {
             const val = buscarInput.value.trim();
@@ -289,11 +296,9 @@ window.initEditarProcesado = function() {
         });
     }
 
-    // Inicializar objeto global para eliminaciones
     window.docsEliminados = {};
 };
 
-// Inicializar cuando el DOM esté listo
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.initEditarProcesado);
 } else {
