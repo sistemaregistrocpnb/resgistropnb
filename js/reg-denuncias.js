@@ -1,4 +1,4 @@
-
+// ✅ PROTECCIÓN CONTRA DOBLE INICIALIZACIÓN
 if (window._regDenunciasInit) {
     console.warn('⚠️ reg-denuncias.js ya estaba inicializado.');
 } else {
