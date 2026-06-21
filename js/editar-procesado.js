@@ -1,4 +1,4 @@
-// ✅ MARCA DE VERIFICACIÓN
+
 console.log("✅ VERSIÓN FINAL: elim-vinculado.js cargado (Con validación esUrlValida)");
 
 window.initElimVinculados = function() {
