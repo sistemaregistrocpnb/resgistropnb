@@ -1,6 +1,8 @@
+// ✅ MÓDULO EDITAR PROCESADO - ADAPTADO A ESTRUCTURA REAL DE SUPABASE
 window.initEditarProcesado = function() {
     console.log("✅ Módulo editar-procesado.js inicializado correctamente.");
 
+    // 🔹 Referencias DOM
     const buscarInput = document.getElementById('edit_busqueda_input');
     const buscarBtn = document.getElementById('edit_btn_buscar');
     const msgBusqueda = document.getElementById('edit_msg_busqueda');
@@ -9,13 +11,21 @@ window.initEditarProcesado = function() {
     const formEditar = document.getElementById('form-editar-procesado');
     const msgForm = document.getElementById('edit-msg-form');
     const loadingOverlay = document.getElementById('edit-loading-overlay');
-
     const docsUnicosContainer = document.getElementById('edit-docs-unicos-container');
     const docsMultiplesContainer = document.getElementById('edit-docs-multiples-container');
 
     let currentData = null;
-    let tablaActual = '';
     let registroIdActual = null;
+    let personaData = null; // Datos de la persona extraídos del JSON
+
+    // 🔹 Columnas de documentos PDF en tu tabla registro_procesados
+    const COLUMNAS_DOCS = [
+        'portada', 'oficio_remision', 'acta_denuncia', 'datos_filiatorios',
+        'acta_policial', 'derechos_imputado', 'evaluacion_medica', 'identificacion_cedula',
+        'solicitud_examen_forense', 'resultados_examen_forense', 'asistencia_comdepro',
+        'remision_estacionamiento', 'planilla_pvr', 'otros_documentos', 'entrevista',
+        'cadena_custodia', 'inspecciones_tecnicas'
+    ];
 
     // 🔹 Helpers UI
     const showMsg = (el, txt, type) => {
@@ -37,11 +47,18 @@ window.initEditarProcesado = function() {
     // 🔍 1. BÚSQUEDA DE PROCESADO
     // ==========================================
     async function buscarProcesado(valor) {
-        const val = valor.trim().toUpperCase();
-        // ⚠️ NOTA: Cambia 'procesados' por el nombre real de tu tabla en Supabase
-       const tabla = 'registro_procesados'; 
+        const val = valor.trim();
+        const tabla = 'registro_procesados';
         
-        const query = `cedula.ilike.%${val}%,placa.ilike.%${val}%,id.eq.${val}`;
+        // Buscar por cédula (columna real) o por ID
+        let query;
+        if (/^\d+$/.test(val)) {
+            // Si es solo números, buscar por cédula o ID
+            query = `cedula.eq.${val},id.eq.${val}`;
+        } else {
+            // Si tiene letras, buscar solo por ID (UUID)
+            query = `id.eq.${val}`;
+        }
 
         try {
             const { data, error } = await window.supabaseClient
@@ -60,13 +77,22 @@ window.initEditarProcesado = function() {
             }
 
             currentData = data[0];
-            tablaActual = tabla;
             registroIdActual = currentData.id;
 
+            // Extraer datos de la persona del JSON
+            try {
+                personaData = typeof currentData.datos_originales === 'string' 
+                    ? JSON.parse(currentData.datos_originales) 
+                    : currentData.datos_originales;
+            } catch (e) {
+                console.error('❌ Error parseando datos_originales:', e);
+                personaData = {};
+            }
+
             showMsg(msgBusqueda, '✅ Registro encontrado. Puede editarlo a continuación.', 'success');
-            renderizarDatos(currentData);
-            cargarFormulario(currentData);
-            renderizarDocumentos(currentData);
+            renderizarDatos();
+            cargarFormulario();
+            renderizarDocumentos();
             
             datosPanel.style.display = 'block';
             formEditar.style.display = 'block';
@@ -78,113 +104,111 @@ window.initEditarProcesado = function() {
     }
 
     // ==========================================
-    // 📋 2. RENDERIZAR DATOS Y FORMULARIO
+    // 📋 2. RENDERIZAR DATOS DE LA PERSONA
     // ==========================================
-    function renderizarDatos(data) {
+    function renderizarDatos() {
+        const nombreCompleto = [
+            personaData.primer_nombre,
+            personaData.segundo_nombre,
+            personaData.primer_apellido,
+            personaData.segundo_apellido
+        ].filter(n => n && n.trim() !== '').join(' ') || 'Sin nombre';
+
         datosContenido.innerHTML = `
-            <div class="dato-fila"><span class="dato-label">Cédula:</span> <span class="dato-valor">${data.cedula || '-'}</span></div>
-            <div class="dato-fila"><span class="dato-label">Placa:</span> <span class="dato-valor">${data.placa || '-'}</span></div>
-            <div class="dato-fila"><span class="dato-label">Nombre:</span> <span class="dato-valor">${data.primer_nombre || ''} ${data.primer_apellido || ''}</span></div>
-            <div class="dato-fila"><span class="dato-label">ID Registro:</span> <span class="dato-valor">${data.id}</span></div>
+            <div class="dato-fila"><span class="dato-label">Cédula:</span> <span class="dato-valor">${personaData.cedula || currentData.cedula || '-'}</span></div>
+            <div class="dato-fila"><span class="dato-label">Nombre Completo:</span> <span class="dato-valor">${nombreCompleto}</span></div>
+            <div class="dato-fila"><span class="dato-label">Estatus:</span> <span class="dato-valor">${currentData.estatus || '-'}</span></div>
+            <div class="dato-fila"><span class="dato-label">Fecha Procesamiento:</span> <span class="dato-valor">${currentData.fecha_procesamiento ? new Date(currentData.fecha_procesamiento).toLocaleDateString('es-VE') : '-'}</span></div>
+            <div class="dato-fila"><span class="dato-label">ID Registro:</span> <span class="dato-valor">${currentData.id}</span></div>
         `;
     }
 
-    function cargarFormulario(data) {
-        document.getElementById('edit_procesado_id').value = data.id;
-        document.getElementById('edit_tabla_origen').value = tablaActual;
-        document.getElementById('edit_registro_id').value = data.id;
-        document.getElementById('edit_tipo_delito').value = data.tipo_delito || '';
-        document.getElementById('edit_observaciones').value = data.observaciones || '';
+    function cargarFormulario() {
+        document.getElementById('edit_procesado_id').value = currentData.id;
+        document.getElementById('edit_tabla_origen').value = currentData.tabla_origen || '';
+        document.getElementById('edit_registro_id').value = currentData.registro_id || '';
+        document.getElementById('edit_tipo_delito').value = currentData.tipo_delito || '';
+        document.getElementById('edit_observaciones').value = currentData.observaciones || '';
     }
 
     // ==========================================
-    // 📁 3. MANEJO DE DOCUMENTOS (PDFs)
+    // 📁 3. MANEJO DE DOCUMENTOS PDF
     // ==========================================
-    function renderizarDocumentos(data) {
-        // Limpiar contenedores
+    function renderizarDocumentos() {
         docsUnicosContainer.innerHTML = '';
         docsMultiplesContainer.innerHTML = '';
 
-        // Ejemplo: Renderizar documentos únicos (Ajusta los nombres de las columnas según tu BD)
-        const docsUnicos = ['documento_identidad', 'antecedentes_penales']; 
-        docsUnicos.forEach(campo => {
-            if (data[campo]) {
-                docsUnicosContainer.innerHTML += crearItemDocUnico(campo, data[campo]);
+        let totalDocs = 0;
+
+        COLUMNAS_DOCS.forEach(campo => {
+            const urls = currentData[campo] || [];
+            
+            // Asegurar que sea un array
+            let urlsArray = [];
+            if (Array.isArray(urls)) {
+                urlsArray = urls;
+            } else if (typeof urls === 'string' && urls.startsWith('[')) {
+                try {
+                    urlsArray = JSON.parse(urls);
+                } catch (e) {
+                    urlsArray = [];
+                }
+            }
+
+            if (urlsArray.length > 0) {
+                totalDocs += urlsArray.length;
+                docsUnicosContainer.innerHTML += crearItemDoc(campo, urlsArray);
             }
         });
 
-        // Ejemplo: Renderizar documentos múltiples (Asumiendo que es un Array JSON)
-        const docsMultiples = data.pruebas_adicionales || [];
-        if (Array.isArray(docsMultiples) && docsMultiples.length > 0) {
-            docsMultiples.forEach((url, index) => {
-                docsMultiplesContainer.innerHTML += crearItemDocMultiple(url, index);
-            });
-        } else {
-            docsMultiplesContainer.innerHTML = '<p style="color:#64748b; font-size:0.85rem;">No hay documentos múltiples cargados.</p>';
+        if (totalDocs === 0) {
+            docsUnicosContainer.innerHTML = '<p style="color:#64748b; font-size:0.85rem; text-align:center; padding:20px;">📭 No se encontraron documentos cargados en este registro.</p>';
         }
-
-        // Agregar botones para subir nuevos archivos
-        docsMultiplesContainer.innerHTML += `
-            <button type="button" class="btn-add-file" onclick="document.getElementById('file-multiple-input').click()">➕ Agregar Más Documentos</button>
-            <input type="file" id="file-multiple-input" multiple accept=".pdf" style="display:none;">
-            <div id="file-multiple-list" class="file-count"></div>
-        `;
     }
 
-    function crearItemDocUnico(campo, url) {
-        return `
+    function crearItemDoc(campo, urls) {
+        const nombreCampo = campo.replace(/_/g, ' ').toUpperCase();
+        let html = `
             <div class="doc-item" data-campo="${campo}">
                 <div class="doc-header">
-                    <label>${campo.replace(/_/g, ' ').toUpperCase()}</label>
+                    <label>📄 ${nombreCampo} (${urls.length} archivo${urls.length > 1 ? 's' : ''})</label>
                 </div>
-                <div class="doc-current">
-                    <div class="file-info">📄 <span>${url.split('/').pop()}</span></div>
+        `;
+
+        urls.forEach((url, index) => {
+            const nombreArchivo = url.split('/').pop();
+            html += `
+                <div class="doc-current" data-index="${index}" data-url="${url}">
+                    <div class="file-info">📎 <span title="${nombreArchivo}">${nombreArchivo}</span></div>
                     <div class="actions">
                         <button type="button" class="btn-view" onclick="window.open('${url}', '_blank')">👁️ Ver</button>
-                        <button type="button" class="btn-delete" onclick="eliminarDocUnico(this, '${campo}')">🗑️</button>
+                        <button type="button" class="btn-delete" onclick="marcarDocEliminacion(this, '${campo}', ${index})">🗑️</button>
                     </div>
                 </div>
-                <div class="doc-upload-area">
-                    <input type="file" accept=".pdf" onchange="reemplazarDocUnico(this, '${campo}')">
-                </div>
-            </div>
-        `;
+            `;
+        });
+
+        html += `</div>`;
+        return html;
     }
 
-    function crearItemDocMultiple(url, index) {
-        return `
-            <div class="file-item-multiple" data-index="${index}">
-                <span>📎 ${url.split('/').pop()}</span>
-                <div class="file-actions">
-                    <button type="button" class="btn-view" onclick="window.open('${url}', '_blank')">👁️</button>
-                    <button type="button" onclick="eliminarDocMultiple(this, ${index})">🗑️</button>
-                </div>
-            </div>
-        `;
-    }
-
-    // Funciones globales para los botones de documentos
-    window.eliminarDocUnico = function(btn, campo) {
-        if(confirm('¿Eliminar este documento? Se subirá uno nuevo al guardar.')) {
-            btn.closest('.doc-item').style.opacity = '0.5';
-            btn.closest('.doc-item').dataset.action = 'delete';
+    // Función global para marcar documento para eliminación
+    window.marcarDocEliminacion = function(btn, campo, index) {
+        if(confirm('¿Eliminar este documento? Se marcará para eliminación al guardar.')) {
+            const docCurrent = btn.closest('.doc-current');
+            docCurrent.style.opacity = '0.4';
+            docCurrent.style.textDecoration = 'line-through';
+            docCurrent.dataset.action = 'delete';
+            
+            // Guardar en un objeto global las eliminaciones pendientes
+            if (!window.docsEliminados) window.docsEliminados = {};
+            if (!window.docsEliminados[campo]) window.docsEliminados[campo] = [];
+            window.docsEliminados[campo].push(index);
         }
-    };
-    window.reemplazarDocUnico = function(input, campo) {
-        if(input.files.length > 0) {
-            const item = input.closest('.doc-item');
-            item.dataset.action = 'replace';
-            item.dataset.newFile = input.files[0];
-            item.querySelector('.doc-current').style.background = '#fef3c7';
-        }
-    };
-    window.eliminarDocMultiple = function(btn, index) {
-        btn.closest('.file-item-multiple').style.display = 'none';
-        btn.closest('.file-item-multiple').dataset.action = 'delete';
     };
 
     // ==========================================
-    // 💾 4. GUARDAR CAMBIOS (SUPABASE)
+    // 💾 4. GUARDAR CAMBIOS
     // ==========================================
     formEditar.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -202,24 +226,34 @@ window.initEditarProcesado = function() {
                 return showMsg(msgForm, '⚠️ El Tipo de Delito es obligatorio.', 'error');
             }
 
-            // 1. Actualizar campos de texto
+            // Preparar datos a actualizar
+            const datosActualizar = { 
+                tipo_delito: tipoDelito,
+                observaciones: observaciones
+            };
+
+            // Procesar eliminaciones de documentos
+            if (window.docsEliminados && Object.keys(window.docsEliminados).length > 0) {
+                for (const [campo, indices] of Object.entries(window.docsEliminados)) {
+                    const urlsActuales = currentData[campo] || [];
+                    // Filtrar las URLs eliminadas (de atrás hacia adelante para no afectar los índices)
+                    const urlsFiltradas = urlsActuales.filter((_, idx) => !indices.includes(idx));
+                    datosActualizar[campo] = urlsFiltradas;
+                }
+            }
+
             const { error: updateError } = await window.supabaseClient
-                .from(tablaActual)
-                .update({ 
-                    tipo_delito: tipoDelito,
-                    observaciones: observaciones,
-                    updated_at: new Date().toISOString()
-                })
+                .from('registro_procesados')
+                .update(datosActualizar)
                 .eq('id', registroIdActual);
 
             if (updateError) throw updateError;
 
-            // 2. Aquí iría la lógica para subir los PDFs nuevos al Storage de Supabase
-            // y actualizar las URLs en la base de datos. (Se omite para mantener el ejemplo limpio, 
-            // pero debes usar supabase.storage.from('bucket_name').upload(...))
-
             toggleLoading(false);
             showMsg(msgForm, '✅ Cambios guardados exitosamente.', 'success');
+            
+            // Limpiar estado
+            window.docsEliminados = {};
             
             setTimeout(() => {
                 formEditar.reset();
@@ -244,6 +278,7 @@ window.initEditarProcesado = function() {
             const val = buscarInput.value.trim();
             if (val.length < 3) return showMsg(msgBusqueda, '⚠️ Ingrese al menos 3 caracteres.', 'error');
             hideMsg(msgBusqueda);
+            window.docsEliminados = {};
             buscarProcesado(val);
         });
 
@@ -254,6 +289,9 @@ window.initEditarProcesado = function() {
             }
         });
     }
+
+    // Inicializar objeto global para eliminaciones
+    window.docsEliminados = {};
 };
 
 // Inicializar cuando el DOM esté listo
