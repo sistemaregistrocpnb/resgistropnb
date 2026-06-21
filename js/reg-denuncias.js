@@ -34,7 +34,6 @@ if (window._regDenunciasInit) {
                 fechaInput.value = ahora.toLocaleString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
             }
 
-            // ✅ Calcular próximo número (CORREGIDA)
             async function actualizarProximoNumero() {
                 const inputNum = document.getElementById('d_numero_denuncia');
                 if (!inputNum || !window.supabaseClient) return;
