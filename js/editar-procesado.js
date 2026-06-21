@@ -2,13 +2,13 @@ window.initEditarProcesado = function() {
     console.log("✅ Módulo editar-procesado.js cargado correctamente.");
 
     // ==========================================
-    // LISTAS DE DOCUMENTOS (Igual que reg-procesados.js + entrevista_multi)
+    // LISTAS DE DOCUMENTOS (CORREGIDO: Sin 'entrevista' en Únicos)
     // ==========================================
     const docsUnicos = [
         { id: 'portada', label: '📑 Portada' },
         { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
         { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
-        { id: 'entrevista', label: '🎤 Entrevista' },
+        // ❌ ELIMINADO: { id: 'entrevista', label: '🎤 Entrevista' },
         { id: 'datos_filiatorios', label: '📋 Datos Filiatorios' },
         { id: 'acta_policial', label: '📋 Acta Policial' },
         { id: 'derechos_imputado', label: '⚖️ Derechos del Imputado' },
@@ -353,6 +353,7 @@ window.initEditarProcesado = function() {
                 };
 
                 // 1. Procesar Campos Top (Únicos + Cadena + Inspecciones)
+                // ✅ 'entrevista' ya no está en docsUnicos, por lo que no se procesará aquí
                 const camposTop = [...docsUnicos.map(d=>d.id), 'cadena_custodia', 'inspecciones_tecnicas'];
                 for (const campo of camposTop) {
                     let urlsActuales = convertirAArray(currentData[campo]);
