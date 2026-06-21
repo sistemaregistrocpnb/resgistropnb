@@ -1,7 +1,14 @@
 window.initElimProcesados = function() {
+    // ✅ PROTECCIÓN CONTRA DOBLE INICIALIZACIÓN
+    if (window._elimProcesadosInit) {
+        console.warn('⚠️ Módulo elim-procesados ya estaba inicializado. Saltando...');
+        return;
+    }
+    window._elimProcesadosInit = true;
+    
     console.log("✅ Módulo elim-procesados.js cargado correctamente.");
 
-    // 🔹 Referencias DOM (con validaciones)
+    // 🔹 Referencias DOM
     const buscarInput = document.getElementById('buscar-procesado-elim');
     const buscarBtn = document.getElementById('btn-buscar-procesado-elim');
     const msgBuscar = document.getElementById('buscar-msg-elim');
@@ -18,7 +25,6 @@ window.initElimProcesados = function() {
     const btnModalYes = document.getElementById('btn-modal-yes-elim');
     const btnModalNo = document.getElementById('btn-modal-no-elim');
 
-    // Validar que todos los elementos existan
     if (!buscarInput || !buscarBtn) {
         console.error('❌ Elementos de búsqueda no encontrados en el DOM');
         return;
@@ -108,12 +114,9 @@ window.initElimProcesados = function() {
         hideMsgElim(); 
         if (archivedNotice) archivedNotice.style.display = 'none';
 
-        // Query simplificada: busca en columnas directas y dentro del JSONB
         const queryOr = `identificador_principal.eq.${val},datos_originales->>cedula.eq.${val},datos_originales->>placa.eq.${val}`;
 
         try {
-            console.log('📡 Query Supabase:', queryOr);
-            
             // 1. Buscar en Activos
             let { data: activo, error: errActivo } = await window.supabaseClient
                 .from('registro_procesados')
@@ -123,12 +126,7 @@ window.initElimProcesados = function() {
                 .limit(1)
                 .maybeSingle();
 
-            if (errActivo) {
-                console.error('❌ Error buscando en activos:', errActivo);
-                throw errActivo;
-            }
-
-            console.log('📦 Resultado activos:', activo);
+            if (errActivo) throw errActivo;
 
             if (activo) {
                 currentData = activo; 
@@ -149,12 +147,7 @@ window.initElimProcesados = function() {
                 .limit(1)
                 .maybeSingle();
 
-            if (errArch) {
-                console.error('❌ Error buscando en archivados:', errArch);
-                throw errArch;
-            }
-
-            console.log('📦 Resultado archivados:', archivado);
+            if (errArch) throw errArch;
 
             if (archivado) {
                 currentData = archivado; 
@@ -195,9 +188,18 @@ window.initElimProcesados = function() {
     }
 
     async function ejecutarAccion() {
-        if (pendingAction === 'delete') await eliminarRegistro();
-        else if (pendingAction === 'reintegrate') await reintegrarRegistro();
+        // ✅ PROTECCIÓN: Solo ejecutar si hay una acción pendiente
+        if (!pendingAction) {
+            console.warn('⚠️ No hay acción pendiente');
+            return;
+        }
+        
+        const accion = pendingAction;
+        pendingAction = null; // ✅ Limpiar inmediatamente para evitar doble ejecución
         closeModal();
+        
+        if (accion === 'delete') await eliminarRegistro();
+        else if (accion === 'reintegrate') await reintegrarRegistro();
     }
 
     // ==========================================
@@ -206,10 +208,12 @@ window.initElimProcesados = function() {
     async function eliminarRegistro() {
         if (!currentData) return;
         
+        // ✅ PROTECCIÓN: Deshabilitar ambos botones durante la operación
         if (btnEliminar) {
             btnEliminar.disabled = true;
             btnEliminar.textContent = '⏳ Procesando...';
         }
+        if (btnReintegrar) btnReintegrar.disabled = true;
         hideMsgElim();
 
         try {
@@ -228,7 +232,6 @@ window.initElimProcesados = function() {
                 tipo_registro: currentData.tipo_registro || 'procesado',
                 estatus: currentData.estatus || 'activo',
                 fecha_procesamiento: currentData.fecha_procesamiento || currentData.created_at,
-                // Documentos
                 portada: currentData.portada, oficio_remision: currentData.oficio_remision,
                 acta_denuncia: currentData.acta_denuncia, datos_filiatorios: currentData.datos_filiatorios,
                 acta_policial: currentData.acta_policial, derechos_imputado: currentData.derechos_imputado,
@@ -241,8 +244,10 @@ window.initElimProcesados = function() {
                 created_at_original: currentData.created_at, updated_at_original: currentData.updated_at
             };
 
+            console.log('📤 Insertando en eliminados_procesados (UNA SOLA VEZ)...');
             const { error: insErr } = await window.supabaseClient.from('eliminados_procesados').insert([dataToArchive]);
             if (insErr) throw new Error('Error archivando: ' + insErr.message);
+            console.log('✅ Insertado correctamente en eliminados_procesados');
 
             const { error: delErr } = await window.supabaseClient.from('registro_procesados').delete().eq('id', currentId);
             if (delErr) throw new Error('Error eliminando: ' + delErr.message);
@@ -260,7 +265,7 @@ window.initElimProcesados = function() {
                     tipo_delito: currentData.tipo_delito || 'N/A',
                     accion_detalle: 'Registro procesado eliminado y archivado como respaldo histórico'
                 }, currentId);
-                console.log('✅ Log de eliminación registrado en sistema_logs');
+                console.log('✅ Log de eliminación registrado (UNA SOLA VEZ)');
             }
 
             showMsgElim('✅ Procesado eliminado y archivado correctamente.', 'success');
@@ -278,6 +283,7 @@ window.initElimProcesados = function() {
                 btnEliminar.disabled = false;
                 btnEliminar.textContent = '🗑️ Eliminar Procesado del Sistema';
             }
+            if (btnReintegrar) btnReintegrar.disabled = false;
         }
     }
 
@@ -291,6 +297,7 @@ window.initElimProcesados = function() {
             btnReintegrar.disabled = true;
             btnReintegrar.textContent = '⏳ Procesando...';
         }
+        if (btnEliminar) btnEliminar.disabled = true;
         hideMsgElim();
 
         try {
@@ -304,7 +311,6 @@ window.initElimProcesados = function() {
                 tipo_registro: currentData.tipo_registro || 'procesado',
                 estatus: currentData.estatus || 'Procesado',
                 fecha_procesamiento: currentData.fecha_procesamiento || currentData.created_at_original || new Date().toISOString(),
-                // Documentos
                 portada: currentData.portada, oficio_remision: currentData.oficio_remision,
                 acta_denuncia: currentData.acta_denuncia, datos_filiatorios: currentData.datos_filiatorios,
                 acta_policial: currentData.acta_policial, derechos_imputado: currentData.derechos_imputado,
@@ -322,7 +328,6 @@ window.initElimProcesados = function() {
             const { error: delErr } = await window.supabaseClient.from('eliminados_procesados').delete().eq('id', currentData.id);
             if (delErr) throw new Error('Error quitando archivo: ' + delErr.message);
 
-            // ✅ REGISTRAR LOG USANDO UTILS.JS (GLOBAL)
             if (typeof window.registrarLog === 'function') {
                 const orig = currentData.datos_originales || {};
                 await window.registrarLog('REINTEGRAR', 'PROCESADOS', {
@@ -335,10 +340,9 @@ window.initElimProcesados = function() {
                     tipo_delito: currentData.tipo_delito || 'N/A',
                     accion_detalle: 'Registro procesado reintegrado al sistema activo desde el respaldo histórico'
                 }, currentId);
-                console.log('✅ Log de reintegración registrado en sistema_logs');
             }
 
-            showMsgElim('✅ Procesado reintegrado al sistema activo. El respaldo histórico se mantiene.', 'success');
+            showMsgElim('✅ Procesado reintegrado al sistema activo.', 'success');
             setTimeout(() => {
                 if (dataContainer) dataContainer.style.display = 'none';
                 buscarInput.value = '';
@@ -348,7 +352,7 @@ window.initElimProcesados = function() {
         } catch (err) {
             console.error('❌ Error reintegrando:', err);
             let msg = err.message.includes('23505') || err.message.includes('unique')
-                ? '❌ <strong>No se puede reintegrar:</strong> Ya existe un registro activo con este identificador.<br><small style="color:#64748b;">Este registro se conserva como historial.</small>'
+                ? '❌ <strong>No se puede reintegrar:</strong> Ya existe un registro activo con este identificador.'
                 : '❌ ' + err.message;
             showMsgElim(msg, 'error');
         } finally {
@@ -356,55 +360,79 @@ window.initElimProcesados = function() {
                 btnReintegrar.disabled = false;
                 btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo';
             }
+            if (btnEliminar) btnEliminar.disabled = false;
         }
     }
 
     // ==========================================
-    // 🔹 LISTENERS
+    // 🔹 LISTENERS (CON PROTECCIÓN ANTI-DUPLICADOS)
     // ==========================================
-    console.log('🔧 Configurando listeners...');
     
-    buscarBtn.addEventListener('click', () => {
-        console.log('🖱️ Click en botón buscar');
+    // ✅ Limpiar listeners previos antes de agregar nuevos
+    const newBuscarBtn = buscarBtn.cloneNode(true);
+    buscarBtn.parentNode.replaceChild(newBuscarBtn, buscarBtn);
+    
+    const newBuscarInput = buscarInput.cloneNode(true);
+    buscarInput.parentNode.replaceChild(newBuscarInput, buscarInput);
+    
+    // Re-asignar referencias después del clonado
+    const freshBuscarBtn = document.getElementById('btn-buscar-procesado-elim');
+    const freshBuscarInput = document.getElementById('buscar-procesado-elim');
+    
+    freshBuscarBtn.addEventListener('click', () => {
+        console.log('🖱️ Click en botón buscar (UNA SOLA VEZ)');
         buscarProcesado();
     });
     
-    buscarInput.addEventListener('keydown', e => { 
+    freshBuscarInput.addEventListener('keydown', e => { 
         if (e.key === 'Enter') { 
             e.preventDefault(); 
-            console.log('⌨️ Enter en input buscar');
             buscarProcesado(); 
         } 
     });
     
     if (btnEliminar) {
-        btnEliminar.addEventListener('click', () => {
+        const newBtnEliminar = btnEliminar.cloneNode(true);
+        btnEliminar.parentNode.replaceChild(newBtnEliminar, btnEliminar);
+        document.getElementById('btn-eliminar-procesado').addEventListener('click', () => {
             if (!currentData) return;
             const orig = currentData.datos_originales || {};
             const identificador = orig.cedula || currentData.identificador_principal || 'este registro';
-            showModal('⚠️ Confirmar Eliminación', `¿Eliminar el procesado con identificador "${identificador}"? Se moverá a la papelera de archivo.`, 'delete', 'danger');
+            showModal('⚠️ Confirmar Eliminación', `¿Eliminar el procesado con identificador "${identificador}"?`, 'delete', 'danger');
         });
     }
     
     if (btnReintegrar) {
-        btnReintegrar.addEventListener('click', () => {
+        const newBtnReintegrar = btnReintegrar.cloneNode(true);
+        btnReintegrar.parentNode.replaceChild(newBtnReintegrar, btnReintegrar);
+        document.getElementById('btn-reintegrar-procesado').addEventListener('click', () => {
             if (!currentData) return;
             const orig = currentData.datos_originales || {};
             const identificador = orig.cedula || currentData.identificador_principal || 'este registro';
-            showModal('♻️ Confirmar Reintegración', `¿Reintegrar el procesado con identificador "${identificador}"? Volverá a estar disponible en el sistema activo.`, 'reintegrate', 'success');
+            showModal('♻️ Confirmar Reintegración', `¿Reintegrar el procesado con identificador "${identificador}"?`, 'reintegrate', 'success');
         });
     }
     
-    if (btnModalYes) btnModalYes.addEventListener('click', ejecutarAccion);
-    if (btnModalNo) btnModalNo.addEventListener('click', closeModal);
+    if (btnModalYes) {
+        const newBtnModalYes = btnModalYes.cloneNode(true);
+        btnModalYes.parentNode.replaceChild(newBtnModalYes, btnModalYes);
+        document.getElementById('btn-modal-yes-elim').addEventListener('click', () => {
+            console.log('✅ Click en botón Sí del modal (UNA SOLA VEZ)');
+            ejecutarAccion();
+        });
+    }
+    
+    if (btnModalNo) {
+        const newBtnModalNo = btnModalNo.cloneNode(true);
+        btnModalNo.parentNode.replaceChild(newBtnModalNo, btnModalNo);
+        document.getElementById('btn-modal-no-elim').addEventListener('click', closeModal);
+    }
+    
     if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 
-    console.log("✅ Módulo elim-procesados.js inicializado correctamente.");
+    console.log("✅ Módulo elim-procesados.js inicializado correctamente (UNA SOLA VEZ).");
 };
 
-// ✅ INICIALIZACIÓN AUTOMÁTICA
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', window.initElimProcesados);
-} else {
-    window.initElimProcesados();
-}
+// ❌ NO AUTO-INICIALIZAR - Dejar que dashboard.js lo haga
+// Si dashboard.js NO lo llama, descomenta la siguiente línea:
+// window.initElimProcesados();
