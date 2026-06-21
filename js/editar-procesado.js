@@ -391,17 +391,23 @@ window.initEditarProcesado = function() {
                 if (updateError) throw updateError;
 
                 // 4. ✅ REGISTRAR LOG USANDO UTILS.JS
-                if (typeof window.registrarLog === 'function') {
-                    const logDetalles = {
-                        tipo_delito: tipoDelito,
-                        cedula: currentData.cedula || personaData?.cedula || 'N/A',
-                        nombre_completo: `${personaData?.primer_nombre || ''} ${personaData?.primer_apellido || ''}`.trim() || 'N/A',
-                        documentos_eliminados: Object.keys(docsEliminados).length,
-                        documentos_agregados: Object.keys(archivosNuevos).length
-                    };
-                    await window.registrarLog('EDITAR_PROCESADO', 'PROCESADOS', logDetalles, registroIdActual);
-                    console.log('✅ Log de edición registrado en sistema_logs');
-                }
+           // 4. ✅ REGISTRAR LOG USANDO UTILS.JS (CORREGIDO)
+if (typeof window.registrarLog === 'function') {
+    const logDetalles = {
+        registro: 'Procesado',           // ✅ CLAVE PARA QUE APAREZCA "PROCESADO"
+        estatus: 'Editado/Procesado',    // ✅ CLAVE PARA QUE APAREZCA "PROCESADO"
+        tipo_delito: tipoDelito,
+        cedula: currentData.cedula || personaData?.cedula || 'N/A',
+        nombre_completo: `${personaData?.primer_nombre || ''} ${personaData?.primer_apellido || ''}`.trim() || 'N/A',
+        tabla_origen: currentData.tabla_origen || 'N/A',
+        identificador: currentData.identificador_principal || 'N/A',
+        documentos_eliminados: Object.keys(docsEliminados).length,
+        documentos_agregados: Object.keys(archivosNuevos).length,
+        observaciones: document.getElementById('edit_observaciones').value.trim() || null
+    };
+    await window.registrarLog('EDITAR_PROCESADO', 'PROCESADOS', logDetalles, registroIdActual);
+    console.log('✅ Log de edición registrado en sistema_logs');
+}
 
                 ocultarOverlay();
                 mostrarMsg(msgForm, '✅ Cambios guardados exitosamente.', 'success');
