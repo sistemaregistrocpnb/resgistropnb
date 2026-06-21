@@ -165,7 +165,13 @@ if (window._regDenunciasInit) {
             // ==========================================
             // 🔹 ENVÍO DEL FORMULARIO (UN SOLO INSERT)
             // ==========================================
-            form.addEventListener('submit', async (e) => {
+            // ==========================================
+// 🔹 ENVÍO DEL FORMULARIO (UN SOLO INSERT)
+// ==========================================
+// Evitar registrar el listener múltiples veces
+if (!form.dataset.submitBound) {
+    form.dataset.submitBound = 'true';
+    form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 if (!form.checkValidity()) { form.reportValidity(); return; }
                 if (!window.supabaseClient) { alert("❌ Supabase no inicializado."); return; }
@@ -277,11 +283,12 @@ if (window._regDenunciasInit) {
                 } catch (err) {
                     console.error('Error:', err);
                     if (msg) { msg.textContent = '❌ ' + err.message; msg.className = 'msg error'; msg.style.display = 'block'; }
-                } finally {
+                         } finally {
                     btn.disabled = false; btn.textContent = '✅ Registrar Denuncia';
                     if (loadingOverlay) loadingOverlay.classList.remove('active');
                 }
             });
+} // ← CIERRA EL if (!form.dataset.submitBound)
             console.log("✅ Módulo reg-denuncias.js inicializado correctamente");
         }
         // 🔹 REFUERZO DE EVENTO CLICK (Por si el DOM dinámico lo pierde)
