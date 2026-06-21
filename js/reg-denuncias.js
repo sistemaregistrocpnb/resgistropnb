@@ -319,20 +319,20 @@ if (window._regDenunciasInit) {
                         }
                     });
 
-                    const detallesLog = {
-                        numero_denuncia: nuevoNumero,
-                        estacion: data.estacion_policial,
-                        cedula: data.cedula || 'N/A',
-                        nombre_completo: nombreComp || 'N/A',
-                        telefono: tlfCompleto,
-                        direccion: data.direccion || 'No indicada',
-                        motivo: (data.motivo_denuncia || '').substring(0, 100) + '...',
-                        total_documentos: totalDocs,
-                        documentos_detalle: docsDetalle,
-                        email_registrante: user.email,
-                        fecha_registro: new Date().toLocaleString('es-VE')
-                    };
-
+           const detallesLog = {
+    numero_denuncia: nuevoNumero,
+    estacion: data.estacion_policial,
+    cedula: data.cedula || 'N/A',
+    nombre_completo: nombreComp || 'N/A',
+    telefono: tlfCompleto,
+    direccion: data.direccion || 'No indicada',
+    motivo: (data.motivo_denuncia || '').substring(0, 100) + '...',
+    total_documentos: totalDocs,
+    documentos_detalle: docsDetalle,
+    email_registrante: user.email,
+    fecha_registro: new Date().toLocaleString('es-VE'),
+    estatus: 'Registrado'  // ✅ ESTE ES EL CAMPO QUE FALTABA
+};
                     await logDenuncias('REGISTRAR', detallesLog, insertedData.id);
 
                     if (msg) { msg.textContent = `✅ Denuncia registrada. N°: ${nuevoNumero}`; msg.className = 'msg success'; msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 5000); }
