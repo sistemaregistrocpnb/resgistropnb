@@ -559,3 +559,9 @@ window.initElimVinculados = function() {
     
     console.log("✅ Módulo elim-vinculado.js inicializado correctamente.");
 };
+// 🚀 AUTO-INICIALIZACIÓN
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', window.initElimVinculados);
+} else {
+    window.initElimVinculados();
+}
