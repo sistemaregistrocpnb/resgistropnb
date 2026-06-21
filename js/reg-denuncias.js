@@ -325,6 +325,20 @@ if (window._regDenunciasInit) {
             console.log("✅ Módulo reg-denuncias.js inicializado correctamente");
         }
         iniciarModulo();
+        // 🔹 REFUERZO DE EVENTO CLICK (Por si el DOM dinámico lo pierde)
+setTimeout(() => {
+    const displayBoxFix = document.getElementById('d-phone-display');
+    const optionsBoxFix = document.getElementById('d-phone-options');
+    if (displayBoxFix && optionsBoxFix && !displayBoxFix.dataset.clickBound) {
+        displayBoxFix.dataset.clickBound = 'true';
+        displayBoxFix.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = optionsBoxFix.style.display === 'none' || optionsBoxFix.style.display === '';
+            optionsBoxFix.style.display = isHidden ? 'block' : 'none';
+        });
+        console.log("✅ Evento click del dropdown de países reforzado.");
+    }
+}, 500);
     };
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.initRegDenuncias);
