@@ -16,7 +16,6 @@ if (window._regDenunciasInit) {
                 else { console.error("❌ ERROR: No se encontró el formulario."); return; }
             }
 
-            // 🔹 FUNCIÓN AUXILIAR PARA LOGS DEL MÓDULO
             async function logDenuncias(accion, detalles, registroId = null) {
                 if (typeof window.registrarLog !== 'function') {
                     console.warn('⚠️ utils.js no disponible para registrar log');
