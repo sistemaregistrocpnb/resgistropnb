@@ -219,8 +219,20 @@ if (window._regDenunciasInit) {
                             } else docsMultiplesUrls[doc.id] = null;
                         }
 
-                        const tlfPais = document.getElementById('d_tlf_pais')?.value || null;
-                        const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '') || null;
+                       const tlfPais = document.getElementById('d_tlf_pais')?.value || null;
+const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '') || null;
+
+// ✅ VALIDACIÓN DE CÉDULA (7 u 8 dígitos numéricos)
+const cedulaInput = document.getElementById('d_cedula');
+const cedulaValor = cedulaInput?.value.trim().replace(/\D/g, '') || '';
+if (cedulaValor.length < 7 || cedulaValor.length > 8) {
+    alert('⚠️ La cédula debe tener 7 u 8 dígitos numéricos.');
+    cedulaInput?.focus();
+    btn.disabled = false;
+    btn.textContent = '✅ Registrar Denuncia';
+    if (loadingOverlay) loadingOverlay.classList.remove('active');
+    return;
+}
                         
                         // Preparar data
                         const data = {
@@ -230,7 +242,7 @@ if (window._regDenunciasInit) {
                             segundo_nombre: document.getElementById('d_nombre2')?.value.trim() || null,
                             primer_apellido: document.getElementById('d_apellido1')?.value.trim(),
                             segundo_apellido: document.getElementById('d_apellido2')?.value.trim() || null,
-                            cedula: document.getElementById('d_cedula')?.value.trim() || null,
+                         cedula: cedulaValor || null,
                             tlf_pais: tlfPais,
                             tlf_numero: tlfNum,
                             direccion: document.getElementById('d_direccion')?.value.trim() || null,
@@ -289,6 +301,21 @@ if (window._regDenunciasInit) {
         }
         
         iniciarModulo();
+        // ✅ FILTRAR SOLO NÚMEROS EN CAMPOS DE CÉDULA Y TELÉFONO
+const cedulaField = document.getElementById('d_cedula');
+const tlfField = document.getElementById('d_tlf_num');
+
+if (cedulaField) {
+    cedulaField.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/\D/g, '').substring(0, 8);
+    });
+}
+
+if (tlfField) {
+    tlfField.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/\D/g, '').substring(0, 11);
+    });
+}
         
         // 🔹 REFUERZO DE EVENTO CLICK (Por si el DOM dinámico lo pierde)
         setTimeout(() => {
