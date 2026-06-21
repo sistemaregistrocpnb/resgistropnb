@@ -1,41 +1,7 @@
 window.initElimProcesados = function() {
-    // ==========================================
-    // ✅ FUNCIÓN PARA REGISTRAR LOGS CON NOMBRE COMPLETO
-    // ==========================================
-    async function registrarLog(accion, modulo, detalles) {
-        try {
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            if (!user) return;
-            let nombreUsuario = user.email || 'Sistema';
-            
-            try {
-                const { data: perfil } = await window.supabaseClient
-                    .from('perfiles_usuario')
-                    .select('nombre, apellido, email')
-                    .eq('user_id', user.id)
-                    .maybeSingle();
-                if (perfil) {
-                    nombreUsuario = [perfil.nombre, perfil.apellido].filter(Boolean).join(' ').trim() || nombreUsuario;
-                }
-            } catch (err) {
-                // Silencioso por seguridad
-            }
+    console.log("✅ Módulo elim-procesados.js cargado correctamente.");
 
-            const logEntry = {
-                user_id: user.id,
-                user_nombre: nombreUsuario,
-                user_email: user.email || 'sistema',
-                accion: accion,
-                modulo: modulo,
-                detalles: detalles,
-                created_at: new Date().toISOString()
-            };
-            await window.supabaseClient.from('sistema_logs').insert([logEntry]);
-        } catch (err) {
-            // Silencioso por seguridad
-        }
-    }
-
+    // 🔹 Referencias DOM
     const buscarInput = document.getElementById('buscar-procesado-elim');
     const buscarBtn = document.getElementById('btn-buscar-procesado-elim');
     const msgBuscar = document.getElementById('buscar-msg-elim');
@@ -51,11 +17,12 @@ window.initElimProcesados = function() {
     const modalText = document.getElementById('modal-text-elim');
     const btnModalYes = document.getElementById('btn-modal-yes-elim');
     const btnModalNo = document.getElementById('btn-modal-no-elim');
-    
+
     let currentData = null;
     let currentId = null;
     let pendingAction = null;
 
+    // 🔹 Helpers UI
     const showMsg = (el, txt, type) => { el.innerHTML = txt; el.className = `search-msg ${type}`; el.style.display = 'block'; };
     const hideMsg = (el) => { el.style.display = 'none'; };
     const showMsgElim = (txt, type) => { msgElim.innerHTML = txt; msgElim.className = `msg ${type}`; msgElim.style.display = 'block'; };
@@ -64,27 +31,31 @@ window.initElimProcesados = function() {
     function renderUI(data, isArchived) {
         const orig = data.datos_originales || {};
         const nombre = `${orig.primer_nombre || ''} ${orig.primer_apellido || ''}`.trim() || 'No especificado';
-        const cedula = orig.cedula || 'N/A';
+        const cedula = orig.cedula || data.cedula || 'N/A';
         const placa = orig.placa || 'N/A';
+        
         let docsCount = 0;
         const camposDocs = ['portada', 'oficio_remision', 'acta_denuncia', 'datos_filiatorios', 'acta_policial', 'derechos_imputado', 'evaluacion_medica', 'identificacion_cedula', 'solicitud_examen_forense', 'resultados_examen_forense', 'asistencia_comdepro', 'remision_estacionamiento', 'planilla_pvr', 'otros_documentos'];
-        camposDocs.forEach(campo => { if (data[campo]) docsCount++; });
+        camposDocs.forEach(campo => { 
+            const val = data[campo];
+            if (Array.isArray(val) ? val.length > 0 : val) docsCount++; 
+        });
         ['entrevista', 'cadena_custodia', 'inspecciones_tecnicas'].forEach(campo => {
             if (Array.isArray(data[campo])) docsCount += data[campo].length;
         });
-        
+
         let html = `
-        <div class="data-row"><span class="data-label">🆔 ID Original:</span><span class="data-value">${data.id_original || data.id}</span></div>
-        <div class="data-row"><span class="data-label">📋 Tabla Origen:</span><span class="data-value">${data.tabla_origen || 'N/A'}</span></div>
-        <div class="data-row"><span class="data-label">🔍 Identificador:</span><span class="data-value">${data.identificador_principal || 'N/A'}</span></div>
-        <div class="data-row"><span class="data-label">👤 Nombre:</span><span class="data-value">${nombre}</span></div>
-        <div class="data-row"><span class="data-label">🆔 Cédula:</span><span class="data-value">${cedula}</span></div>
-        <div class="data-row"><span class="data-label">🚗 Placa:</span><span class="data-value">${placa}</span></div>
-        <div class="data-row"><span class="data-label">⚖️ Tipo Delito:</span><span class="data-value">${data.tipo_delito || 'N/A'}</span></div>
-        <div class="data-row"><span class="data-label">📎 Documentos:</span><span class="data-value">${docsCount > 0 ? docsCount + ' archivos' : 'Sin documentos'}</span></div>
+            <div class="data-row"><span class="data-label">🆔 ID Original:</span><span class="data-value">${data.id_original || data.id}</span></div>
+            <div class="data-row"><span class="data-label">📋 Tabla Origen:</span><span class="data-value">${data.tabla_origen || 'N/A'}</span></div>
+            <div class="data-row"><span class="data-label">🔍 Identificador:</span><span class="data-value">${data.identificador_principal || 'N/A'}</span></div>
+            <div class="data-row"><span class="data-label">👤 Nombre:</span><span class="data-value">${nombre}</span></div>
+            <div class="data-row"><span class="data-label">🆔 Cédula:</span><span class="data-value">${cedula}</span></div>
+            <div class="data-row"><span class="data-label">🚗 Placa:</span><span class="data-value">${placa}</span></div>
+            <div class="data-row"><span class="data-label">⚖️ Tipo Delito:</span><span class="data-value">${data.tipo_delito || 'N/A'}</span></div>
+            <div class="data-row"><span class="data-label">📎 Documentos:</span><span class="data-value">${docsCount > 0 ? docsCount + ' archivos' : 'Sin documentos'}</span></div>
         `;
         resumenContainer.innerHTML = html;
-        
+
         if (isArchived) {
             archivedBanner.style.display = 'block';
             archivedNotice.style.display = 'block';
@@ -100,6 +71,9 @@ window.initElimProcesados = function() {
         }
     }
 
+    // ==========================================
+    // 🔍 BÚSQUEDA (ACTIVOS Y ARCHIVADOS)
+    // ==========================================
     async function buscarProcesado() {
         const val = buscarInput.value.trim().toUpperCase();
         if (val.length < 3) return showMsg(msgBuscar, '⚠️ Ingrese al menos 3 caracteres', 'error');
@@ -108,50 +82,63 @@ window.initElimProcesados = function() {
         buscarBtn.disabled = true;
         dataContainer.style.display = 'none';
         hideMsg(msgBuscar); hideMsgElim(); archivedNotice.style.display = 'none';
-        
+
+        // Query mejorada: busca en columnas directas y dentro del JSONB
+        const queryOr = `identificador_principal.eq.${val},cedula.eq.${val},datos_originales->>cedula.eq.${val},datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`;
+
         try {
+            // 1. Buscar en Activos
             let { data: activo, error: errActivo } = await window.supabaseClient
                 .from('registro_procesados')
                 .select('*')
-                .or(`identificador_principal.eq.${val},datos_originales->>cedula.eq.${val},datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
+                .or(queryOr)
                 .order('fecha_procesamiento', { ascending: false })
                 .limit(1)
                 .maybeSingle();
-                
+
             if (errActivo) throw errActivo;
+
             if (activo) {
-                currentData = activo; currentId = activo.id;
+                currentData = activo; 
+                currentId = activo.id;
                 renderUI(activo, false);
                 dataContainer.style.display = 'block';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
-            
+
+            // 2. Buscar en Archivados
             let { data: archivado, error: errArch } = await window.supabaseClient
                 .from('eliminados_procesados')
                 .select('*')
-                .or(`identificador_principal.eq.${val},datos_originales->>cedula.eq.${val},datos_originales->>placa.eq.${val},datos_originales->>serial_carroceria.eq.${val},datos_originales->>serial_motor.eq.${val}`)
+                .or(queryOr)
                 .order('eliminado_en', { ascending: false })
                 .limit(1)
                 .maybeSingle();
-                
+
             if (errArch) throw errArch;
+
             if (archivado) {
-                currentData = archivado; currentId = archivado.id_original || archivado.id;
+                currentData = archivado; 
+                currentId = archivado.id_original || archivado.id;
                 renderUI(archivado, true);
                 dataContainer.style.display = 'block';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
-            
+
             showMsg(msgBuscar, '❌ Procesado no encontrado en el sistema.', 'error');
         } catch (err) {
+            console.error('❌ Error buscando:', err);
             showMsg(msgBuscar, '❌ Error de conexión al buscar.', 'error');
         } finally {
             buscarBtn.disabled = false;
         }
     }
 
+    // ==========================================
+    // 🔹 MODAL DE CONFIRMACIÓN
+    // ==========================================
     function showModal(titulo, texto, accion, tipo) {
         pendingAction = accion;
         modalTitle.textContent = titulo;
@@ -161,9 +148,9 @@ window.initElimProcesados = function() {
         modal.style.display = 'flex';
     }
 
-    function closeModal() { 
-        modal.style.display = 'none'; 
-        pendingAction = null; 
+    function closeModal() {
+        modal.style.display = 'none';
+        pendingAction = null;
     }
 
     async function ejecutarAccion() {
@@ -173,17 +160,17 @@ window.initElimProcesados = function() {
     }
 
     // ==========================================
-    // 🔹 Eliminar (Activa → Eliminados)
+    // 🔹 ELIMINAR (Activa → Eliminados)
     // ==========================================
     async function eliminarRegistro() {
         btnEliminar.disabled = true;
         btnEliminar.textContent = '⏳ Procesando...';
         hideMsgElim();
-        
+
         try {
             const { data: { user } } = await window.supabaseClient.auth.getUser();
             const eliminadoPor = user?.email || sessionStorage.getItem('pnb_user_email') || 'usuario@sistema';
-            
+
             const dataToArchive = {
                 id_original: currentId,
                 eliminado_por: eliminadoPor,
@@ -196,6 +183,8 @@ window.initElimProcesados = function() {
                 tipo_registro: currentData.tipo_registro || 'procesado',
                 estatus: currentData.estatus || 'activo',
                 fecha_procesamiento: currentData.fecha_procesamiento || currentData.created_at,
+                cedula: currentData.cedula,
+                // Documentos
                 portada: currentData.portada, oficio_remision: currentData.oficio_remision,
                 acta_denuncia: currentData.acta_denuncia, datos_filiatorios: currentData.datos_filiatorios,
                 acta_policial: currentData.acta_policial, derechos_imputado: currentData.derechos_imputado,
@@ -207,22 +196,28 @@ window.initElimProcesados = function() {
                 inspecciones_tecnicas: currentData.inspecciones_tecnicas,
                 created_at_original: currentData.created_at, updated_at_original: currentData.updated_at
             };
-            
+
             const { error: insErr } = await window.supabaseClient.from('eliminados_procesados').insert([dataToArchive]);
             if (insErr) throw new Error('Error archivando: ' + insErr.message);
-            
+
             const { error: delErr } = await window.supabaseClient.from('registro_procesados').delete().eq('id', currentId);
             if (delErr) throw new Error('Error eliminando: ' + delErr.message);
-            
-            // ✅ REGISTRAR LOG DE ELIMINACIÓN (UNA SOLA VEZ)
-            await registrarLog('ELIMINAR', 'PROCESADOS', {
-                identificador: currentData.identificador_principal || currentData.datos_originales?.cedula || 'N/A',
-                tipo_registro: currentData.tipo_registro || 'procesado',
-                tipo_delito: currentData.tipo_delito || 'N/A',
-                estatus: 'Eliminado',
-                accion_detalle: 'Registro procesado eliminado y archivado como respaldo histórico'
-            });
-            
+
+            // ✅ REGISTRAR LOG USANDO UTILS.JS (GLOBAL)
+            if (typeof window.registrarLog === 'function') {
+                const orig = currentData.datos_originales || {};
+                await window.registrarLog('ELIMINAR', 'PROCESADOS', {
+                    registro: 'Eliminado/Archivado',
+                    estatus: 'Eliminado',
+                    identificador: currentData.identificador_principal || orig.cedula || 'N/A',
+                    cedula: orig.cedula || currentData.cedula || 'N/A',
+                    nombre_completo: `${orig.primer_nombre || ''} ${orig.primer_apellido || ''}`.trim() || 'N/A',
+                    tipo_registro: currentData.tipo_registro || 'procesado',
+                    tipo_delito: currentData.tipo_delito || 'N/A',
+                    accion_detalle: 'Registro procesado eliminado y archivado como respaldo histórico'
+                }, currentId); // 📌 Enviamos el ID del registro
+            }
+
             showMsgElim('✅ Procesado eliminado y archivado correctamente.', 'success');
             setTimeout(() => {
                 dataContainer.style.display = 'none';
@@ -231,7 +226,8 @@ window.initElimProcesados = function() {
                 hideMsgElim();
             }, 4000);
         } catch (err) {
-            showMsgElim('❌ Error al procesar la solicitud.', 'error');
+            console.error('❌ Error eliminando:', err);
+            showMsgElim('❌ Error al procesar la solicitud: ' + err.message, 'error');
         } finally {
             btnEliminar.disabled = false;
             btnEliminar.textContent = '🗑️ Eliminar Procesado del Sistema';
@@ -239,13 +235,13 @@ window.initElimProcesados = function() {
     }
 
     // ==========================================
-    // 🔹 Reintegrar (Eliminados → Activa)
+    // 🔹 REINTEGRAR (Eliminados → Activa)
     // ==========================================
     async function reintegrarRegistro() {
         btnReintegrar.disabled = true;
         btnReintegrar.textContent = '⏳ Procesando...';
         hideMsgElim();
-        
+
         try {
             const dataToRestore = {
                 tabla_origen: currentData.tabla_origen,
@@ -255,8 +251,10 @@ window.initElimProcesados = function() {
                 observaciones: currentData.observaciones,
                 datos_originales: currentData.datos_originales,
                 tipo_registro: currentData.tipo_registro || 'procesado',
-                estatus: currentData.estatus || 'activo',
+                estatus: currentData.estatus || 'Procesado',
                 fecha_procesamiento: currentData.fecha_procesamiento || currentData.created_at_original || new Date().toISOString(),
+                cedula: currentData.cedula,
+                // Documentos
                 portada: currentData.portada, oficio_remision: currentData.oficio_remision,
                 acta_denuncia: currentData.acta_denuncia, datos_filiatorios: currentData.datos_filiatorios,
                 acta_policial: currentData.acta_policial, derechos_imputado: currentData.derechos_imputado,
@@ -267,19 +265,28 @@ window.initElimProcesados = function() {
                 entrevista: currentData.entrevista, cadena_custodia: currentData.cadena_custodia,
                 inspecciones_tecnicas: currentData.inspecciones_tecnicas
             };
-            
+
             const { error: insErr } = await window.supabaseClient.from('registro_procesados').insert([dataToRestore]);
             if (insErr) throw new Error('Error restaurando: ' + insErr.message);
-            
-            // ✅ REGISTRAR LOG DE REINTEGRACIÓN (UNA SOLA VEZ)
-            await registrarLog('REINTEGRAR', 'PROCESADOS', {
-                identificador: currentData.identificador_principal || currentData.datos_originales?.cedula || 'N/A',
-                tipo_registro: currentData.tipo_registro || 'procesado',
-                tipo_delito: currentData.tipo_delito || 'N/A',
-                estatus: 'Procesado',
-                accion_detalle: 'Registro procesado reintegrado al sistema activo desde el respaldo histórico'
-            });
-            
+
+            const { error: delErr } = await window.supabaseClient.from('eliminados_procesados').delete().eq('id', currentData.id);
+            if (delErr) throw new Error('Error quitando archivo: ' + delErr.message);
+
+            // ✅ REGISTRAR LOG USANDO UTILS.JS (GLOBAL)
+            if (typeof window.registrarLog === 'function') {
+                const orig = currentData.datos_originales || {};
+                await window.registrarLog('REINTEGRAR', 'PROCESADOS', {
+                    registro: 'Reintegrado/Activo',
+                    estatus: 'Procesado',
+                    identificador: currentData.identificador_principal || orig.cedula || 'N/A',
+                    cedula: orig.cedula || currentData.cedula || 'N/A',
+                    nombre_completo: `${orig.primer_nombre || ''} ${orig.primer_apellido || ''}`.trim() || 'N/A',
+                    tipo_registro: currentData.tipo_registro || 'procesado',
+                    tipo_delito: currentData.tipo_delito || 'N/A',
+                    accion_detalle: 'Registro procesado reintegrado al sistema activo desde el respaldo histórico'
+                }, currentId); // 📌 Enviamos el ID del registro
+            }
+
             showMsgElim('✅ Procesado reintegrado al sistema activo. El respaldo histórico se mantiene.', 'success');
             setTimeout(() => {
                 dataContainer.style.display = 'none';
@@ -288,6 +295,7 @@ window.initElimProcesados = function() {
                 hideMsgElim();
             }, 4000);
         } catch (err) {
+            console.error('❌ Error reintegrando:', err);
             let msg = err.message.includes('23505') || err.message.includes('unique')
                 ? '❌ <strong>No se puede reintegrar:</strong> Ya existe un registro activo con este identificador.<br><small style="color:#64748b;">Este registro se conserva como historial.</small>'
                 : '❌ ' + err.message;
@@ -306,20 +314,21 @@ window.initElimProcesados = function() {
     
     btnEliminar.addEventListener('click', () => {
         if (!currentData) return;
-        const identificador = currentData.datos_originales?.cedula || currentData.identificador_principal || 'este registro';
+        const orig = currentData.datos_originales || {};
+        const identificador = orig.cedula || currentData.identificador_principal || 'este registro';
         showModal('⚠️ Confirmar Eliminación', `¿Eliminar el procesado con identificador "${identificador}"? Se moverá a la papelera de archivo.`, 'delete', 'danger');
     });
     
     btnReintegrar.addEventListener('click', () => {
         if (!currentData) return;
-        const identificador = currentData.datos_originales?.cedula || currentData.identificador_principal || 'este registro';
+        const orig = currentData.datos_originales || {};
+        const identificador = orig.cedula || currentData.identificador_principal || 'este registro';
         showModal('♻️ Confirmar Reintegración', `¿Reintegrar el procesado con identificador "${identificador}"? Volverá a estar disponible en el sistema activo.`, 'reintegrate', 'success');
     });
     
     btnModalYes.addEventListener('click', ejecutarAccion);
     btnModalNo.addEventListener('click', closeModal);
     modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
-    
-    // ✅ NOTA: Se eliminó la auto-inicialización del final para evitar que dashboard.js 
-    // y este archivo ejecuten la función dos veces, lo que causaba el log duplicado.
+
+    console.log("✅ Módulo elim-procesados.js inicializado correctamente.");
 };
