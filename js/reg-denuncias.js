@@ -23,13 +23,18 @@ if (window._regDenunciasInit) {
                 fechaInput.value = ahora.toLocaleString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
             }
 
-            // Calcular próximo número
+            // ✅ Calcular próximo número (CORREGIDA)
             async function actualizarProximoNumero() {
                 const inputNum = document.getElementById('d_numero_denuncia');
                 if (!inputNum || !window.supabaseClient) return;
                 inputNum.value = 'Calculando...';
                 try {
-            
+                    const { data: ultima } = await window.supabaseClient.from('denuncias').select('numero_denuncia').order('numero_denuncia', { ascending: false }).limit(1).maybeSingle();
+                    let proximo = 'CPNB-00000001';
+                    if (ultima && ultima.numero_denuncia) {
+                        const partes = ultima.numero_denuncia.split('-');
+                        if (partes.length === 2) proximo = `CPNB-${(parseInt(partes[1], 10) + 1).toString().padStart(8, '0')}`;
+                    }
                     inputNum.value = proximo;
                 } catch (e) { inputNum.value = 'Error'; }
             }
@@ -120,7 +125,7 @@ if (window._regDenunciasInit) {
             window.quitarMultiple = function(docId, index, max) { archivosMultiples[docId].splice(index, 1); actualizarListaMultiples(docId, max); };
 
             // ==========================================
-            // 🔹 DROPDOWN DE BANDERAS (COPIA EXACTA DE REG-PERSONAS)
+            // 🔹 DROPDOWN DE BANDERAS
             // ==========================================
             const nativeSelect = document.getElementById('d_tlf_pais');
             const displayBox = document.getElementById('d-phone-display');
@@ -166,7 +171,7 @@ if (window._regDenunciasInit) {
             actualizarProximoNumero();
 
             // ==========================================
-            // ENVÍO DEL FORMULARIO Y LOGS
+            // 🔹 ENVÍO DEL FORMULARIO CON REINTENTOS
             // ==========================================
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -184,13 +189,7 @@ if (window._regDenunciasInit) {
 
                     const uid = user.id; const ts = Date.now();
 
-                    const { data: ultima } = await window.supabaseClient.from('denuncias').select('numero_denuncia').order('numero_denuncia', { ascending: false }).limit(1).maybeSingle();
-                    let nuevoNumero = 'CPNB-00000001';
-                    if (ultima && ultima.numero_denuncia) {
-                        const p = ultima.numero_denuncia.split('-');
-                        if (p.length === 2) nuevoNumero = `CPNB-${(parseInt(p[1], 10) + 1).toString().padStart(8, '0')}`;
-                    }
-
+                    // ✅ SUBIDA DE DOCUMENTOS ÚNICOS
                     const docsUnicosUrls = {};
                     for (const doc of docsUnicos) {
                         const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
@@ -202,6 +201,7 @@ if (window._regDenunciasInit) {
                         } else docsUnicosUrls[doc.id] = null;
                     }
 
+                    // ✅ SUBIDA DE DOCUMENTOS MÚLTIPLES
                     const docsMultiplesUrls = {};
                     for (const doc of docsMultiples) {
                         const radio = document.querySelector(`input[name="doc_${doc.id}"]:checked`);
@@ -216,77 +216,72 @@ if (window._regDenunciasInit) {
                             docsMultiplesUrls[doc.id] = urls;
                         } else docsMultiplesUrls[doc.id] = null;
                     }
-// ✅ CÓDIGO NUEVO CON REINTENTOS
-const tlfPais = document.getElementById('d_tlf_pais')?.value || null;
-const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '') || null;
-const data = {
-    // numero_denuncia se calculará dinámicamente en el bucle
-    estacion_policial: document.getElementById('d_estacion')?.value,
-    primer_nombre: document.getElementById('d_nombre1')?.value.trim(),
-    segundo_nombre: document.getElementById('d_nombre2')?.value.trim() || null,
-    primer_apellido: document.getElementById('d_apellido1')?.value.trim(),
-    segundo_apellido: document.getElementById('d_apellido2')?.value.trim() || null,
-    cedula: document.getElementById('d_cedula')?.value.trim() || null,
-    tlf_pais: tlfPais,
-    tlf_numero: tlfNum,
-    direccion: document.getElementById('d_direccion')?.value.trim() || null,
-    motivo_denuncia: document.getElementById('d_motivo')?.value.trim(),
-    oficio_remision: docsUnicosUrls.oficio_remision,
-    acta_denuncia: docsUnicosUrls.acta_denuncia,
-    medida_proteccion: docsUnicosUrls.medida_proteccion,
-    acta_entrevista: docsMultiplesUrls.acta_entrevista,
-    datos_filiatorios: docsMultiplesUrls.datos_filiatorios,
-    evidencias: docsMultiplesUrls.evidencias,
-    solicitud_senamecf: docsMultiplesUrls.solicitud_senamecf,
-    observaciones: document.getElementById('d_observaciones')?.value.trim() || null,
-    registrado_por: uid,
-    email_registrante: user.email
-};
 
-// ==========================================
-// 🔹 INSERCIÓN CON REINTENTOS (Anti-Duplicados)
-// ==========================================
-let intentos = 0;
-const maxIntentos = 3;
-let insertedData = null;
-let insertError = null;
-let nuevoNumero = '';
+                    // ✅ PREPARAR DATA (SIN numero_denuncia aún)
+                    const tlfPais = document.getElementById('d_tlf_pais')?.value || null;
+                    const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '') || null;
+                    const data = {
+                        estacion_policial: document.getElementById('d_estacion')?.value,
+                        primer_nombre: document.getElementById('d_nombre1')?.value.trim(),
+                        segundo_nombre: document.getElementById('d_nombre2')?.value.trim() || null,
+                        primer_apellido: document.getElementById('d_apellido1')?.value.trim(),
+                        segundo_apellido: document.getElementById('d_apellido2')?.value.trim() || null,
+                        cedula: document.getElementById('d_cedula')?.value.trim() || null,
+                        tlf_pais: tlfPais,
+                        tlf_numero: tlfNum,
+                        direccion: document.getElementById('d_direccion')?.value.trim() || null,
+                        motivo_denuncia: document.getElementById('d_motivo')?.value.trim(),
+                        oficio_remision: docsUnicosUrls.oficio_remision,
+                        acta_denuncia: docsUnicosUrls.acta_denuncia,
+                        medida_proteccion: docsUnicosUrls.medida_proteccion,
+                        acta_entrevista: docsMultiplesUrls.acta_entrevista,
+                        datos_filiatorios: docsMultiplesUrls.datos_filiatorios,
+                        evidencias: docsMultiplesUrls.evidencias,
+                        solicitud_senamecf: docsMultiplesUrls.solicitud_senamecf,
+                        observaciones: document.getElementById('d_observaciones')?.value.trim() || null,
+                        registrado_por: uid,
+                        email_registrante: user.email
+                    };
 
-while (intentos < maxIntentos) {
-    // 1. Recalcular el número más alto actual en cada intento
-    const { data: ultima } = await window.supabaseClient.from('denuncias').select('numero_denuncia').order('numero_denuncia', { ascending: false }).limit(1).maybeSingle();
-    nuevoNumero = 'CPNB-00000001';
-    if (ultima && ultima.numero_denuncia) {
-        const p = ultima.numero_denuncia.split('-');
-        if (p.length === 2) nuevoNumero = `CPNB-${(parseInt(p[1], 10) + 1).toString().padStart(8, '0')}`;
-    }
-    
-    data.numero_denuncia = nuevoNumero;
+                    // ==========================================
+                    // 🔹 INSERCIÓN CON REINTENTOS (Anti-Duplicados)
+                    // ==========================================
+                    let intentos = 0;
+                    const maxIntentos = 3;
+                    let insertedData = null;
+                    let insertError = null;
+                    let nuevoNumero = '';
 
-    // 2. Intentar insertar
-    const result = await window.supabaseClient.from('denuncias').insert([data]).select('id').single();
-    
-    if (result.error) {
-        if (result.error.code === '23505') { // Error de clave duplicada
-            console.warn(`⚠️ Conflicto de número (${nuevoNumero}). Reintentando... (Intento ${intentos + 1})`);
-            intentos++;
-            insertError = result.error;
-            continue; // Vuelve a empezar el bucle
-        } else {
-            insertError = result.error;
-            break; // Error distinto, salir
-        }
-    } else {
-        insertedData = result.data;
-        insertError = null;
-        break; // ¡Éxito!
-    }
-}
+                    while (intentos < maxIntentos) {
+                        const { data: ultima } = await window.supabaseClient.from('denuncias').select('numero_denuncia').order('numero_denuncia', { ascending: false }).limit(1).maybeSingle();
+                        nuevoNumero = 'CPNB-00000001';
+                        if (ultima && ultima.numero_denuncia) {
+                            const p = ultima.numero_denuncia.split('-');
+                            if (p.length === 2) nuevoNumero = `CPNB-${(parseInt(p[1], 10) + 1).toString().padStart(8, '0')}`;
+                        }
+                        
+                        data.numero_denuncia = nuevoNumero;
 
-if (insertError) throw insertError;
+                        const result = await window.supabaseClient.from('denuncias').insert([data]).select('id').single();
+                        
+                        if (result.error) {
+                            if (result.error.code === '23505') {
+                                console.warn(`⚠️ Conflicto de número (${nuevoNumero}). Reintentando... (Intento ${intentos + 1})`);
+                                intentos++;
+                                insertError = result.error;
+                                continue;
+                            } else {
+                                insertError = result.error;
+                                break;
+                            }
+                        } else {
+                            insertedData = result.data;
+                            insertError = null;
+                            break;
+                        }
+                    }
 
-                    const { data: insertedData, error } = await window.supabaseClient.from('denuncias').insert([data]).select('id').single();
-                    if (error) throw error;
+                    if (insertError) throw insertError;
 
                     // ✅ REGISTRAR LOG USANDO UTILS.JS
                     if (typeof window.registrarLog === 'function') {
@@ -330,20 +325,6 @@ if (insertError) throw insertError;
             console.log("✅ Módulo reg-denuncias.js inicializado correctamente");
         }
         iniciarModulo();
-        // 🔹 REFUERZO DE EVENTO CLICK (Por si el DOM dinámico lo pierde)
-setTimeout(() => {
-    const displayBoxFix = document.getElementById('d-phone-display');
-    const optionsBoxFix = document.getElementById('d-phone-options');
-    if (displayBoxFix && optionsBoxFix && !displayBoxFix.dataset.clickBound) {
-        displayBoxFix.dataset.clickBound = 'true';
-        displayBoxFix.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const isHidden = optionsBoxFix.style.display === 'none' || optionsBoxFix.style.display === '';
-            optionsBoxFix.style.display = isHidden ? 'block' : 'none';
-        });
-        console.log("✅ Evento click del dropdown de países reforzado.");
-    }
-}, 500);
     };
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.initRegDenuncias);
