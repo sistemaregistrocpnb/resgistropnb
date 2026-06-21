@@ -62,22 +62,42 @@ function generarDocsUnicos() {
 if (!contenedorUnicos) return;
 contenedorUnicos.innerHTML = '';
 docsUnicos.forEach(doc => {
-const div = document.createElement('div');
-div.className = 'doc-item';
-div.id = `doc-item-${doc.id}`;
-div.innerHTML = `
-<div class="doc-header">
-<label>${doc.label}</label>
-</div>
-<div id="current-${doc.id}"></div>
-<div class="doc-upload-area" id="upload-${doc.id}">
-<input type="file" id="file_${doc.id}" accept=".pdf,application/pdf" onchange="mostrarNuevoArchivo('${doc.id}', this)">
-<div id="status-${doc.id}" class="file-status-container"></div>
-</div>
-`;
-contenedorUnicos.appendChild(div);
+    const currentDiv = document.getElementById(`current-${doc.id}`);
+    const url = proc[doc.id];
+    
+    if (url) {
+        archivosActuales[doc.id] = url;
+        const fileName = url.split('/').pop();
+        currentDiv.innerHTML = `
+            <div class="doc-current">
+                <div class="file-info">
+                    <span>📄</span>
+                    <span>${fileName}</span>
+                </div>
+                <div class="actions">
+                    <button type="button" class="btn-view" onclick="verArchivo('${url}')">👁️ Ver</button>
+                    <button type="button" class="btn-replace" onclick="reemplazarArchivo('${doc.id}')">🔄 Reemplazar</button>
+                    <button type="button" class="btn-delete" onclick="eliminarArchivoActual('${doc.id}')">🗑️ Eliminar</button>
+                </div>
+            </div>
+        `;
+    } else {
+        // 🔹 CORRECCIÓN: Mostrar botón "Ver" DESHABILITADO cuando no hay archivo
+        archivosActuales[doc.id] = null;
+        currentDiv.innerHTML = `
+            <div class="doc-current">
+                <div class="file-info">
+                    <span>📄</span>
+                    <span style="color: #94a3b8;">Sin archivo</span>
+                </div>
+                <div class="actions">
+                    <button type="button" class="btn-view" disabled style="opacity: 0.5; cursor: not-allowed;">👁️ Ver</button>
+                    <button type="button" class="btn-replace" onclick="reemplazarArchivo('${doc.id}')">🔄 Subir Archivo</button>
+                </div>
+            </div>
+        `;
+    }
 });
-}
 function generarDocsMultiples() {
 if (!contenedorMultiples) return;
 contenedorMultiples.innerHTML = '';
@@ -103,19 +123,39 @@ contenedorMultiples.appendChild(div);
 generarDocsUnicos();
 generarDocsMultiples();
 window.mostrarNuevoArchivo = function(docId, input) {
-const statusContainer = document.getElementById(`status-${docId}`);
-if (!statusContainer) return;
-if (input.files && input.files[0]) {
-archivosNuevos[docId] = input.files[0];
-archivosAEliminar[docId] = true;
-statusContainer.innerHTML = `
-<div class="file-loaded">
-<span>🔄</span>
-<span class="file-name">${input.files[0].name}</span>
-<button type="button" class="btn-remove" onclick="cancelarNuevo('${docId}')">❌ Cancelar</button>
-</div>
-`;
-}
+    const statusContainer = document.getElementById(`status-${docId}`);
+    const currentDiv = document.getElementById(`current-${docId}`);
+    
+    if (!statusContainer) return;
+    
+    if (input.files && input.files[0]) {
+        archivosNuevos[docId] = input.files[0];
+        archivosAEliminar[docId] = false; // Ya no se va a eliminar
+        
+        statusContainer.innerHTML = `
+            <div class="file-loaded">
+                <span>🔄</span>
+                <span class="file-name">${input.files[0].name}</span>
+                <button type="button" class="btn-remove" onclick="cancelarNuevo('${docId}')">❌ Cancelar</button>
+            </div>
+        `;
+        
+        // 🔹 CORRECCIÓN: Actualizar el botón "Ver" para que aparezca HABILITADO
+        if (currentDiv) {
+            currentDiv.innerHTML = `
+                <div class="doc-current">
+                    <div class="file-info">
+                        <span>📄</span>
+                        <span style="color: #059669;">🆕 ${input.files[0].name} (Nuevo)</span>
+                    </div>
+                    <div class="actions">
+                        <button type="button" class="btn-view" disabled style="opacity: 0.5; cursor: not-allowed;" title="Se habilitará al guardar">👁️ Ver</button>
+                        <button type="button" class="btn-replace" onclick="reemplazarArchivo('${docId}')">🔄 Cambiar</button>
+                    </div>
+                </div>
+            `;
+        }
+    }
 };
 window.cancelarNuevo = function(docId) {
 const input = document.getElementById(`file_${docId}`);
@@ -184,23 +224,35 @@ window.eliminarArchivoActual = function(docId) {
     
     archivosAEliminar[docId] = true;
     archivosNuevos[docId] = null;
+    archivosActuales[docId] = null; // 🔹 IMPORTANTE: Marcar como sin archivo
     
     const currentDiv = document.getElementById(`current-${docId}`);
     const uploadArea = document.getElementById(`upload-${docId}`);
     const statusContainer = document.getElementById(`status-${docId}`);
     const fileInput = document.getElementById(`file_${docId}`);
     
-    // 🔹 Mostrar "Sin archivo" en lugar del mensaje de eliminación
+    // 🔹 CORRECCIÓN: Después de eliminar, mostrar "Sin archivo" con botón "Ver" DESHABILITADO
     if (currentDiv) {
-        currentDiv.innerHTML = '<p style="color: #64748b; font-size: 0.85rem; margin-top: 10px;">Sin archivo</p>';
+        currentDiv.innerHTML = `
+            <div class="doc-current">
+                <div class="file-info">
+                    <span>📄</span>
+                    <span style="color: #94a3b8;">Sin archivo</span>
+                </div>
+                <div class="actions">
+                    <button type="button" class="btn-view" disabled style="opacity: 0.5; cursor: not-allowed;">👁️ Ver</button>
+                    <button type="button" class="btn-replace" onclick="reemplazarArchivo('${docId}')">🔄 Subir Archivo</button>
+                </div>
+            </div>
+        `;
     }
     
-    // 🔹 Habilitar el área de carga para subir uno nuevo
+    // Habilitar el área de carga para subir uno nuevo
     if (uploadArea) {
         uploadArea.classList.add('active');
     }
     
-    // 🔹 Limpiar el input y el status
+    // Limpiar el input y el status
     if (fileInput) fileInput.value = '';
     if (statusContainer) statusContainer.innerHTML = '';
 };
