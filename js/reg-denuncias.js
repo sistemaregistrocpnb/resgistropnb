@@ -23,8 +23,7 @@ window.initRegDenuncias = function() {
         }
 
         console.log("✅ Formulario encontrado. Configurando módulo...");
-
-        // Configurar fecha actual
+        
         const fechaInput = document.getElementById('d_fecha_hora');
         if (fechaInput) {
             const ahora = new Date();
