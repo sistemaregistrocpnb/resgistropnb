@@ -2,7 +2,7 @@ window.initRegProcesados = function() {
     console.log("✅ Módulo reg-procesados.js cargado correctamente.");
 
     // ==========================================
-    // LISTAS DE DOCUMENTOS (CORREGIDO: Sin 'entrevista' en Únicos)
+
     // ==========================================
     const docsUnicos = [
         { id: 'portada', label: '📑 Portada' },
