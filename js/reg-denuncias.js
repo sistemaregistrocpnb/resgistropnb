@@ -296,21 +296,13 @@ if (window._regDenunciasInit) {
                     // ==========================================
                     // 🔹 REGISTRO DE LOG MEJORADO (Integración con utils.js)
                     // ==========================================
-               const nombreComp = `${data.primer_nombre} ${data.segundo_nombre || ''} ${data.primer_apellido} ${data.segundo_apellido || ''}`.trim();
+  const nombreComp = `${data.primer_nombre} ${data.segundo_nombre || ''} ${data.primer_apellido} ${data.segundo_apellido || ''}`.trim();
 
-           const detallesLog = {
+const detallesLog = {
     numero_denuncia: nuevoNumero,
     estacion: data.estacion_policial,
     cedula: data.cedula || 'N/A',
-    nombre_completo: nombreComp || 'N/A',
-    telefono: tlfCompleto,
-    direccion: data.direccion || 'No indicada',
-    motivo: (data.motivo_denuncia || '').substring(0, 100) + '...',
-    total_documentos: totalDocs,
-    documentos_detalle: docsDetalle,
-    email_registrante: user.email,
-    fecha_registro: new Date().toLocaleString('es-VE'),
-    estatus: 'Registrado'  // ✅ ESTE ES EL CAMPO QUE FALTABA
+    nombre_completo: nombreComp || 'N/A'
 };
                     await logDenuncias('REGISTRAR', detallesLog, insertedData.id);
 
