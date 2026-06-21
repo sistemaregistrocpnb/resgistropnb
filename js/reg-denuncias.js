@@ -7,10 +7,13 @@ window.initRegDenuncias = function() {
         const msg = document.getElementById('msg-reg-denuncias');
         const loadingOverlay = document.getElementById('loading-overlay');
 
-        // Elementos del teléfono
-        const nativeSelect = document.getElementById('d_tlf_pais');
-        const displayBox = document.querySelector('.phone-display');
-        const optionsBox = document.querySelector('.phone-options');
+        // Elementos del teléfono (AHORA CON INPUT HIDDEN)
+        const hiddenInput = document.getElementById('d_tlf_pais');
+        const displayBtn = document.getElementById('phone-display-btn');
+        const optionsList = document.getElementById('phone-options-list');
+        const flagImg = document.getElementById('d-tlf-flag-img');
+        const codeText = document.getElementById('d-tlf-code-text');
+        const countryText = document.getElementById('d-tlf-country-text');
 
         if (!form || !btn) {
             if (intentos < 10) {
@@ -24,6 +27,7 @@ window.initRegDenuncias = function() {
 
         console.log("✅ Formulario encontrado. Configurando módulo...");
         
+        // Configurar fecha actual
         const fechaInput = document.getElementById('d_fecha_hora');
         if (fechaInput) {
             const ahora = new Date();
@@ -236,103 +240,288 @@ window.initRegDenuncias = function() {
         };
 
         // ==========================================
-        // 🔹 DROPDOWN DE BANDERAS (COPIADO DE REG-PERSONAS.JS)
+        // 🔹 DROPDOWN DE BANDERAS (VERSIÓN CORREGIDA - SIN SELECT)
         // ==========================================
-        const flagImg = document.getElementById('d-tlf-flag-img');
-        const codeText = document.getElementById('d-tlf-code-text');
-        const countryText = document.getElementById('d-tlf-country-text');
+        
+        // Lista completa de países (sin depender del HTML)
+        const paises = [
+            {codigo: "+93", nombre: "Afganistán", iso: "af"},
+            {codigo: "+355", nombre: "Albania", iso: "al"},
+            {codigo: "+49", nombre: "Alemania", iso: "de"},
+            {codigo: "+376", nombre: "Andorra", iso: "ad"},
+            {codigo: "+244", nombre: "Angola", iso: "ao"},
+            {codigo: "+1268", nombre: "Antigua y Barbuda", iso: "ag"},
+            {codigo: "+966", nombre: "Arabia Saudita", iso: "sa"},
+            {codigo: "+213", nombre: "Argelia", iso: "dz"},
+            {codigo: "+54", nombre: "Argentina", iso: "ar"},
+            {codigo: "+374", nombre: "Armenia", iso: "am"},
+            {codigo: "+297", nombre: "Aruba", iso: "aw"},
+            {codigo: "+61", nombre: "Australia", iso: "au"},
+            {codigo: "+43", nombre: "Austria", iso: "at"},
+            {codigo: "+994", nombre: "Azerbaiyán", iso: "az"},
+            {codigo: "+1242", nombre: "Bahamas", iso: "bs"},
+            {codigo: "+973", nombre: "Baréin", iso: "bh"},
+            {codigo: "+880", nombre: "Bangladés", iso: "bd"},
+            {codigo: "+1246", nombre: "Barbados", iso: "bb"},
+            {codigo: "+32", nombre: "Bélgica", iso: "be"},
+            {codigo: "+501", nombre: "Belice", iso: "bz"},
+            {codigo: "+229", nombre: "Benín", iso: "bj"},
+            {codigo: "+1441", nombre: "Bermudas", iso: "bm"},
+            {codigo: "+375", nombre: "Bielorrusia", iso: "by"},
+            {codigo: "+95", nombre: "Birmania", iso: "mm"},
+            {codigo: "+591", nombre: "Bolivia", iso: "bo"},
+            {codigo: "+387", nombre: "Bosnia y Herzegovina", iso: "ba"},
+            {codigo: "+267", nombre: "Botsuana", iso: "bw"},
+            {codigo: "+55", nombre: "Brasil", iso: "br"},
+            {codigo: "+673", nombre: "Brunéi", iso: "bn"},
+            {codigo: "+359", nombre: "Bulgaria", iso: "bg"},
+            {codigo: "+226", nombre: "Burkina Faso", iso: "bf"},
+            {codigo: "+257", nombre: "Burundi", iso: "bi"},
+            {codigo: "+975", nombre: "Bután", iso: "bt"},
+            {codigo: "+238", nombre: "Cabo Verde", iso: "cv"},
+            {codigo: "+855", nombre: "Camboya", iso: "kh"},
+            {codigo: "+237", nombre: "Camerún", iso: "cm"},
+            {codigo: "+1", nombre: "Canadá", iso: "ca"},
+            {codigo: "+974", nombre: "Catar", iso: "qa"},
+            {codigo: "+236", nombre: "Rep. Centroafricana", iso: "cf"},
+            {codigo: "+235", nombre: "Chad", iso: "td"},
+            {codigo: "+56", nombre: "Chile", iso: "cl"},
+            {codigo: "+86", nombre: "China", iso: "cn"},
+            {codigo: "+357", nombre: "Chipre", iso: "cy"},
+            {codigo: "+57", nombre: "Colombia", iso: "co"},
+            {codigo: "+269", nombre: "Comoras", iso: "km"},
+            {codigo: "+242", nombre: "Congo", iso: "cg"},
+            {codigo: "+850", nombre: "Corea del Norte", iso: "kp"},
+            {codigo: "+82", nombre: "Corea del Sur", iso: "kr"},
+            {codigo: "+225", nombre: "Costa de Marfil", iso: "ci"},
+            {codigo: "+506", nombre: "Costa Rica", iso: "cr"},
+            {codigo: "+385", nombre: "Croacia", iso: "hr"},
+            {codigo: "+53", nombre: "Cuba", iso: "cu"},
+            {codigo: "+599", nombre: "Curazao", iso: "cw"},
+            {codigo: "+45", nombre: "Dinamarca", iso: "dk"},
+            {codigo: "+1767", nombre: "Dominica", iso: "dm"},
+            {codigo: "+593", nombre: "Ecuador", iso: "ec"},
+            {codigo: "+20", nombre: "Egipto", iso: "eg"},
+            {codigo: "+503", nombre: "El Salvador", iso: "sv"},
+            {codigo: "+971", nombre: "Emiratos Árabes", iso: "ae"},
+            {codigo: "+291", nombre: "Eritrea", iso: "er"},
+            {codigo: "+421", nombre: "Eslovaquia", iso: "sk"},
+            {codigo: "+386", nombre: "Eslovenia", iso: "si"},
+            {codigo: "+34", nombre: "España", iso: "es"},
+            {codigo: "+1", nombre: "Estados Unidos", iso: "us"},
+            {codigo: "+372", nombre: "Estonia", iso: "ee"},
+            {codigo: "+251", nombre: "Etiopía", iso: "et"},
+            {codigo: "+63", nombre: "Filipinas", iso: "ph"},
+            {codigo: "+358", nombre: "Finlandia", iso: "fi"},
+            {codigo: "+679", nombre: "Fiyi", iso: "fj"},
+            {codigo: "+33", nombre: "Francia", iso: "fr"},
+            {codigo: "+241", nombre: "Gabón", iso: "ga"},
+            {codigo: "+220", nombre: "Gambia", iso: "gm"},
+            {codigo: "+995", nombre: "Georgia", iso: "ge"},
+            {codigo: "+233", nombre: "Ghana", iso: "gh"},
+            {codigo: "+350", nombre: "Gibraltar", iso: "gi"},
+            {codigo: "+1473", nombre: "Granada", iso: "gd"},
+            {codigo: "+30", nombre: "Grecia", iso: "gr"},
+            {codigo: "+299", nombre: "Groenlandia", iso: "gl"},
+            {codigo: "+590", nombre: "Guadalupe", iso: "gp"},
+            {codigo: "+1671", nombre: "Guam", iso: "gu"},
+            {codigo: "+502", nombre: "Guatemala", iso: "gt"},
+            {codigo: "+594", nombre: "Guayana Francesa", iso: "gf"},
+            {codigo: "+224", nombre: "Guinea", iso: "gn"},
+            {codigo: "+240", nombre: "Guinea Ecuatorial", iso: "gq"},
+            {codigo: "+245", nombre: "Guinea-Bisáu", iso: "gw"},
+            {codigo: "+592", nombre: "Guyana", iso: "gy"},
+            {codigo: "+509", nombre: "Haití", iso: "ht"},
+            {codigo: "+504", nombre: "Honduras", iso: "hn"},
+            {codigo: "+852", nombre: "Hong Kong", iso: "hk"},
+            {codigo: "+36", nombre: "Hungría", iso: "hu"},
+            {codigo: "+91", nombre: "India", iso: "in"},
+            {codigo: "+62", nombre: "Indonesia", iso: "id"},
+            {codigo: "+964", nombre: "Irak", iso: "iq"},
+            {codigo: "+98", nombre: "Irán", iso: "ir"},
+            {codigo: "+353", nombre: "Irlanda", iso: "ie"},
+            {codigo: "+44", nombre: "Isla de Man", iso: "im"},
+            {codigo: "+298", nombre: "Islas Feroe", iso: "fo"},
+            {codigo: "+677", nombre: "Islas Salomón", iso: "sb"},
+            {codigo: "+972", nombre: "Israel", iso: "il"},
+            {codigo: "+39", nombre: "Italia", iso: "it"},
+            {codigo: "+1876", nombre: "Jamaica", iso: "jm"},
+            {codigo: "+81", nombre: "Japón", iso: "jp"},
+            {codigo: "+962", nombre: "Jordania", iso: "jo"},
+            {codigo: "+7", nombre: "Kazajistán", iso: "kz"},
+            {codigo: "+254", nombre: "Kenia", iso: "ke"},
+            {codigo: "+996", nombre: "Kirguistán", iso: "kg"},
+            {codigo: "+686", nombre: "Kiribati", iso: "ki"},
+            {codigo: "+965", nombre: "Kuwait", iso: "kw"},
+            {codigo: "+856", nombre: "Laos", iso: "la"},
+            {codigo: "+371", nombre: "Letonia", iso: "lv"},
+            {codigo: "+961", nombre: "Líbano", iso: "lb"},
+            {codigo: "+266", nombre: "Lesoto", iso: "ls"},
+            {codigo: "+231", nombre: "Liberia", iso: "lr"},
+            {codigo: "+218", nombre: "Libia", iso: "ly"},
+            {codigo: "+423", nombre: "Liechtenstein", iso: "li"},
+            {codigo: "+370", nombre: "Lituania", iso: "lt"},
+            {codigo: "+352", nombre: "Luxemburgo", iso: "lu"},
+            {codigo: "+853", nombre: "Macao", iso: "mo"},
+            {codigo: "+389", nombre: "Macedonia del Norte", iso: "mk"},
+            {codigo: "+261", nombre: "Madagascar", iso: "mg"},
+            {codigo: "+60", nombre: "Malasia", iso: "my"},
+            {codigo: "+265", nombre: "Malaui", iso: "mw"},
+            {codigo: "+960", nombre: "Maldivas", iso: "mv"},
+            {codigo: "+223", nombre: "Malí", iso: "ml"},
+            {codigo: "+356", nombre: "Malta", iso: "mt"},
+            {codigo: "+212", nombre: "Marruecos", iso: "ma"},
+            {codigo: "+596", nombre: "Martinica", iso: "mq"},
+            {codigo: "+230", nombre: "Mauricio", iso: "mu"},
+            {codigo: "+222", nombre: "Mauritania", iso: "mr"},
+            {codigo: "+262", nombre: "Mayotte", iso: "yt"},
+            {codigo: "+52", nombre: "México", iso: "mx"},
+            {codigo: "+691", nombre: "Micronesia", iso: "fm"},
+            {codigo: "+373", nombre: "Moldavia", iso: "md"},
+            {codigo: "+377", nombre: "Mónaco", iso: "mc"},
+            {codigo: "+976", nombre: "Mongolia", iso: "mn"},
+            {codigo: "+382", nombre: "Montenegro", iso: "me"},
+            {codigo: "+1664", nombre: "Montserrat", iso: "ms"},
+            {codigo: "+258", nombre: "Mozambique", iso: "mz"},
+            {codigo: "+264", nombre: "Namibia", iso: "na"},
+            {codigo: "+674", nombre: "Nauru", iso: "nr"},
+            {codigo: "+977", nombre: "Nepal", iso: "np"},
+            {codigo: "+505", nombre: "Nicaragua", iso: "ni"},
+            {codigo: "+227", nombre: "Níger", iso: "ne"},
+            {codigo: "+234", nombre: "Nigeria", iso: "ng"},
+            {codigo: "+683", nombre: "Niue", iso: "nu"},
+            {codigo: "+47", nombre: "Noruega", iso: "no"},
+            {codigo: "+687", nombre: "Nueva Caledonia", iso: "nc"},
+            {codigo: "+64", nombre: "Nueva Zelanda", iso: "nz"},
+            {codigo: "+968", nombre: "Omán", iso: "om"},
+            {codigo: "+31", nombre: "Países Bajos", iso: "nl"},
+            {codigo: "+92", nombre: "Pakistán", iso: "pk"},
+            {codigo: "+680", nombre: "Palaos", iso: "pw"},
+            {codigo: "+970", nombre: "Palestina", iso: "ps"},
+            {codigo: "+507", nombre: "Panamá", iso: "pa"},
+            {codigo: "+675", nombre: "Papúa Nueva Guinea", iso: "pg"},
+            {codigo: "+595", nombre: "Paraguay", iso: "py"},
+            {codigo: "+51", nombre: "Perú", iso: "pe"},
+            {codigo: "+689", nombre: "Polinesia Francesa", iso: "pf"},
+            {codigo: "+48", nombre: "Polonia", iso: "pl"},
+            {codigo: "+351", nombre: "Portugal", iso: "pt"},
+            {codigo: "+1", nombre: "Puerto Rico", iso: "pr"},
+            {codigo: "+420", nombre: "Rep. Checa", iso: "cz"},
+            {codigo: "+262", nombre: "Reunión", iso: "re"},
+            {codigo: "+250", nombre: "Ruanda", iso: "rw"},
+            {codigo: "+40", nombre: "Rumania", iso: "ro"},
+            {codigo: "+7", nombre: "Rusia", iso: "ru"},
+            {codigo: "+685", nombre: "Samoa", iso: "ws"},
+            {codigo: "+378", nombre: "San Marino", iso: "sm"},
+            {codigo: "+1758", nombre: "Santa Lucía", iso: "lc"},
+            {codigo: "+239", nombre: "Santo Tomé y Príncipe", iso: "st"},
+            {codigo: "+1784", nombre: "San Vicente y las Granadinas", iso: "vc"},
+            {codigo: "+221", nombre: "Senegal", iso: "sn"},
+            {codigo: "+381", nombre: "Serbia", iso: "rs"},
+            {codigo: "+248", nombre: "Seychelles", iso: "sc"},
+            {codigo: "+232", nombre: "Sierra Leona", iso: "sl"},
+            {codigo: "+65", nombre: "Singapur", iso: "sg"},
+            {codigo: "+963", nombre: "Siria", iso: "sy"},
+            {codigo: "+252", nombre: "Somalia", iso: "so"},
+            {codigo: "+27", nombre: "Sudáfrica", iso: "za"},
+            {codigo: "+249", nombre: "Sudán", iso: "sd"},
+            {codigo: "+211", nombre: "Sudán del Sur", iso: "ss"},
+            {codigo: "+46", nombre: "Suecia", iso: "se"},
+            {codigo: "+41", nombre: "Suiza", iso: "ch"},
+            {codigo: "+597", nombre: "Surinam", iso: "sr"},
+            {codigo: "+268", nombre: "Esuatini", iso: "sz"},
+            {codigo: "+992", nombre: "Tayikistán", iso: "tj"},
+            {codigo: "+255", nombre: "Tanzania", iso: "tz"},
+            {codigo: "+66", nombre: "Tailandia", iso: "th"},
+            {codigo: "+670", nombre: "Timor Oriental", iso: "tl"},
+            {codigo: "+228", nombre: "Togo", iso: "tg"},
+            {codigo: "+676", nombre: "Tonga", iso: "to"},
+            {codigo: "+1868", nombre: "Trinidad y Tobago", iso: "tt"},
+            {codigo: "+216", nombre: "Túnez", iso: "tn"},
+            {codigo: "+90", nombre: "Turquía", iso: "tr"},
+            {codigo: "+993", nombre: "Turkmenistán", iso: "tm"},
+            {codigo: "+688", nombre: "Tuvalu", iso: "tv"},
+            {codigo: "+380", nombre: "Ucrania", iso: "ua"},
+            {codigo: "+256", nombre: "Uganda", iso: "ug"},
+            {codigo: "+598", nombre: "Uruguay", iso: "uy"},
+            {codigo: "+998", nombre: "Uzbekistán", iso: "uz"},
+            {codigo: "+678", nombre: "Vanuatu", iso: "vu"},
+            {codigo: "+379", nombre: "Vaticano", iso: "va"},
+            {codigo: "+58", nombre: "Venezuela", iso: "ve"},
+            {codigo: "+84", nombre: "Vietnam", iso: "vn"},
+            {codigo: "+681", nombre: "Wallis y Futuna", iso: "wf"},
+            {codigo: "+967", nombre: "Yemen", iso: "ye"},
+            {codigo: "+253", nombre: "Yibuti", iso: "dj"},
+            {codigo: "+260", nombre: "Zambia", iso: "zm"},
+            {codigo: "+263", nombre: "Zimbabue", iso: "zw"}
+        ];
 
-        // ✅ MAPEO COMPLETO DE PAÍSES (igual que reg-personas.js)
-        const isoMap = {
-            "Afganistán":"af","Albania":"al","Alemania":"de","Andorra":"ad","Angola":"ao",
-            "Antigua y Barbuda":"ag","Arabia Saudita":"sa","Argelia":"dz","Argentina":"ar",
-            "Armenia":"am","Australia":"au","Austria":"at","Azerbaiyán":"az","Bahamas":"bs",
-            "Baréin":"bh","Bangladés":"bd","Barbados":"bb","Bélgica":"be","Belice":"bz",
-            "Benín":"bj","Bielorrusia":"by","Birmania":"mm","Bolivia":"bo","Bosnia y Herzegovina":"ba",
-            "Botsuana":"bw","Brasil":"br","Brunéi":"bn","Bulgaria":"bg","Burkina Faso":"bf",
-            "Burundi":"bi","Bután":"bt","Cabo Verde":"cv","Camboya":"kh","Camerún":"cm",
-            "Canadá":"ca","Catar":"qa","Rep. Centroafricana":"cf","Chad":"td","Rep. Checa":"cz",
-            "Chile":"cl","China":"cn","Chipre":"cy","Colombia":"co","Comoras":"km",
-            "Congo (Rep.)":"cg","Congo (R.D.)":"cd","Corea del Norte":"kp","Corea del Sur":"kr",
-            "Costa de Marfil":"ci","Costa Rica":"cr","Croacia":"hr","Cuba":"cu","Dinamarca":"dk",
-            "Dominica":"dm","Ecuador":"ec","Egipto":"eg","El Salvador":"sv",
-            "Emiratos Árabes":"ae","Eritrea":"er","Eslovaquia":"sk","Eslovenia":"si","España":"es",
-            "Estados Unidos":"us","Estonia":"ee","Etiopía":"et","Filipinas":"ph","Finlandia":"fi",
-            "Fiyi":"fj","Francia":"fr","Gabón":"ga","Gambia":"gm","Georgia":"ge","Ghana":"gh",
-            "Granada":"gd","Grecia":"gr","Guatemala":"gt","Guinea":"gn","Guinea Ecuatorial":"gq",
-            "Guinea-Bisáu":"gw","Guyana":"gy","Haití":"ht","Honduras":"hn","Hungría":"hu",
-            "India":"in","Indonesia":"id","Irak":"iq","Irán":"ir","Irlanda":"ie","Islandia":"is",
-            "Israel":"il","Italia":"it","Jamaica":"jm","Japón":"jp","Jordania":"jo",
-            "Kazajistán":"kz","Kenia":"ke","Kirguistán":"kg","Kiribati":"ki","Kuwait":"kw",
-            "Laos":"la","Lesoto":"ls","Letonia":"lv","Líbano":"lb","Liberia":"lr","Libia":"ly",
-            "Liechtenstein":"li","Lituania":"lt","Luxemburgo":"lu","Macedonia del Norte":"mk",
-            "Madagascar":"mg","Malasia":"my","Malaui":"mw","Maldivas":"mv","Malí":"ml","Malta":"mt",
-            "Marruecos":"ma","Mauricio":"mu","Mauritania":"mr","México":"mx","Micronesia":"fm",
-            "Moldavia":"md","Mónaco":"mc","Mongolia":"mn","Montenegro":"me","Mozambique":"mz",
-            "Namibia":"na","Nauru":"nr","Nepal":"np","Nicaragua":"ni","Níger":"ne","Nigeria":"ng",
-            "Nueva Zelanda":"nz","Noruega":"no","Omán":"om","Países Bajos":"nl","Pakistán":"pk",
-            "Palaos":"pw","Palestina":"ps","Panamá":"pa","Papúa Nueva Guinea":"pg","Paraguay":"py",
-            "Perú":"pe","Polonia":"pl","Portugal":"pt","Reino Unido":"gb","Puerto Rico":"pr",
-            "Ruanda":"rw","Rumania":"ro","Rusia":"ru","Samoa":"ws","San Marino":"sm",
-            "Santa Lucía":"lc","Santo Tomé y Príncipe":"st","San Vicente y las Granadinas":"vc",
-            "Senegal":"sn","Serbia":"rs","Seychelles":"sc","Sierra Leona":"sl","Singapur":"sg",
-            "Siria":"sy","Somalia":"so","Sudáfrica":"za","Sudán":"sd","Sudán del Sur":"ss",
-            "Suecia":"se","Suiza":"ch","Surinam":"sr","Esuatini":"sz","Tayikistán":"tj",
-            "Tanzania":"tz","Tailandia":"th","Timor Oriental":"tl","Togo":"tg","Tonga":"to",
-            "Trinidad y Tobago":"tt","Túnez":"tn","Turquía":"tr","Turkmenistán":"tm","Tuvalu":"tv",
-            "Ucrania":"ua","Uganda":"ug","Uruguay":"uy","Uzbekistán":"uz","Vanuatu":"vu",
-            "Vaticano":"va","Venezuela":"ve","Vietnam":"vn","Yemen":"ye","Yibuti":"dj",
-            "Zambia":"zm","Zimbabue":"zw"
-        };
-
-        // ✅ LÓGICA EXACTA DE REG-PERSONAS.JS (FUNCIONA PERFECTAMENTE)
-        if (optionsBox && nativeSelect && displayBox) {
-            console.log("✅ Generando dropdown de banderas (lógica reg-personas.js)...");
+        // Función para generar las opciones del dropdown
+        function generarOpcionesDropdown() {
+            if (!optionsList) {
+                console.error('❌ No se encontró #phone-options-list');
+                return;
+            }
             
-            // Limpiar opciones previas
-            optionsBox.innerHTML = '';
-
-            // Renderizar todas las opciones del select nativo
-            Array.from(nativeSelect.options).forEach(opt => {
-                if (!opt.value) return;
-                
-                // Buscar código ISO del país
-                const iso = isoMap[opt.text] || opt.value.replace('+','').toLowerCase();
-                
+            optionsList.innerHTML = '';
+            
+            paises.forEach(pais => {
                 const div = document.createElement('div');
                 div.className = 'phone-option';
-                div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;" onerror="this.src='https://flagcdn.com/w20/xx.png'"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.8rem;">${opt.text}</span>`;
+                div.innerHTML = `
+                    <img src="https://flagcdn.com/w20/${pais.iso}.png" 
+                         style="width:18px;height:13px;object-fit:contain;border-radius:2px;" 
+                         onerror="this.src='https://flagcdn.com/w20/xx.png'">
+                    <span class="code" style="font-weight:600;min-width:30px;">${pais.codigo}</span>
+                    <span class="country" style="color:#475569;font-size:0.8rem;">${pais.nombre}</span>
+                `;
                 div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;';
-                div.onmouseenter = () => div.style.background = '#f8fafc';
-                div.onmouseleave = () => div.style.background = '';
                 
-                div.addEventListener('click', () => {
-                    nativeSelect.value = opt.value;
-                    flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
-                    codeText.textContent = opt.value;
-                    countryText.textContent = opt.text;
-                    optionsBox.style.display = 'none';
+                div.addEventListener('mouseenter', () => div.style.background = '#f8fafc');
+                div.addEventListener('mouseleave', () => div.style.background = '');
+                
+                div.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    hiddenInput.value = pais.codigo;
+                    flagImg.src = `https://flagcdn.com/w20/${pais.iso}.png`;
+                    codeText.textContent = pais.codigo;
+                    countryText.textContent = pais.nombre;
+                    optionsList.style.display = 'none';
+                    console.log(`✅ País seleccionado: ${pais.nombre} (${pais.codigo})`);
                 });
                 
-                optionsBox.appendChild(div);
+                optionsList.appendChild(div);
             });
+            
+            console.log(`✅ Dropdown generado con ${paises.length} países`);
+        }
 
-            // ✅ Click en el display abre/cierra el dropdown
-            displayBox.addEventListener('click', (e) => { 
-                e.stopPropagation(); 
-                optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block'; 
+        // Configurar click en el display
+        if (displayBtn && optionsList) {
+            generarOpcionesDropdown();
+            
+            displayBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                const isVisible = optionsList.style.display === 'block';
+                optionsList.style.display = isVisible ? 'none' : 'block';
+                console.log(`🔽 Dropdown ${isVisible ? 'cerrado' : 'abierto'}`);
             });
-
-            // ✅ Click fuera cierra el dropdown
-            document.addEventListener('click', (e) => { 
+            
+            // Cerrar al hacer click fuera
+            document.addEventListener('click', (e) => {
                 if (!e.target.closest('.phone-dropdown-wrapper')) {
-                    optionsBox.style.display = 'none'; 
+                    optionsList.style.display = 'none';
                 }
             });
+            
+            console.log('✅ Dropdown de banderas configurado correctamente');
+        } else {
+            console.error('❌ No se encontraron los elementos del dropdown');
         }
 
         // ✅ Configurar valores iniciales por defecto (Venezuela)
-        if (nativeSelect) nativeSelect.value = '+58';
+        if (hiddenInput) hiddenInput.value = '+58';
         if (flagImg) flagImg.src = 'https://flagcdn.com/w20/ve.png';
         if (codeText) codeText.textContent = '+58';
         if (countryText) countryText.textContent = 'Venezuela';
@@ -427,7 +616,7 @@ window.initRegDenuncias = function() {
                     }
                 }
 
-                const tlfPais = document.getElementById('d_tlf_pais')?.value;
+                const tlfPais = hiddenInput?.value || '+58';
                 const tlfNum = document.getElementById('d_tlf_num')?.value.trim().replace(/\D/g, '');
 
                 // Preparar datos completos
@@ -508,7 +697,7 @@ window.initRegDenuncias = function() {
                 docsMultiples.forEach(d => toggleDocField(d.id, false));
 
                 // ✅ Resetear teléfono a Venezuela por defecto
-                if (nativeSelect) nativeSelect.value = '+58';
+                if (hiddenInput) hiddenInput.value = '+58';
                 if (flagImg) flagImg.src = 'https://flagcdn.com/w20/ve.png';
                 if (codeText) codeText.textContent = '+58';
                 if (countryText) countryText.textContent = 'Venezuela';
