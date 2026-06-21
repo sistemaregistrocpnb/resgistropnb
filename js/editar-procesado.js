@@ -1,567 +1,266 @@
-// ✅ MARCA DE VERIFICACIÓN
-console.log("✅ VERSIÓN FINAL: elim-vinculado.js cargado (Con validación esUrlValida)");
+// ✅ MÓDULO CORRECTO PARA EDITAR PROCESADO
+window.initEditarProcesado = function() {
+    console.log("✅ Módulo editar-procesado.js inicializado correctamente.");
 
-window.initElimVinculados = function() {
-    console.log("✅ Módulo initElimVinculados ejecutándose...");
-    
-    // 🔹🔹 FUNCIÓN DE VALIDACIÓN ULTRA ESTRICTA
-    function esUrlValida(url) {
-        if (!url) {
-            console.log('❌ URL es null/undefined/vacío:', url);
-            return false;
-        }
-        if (typeof url !== 'string') {
-            console.log('❌ URL no es string:', typeof url, url);
-            return false;
-        }
-        if (url.trim() === '') {
-            console.log('❌ URL es string vacío con espacios');
-            return false;
-        }
-        if (url === '[]' || url === '{}' || url === 'null') {
-            console.log('❌ URL es string especial:', url);
-            return false;
-        }
-        if (url.startsWith('[') || url.startsWith('{')) {
-            console.log('❌ URL parece array/objeto stringificado:', url.substring(0, 50));
-            return false;
-        }
-        // Si llega aquí, es una URL válida
-        console.log('✅ URL válida:', url.substring(0, 80) + '...');
-        return true;
-    }
-    
     // 🔹 Referencias DOM
-    const buscarInput = document.getElementById('buscar-vinc-elim');
-    const buscarBtn = document.getElementById('btn-buscar-vinc-elim');
-    const msgBuscar = document.getElementById('buscar-msg-vinc');
-    const archivedNotice = document.getElementById('archived-notice-vinc');
-    const dataContainer = document.getElementById('vinc-data-container');
-    const archivedBanner = document.getElementById('archived-banner-vinc');
-    const archivedDate = document.getElementById('archived-date-vinc');
-    const archivedBy = document.getElementById('archived-by-vinc');
-    const btnEliminar = document.getElementById('btn-eliminar-vinc');
-    const btnReintegrar = document.getElementById('btn-reintegrar-vinc');
-    const msgElim = document.getElementById('msg-vinc');
-    const modal = document.getElementById('vinc-modal');
-    const modalTitle = document.getElementById('modal-title-vinc');
-    const modalText = document.getElementById('modal-text-vinc');
-    const btnModalYes = document.getElementById('btn-modal-yes-vinc');
-    const btnModalNo = document.getElementById('btn-modal-no-vinc');
-    
+    const buscarInput = document.getElementById('edit_busqueda_input');
+    const buscarBtn = document.getElementById('edit_btn_buscar');
+    const msgBusqueda = document.getElementById('edit_msg_busqueda');
+    const datosPanel = document.getElementById('edit-datos-panel');
+    const datosContenido = document.getElementById('edit-datos-contenido');
+    const formEditar = document.getElementById('form-editar-procesado');
+    const msgForm = document.getElementById('edit-msg-form');
+    const loadingOverlay = document.getElementById('edit-loading-overlay');
+
+    const docsUnicosContainer = document.getElementById('edit-docs-unicos-container');
+    const docsMultiplesContainer = document.getElementById('edit-docs-multiples-container');
+
     let currentData = null;
-    let isArchived = false;
-    let pendingAction = null;
-    
+    let tablaActual = '';
+    let registroIdActual = null;
+
     // 🔹 Helpers UI
     const showMsg = (el, txt, type) => {
-        if(el) {
-            el.innerHTML = txt;
-            el.className = `search-msg ${type}`;
-            el.style.display = 'block';
-        }
+        if (!el) return;
+        el.innerHTML = txt;
+        el.className = `msg ${type}`;
+        el.style.display = 'block';
     };
-    const hideMsg = (el) => { if(el) el.style.display = 'none'; };
-    const showMsgElim = (txt, type) => {
-        if(msgElim) {
-            msgElim.innerHTML = txt;
-            msgElim.className = `msg ${type}`;
-            msgElim.style.display = 'block';
-        }
+    const hideMsg = (el) => { if (el) el.style.display = 'none'; };
+    
+    const toggleLoading = (show, text = '⏳ Actualizando registro...') => {
+        if (!loadingOverlay) return;
+        const loadingText = loadingOverlay.querySelector('.loading-text');
+        if (loadingText) loadingText.innerHTML = `${text}<small>Por favor, no cierre ni recargue esta ventana.</small>`;
+        loadingOverlay.classList.toggle('active', show);
     };
-    const hideMsgElim = () => { if(msgElim) msgElim.style.display = 'none'; };
-    
-    const setVal = (id, val) => {
-        const el = document.getElementById(id);
-        if(el) el.value = (val !== null && val !== undefined && val !== '') ? val : '-';
-    };
-    
-    const setPhoto = (imgId, url) => {
-        const img = document.getElementById(imgId);
-        if (img) {
-            console.log(`📸 [${imgId}] URL recibida:`, url ? url.substring(0, 60) + '...' : 'NULL');
-            if (esUrlValida(url)) {
-                img.src = url;
-                img.style.display = 'block';
-                console.log(`✅ [${imgId}] Imagen mostrada`);
-            } else {
-                img.src = '';
-                img.style.display = 'none';
-                console.log(`❌ [${imgId}] Imagen ocultada - URL inválida`);
-            }
-        }
-    };
-    
-    // 🔹 Mostrar datos en el formulario
-    function cargarDatos(data, source) {
-        console.log('📋 Cargando datos del registro:', source);
-        console.log('📦 Datos completos:', data);
-        
-        currentData = data;
-        isArchived = (source === 'eliminados_vinculados');
-        
-        if(dataContainer) dataContainer.style.display = 'block';
-        hideMsg(msgBuscar);
-        hideMsgElim();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        
-        // Persona
-        setVal('ev-p-n1', data.primer_nombre);
-        setVal('ev-p-n2', data.segundo_nombre);
-        setVal('ev-p-a1', data.primer_apellido);
-        setVal('ev-p-a2', data.segundo_apellido);
-        setVal('ev-p-cedula', data.cedula);
-        setVal('ev-p-apodo', data.apodo);
-        setVal('ev-p-fnac', data.fecha_nacimiento);
-        setVal('ev-p-edad', data.edad ? `${data.edad} años` : '-');
-        setVal('ev-p-marca', data.marca_corporal);
-        setVal('ev-p-nac', data.nacionalidad);
-        setVal('ev-p-sexo', data.sexo);
-        setVal('ev-p-tlf-pais', data.tlf_pais);
-        setVal('ev-p-tlf-num', data.tlf_numero);
-        setVal('ev-p-dir', data.direccion);
-        
-        // Características Físicas
-        setVal('ev-p-est', data.estatura_cm);
-        setVal('ev-p-piel', data.color_piel);
-        setVal('ev-p-ojos', data.color_ojos);
-        setVal('ev-p-cabello', data.color_cabello);
-        setVal('ev-p-comp', data.complexion);
-        
-        // Salud y Antecedentes
-        setVal('ev-p-lentes', data.usa_lentes);
-        const boxLentes = document.getElementById('box-ev-lentes-det');
-        if(boxLentes) boxLentes.style.display = (data.usa_lentes === 'Sí' || data.usa_lentes === 'Si') ? 'block' : 'none';
-        setVal('ev-p-lentes-det', data.detalle_lentes);
-        
-        setVal('ev-p-perf', data.perforaciones);
-        const boxPerf = document.getElementById('box-ev-perf-det');
-        if(boxPerf) boxPerf.style.display = (data.perforaciones === 'Sí' || data.perforaciones === 'Si') ? 'block' : 'none';
-        setVal('ev-p-perf-det', data.detalle_perforaciones);
-        
-        setVal('ev-p-cond', data.condicion_medica);
-        const boxCond = document.getElementById('box-ev-cond-det');
-        if(boxCond) boxCond.style.display = (data.condicion_medica === 'Sí' || data.condicion_medica === 'Si') ? 'block' : 'none';
-        setVal('ev-p-cond-det', data.detalle_condicion_medica);
-        
-        setVal('ev-p-med', data.consume_medicamento);
-        const boxMed = document.getElementById('box-ev-med-det');
-        if(boxMed) boxMed.style.display = (data.consume_medicamento === 'Sí' || data.consume_medicamento === 'Si') ? 'block' : 'none';
-        setVal('ev-p-med-det', data.detalle_medicamento);
-        
-        setVal('ev-p-jud', data.problema_judicial);
-        const boxJud = document.getElementById('box-ev-jud-det');
-        if(boxJud) boxJud.style.display = (data.problema_judicial === 'Sí' || data.problema_judicial === 'Si') ? 'block' : 'none';
-        setVal('ev-p-jud-det', data.detalle_problema_judicial);
-        
-        // 🔹 FOTOS PERSONA - Con validación
-        console.log('📸 Cargando fotos de persona...');
-        setPhoto('ev-foto-p-frontal', data.foto_frontal_persona);
-        setPhoto('ev-foto-p-izq', data.foto_perfil_izq_persona);
-        setPhoto('ev-foto-p-der', data.foto_perfil_der_persona);
-        
-        // Vehículo
-        setVal('ev-v-tipo', data.tipo_vehiculo);
-        setVal('ev-v-placa', data.placa);
-        setVal('ev-v-serial-carro', data.serial_carroceria);
-        setVal('ev-v-serial-motor', data.serial_motor);
-        setVal('ev-v-cilindraje', data.cilindraje);
-        setVal('ev-v-marca', data.marca_vehiculo);
-        setVal('ev-v-modelo', data.modelo_vehiculo);
-        setVal('ev-v-anio', data.anio_vehiculo);
-        setVal('ev-v-color', data.color_vehiculo);
-        
-        // 🔹🔹 FOTOS VEHÍCULO - Con validación
-        console.log('📸 Cargando fotos de vehículo...');
-        setPhoto('ev-foto-v-frontal', data.foto_frontal_vehiculo);
-        setPhoto('ev-foto-v-trasera', data.foto_trasera_vehiculo);
-        setPhoto('ev-foto-v-der', data.foto_lado_der_vehiculo);
-        setPhoto('ev-foto-v-izq', data.foto_lado_izq_vehiculo);
-        
-        // Registro
-        setVal('ev-estacion', data.estacion_policial);
-        setVal('ev-dir-det', data.direccion_detencion);
-        setVal('ev-obs', data.observaciones);
-        
-        // Estado (Activo vs Archivado)
-        if (isArchived) {
-            if (archivedNotice) archivedNotice.style.display = 'block';
-            if (archivedBanner) archivedBanner.style.display = 'block';
-            if (archivedDate && data.eliminado_en) {
-                archivedDate.textContent = new Date(data.eliminado_en).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' });
-            } else if (archivedDate) {
-                archivedDate.textContent = '-';
-            }
-            if (archivedBy) archivedBy.textContent = data.eliminado_por || 'Sistema';
-            if (btnEliminar) btnEliminar.style.display = 'none';
-            if (btnReintegrar) btnReintegrar.style.display = 'block';
-        } else {
-            if (archivedNotice) archivedNotice.style.display = 'none';
-            if (archivedBanner) archivedBanner.style.display = 'none';
-            if (btnEliminar) btnEliminar.style.display = 'block';
-            if (btnReintegrar) btnReintegrar.style.display = 'none';
-        }
-        
-        console.log('✅ Datos cargados correctamente');
-    }
-    
+
     // ==========================================
-    // 🔍 BÚSQUEDA MULTI-TABLA
+    // 🔍 1. BÚSQUEDA DE PROCESADO
     // ==========================================
-    function detectarCoincidencias(reg, val) {
-        const campos = [];
-        const v = val.trim().toUpperCase();
-        if (reg.cedula && reg.cedula.toUpperCase().includes(v)) campos.push('Cédula');
-        if (reg.placa && reg.placa.toUpperCase().includes(v)) campos.push('Placa');
-        if (reg.serial_carroceria && reg.serial_carroceria.toUpperCase().includes(v)) campos.push('Serial Carrocería');
-        if (reg.serial_motor && reg.serial_motor.toUpperCase().includes(v)) campos.push('Serial Motor');
-        return campos;
-    }
-    
-    async function buscarEnTodasLasTablas(valor) {
-        const resultados = [];
+    async function buscarProcesado(valor) {
         const val = valor.trim().toUpperCase();
-        const query = `cedula.ilike.%${val}%,placa.ilike.%${val}%,serial_carroceria.ilike.%${val}%,serial_motor.ilike.%${val}%`;
+        // ⚠️ NOTA: Cambia 'procesados' por el nombre real de tu tabla en Supabase
+        const tabla = 'procesados'; 
         
+        const query = `cedula.ilike.%${val}%,placa.ilike.%${val}%,id.eq.${val}`;
+
         try {
-            // 1. Vinculados Activos
-            console.log('🔍 Buscando en registro_vinculado...');
-            const { data: vinculados, error: errVinc } = await window.supabaseClient
-                .from('registro_vinculado')
+            const { data, error } = await window.supabaseClient
+                .from(tabla)
                 .select('*')
-                .or(query);
-            
-            if (errVinc) {
-                console.error('❌ Error en búsqueda activos:', errVinc);
-            } else if (vinculados && vinculados.length > 0) {
-                console.log(`✅ Encontrados ${vinculados.length} registros activos`);
-                vinculados.forEach(reg => {
-                    resultados.push({
-                        origen: 'registro_vinculado',
-                        datos: reg,
-                        eliminado: false,
-                        encontrado_por: detectarCoincidencias(reg, val)
-                    });
-                });
-            } else {
-                console.log('⚠️ No se encontraron registros activos');
+                .or(query)
+                .limit(1);
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                showMsg(msgBusqueda, '❌ No se encontró ningún procesado con ese dato.', 'error');
+                datosPanel.style.display = 'none';
+                formEditar.style.display = 'none';
+                return;
             }
+
+            currentData = data[0];
+            tablaActual = tabla;
+            registroIdActual = currentData.id;
+
+            showMsg(msgBusqueda, '✅ Registro encontrado. Puede editarlo a continuación.', 'success');
+            renderizarDatos(currentData);
+            cargarFormulario(currentData);
+            renderizarDocumentos(currentData);
             
-            // 2. Vinculados Archivados
-            console.log('🔍 Buscando en eliminados_vinculados...');
-            const { data: eliminados, error: errElim } = await window.supabaseClient
-                .from('eliminados_vinculados')
-                .select('*')
-                .or(query);
-            
-            if (errElim) {
-                console.error('❌ Error en búsqueda archivados:', errElim);
-            } else if (eliminados && eliminados.length > 0) {
-                console.log(`✅ Encontrados ${eliminados.length} registros archivados`);
-                eliminados.forEach(reg => {
-                    resultados.push({
-                        origen: 'eliminados_vinculados',
-                        datos: reg,
-                        eliminado: true,
-                        encontrado_por: detectarCoincidencias(reg, val)
-                    });
-                });
-            } else {
-                console.log('⚠️ No se encontraron registros archivados');
-            }
-            
-            return resultados;
+            datosPanel.style.display = 'block';
+            formEditar.style.display = 'block';
+
         } catch (err) {
-            console.error('❌ Error en búsqueda:', err);
-            throw err;
+            console.error('❌ Error buscando:', err);
+            showMsg(msgBusqueda, '❌ Error de conexión: ' + err.message, 'error');
         }
     }
-    
-    // 🔍 LISTENER PRINCIPAL DE BÚSQUEDA
-    if (buscarBtn && buscarInput) {
-        buscarBtn.addEventListener('click', async () => {
-            const val = buscarInput.value.trim();
-            if (val.length < 3) return showMsg(msgBuscar, '⚠️ Ingrese un dato válido (mín. 3 caracteres).', 'error');
-            
-            showMsg(msgBuscar, '🔍 Buscando en registros vinculados...', 'success');
-            buscarBtn.disabled = true;
-            
-            if(dataContainer) dataContainer.style.display = 'none';
-            if(archivedBanner) archivedBanner.style.display = 'none';
-            if(archivedNotice) archivedNotice.style.display = 'none';
-            hideMsgElim();
-            
-            try {
-                const resultados = await buscarEnTodasLasTablas(val);
-                
-                if (resultados.length === 0) {
-                    showMsg(msgBuscar, '❌ Registro vinculado no encontrado.', 'error');
-                } else if (resultados.length === 1) {
-                    showMsg(msgBuscar, '✅ 1 registro encontrado. Cargando...', 'success');
-                    setTimeout(() => cargarDatos(resultados[0].datos, resultados[0].origen), 300);
-                } else {
-                    const activo = resultados.find(r => !r.eliminado) || resultados[0];
-                    showMsg(msgBuscar, `🔎 Se encontraron <strong>${resultados.length} coincidencias</strong>. Mostrando la principal.`, 'success');
-                    setTimeout(() => cargarDatos(activo.datos, activo.origen), 300);
-                }
-            } catch (err) {
-                console.error('❌ Error general:', err);
-                showMsg(msgBuscar, '❌ Error de conexión: ' + err.message, 'error');
-            } finally {
-                buscarBtn.disabled = false;
+
+    // ==========================================
+    // 📋 2. RENDERIZAR DATOS Y FORMULARIO
+    // ==========================================
+    function renderizarDatos(data) {
+        datosContenido.innerHTML = `
+            <div class="dato-fila"><span class="dato-label">Cédula:</span> <span class="dato-valor">${data.cedula || '-'}</span></div>
+            <div class="dato-fila"><span class="dato-label">Placa:</span> <span class="dato-valor">${data.placa || '-'}</span></div>
+            <div class="dato-fila"><span class="dato-label">Nombre:</span> <span class="dato-valor">${data.primer_nombre || ''} ${data.primer_apellido || ''}</span></div>
+            <div class="dato-fila"><span class="dato-label">ID Registro:</span> <span class="dato-valor">${data.id}</span></div>
+        `;
+    }
+
+    function cargarFormulario(data) {
+        document.getElementById('edit_procesado_id').value = data.id;
+        document.getElementById('edit_tabla_origen').value = tablaActual;
+        document.getElementById('edit_registro_id').value = data.id;
+        document.getElementById('edit_tipo_delito').value = data.tipo_delito || '';
+        document.getElementById('edit_observaciones').value = data.observaciones || '';
+    }
+
+    // ==========================================
+    // 📁 3. MANEJO DE DOCUMENTOS (PDFs)
+    // ==========================================
+    function renderizarDocumentos(data) {
+        // Limpiar contenedores
+        docsUnicosContainer.innerHTML = '';
+        docsMultiplesContainer.innerHTML = '';
+
+        // Ejemplo: Renderizar documentos únicos (Ajusta los nombres de las columnas según tu BD)
+        const docsUnicos = ['documento_identidad', 'antecedentes_penales']; 
+        docsUnicos.forEach(campo => {
+            if (data[campo]) {
+                docsUnicosContainer.innerHTML += crearItemDocUnico(campo, data[campo]);
             }
         });
-        
-        buscarInput.addEventListener('keydown', e => {
+
+        // Ejemplo: Renderizar documentos múltiples (Asumiendo que es un Array JSON)
+        const docsMultiples = data.pruebas_adicionales || [];
+        if (Array.isArray(docsMultiples) && docsMultiples.length > 0) {
+            docsMultiples.forEach((url, index) => {
+                docsMultiplesContainer.innerHTML += crearItemDocMultiple(url, index);
+            });
+        } else {
+            docsMultiplesContainer.innerHTML = '<p style="color:#64748b; font-size:0.85rem;">No hay documentos múltiples cargados.</p>';
+        }
+
+        // Agregar botones para subir nuevos archivos
+        docsMultiplesContainer.innerHTML += `
+            <button type="button" class="btn-add-file" onclick="document.getElementById('file-multiple-input').click()">➕ Agregar Más Documentos</button>
+            <input type="file" id="file-multiple-input" multiple accept=".pdf" style="display:none;">
+            <div id="file-multiple-list" class="file-count"></div>
+        `;
+    }
+
+    function crearItemDocUnico(campo, url) {
+        return `
+            <div class="doc-item" data-campo="${campo}">
+                <div class="doc-header">
+                    <label>${campo.replace(/_/g, ' ').toUpperCase()}</label>
+                </div>
+                <div class="doc-current">
+                    <div class="file-info">📄 <span>${url.split('/').pop()}</span></div>
+                    <div class="actions">
+                        <button type="button" class="btn-view" onclick="window.open('${url}', '_blank')">👁️ Ver</button>
+                        <button type="button" class="btn-delete" onclick="eliminarDocUnico(this, '${campo}')">🗑️</button>
+                    </div>
+                </div>
+                <div class="doc-upload-area">
+                    <input type="file" accept=".pdf" onchange="reemplazarDocUnico(this, '${campo}')">
+                </div>
+            </div>
+        `;
+    }
+
+    function crearItemDocMultiple(url, index) {
+        return `
+            <div class="file-item-multiple" data-index="${index}">
+                <span>📎 ${url.split('/').pop()}</span>
+                <div class="file-actions">
+                    <button type="button" class="btn-view" onclick="window.open('${url}', '_blank')">👁️</button>
+                    <button type="button" onclick="eliminarDocMultiple(this, ${index})">🗑️</button>
+                </div>
+            </div>
+        `;
+    }
+
+    // Funciones globales para los botones de documentos
+    window.eliminarDocUnico = function(btn, campo) {
+        if(confirm('¿Eliminar este documento? Se subirá uno nuevo al guardar.')) {
+            btn.closest('.doc-item').style.opacity = '0.5';
+            btn.closest('.doc-item').dataset.action = 'delete';
+        }
+    };
+    window.reemplazarDocUnico = function(input, campo) {
+        if(input.files.length > 0) {
+            const item = input.closest('.doc-item');
+            item.dataset.action = 'replace';
+            item.dataset.newFile = input.files[0];
+            item.querySelector('.doc-current').style.background = '#fef3c7';
+        }
+    };
+    window.eliminarDocMultiple = function(btn, index) {
+        btn.closest('.file-item-multiple').style.display = 'none';
+        btn.closest('.file-item-multiple').dataset.action = 'delete';
+    };
+
+    // ==========================================
+    // 💾 4. GUARDAR CAMBIOS (SUPABASE)
+    // ==========================================
+    formEditar.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!registroIdActual) return;
+
+        toggleLoading(true);
+        hideMsg(msgForm);
+
+        try {
+            const tipoDelito = document.getElementById('edit_tipo_delito').value.trim();
+            const observaciones = document.getElementById('edit_observaciones').value.trim();
+
+            if (!tipoDelito) {
+                toggleLoading(false);
+                return showMsg(msgForm, '⚠️ El Tipo de Delito es obligatorio.', 'error');
+            }
+
+            // 1. Actualizar campos de texto
+            const { error: updateError } = await window.supabaseClient
+                .from(tablaActual)
+                .update({ 
+                    tipo_delito: tipoDelito,
+                    observaciones: observaciones,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', registroIdActual);
+
+            if (updateError) throw updateError;
+
+            // 2. Aquí iría la lógica para subir los PDFs nuevos al Storage de Supabase
+            // y actualizar las URLs en la base de datos. (Se omite para mantener el ejemplo limpio, 
+            // pero debes usar supabase.storage.from('bucket_name').upload(...))
+
+            toggleLoading(false);
+            showMsg(msgForm, '✅ Cambios guardados exitosamente.', 'success');
+            
+            setTimeout(() => {
+                formEditar.reset();
+                formEditar.style.display = 'none';
+                datosPanel.style.display = 'none';
+                hideMsg(msgBusqueda);
+                buscarInput.value = '';
+            }, 3000);
+
+        } catch (err) {
+            console.error('❌ Error guardando:', err);
+            toggleLoading(false);
+            showMsg(msgForm, '❌ Error al guardar: ' + err.message, 'error');
+        }
+    });
+
+    // ==========================================
+    // 🔹 LISTENERS INICIALES
+    // ==========================================
+    if (buscarBtn && buscarInput) {
+        buscarBtn.addEventListener('click', () => {
+            const val = buscarInput.value.trim();
+            if (val.length < 3) return showMsg(msgBusqueda, '⚠️ Ingrese al menos 3 caracteres.', 'error');
+            hideMsg(msgBusqueda);
+            buscarProcesado(val);
+        });
+
+        buscarInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 buscarBtn.click();
             }
         });
     }
-    
-    // ==========================================
-    // 🔹 MODAL DE CONFIRMACIÓN
-    // ==========================================
-    function showModal(titulo, texto, accion, tipo) {
-        pendingAction = accion;
-        if(modalTitle) modalTitle.textContent = titulo;
-        if(modalText) modalText.textContent = texto;
-        if(btnModalYes) {
-            btnModalYes.className = tipo === 'danger' ? 'btn-modal-danger' : 'btn-modal-success';
-            btnModalYes.textContent = tipo === 'danger' ? '✅ Sí, Eliminar' : '✅ Sí, Reintegrar';
-        }
-        if(modal) modal.style.display = 'flex';
-    }
-    
-    function closeModal() {
-        if(modal) modal.style.display = 'none';
-        pendingAction = null;
-    }
-    
-    async function ejecutarAccion() {
-        if (pendingAction === 'delete') await eliminarRegistro();
-        else if (pendingAction === 'reintegrate') await reintegrarRegistro();
-        closeModal();
-    }
-    
-    if (btnModalNo) btnModalNo.addEventListener('click', closeModal);
-    if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
-    if (btnModalYes) btnModalYes.addEventListener('click', ejecutarAccion);
-    
-    // ==========================================
-    // 🔹 ELIMINAR
-    // ==========================================
-    async function eliminarRegistro() {
-        if (!currentData) return;
-        if(btnEliminar) {
-            btnEliminar.disabled = true;
-            btnEliminar.textContent = '⏳ Archivando...';
-        }
-        hideMsgElim();
-        
-        try {
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            const eliminadoPor = user?.email || 'usuario@sistema';
-            
-            const dataToArchive = {
-                eliminado_por: eliminadoPor,
-                eliminado_en: new Date().toISOString(),
-                primer_nombre: currentData.primer_nombre,
-                segundo_nombre: currentData.segundo_nombre,
-                primer_apellido: currentData.primer_apellido,
-                segundo_apellido: currentData.segundo_apellido,
-                cedula: currentData.cedula,
-                fecha_nacimiento: currentData.fecha_nacimiento,
-                edad: currentData.edad,
-                apodo: currentData.apodo,
-                marca_corporal: currentData.marca_corporal,
-                nacionalidad: currentData.nacionalidad,
-                sexo: currentData.sexo,
-                direccion: currentData.direccion,
-                tlf_pais: currentData.tlf_pais,
-                tlf_numero: currentData.tlf_numero,
-                estatura_cm: currentData.estatura_cm,
-                color_piel: currentData.color_piel,
-                color_ojos: currentData.color_ojos,
-                color_cabello: currentData.color_cabello,
-                complexion: currentData.complexion,
-                usa_lentes: currentData.usa_lentes,
-                detalle_lentes: currentData.detalle_lentes,
-                perforaciones: currentData.perforaciones,
-                detalle_perforaciones: currentData.detalle_perforaciones,
-                condicion_medica: currentData.condicion_medica,
-                detalle_condicion_medica: currentData.detalle_condicion_medica,
-                consume_medicamento: currentData.consume_medicamento,
-                detalle_medicamento: currentData.detalle_medicamento,
-                problema_judicial: currentData.problema_judicial,
-                detalle_problema_judicial: currentData.detalle_problema_judicial,
-                foto_frontal_persona: currentData.foto_frontal_persona,
-                foto_perfil_izq_persona: currentData.foto_perfil_izq_persona,
-                foto_perfil_der_persona: currentData.foto_perfil_der_persona,
-                tipo_vehiculo: currentData.tipo_vehiculo,
-                placa: currentData.placa,
-                serial_carroceria: currentData.serial_carroceria,
-                serial_motor: currentData.serial_motor,
-                cilindraje: currentData.cilindraje,
-                color_vehiculo: currentData.color_vehiculo,
-                anio_vehiculo: currentData.anio_vehiculo,
-                marca_vehiculo: currentData.marca_vehiculo,
-                modelo_vehiculo: currentData.modelo_vehiculo,
-                foto_frontal_vehiculo: currentData.foto_frontal_vehiculo,
-                foto_trasera_vehiculo: currentData.foto_trasera_vehiculo,
-                foto_lado_der_vehiculo: currentData.foto_lado_der_vehiculo,
-                foto_lado_izq_vehiculo: currentData.foto_lado_izq_vehiculo,
-                estatus: currentData.estatus,
-                estacion_policial: currentData.estacion_policial,
-                direccion_detencion: currentData.direccion_detencion,
-                observaciones: currentData.observaciones
-            };
-            
-            const res = await window.supabaseClient.from('eliminados_vinculados').insert([dataToArchive]);
-            if (res.error) throw res.error;
-            
-            const delRes = await window.supabaseClient.from('registro_vinculado').delete().eq('id', currentData.id);
-            if (delRes.error) throw delRes.error;
-            
-            showMsgElim('✅ Registro vinculado eliminado y archivado correctamente.', 'success');
-            setTimeout(() => {
-                if(dataContainer) dataContainer.style.display = 'none';
-                if(buscarInput) buscarInput.value = '';
-                hideMsg(msgBuscar);
-                hideMsgElim();
-                if(archivedBanner) archivedBanner.style.display = 'none';
-                if(archivedNotice) archivedNotice.style.display = 'none';
-            }, 4000);
-        } catch (err) {
-            console.error('❌ Error eliminando:', err);
-            showMsgElim('❌ ' + err.message, 'error');
-        } finally {
-            if(btnEliminar) {
-                btnEliminar.disabled = false;
-                btnEliminar.textContent = '🗑️ Eliminar Registro Vinculado';
-            }
-        }
-    }
-    
-    // ==========================================
-    // 🔹 REINTEGRAR
-    // ==========================================
-    async function reintegrarRegistro() {
-        if (!currentData) return;
-        if(btnReintegrar) {
-            btnReintegrar.disabled = true;
-            btnReintegrar.textContent = '⏳ Reintegrando...';
-        }
-        hideMsgElim();
-        
-        try {
-            const dataToRestore = {
-                estatus: currentData.estatus,
-                estacion_policial: currentData.estacion_policial,
-                direccion_detencion: currentData.direccion_detencion,
-                observaciones: currentData.observaciones,
-                primer_nombre: currentData.primer_nombre,
-                segundo_nombre: currentData.segundo_nombre,
-                primer_apellido: currentData.primer_apellido,
-                segundo_apellido: currentData.segundo_apellido,
-                cedula: currentData.cedula,
-                fecha_nacimiento: currentData.fecha_nacimiento,
-                edad: currentData.edad,
-                apodo: currentData.apodo,
-                marca_corporal: currentData.marca_corporal,
-                nacionalidad: currentData.nacionalidad,
-                sexo: currentData.sexo,
-                direccion: currentData.direccion,
-                tlf_pais: currentData.tlf_pais,
-                tlf_numero: currentData.tlf_numero,
-                estatura_cm: currentData.estatura_cm,
-                color_piel: currentData.color_piel,
-                color_ojos: currentData.color_ojos,
-                color_cabello: currentData.color_cabello,
-                complexion: currentData.complexion,
-                usa_lentes: currentData.usa_lentes,
-                detalle_lentes: currentData.detalle_lentes,
-                perforaciones: currentData.perforaciones,
-                detalle_perforaciones: currentData.detalle_perforaciones,
-                condicion_medica: currentData.condicion_medica,
-                detalle_condicion_medica: currentData.detalle_condicion_medica,
-                consume_medicamento: currentData.consume_medicamento,
-                detalle_medicamento: currentData.detalle_medicamento,
-                problema_judicial: currentData.problema_judicial,
-                detalle_problema_judicial: currentData.detalle_problema_judicial,
-                foto_frontal_persona: currentData.foto_frontal_persona,
-                foto_perfil_izq_persona: currentData.foto_perfil_izq_persona,
-                foto_perfil_der_persona: currentData.foto_perfil_der_persona,
-                tipo_vehiculo: currentData.tipo_vehiculo,
-                placa: currentData.placa,
-                serial_carroceria: currentData.serial_carroceria,
-                serial_motor: currentData.serial_motor || '',
-                cilindraje: currentData.cilindraje,
-                color_vehiculo: currentData.color_vehiculo,
-                anio_vehiculo: currentData.anio_vehiculo,
-                marca_vehiculo: currentData.marca_vehiculo,
-                modelo_vehiculo: currentData.modelo_vehiculo,
-                foto_frontal_vehiculo: currentData.foto_frontal_vehiculo,
-                foto_trasera_vehiculo: currentData.foto_trasera_vehiculo,
-                foto_lado_der_vehiculo: currentData.foto_lado_der_vehiculo,
-                foto_lado_izq_vehiculo: currentData.foto_lado_izq_vehiculo
-            };
-            
-            const res = await window.supabaseClient.from('registro_vinculado').insert([dataToRestore]);
-            if (res.error) throw res.error;
-            
-            const delRes = await window.supabaseClient.from('eliminados_vinculados').delete().eq('id', currentData.id);
-            if (delRes.error) throw delRes.error;
-            
-            showMsgElim('✅ Registro vinculado reintegrado al sistema activo.', 'success');
-            setTimeout(() => {
-                if(dataContainer) dataContainer.style.display = 'none';
-                if(buscarInput) buscarInput.value = '';
-                hideMsg(msgBuscar);
-                hideMsgElim();
-                if(archivedBanner) archivedBanner.style.display = 'none';
-                if(archivedNotice) archivedNotice.style.display = 'none';
-            }, 4000);
-        } catch (err) {
-            console.error('Error reintegrando:', err);
-            let msg = 'Error al reintegrar.';
-            if (err.message.includes('23505') || err.message.includes('unique') || err.message.includes('duplicate key')) {
-                msg = '❌ <strong>No se puede reintegrar:</strong> La cédula, placa o serial ya se encuentra en uso.<br><small style="color:#64748b;">Este registro se conserva como historial.</small>';
-            } else {
-                msg = '❌ ' + err.message;
-            }
-            showMsgElim(msg, 'error');
-        } finally {
-            if(btnReintegrar) {
-                btnReintegrar.disabled = false;
-                btnReintegrar.textContent = '♻️ Reintegrar al Sistema Activo';
-            }
-        }
-    }
-    
-    // ==========================================
-    // 🔹 LISTENERS DE BOTONES
-    // ==========================================
-    if (btnEliminar) {
-        btnEliminar.addEventListener('click', () => {
-            if (!currentData) return;
-            showModal('⚠️ Confirmar Eliminación', `¿Está seguro de eliminar este registro vinculado (C.I: ${currentData.cedula})?`, 'delete', 'danger');
-        });
-    }
-    
-    if (btnReintegrar) {
-        btnReintegrar.addEventListener('click', () => {
-            if (!currentData) return;
-            showModal('⚠️ Confirmar Reintegración', `¿Está seguro de reintegrar este registro (C.I: ${currentData.cedula}) al sistema activo?`, 'reintegrate', 'success');
-        });
-    }
-    
-    console.log("✅ Módulo elim-vinculado.js inicializado correctamente.");
 };
-// 🚀 AUTO-INICIALIZACIÓN
+
+// Inicializar cuando el DOM esté listo
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', window.initElimVinculados);
+    document.addEventListener('DOMContentLoaded', window.initEditarProcesado);
 } else {
-    window.initElimVinculados();
+    window.initEditarProcesado();
 }
