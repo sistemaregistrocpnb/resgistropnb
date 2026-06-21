@@ -1,3 +1,9 @@
+// ✅ PROTECCIÓN CONTRA DOBLE INICIALIZACIÓN
+if (window._regDenunciasInit) {
+    console.warn('⚠️ reg-denuncias.js ya estaba inicializado. Saltando duplicado.');
+} else {
+    window._regDenunciasInit = true;
+
 window.initRegDenuncias = function() {
     console.log("⚙️ Iniciando módulo reg-denuncias.js...");
 
@@ -729,3 +735,5 @@ if (document.readyState === 'loading') {
 } else {
     window.initRegDenuncias();
 }
+
+} // ✅ Cierre de la protección contra doble inicialización
