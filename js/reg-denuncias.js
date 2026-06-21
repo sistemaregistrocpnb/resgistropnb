@@ -29,12 +29,7 @@ if (window._regDenunciasInit) {
                 if (!inputNum || !window.supabaseClient) return;
                 inputNum.value = 'Calculando...';
                 try {
-                    const { data: ultima } = await window.supabaseClient.from('denuncias').select('numero_denuncia').order('numero_denuncia', { ascending: false }).limit(1).maybeSingle();
-                    let proximo = 'CPNB-00000001';
-                    if (ultima && ultima.numero_denuncia) {
-                        const partes = ultima.numero_denuncia.split('-');
-                        if (partes.length === 2) proximo = `CPNB-${(parseInt(partes[1], 10) + 1).toString().padStart(8, '0')}`;
-                    }
+            
                     inputNum.value = proximo;
                 } catch (e) { inputNum.value = 'Error'; }
             }
