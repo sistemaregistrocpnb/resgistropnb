@@ -41,7 +41,7 @@ window.initEditarProcesado = function() {
     async function buscarProcesado(valor) {
         const val = valor.trim().toUpperCase();
         // ⚠️ NOTA: Cambia 'procesados' por el nombre real de tu tabla en Supabase
-        const tabla = 'procesados'; 
+       const tabla = 'registro_procesados'; 
         
         const query = `cedula.ilike.%${val}%,placa.ilike.%${val}%,id.eq.${val}`;
 
