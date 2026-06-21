@@ -1,22 +1,32 @@
 window.initModDenuncias = function() {
     console.log("⚙️ Iniciando módulo mod-denuncias.js...");
-
     if (window._modDenunciasInitialized) return;
     window._modDenunciasInitialized = true;
+
+    // 🔹 FUNCIÓN AUXILIAR PARA LOGS
+    async function logModDenuncias(accion, detalles, registroId = null) {
+        if (typeof window.registrarLog !== 'function') {
+            console.warn('⚠️ utils.js no disponible para registrar log');
+            return;
+        }
+        try {
+            await window.registrarLog(accion, 'MOD_DENUNCIAS', detalles, registroId);
+        } catch (e) {
+            console.warn('⚠️ Error registrando log:', e);
+        }
+    }
 
     const docsUnicos = [
         { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
         { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
         { id: 'medida_proteccion', label: '🛡️ Medida de Protección' }
     ];
-
     const docsMultiples = [
         { id: 'acta_entrevista', label: '🎤 Acta de Entrevista', max: 10 },
         { id: 'datos_filiatorios', label: '👤 Datos Filiatorios', max: 10 },
         { id: 'evidencias', label: '🔍 Evidencias', max: 10 },
         { id: 'solicitud_senamecf', label: '🏥 Solicitud SENAMECF', max: 10 }
     ];
-
     const modEstadoDocs = { unicos: {}, multiples: {} };
 
     function inicializarContenedores() {
@@ -127,7 +137,6 @@ window.initModDenuncias = function() {
         const estado = modEstadoDocs.multiples[docId];
         listDiv.innerHTML = '';
         let contador = 0;
-
         estado.urlsOriginales.forEach((url, idx) => {
             if (!estado.indicesToDelete.includes(idx)) {
                 contador++;
@@ -138,7 +147,6 @@ window.initModDenuncias = function() {
                 listDiv.appendChild(item);
             }
         });
-
         estado.newFiles.forEach((file, idx) => {
             contador++;
             const item = document.createElement('div');
@@ -228,15 +236,16 @@ window.initModDenuncias = function() {
         const msgBusqueda = document.getElementById('mod_msg_busqueda');
         const formContainer = document.getElementById('mod_form_container');
         const listaContainer = document.getElementById('mod_denuncias_lista');
-        const cedulaRegex = /^[VE]-\d{6,9}$/;
-
+        
+        // ✅ VALIDACIÓN MEJORADA DE CÉDULA
+        const cedulaRegex = /^[VE]-\d{7,8}$/;
+        
         if (!cedulaRaw) {
             if (msgBusqueda) { msgBusqueda.textContent = '⚠️ El campo de cédula no puede estar vacío.'; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
             return;
         }
-
         if (!cedulaRegex.test(cedulaRaw)) {
-            if (msgBusqueda) { msgBusqueda.textContent = '⚠️ Formato incorrecto. Debe colocar V- o E- seguido del número (Ej: V-12345678).'; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
+            if (msgBusqueda) { msgBusqueda.textContent = '⚠️ Formato incorrecto. Debe colocar V- o E- seguido de 7 u 8 dígitos (Ej: V-12345678).'; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
             return;
         }
 
@@ -253,6 +262,12 @@ window.initModDenuncias = function() {
 
             if (error) throw error;
 
+            // ✅ LOG DE BÚSQUEDA
+            await logModDenuncias('BUSCAR', {
+                cedula_buscada: cedulaRaw,
+                resultados_encontrados: data ? data.length : 0
+            });
+
             if (!data || data.length === 0) {
                 if (msgBusqueda) { msgBusqueda.textContent = '❌ No se encontró ninguna denuncia registrada con esa cédula.'; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
                 return;
@@ -262,50 +277,49 @@ window.initModDenuncias = function() {
             if (msgBusqueda) { msgBusqueda.textContent = `✅ Se encontraron ${data.length} denuncia(s). Seleccione una para editar.`; msgBusqueda.className = 'msg success'; msgBusqueda.style.display = 'block'; }
             
             if (listaContainer) {
-                listaContainer.innerHTML = `
-                    <div class="denuncias-lista-header">📋 Denuncias encontradas (${data.length})</div>
-                `;
-                
+                listaContainer.innerHTML = `<div class="denuncias-lista-header">📋 Denuncias encontradas (${data.length})</div>`;
                 data.forEach((denuncia, index) => {
                     const fecha = new Date(denuncia.created_at).toLocaleString('es-VE', {
                         year: 'numeric', month: '2-digit', day: '2-digit',
                         hour: '2-digit', minute: '2-digit'
                     });
-                    
                     const item = document.createElement('div');
                     item.className = 'denuncia-item';
                     item.innerHTML = `
                         <div class="denuncia-item-info">
                             <div class="denuncia-item-numero">${denuncia.numero_denuncia || 'N/A'}</div>
                             <div class="denuncia-item-detalles">
-                                <strong>Estación:</strong> ${denuncia.estacion_policial || 'N/A'} | 
+                                <strong>Estación:</strong> ${denuncia.estacion_policial || 'N/A'} |
                                 <strong>Motivo:</strong> ${denuncia.motivo_denuncia ? denuncia.motivo_denuncia.substring(0, 80) + (denuncia.motivo_denuncia.length > 80 ? '...' : '') : 'N/A'}
                             </div>
                         </div>
                         <div class="denuncia-item-fecha">${fecha}</div>
                         <button type="button" class="denuncia-item-btn" data-index="${index}">✏️ Editar</button>
                     `;
-                    
                     item.querySelector('.denuncia-item-btn').addEventListener('click', () => {
                         cargarDenunciaEnFormulario(denuncia);
                     });
-                    
                     listaContainer.appendChild(item);
                 });
-                
                 listaContainer.style.display = 'block';
             }
-
         } catch (err) {
             console.error('Error en búsqueda:', err);
             if (msgBusqueda) { msgBusqueda.textContent = '❌ Error al buscar: ' + err.message; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
+            
+            // ✅ LOG DE ERROR EN BÚSQUEDA
+            await logModDenuncias('ERROR', {
+                accion: 'BUSCAR',
+                error: err.message,
+                cedula_buscada: cedulaRaw
+            });
         }
     });
 
     // ==========================================
     // CARGAR DENUNCIA SELECCIONADA EN EL FORMULARIO
     // ==========================================
-    function cargarDenunciaEnFormulario(data) {
+    async function cargarDenunciaEnFormulario(data) {
         const formContainer = document.getElementById('mod_form_container');
         const listaContainer = document.getElementById('mod_denuncias_lista');
         const msgBusqueda = document.getElementById('mod_msg_busqueda');
@@ -366,6 +380,13 @@ window.initModDenuncias = function() {
         if (msgBusqueda) { msgBusqueda.textContent = `✅ Editando denuncia ${data.numero_denuncia}`; msgBusqueda.className = 'msg success'; msgBusqueda.style.display = 'block'; }
         if (listaContainer) listaContainer.style.display = 'none';
         if (formContainer) formContainer.style.display = 'block';
+
+        // ✅ LOG DE CARGA DE DENUNCIA
+        await logModDenuncias('CARGAR', {
+            numero_denuncia: data.numero_denuncia,
+            denuncia_id: data.id,
+            cedula: data.cedula
+        }, data.id);
     }
 
     // ==========================================
@@ -389,6 +410,7 @@ window.initModDenuncias = function() {
             const bucket = window.supabaseClient.storage.from('denuncias_documentos');
             const updateData = {};
 
+            // Procesar documentos únicos
             for (const doc of docsUnicos) {
                 const radio = document.querySelector(`input[name="mod_doc_${doc.id}"]:checked`);
                 const estado = modEstadoDocs.unicos[doc.id];
@@ -406,6 +428,7 @@ window.initModDenuncias = function() {
                 } else { updateData[doc.id] = null; }
             }
 
+            // Procesar documentos múltiples
             for (const doc of docsMultiples) {
                 const radio = document.querySelector(`input[name="mod_doc_${doc.id}"]:checked`);
                 const estado = modEstadoDocs.multiples[doc.id];
@@ -428,6 +451,7 @@ window.initModDenuncias = function() {
                 }
             }
 
+            // Campos a actualizar
             updateData.estacion_policial = document.getElementById('mod_estacion').value;
             updateData.primer_nombre = document.getElementById('mod_nombre1').value.trim();
             updateData.segundo_nombre = document.getElementById('mod_nombre2').value.trim() || null;
@@ -443,6 +467,14 @@ window.initModDenuncias = function() {
             if (dbError) throw dbError;
 
             if (msg) { msg.textContent = '✅ Denuncia actualizada exitosamente.'; msg.className = 'msg success'; msg.style.display = 'block'; }
+
+            // ✅ LOG DE ACTUALIZACIÓN
+            await logModDenuncias('ACTUALIZAR', {
+                denuncia_id: denunciaId,
+                campos_actualizados: Object.keys(updateData),
+                estacion: updateData.estacion_policial
+            }, denunciaId);
+
             setTimeout(() => {
                 if (msg) msg.style.display = 'none';
                 document.getElementById('mod_form_container').style.display = 'none';
@@ -452,6 +484,13 @@ window.initModDenuncias = function() {
         } catch (err) {
             console.error('Error al actualizar:', err);
             if (msg) { msg.textContent = '❌ ' + err.message; msg.className = 'msg error'; msg.style.display = 'block'; }
+            
+            // ✅ LOG DE ERROR EN ACTUALIZACIÓN
+            await logModDenuncias('ERROR', {
+                accion: 'ACTUALIZAR',
+                error: err.message,
+                denuncia_id: denunciaId
+            });
         } finally {
             btn.disabled = false; btn.textContent = '💾 Guardar Cambios';
             loading.classList.remove('active');
@@ -459,6 +498,12 @@ window.initModDenuncias = function() {
     });
 
     inicializarContenedores();
+    
+    // ✅ LOG DE INICIO DE MÓDULO
+    logModDenuncias('INICIAR', {
+        mensaje: 'Usuario abrió el módulo de modificación de denuncias'
+    });
+    
     console.log("✅ Módulo mod-denuncias.js inicializado correctamente");
 };
 
