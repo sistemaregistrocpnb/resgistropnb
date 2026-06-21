@@ -16,6 +16,19 @@ if (window._regDenunciasInit) {
                 else { console.error("❌ ERROR: No se encontró el formulario."); return; }
             }
 
+            // 🔹 FUNCIÓN AUXILIAR PARA LOGS DEL MÓDULO
+            async function logDenuncias(accion, detalles, registroId = null) {
+                if (typeof window.registrarLog !== 'function') {
+                    console.warn('⚠️ utils.js no disponible para registrar log');
+                    return;
+                }
+                try {
+                    await window.registrarLog(accion, 'DENUNCIAS', detalles, registroId);
+                } catch (e) {
+                    console.warn('⚠️ Error registrando log:', e);
+                }
+            }
+
             const fechaInput = document.getElementById('d_fecha_hora');
             if (fechaInput) {
                 const ahora = new Date();
@@ -282,23 +295,46 @@ if (window._regDenunciasInit) {
 
                     if (insertError) throw insertError;
 
-                    // ✅ REGISTRAR LOG USANDO UTILS.JS
-                    if (typeof window.registrarLog === 'function') {
-                        const nombreComp = `${data.primer_nombre} ${data.segundo_nombre || ''} ${data.primer_apellido} ${data.segundo_apellido || ''}`.trim();
-                        const tlfCompleto = tlfPais && tlfNum ? `${tlfPais} ${tlfNum}` : (tlfNum || 'N/A');
-                        let totalDocs = 0;
-                        Object.values(docsUnicosUrls).forEach(v => { if (v) totalDocs++; });
-                        Object.values(docsMultiplesUrls).forEach(arr => { if (Array.isArray(arr)) totalDocs += arr.length; });
-                        
-                        await window.registrarLog('REGISTRAR', 'DENUNCIAS', {
-                            numero_denuncia: nuevoNumero,
-                            estacion: data.estacion_policial,
-                            cedula: data.cedula || 'N/A',
-                            nombre: nombreComp || 'N/A',
-                            telefono: tlfCompleto,
-                            documentos: totalDocs
-                        }, insertedData.id);
-                    }
+                    // ==========================================
+                    // 🔹 REGISTRO DE LOG MEJORADO (Integración con utils.js)
+                    // ==========================================
+                    const nombreComp = `${data.primer_nombre} ${data.segundo_nombre || ''} ${data.primer_apellido} ${data.segundo_apellido || ''}`.trim();
+                    const tlfCompleto = tlfPais && tlfNum ? `${tlfPais}-${tlfNum}` : (tlfNum || 'N/A');
+                    
+                    // 📊 Contar documentos subidos con detalle
+                    let totalDocs = 0;
+                    const docsDetalle = {};
+                    
+                    docsUnicos.forEach(doc => {
+                        if (docsUnicosUrls[doc.id]) {
+                            totalDocs++;
+                            docsDetalle[doc.id] = 1;
+                        }
+                    });
+                    
+                    docsMultiples.forEach(doc => {
+                        const arr = docsMultiplesUrls[doc.id];
+                        if (Array.isArray(arr) && arr.length > 0) {
+                            totalDocs += arr.length;
+                            docsDetalle[doc.id] = arr.length;
+                        }
+                    });
+
+                    const detallesLog = {
+                        numero_denuncia: nuevoNumero,
+                        estacion: data.estacion_policial,
+                        cedula: data.cedula || 'N/A',
+                        nombre_completo: nombreComp || 'N/A',
+                        telefono: tlfCompleto,
+                        direccion: data.direccion || 'No indicada',
+                        motivo: (data.motivo_denuncia || '').substring(0, 100) + '...',
+                        total_documentos: totalDocs,
+                        documentos_detalle: docsDetalle,
+                        email_registrante: user.email,
+                        fecha_registro: new Date().toLocaleString('es-VE')
+                    };
+
+                    await logDenuncias('REGISTRAR', detallesLog, insertedData.id);
 
                     if (msg) { msg.textContent = `✅ Denuncia registrada. N°: ${nuevoNumero}`; msg.className = 'msg success'; msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 5000); }
 
@@ -316,28 +352,41 @@ if (window._regDenunciasInit) {
                 } catch (err) {
                     console.error('Error:', err);
                     if (msg) { msg.textContent = '❌ ' + err.message; msg.className = 'msg error'; msg.style.display = 'block'; }
+                    
+                    // 🔹 LOG DE ERROR
+                    await logDenuncias('ERROR', {
+                        mensaje_error: err.message,
+                        codigo_error: err.code || 'N/A',
+                        hora: new Date().toLocaleString('es-VE')
+                    });
                 } finally {
                     btn.disabled = false; btn.textContent = '✅ Registrar Denuncia';
                     if (loadingOverlay) loadingOverlay.classList.remove('active');
                 }
             });
             console.log("✅ Módulo reg-denuncias.js inicializado correctamente");
+            
+            // 🔹 LOG DE INICIO DE MÓDULO
+            logDenuncias('INICIAR', {
+                mensaje: 'Usuario abrió el módulo de registro de denuncias',
+                hora: new Date().toLocaleString('es-VE')
+            });
         }
         iniciarModulo();
         // 🔹 REFUERZO DE EVENTO CLICK (Por si el DOM dinámico lo pierde)
-setTimeout(() => {
-    const displayBoxFix = document.getElementById('d-phone-display');
-    const optionsBoxFix = document.getElementById('d-phone-options');
-    if (displayBoxFix && optionsBoxFix && !displayBoxFix.dataset.clickBound) {
-        displayBoxFix.dataset.clickBound = 'true';
-        displayBoxFix.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const isHidden = optionsBoxFix.style.display === 'none' || optionsBoxFix.style.display === '';
-            optionsBoxFix.style.display = isHidden ? 'block' : 'none';
-        });
-        console.log("✅ Evento click del dropdown de países reforzado.");
-    }
-}, 500);
+        setTimeout(() => {
+            const displayBoxFix = document.getElementById('d-phone-display');
+            const optionsBoxFix = document.getElementById('d-phone-options');
+            if (displayBoxFix && optionsBoxFix && !displayBoxFix.dataset.clickBound) {
+                displayBoxFix.dataset.clickBound = 'true';
+                displayBoxFix.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isHidden = optionsBoxFix.style.display === 'none' || optionsBoxFix.style.display === '';
+                    optionsBoxFix.style.display = isHidden ? 'block' : 'none';
+                });
+                console.log("✅ Evento click del dropdown de países reforzado.");
+            }
+        }, 500);
     };
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.initRegDenuncias);
