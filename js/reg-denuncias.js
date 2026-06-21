@@ -296,27 +296,7 @@ if (window._regDenunciasInit) {
                     // ==========================================
                     // 🔹 REGISTRO DE LOG MEJORADO (Integración con utils.js)
                     // ==========================================
-                    const nombreComp = `${data.primer_nombre} ${data.segundo_nombre || ''} ${data.primer_apellido} ${data.segundo_apellido || ''}`.trim();
-                    const tlfCompleto = tlfPais && tlfNum ? `${tlfPais}-${tlfNum}` : (tlfNum || 'N/A');
-                    
-                    // 📊 Contar documentos subidos con detalle
-                    let totalDocs = 0;
-                    const docsDetalle = {};
-                    
-                    docsUnicos.forEach(doc => {
-                        if (docsUnicosUrls[doc.id]) {
-                            totalDocs++;
-                            docsDetalle[doc.id] = 1;
-                        }
-                    });
-                    
-                    docsMultiples.forEach(doc => {
-                        const arr = docsMultiplesUrls[doc.id];
-                        if (Array.isArray(arr) && arr.length > 0) {
-                            totalDocs += arr.length;
-                            docsDetalle[doc.id] = arr.length;
-                        }
-                    });
+               const nombreComp = `${data.primer_nombre} ${data.segundo_nombre || ''} ${data.primer_apellido} ${data.segundo_apellido || ''}`.trim();
 
            const detallesLog = {
     numero_denuncia: nuevoNumero,
