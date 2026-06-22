@@ -18,7 +18,7 @@ window.initConsultaPersonas = function() {
     let cedulaActualIncidencias = null;
     let tipoActualIncidencias = null;
 
-    //  FUNCIÓN AUXILIAR PARA LOGS
+    // 🔹 FUNCIÓN AUXILIAR PARA LOGS
     async function logConsultaPersonas(accion, detalles, registroId = null) {
         if (typeof window.registrarLog !== 'function') {
             console.warn('⚠️ utils.js no disponible para registrar log');
@@ -29,6 +29,15 @@ window.initConsultaPersonas = function() {
         } catch (e) {
             console.warn('⚠️ Error registrando log:', e);
         }
+    }
+
+    // 🔹 FUNCIÓN PARA NORMALIZAR CÉDULA
+    function normalizarCedula(cedulaInput) {
+        if (!cedulaInput) return '';
+        let cedula = cedulaInput.trim().toUpperCase().replace(/\s/g, '');
+        cedula = cedula.replace(/^[VE]-/, '');
+        cedula = cedula.replace(/\D/g, '');
+        return cedula;
     }
 
     if (btnBuscar) btnBuscar.onclick = () => buscarPersona();
@@ -74,18 +83,6 @@ window.initConsultaPersonas = function() {
         }
     }
 
-    // 🔹 FUNCIÓN PARA NORMALIZAR CÉDULA (Quitar V- o E- si existe)
-    function normalizarCedula(cedulaInput) {
-        if (!cedulaInput) return '';
-        // Quitar espacios y convertir a mayúsculas
-        let cedula = cedulaInput.trim().toUpperCase().replace(/\s/g, '');
-        // Quitar prefijo V- o E- si existe
-        cedula = cedula.replace(/^[VE]-/, '');
-        // Quitar cualquier carácter no numérico
-        cedula = cedula.replace(/\D/g, '');
-        return cedula;
-    }
-
     async function buscarPersona() {
         const cedulaInput = buscarInput?.value.trim() || '';
         const cedulaNormalizada = normalizarCedula(cedulaInput);
@@ -95,7 +92,7 @@ window.initConsultaPersonas = function() {
             return;
         }
 
-        console.log(' Buscando cédula:', cedulaInput, '→ Normalizada:', cedulaNormalizada);
+        console.log('🔍 Buscando cédula:', cedulaInput, '→ Normalizada:', cedulaNormalizada);
 
         mostrarMensaje('🔍 Buscando...', 'info');
         fichaBreve.style.display = 'none';
@@ -106,7 +103,7 @@ window.initConsultaPersonas = function() {
         incidenciasPaginaActual = 1;
 
         try {
-            // ✅ BUSCAR EN registro_personas CON CÉDULA NORMALIZADA
+            // ✅ BUSCAR EN registro_personas
             const { data: persona, error: errPersona } = await window.supabaseClient
                 .from('registro_personas')
                 .select('*')
@@ -116,7 +113,7 @@ window.initConsultaPersonas = function() {
             if (errPersona) throw errPersona;
             
             if (persona) {
-                console.log('✅ Persona encontrada en registro_personas:', persona.cedula);
+                console.log('✅ Persona encontrada:', persona.cedula);
                 personaActual = persona;
                 tipoRegistroActual = 'persona';
                 const estatus = (persona.estatus || '').toLowerCase();
@@ -132,18 +129,19 @@ window.initConsultaPersonas = function() {
                 await window.cargarIncidencias(cedulaNormalizada, 'persona', 1);
                 mostrarMensaje('✅ Persona encontrada', 'success');
                 
-                // ✅ LOG DE CONSULTA DE PERSONA
-          // ✅ LOG DE CONSULTA DE PERSONA
-await logConsultaPersonas('CONSULTA', {
-    cedula_buscada: cedulaInput,
-    cedula_normalizada: cedulaNormalizada,
-    nombre_completo: `${persona.primer_nombre || ''} ${persona.primer_apellido || ''}`.trim() || 'No disponible',
-    tipo: 'Persona',
-    estacion: persona.estacion_policial || 'N/A',
-    estatus: 'Verificación'
-}, persona.id);
+                // ✅ LOG DE CONSULTA
+                await logConsultaPersonas('CONSULTA', {
+                    cedula_buscada: cedulaInput,
+                    cedula_normalizada: cedulaNormalizada,
+                    nombre_completo: `${persona.primer_nombre || ''} ${persona.primer_apellido || ''}`.trim() || 'No disponible',
+                    tipo: 'Persona',
+                    estacion: persona.estacion_policial || 'N/A',
+                    estatus: 'Verificación'
+                }, persona.id);
+                return;
+            }
 
-            // ✅ BUSCAR EN registro_vinculado CON CÉDULA NORMALIZADA
+            // ✅ BUSCAR EN registro_vinculado
             const { data: vinculado, error: errVinculado } = await window.supabaseClient
                 .from('registro_vinculado')
                 .select('*')
@@ -153,7 +151,7 @@ await logConsultaPersonas('CONSULTA', {
             if (errVinculado) throw errVinculado;
             
             if (vinculado) {
-                console.log('✅ Vinculado encontrado en registro_vinculado:', vinculado.cedula);
+                console.log('✅ Vinculado encontrado:', vinculado.cedula);
                 personaActual = vinculado;
                 tipoRegistroActual = 'vinculado';
                 const estatus = (vinculado.estatus || '').toLowerCase();
@@ -169,17 +167,16 @@ await logConsultaPersonas('CONSULTA', {
                 await window.cargarIncidencias(cedulaNormalizada, 'vinculado', 1);
                 mostrarMensaje('✅ Vehículo vinculado encontrado', 'success');
                 
-                // ✅ LOG DE CONSULTA DE VINCULADO
-           // ✅ LOG DE CONSULTA DE VINCULADO
-await logConsultaPersonas('CONSULTA', {
-    cedula_buscada: cedulaInput,
-    cedula_normalizada: cedulaNormalizada,
-    nombre_completo: `${vinculado.primer_nombre || ''} ${vinculado.primer_apellido || ''}`.trim() || 'No disponible',
-    tipo: 'Vinculado',
-    estacion: vinculado.estacion_policial || 'N/A',
-    placa: vinculado.placa || 'N/A',
-    estatus: 'Verificación'
-}, vinculado.id);
+                // ✅ LOG DE CONSULTA
+                await logConsultaPersonas('CONSULTA', {
+                    cedula_buscada: cedulaInput,
+                    cedula_normalizada: cedulaNormalizada,
+                    nombre_completo: `${vinculado.primer_nombre || ''} ${vinculado.primer_apellido || ''}`.trim() || 'No disponible',
+                    tipo: 'Vinculado',
+                    estacion: vinculado.estacion_policial || 'N/A',
+                    placa: vinculado.placa || 'N/A',
+                    estatus: 'Verificación'
+                }, vinculado.id);
                 return;
             }
 
@@ -187,18 +184,17 @@ await logConsultaPersonas('CONSULTA', {
             mostrarMensaje('❌ No se encontró ninguna persona con esa cédula', 'error');
             
             // ✅ LOG DE CONSULTA SIN RESULTADOS
-// ✅ LOG DE CONSULTA SIN RESULTADOS
-await logConsultaPersonas('CONSULTA', {
-    cedula_buscada: cedulaInput,
-    cedula_normalizada: cedulaNormalizada,
-    resultado: 'No encontrado',
-    estatus: 'Verificación'
-});
+            await logConsultaPersonas('CONSULTA', {
+                cedula_buscada: cedulaInput,
+                cedula_normalizada: cedulaNormalizada,
+                resultado: 'No encontrado',
+                estatus: 'Verificación'
+            });
         } catch (err) {
             console.error('Error buscando:', err);
             mostrarMensaje('❌ Error: ' + err.message, 'error');
             
-            // ✅ LOG DE ERROR EN BÚSQUEDA
+            // ✅ LOG DE ERROR
             await logConsultaPersonas('ERROR', {
                 accion: 'CONSULTA',
                 cedula_buscada: cedulaInput,
@@ -243,7 +239,7 @@ await logConsultaPersonas('CONSULTA', {
         }
 
         if (data.observaciones) {
-            htmlCampos += `<div class="ficha-breve-item full-width"><div class="ficha-breve-label"> Observaciones</div><div class="ficha-breve-value">${data.observaciones}</div></div>`;
+            htmlCampos += `<div class="ficha-breve-item full-width"><div class="ficha-breve-label">📝 Observaciones</div><div class="ficha-breve-value">${data.observaciones}</div></div>`;
         }
 
         const tienePermisos = await tienePermisosIncidencia();
@@ -361,7 +357,7 @@ await logConsultaPersonas('CONSULTA', {
                 html += alertasHtml;
                 html += `<div class="ficha-completa-grid">`;
 
-                // ✅ CAMBIADO: Se quitó "Estatus" y se movió "Estación" más arriba
+                // ✅ CAMBIADO: Se quitó "Estatus" y se agregó "Estación de Detención"
                 const camposPersona = [
                     { label: 'Primer Nombre', value: data.primer_nombre },
                     { label: 'Segundo Nombre', value: data.segundo_nombre },
@@ -585,7 +581,7 @@ await logConsultaPersonas('CONSULTA', {
                             data-desc="${inc.descripcion}"
                             data-fecha="${inc.fecha_hora}"
                             data-autor="${inc.email_registrante || 'N/A'}"
-                            onclick="window.prepararEliminacion(this)">️ Eliminar</button>`
+                            onclick="window.prepararEliminacion(this)">🗑️ Eliminar</button>`
                         : '';
                     html += `
                         <div class="incidencia-item">
@@ -614,7 +610,7 @@ await logConsultaPersonas('CONSULTA', {
             incidenciasSection.style.display = 'block';
         } catch (err) {
             console.error('Error cargando incidencias:', err);
-            incidenciasSection.innerHTML = '<div class="incidencias-section"><h3> Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
+            incidenciasSection.innerHTML = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
             incidenciasSection.style.display = 'block';
         }
     };
@@ -630,7 +626,7 @@ await logConsultaPersonas('CONSULTA', {
         if (!descripcion) { alert('⚠️ Ingrese una descripción'); return; }
 
         const btnGuardar = el('cp_btn_guardar_incidencia');
-        btnGuardar.disabled = true; btnGuardar.textContent = ' Guardando...';
+        btnGuardar.disabled = true; btnGuardar.textContent = '⏳ Guardando...';
 
         try {
             const { data: { user } } = await window.supabaseClient.auth.getUser();
@@ -662,7 +658,7 @@ await logConsultaPersonas('CONSULTA', {
                 tipo: tipoRegistroActual,
                 descripcion: descripcion,
                 estacion: personaActual.estacion_policial || 'N/A'
-            }, insertedData.id);
+            }, insertedData?.id);
         } catch (err) {
             console.error('Error guardando incidencia:', err);
             alert('❌ Error: ' + err.message);
