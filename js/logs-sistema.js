@@ -53,130 +53,147 @@ window.initLogsSistema = function() {
         }
     }
 
-    // 🔹 FUNCIÓN FORMATEAR DETALLES - Recibe el log completo
-    function formatearDetalles(log) {
-        const detalles = log.detalles;
-        if (!detalles) return '-';
-        let d = typeof detalles === 'string' ? JSON.parse(detalles) : detalles;
+ // 🔹 FUNCIÓN FORMATEAR DETALLES - Recibe el log completo
+function formatearDetalles(log) {
+    const detalles = log.detalles;
+    if (!detalles) return '-';
+    let d = typeof detalles === 'string' ? JSON.parse(detalles) : detalles;
 
-        // ✅ LOGIN
-        if (d.nivel && d.hora_inicio) {
-            return `Nivel: <strong style="color:#7e22ce;">${d.nivel.toUpperCase()}</strong><br>
-            IP: ${d.ip || 'No registrada'}<br>
-            Hora: ${new Date(d.hora_inicio).toLocaleString('es-VE')}`;
-        }
-
-        // ✅ LOGOUT
-        if (d.sesion_duracion || d.sesion_duracion_segundos !== undefined) {
-            let duracion = d.sesion_duracion;
-            if (!duracion && d.sesion_duracion_segundos) {
-                duracion = window.formatearDuracion ? window.formatearDuracion(d.sesion_duracion_segundos) : d.sesion_duracion_segundos + 's';
-            }
-            return `Duración de sesión: <strong style="color:var(--primary); font-size:1.1rem;">${duracion || 'No registrada'}</strong><br>
-            IP: ${d.ip || 'No registrada'}<br>
-            Cierre: ${d.hora_cierre ? new Date(d.hora_cierre).toLocaleString('es-VE') : 'No registrado'}`;
-        }
-
-        // ✅ CONSULTA DE PERSONA/VINCULADO (con nombre)
-        if (d.valor_buscado && d.nombre_completo) {
-            const tipoTexto = d.tipo === 'Vinculado' ? ' (Vinculado)' : '';
-            const placaTexto = d.placa ? `<br>Placa: <strong style="color:var(--primary);">${d.placa}</strong>` : '';
-            return `Consultó Cédula${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.valor_buscado}</strong><br>
-            Nombre: <strong>${d.nombre_completo}</strong>${placaTexto}<br>
-            Estatus: <span style="color:#64748b;">${d.estatus || 'N/A'}</span>`;
-        }
-
-        // ✅ CONSULTA SIN NOMBRE (fallback)
-        if (d.valor_buscado && !d.tipo_busqueda) {
-            const tipoTexto = d.tipo === 'Vinculado' ? ' (Vinculado)' : '';
-            return `Consultó Cédula${tipoTexto}: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span>`;
-        }
-
-        // ✅ CONSULTA VEHÍCULO (por placa/serial)
-        if (d.tipo_busqueda && d.valor_buscado) {
-            const tipoFormateado = d.tipo_busqueda === 'placa' ? 'Placa' :
-                d.tipo_busqueda === 'serial_carroceria' ? 'Serial de Carrocería' : 'Serial de Motor';
-            return `Consultó <strong>${tipoFormateado}</strong>: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span><br>
-            Estatus: <span style="color:#64748b;">${d.estatus || 'N/A'}</span>`;
-        }
-
-        // ✅ CREAR INCIDENCIA (persona o vehículo)
-        if (d.cedula && d.descripcion && !d.descripcion_eliminada) {
-            return `Cédula/Placa: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>
-            Nombre: <strong>${d.nombre_completo || 'No disponible'}</strong><br>
-            Tipo: <span style="color:#64748b;">${d.tipo || 'N/A'}</span><br>
-            Descripción: <em>"${d.descripcion}"</em>`;
-        }
-
-        // ✅ ELIMINAR INCIDENCIA (persona o vehículo)
-        if (d.cedula && d.descripcion_eliminada && d.nombre_completo) {
-            return `Cédula/Placa: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>
-            Nombre: <strong>${d.nombre_completo}</strong><br>
-            Tipo: <span style="color:#64748b;">${d.tipo || 'N/A'}</span><br>
-            Incidencia eliminada: <em>"${d.descripcion_eliminada}"</em>`;
-        }
-
-        // ✅ ELIMINAR INCIDENCIA VEHÍCULO (sin nombre_completo)
-        if (d.identificador && d.descripcion_eliminada) {
-            return `Identificador: <strong style="color:var(--primary); font-size:1.1rem;">${d.identificador}</strong><br>
-            Incidencia eliminada: <em>"${d.descripcion_eliminada}"</em>`;
-        }
-
-
-    // ✅ REGISTRO VEHÍCULO
-if (d.placa && d.marca && d.modelo) {
-    const tipoTexto = d.tipo === 'Motocicleta' ? '🏍️ Motocicleta' : '🚙 Automóvil';
-    const colorTexto = d.color || 'No especificado';  // ✅ Fallback agregado
-    return `Registró ${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.placa}</strong><br>
-    <span style="color:#64748b;">${d.marca} ${d.modelo} (${d.anio}) - ${colorTexto}</span><br>
-    Estación: <strong style="color:#059669;">${d.estacion || 'No especificada'}</strong>`;
-}
-
-        // ✅ ELIMINACIÓN DE PERSONA
-        if (d.cedula && d.nombre_completo && d.descripcion_eliminada && !d.tipo) {
-            return `Eliminó a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre_completo}).<br><em>"${d.descripcion_eliminada}"</em>`;
-        }
-
-        // ✅ REINTEGRACIÓN DE PERSONA
-        if (d.cedula && d.estatus && d.estatus.toLowerCase().includes('reintegrad')) {
-            return `Reintegró a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre_completo || 'Nombre no disponible'}) al sistema activo.`;
-        }
-
-        // ✅ MODIFICACIÓN
-        if (d.cambios_realizados && d.nombre_completo) {
-            return `Modificó a <strong>${d.nombre_completo}</strong> (C.I: ${d.cedula || 'N/A'}).<br><em>"${d.cambios_realizados}"</em>`;
-        }
-
-        // ✅ CREAR PERSONA - Mostrar cédula, nombre, estación y dirección
-        if (log.accion === 'CREAR' && log.modulo === 'PERSONAS' && d.cedula) {
-            let html = `Cédula: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>`;
-            html += `Nombre: <strong>${d.nombre_completo || 'No disponible'}</strong><br>`;
-            html += `Estación: <strong style="color:#059669;">${d.estacion || 'No especificada'}</strong><br>`;
-            if (d.direccion_detencion) {
-                html += `Dirección de detención: <em>${d.direccion_detencion}</em>`;
-            }
-            return html;
-        }
-
-        // ✅ Fallback genérico (FILTRANDO VALORES NULL/VACÍOS)
-        const entradasFiltradas = Object.entries(d).filter(([key, value]) => {
-            if (key === 'estatus') return false;
-            if (value === null || value === undefined || value === '') return false;
-            if (Array.isArray(value) && value.length === 0) return false;
-            return true;
-        });
-
-        if (entradasFiltradas.length === 0) return '<span style="color:#94a3b8;">Sin detalles adicionales</span>';
-
-        return entradasFiltradas
-            .map(([key, value]) => {
-                const keyLimpia = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                const valorMostrar = typeof value === 'object' ? JSON.stringify(value) : value;
-                return `<strong>${keyLimpia}:</strong> ${valorMostrar}`;
-            })
-            .join('<br>');
+    // ✅ LOGIN
+    if (d.nivel && d.hora_inicio) {
+        return `Nivel: <strong style="color:#7e22ce;">${d.nivel.toUpperCase()}</strong><br>
+        IP: ${d.ip || 'No registrada'}<br>
+        Hora: ${new Date(d.hora_inicio).toLocaleString('es-VE')}`;
     }
 
+    // ✅ LOGOUT
+    if (d.sesion_duracion || d.sesion_duracion_segundos !== undefined) {
+        let duracion = d.sesion_duracion;
+        if (!duracion && d.sesion_duracion_segundos) {
+            duracion = window.formatearDuracion ? window.formatearDuracion(d.sesion_duracion_segundos) : d.sesion_duracion_segundos + 's';
+        }
+        return `Duración de sesión: <strong style="color:var(--primary); font-size:1.1rem;">${duracion || 'No registrada'}</strong><br>
+        IP: ${d.ip || 'No registrada'}<br>
+        Cierre: ${d.hora_cierre ? new Date(d.hora_cierre).toLocaleString('es-VE') : 'No registrado'}`;
+    }
+
+    // ✅ CONSULTA DE PERSONA/VINCULADO (con nombre)
+    if (d.valor_buscado && d.nombre_completo) {
+        const tipoTexto = d.tipo === 'Vinculado' ? ' (Vinculado)' : '';
+        const placaTexto = d.placa ? `<br>Placa: <strong style="color:var(--primary);">${d.placa}</strong>` : '';
+        return `Consultó Cédula${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.valor_buscado}</strong><br>
+        Nombre: <strong>${d.nombre_completo}</strong>${placaTexto}<br>
+        Estatus: <span style="color:#64748b;">${d.estatus || 'N/A'}</span>`;
+    }
+
+    // ✅ CONSULTA SIN NOMBRE (fallback)
+    if (d.valor_buscado && !d.tipo_busqueda) {
+        const tipoTexto = d.tipo === 'Vinculado' ? ' (Vinculado)' : '';
+        return `Consultó Cédula${tipoTexto}: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span>`;
+    }
+
+    // ✅ CONSULTA VEHÍCULO (por placa/serial) - MOSTRAR DATOS COMPLETOS
+    if (d.tipo_busqueda && d.valor_buscado) {
+        const tipoFormateado = d.tipo_busqueda === 'placa' ? 'Placa' :
+            d.tipo_busqueda === 'serial_carroceria' ? 'Serial de Carrocería' : 'Serial de Motor';
+        
+        let html = `Consultó <strong>${tipoFormateado}</strong>: <span style="color:var(--primary); font-weight:700; font-size:1.1rem;">${d.valor_buscado}</span><br>`;
+        
+        // Mostrar datos del vehículo si existen
+        if (d.marca || d.modelo) {
+            html += `<strong>Vehículo:</strong> ${d.marca || ''} ${d.modelo || ''} ${d.anio ? `(${d.anio})` : ''}<br>`;
+        }
+        if (d.color) {
+            html += `<strong>Color:</strong> ${d.color}<br>`;
+        }
+        if (d.serial_carroceria && d.serial_carroceria !== 'N/A') {
+            html += `<strong>Serial Carroc.:</strong> ${d.serial_carroceria}<br>`;
+        }
+        if (d.serial_motor && d.serial_motor !== 'N/A') {
+            html += `<strong>Serial Motor:</strong> ${d.serial_motor}<br>`;
+        }
+        if (d.tipo) {
+            html += `<strong>Tipo:</strong> ${d.tipo}`;
+        }
+        
+        return html;
+    }
+
+    // ✅ CREAR INCIDENCIA (persona o vehículo)
+    if (d.cedula && d.descripcion && !d.descripcion_eliminada) {
+        return `Cédula/Placa: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>
+        Nombre: <strong>${d.nombre_completo || 'No disponible'}</strong><br>
+        Tipo: <span style="color:#64748b;">${d.tipo || 'N/A'}</span><br>
+        Descripción: <em>"${d.descripcion}"</em>`;
+    }
+
+    // ✅ ELIMINAR INCIDENCIA (persona o vehículo)
+    if (d.cedula && d.descripcion_eliminada && d.nombre_completo) {
+        return `Cédula/Placa: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>
+        Nombre: <strong>${d.nombre_completo}</strong><br>
+        Tipo: <span style="color:#64748b;">${d.tipo || 'N/A'}</span><br>
+        Incidencia eliminada: <em>"${d.descripcion_eliminada}"</em>`;
+    }
+
+    // ✅ ELIMINAR INCIDENCIA VEHÍCULO (sin nombre_completo)
+    if (d.identificador && d.descripcion_eliminada) {
+        return `Identificador: <strong style="color:var(--primary); font-size:1.1rem;">${d.identificador}</strong><br>
+        Incidencia eliminada: <em>"${d.descripcion_eliminada}"</em>`;
+    }
+
+    // ✅ REGISTRO VEHÍCULO
+    if (d.placa && d.marca && d.modelo) {
+        const tipoTexto = d.tipo === 'Motocicleta' ? '🏍️ Motocicleta' : '🚙 Automóvil';
+        const colorTexto = d.color || 'No especificado';
+        return `Registró ${tipoTexto}: <strong style="color:var(--primary); font-size:1.1rem;">${d.placa}</strong><br>
+        <span style="color:#64748b;">${d.marca} ${d.modelo} (${d.anio}) - ${colorTexto}</span><br>
+        Estación: <strong style="color:#059669;">${d.estacion || 'No especificada'}</strong>`;
+    }
+
+    // ✅ ELIMINACIÓN DE PERSONA
+    if (d.cedula && d.nombre_completo && d.descripcion_eliminada && !d.tipo) {
+        return `Eliminó a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre_completo}).<br><em>"${d.descripcion_eliminada}"</em>`;
+    }
+
+    // ✅ REINTEGRACIÓN DE PERSONA
+    if (d.cedula && d.estatus && d.estatus.toLowerCase().includes('reintegrad')) {
+        return `Reintegró a la persona con C.I. <strong>${d.cedula}</strong> (${d.nombre_completo || 'Nombre no disponible'}) al sistema activo.`;
+    }
+
+    // ✅ MODIFICACIÓN
+    if (d.cambios_realizados && d.nombre_completo) {
+        return `Modificó a <strong>${d.nombre_completo}</strong> (C.I: ${d.cedula || 'N/A'}).<br><em>"${d.cambios_realizados}"</em>`;
+    }
+
+    // ✅ CREAR PERSONA - Mostrar cédula, nombre, estación y dirección
+    if (log.accion === 'CREAR' && log.modulo === 'PERSONAS' && d.cedula) {
+        let html = `Cédula: <strong style="color:var(--primary); font-size:1.1rem;">${d.cedula}</strong><br>`;
+        html += `Nombre: <strong>${d.nombre_completo || 'No disponible'}</strong><br>`;
+        html += `Estación: <strong style="color:#059669;">${d.estacion || 'No especificada'}</strong><br>`;
+        if (d.direccion_detencion) {
+            html += `Dirección de detención: <em>${d.direccion_detencion}</em>`;
+        }
+        return html;
+    }
+
+    // ✅ Fallback genérico (FILTRANDO VALORES NULL/VACÍOS)
+    const entradasFiltradas = Object.entries(d).filter(([key, value]) => {
+        if (key === 'estatus') return false;
+        if (value === null || value === undefined || value === '') return false;
+        if (Array.isArray(value) && value.length === 0) return false;
+        return true;
+    });
+
+    if (entradasFiltradas.length === 0) return '<span style="color:#94a3b8;">Sin detalles adicionales</span>';
+
+    return entradasFiltradas
+        .map(([key, value]) => {
+            const keyLimpia = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const valorMostrar = typeof value === 'object' ? JSON.stringify(value) : value;
+            return `<strong>${keyLimpia}:</strong> ${valorMostrar}`;
+        })
+        .join('<br>');
+}
     function obtenerValorRegistro(log) {
         // ✅ LOGIN
         if (log.accion === 'LOGIN') {
