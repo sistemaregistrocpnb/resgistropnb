@@ -302,16 +302,15 @@ const badgeClass = (accion) => {
         'REINTEGRAR': 'badge-crear',
         'LOGIN': 'badge-login',
         'LOGOUT': 'badge-logout',
-        'CONSULTA': 'badge-consulta',
-        'CONSULTA_VEHICULO': 'badge-consulta',
-        'CONSULTA_PERSONA': 'badge-consulta',
+        'CONSULTA_VEHICULO': 'badge-modificar',
+        'CONSULTA_PERSONA': 'badge-modificar',
         'CREAR_INCIDENCIA_VEHICULO': 'badge-crear',
         'CREAR_INCIDENCIA_PERSONA': 'badge-crear',
         'ELIMINAR_INCIDENCIA_VEHICULO': 'badge-eliminar',
         'ELIMINAR_INCIDENCIA_PERSONA': 'badge-eliminar'
     };
     return map[accion] || 'badge-otros';
-};    let html = `
+};   let html = `
         <table class="logs-table">
             <thead>
                 <tr>
