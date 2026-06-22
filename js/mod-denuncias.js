@@ -231,23 +231,28 @@ window.initModDenuncias = function() {
         });
     }
 
- btnBuscar?.addEventListener('click', async () => {
-    const cedulaInputValue = cedulaInput?.value.trim() || '';
-    const cedulaRaw = cedulaInputValue.toUpperCase().replace(/\s/g, '');
+btnBuscar?.addEventListener('click', async () => {
+    const cedulaInputValue = cedulaInput?.value.trim().toUpperCase().replace(/\s/g, '') || '';
     const msgBusqueda = document.getElementById('mod_msg_busqueda');
     const formContainer = document.getElementById('mod_form_container');
     const listaContainer = document.getElementById('mod_denuncias_lista');
     
-    // ✅ VALIDACIÓN MEJORADA - Acepta V- o E- con 6 a 8 dígitos
-    const cedulaRegex = /^[VE]-\d{6,8}$/;
+    // ✅ VALIDACIÓN MEJORADA - Acepta con o sin prefijo V- o E-
+    const cedulaRegex = /^([VE]-)?\d{6,9}$/;
     
-    console.log('🔍 Buscando cédula:', cedulaRaw);
-    console.log('📝 Valor original:', cedulaInputValue);
-    
-    if (!cedulaRaw) {
+    if (!cedulaInputValue) {
         if (msgBusqueda) { msgBusqueda.textContent = '⚠️ El campo de cédula no puede estar vacío.'; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
         return;
     }
+    if (!cedulaRegex.test(cedulaInputValue)) {
+        if (msgBusqueda) { msgBusqueda.textContent = '⚠️ Formato incorrecto. Use: V-12345678, E-12345678, o solo 12345678'; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
+        return;
+    }
+    
+    // ✅ NORMALIZAR: Extraer solo los números para la búsqueda
+    const cedulaNumeros = cedulaInputValue.replace(/^[VE]-/, '');
+    
+    console.log('🔍 Buscando cédula:', cedulaInputValue, '→ Números:', cedulaNumeros);
     if (!cedulaRegex.test(cedulaRaw)) {
         if (msgBusqueda) { msgBusqueda.textContent = '⚠️ Formato incorrecto. Use: V-12345678 o E-12345678 (6-8 dígitos)'; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
         console.error('❌ Cédula no válida:', cedulaRaw);
@@ -258,14 +263,15 @@ window.initModDenuncias = function() {
     if (formContainer) formContainer.style.display = 'none';
     if (listaContainer) listaContainer.style.display = 'none';
 
-    try {
-        const { data, error } = await window.supabaseClient
-            .from('denuncias')
-            .select('*')
-            .eq('cedula', cedulaRaw)
-            .order('created_at', { ascending: false });
-
-        console.log('📊 Resultado de búsqueda:', { 
+  try {
+    // ✅ BUSCAR TANTO CON COMO SIN PREFIJO
+    const { data, error } = await window.supabaseClient
+        .from('denuncias')
+        .select('*')
+        .or(`cedula.eq.${cedulaNumeros},cedula.eq.V-${cedulaNumeros},cedula.eq.E-${cedulaNumeros}`)
+        .order('created_at', { ascending: false });
+    
+    console.log('📊 Resultado:', { encontrados: data ? data.length : 0, error });
             cedula_buscada: cedulaRaw, 
             encontrados: data ? data.length : 0, 
             error: error 
