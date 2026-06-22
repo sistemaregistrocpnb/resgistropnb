@@ -1,761 +1,546 @@
-window.initConsultaPersonas = function() {
-    const el = (id) => document.getElementById(id);
-    const buscarInput = el('cp_buscar_cedula');
-    const btnBuscar = el('cp_btn_buscar');
-    const msg = el('cp_msg');
-    const fichaBreve = el('cp_ficha_breve');
-    const incidenciasSection = el('cp_incidencias_section');
-    const modalDetalles = el('cp_modal_detalles');
-    const modalIncidencia = el('cp_modal_incidencia');
-    const modalTitulo = el('cp_modal_titulo');
-    const modalBody = el('cp_modal_body');
-    let personaActual = null;
-    let tipoRegistroActual = null;
-    let datosProcesado = null;
-    let incidenciasPaginaActual = 1;
-    const incidenciasPorPagina = 10;
-    let totalIncidencias = 0;
-    let cedulaActualIncidencias = null;
-    let tipoActualIncidencias = null;
+window.initModDenuncias = function() {
+    console.log("️ Iniciando módulo mod-denuncias.js...");
+    if (window._modDenunciasInitialized) return;
+    window._modDenunciasInitialized = true;
 
-    if (btnBuscar) btnBuscar.onclick = () => buscarPersona();
-    if (buscarInput) {
-        buscarInput.oninput = (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8); };
-        buscarInput.onkeypress = (e) => { if (e.key === 'Enter') { e.preventDefault(); btnBuscar?.click(); } };
-    }
-
-    if (el('cp_modal_close')) el('cp_modal_close').onclick = () => modalDetalles.classList.remove('active');
-    if (el('cp_modal_cerrar')) el('cp_modal_cerrar').onclick = () => modalDetalles.classList.remove('active');
-    if (el('cp_modal_inc_close')) el('cp_modal_inc_close').onclick = () => modalIncidencia.classList.remove('active');
-    if (el('cp_btn_cancelar_incidencia')) el('cp_btn_cancelar_incidencia').onclick = () => modalIncidencia.classList.remove('active');
-    if (el('cp_btn_guardar_incidencia')) el('cp_btn_guardar_incidencia').onclick = () => guardarIncidencia();
-    if (el('cp_btn_imprimir_reporte')) el('cp_btn_imprimir_reporte').onclick = () => window.print();
-    if (el('cp_modal_elim_close')) el('cp_modal_elim_close').onclick = () => {
-        el('cp_modal_confirmar_eliminacion').classList.remove('active');
-        window.incidenciaPendienteEliminacion = null;
-    };
-    if (el('cp_btn_cancelar_eliminacion')) el('cp_btn_cancelar_eliminacion').onclick = () => {
-        el('cp_modal_confirmar_eliminacion').classList.remove('active');
-        window.incidenciaPendienteEliminacion = null;
-    };
-
-    function mostrarMensaje(texto, tipo) {
-        if (!msg) return;
-        msg.textContent = texto;
-        msg.className = `msg ${tipo}`;
-        msg.style.display = 'block';
-        if (tipo === 'success') setTimeout(() => { if (msg) msg.style.display = 'none'; }, 3000);
-    }
-
-    async function tienePermisosIncidencia() {
+    // 🔹 FUNCIÓN AUXILIAR PARA LOGS (Integración con utils.js)
+    async function logModDenuncias(accion, detalles, registroId = null) {
+        if (typeof window.registrarLog !== 'function') {
+            console.warn('⚠️ utils.js no disponible para registrar log');
+            return;
+        }
         try {
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            if (!user) return false;
-            const { data: perfil, error } = await window.supabaseClient
-                .from('perfiles_usuario').select('nivel').eq('user_id', user.id).maybeSingle();
-            if (error || !perfil) return false;
-            const nivel = (perfil.nivel || '').toLowerCase().trim();
-            return nivel === 'administrador' || nivel === 'moderador';
-        } catch (err) {
-            return false;
+            await window.registrarLog(accion, 'MOD_DENUNCIAS', detalles, registroId);
+        } catch (e) {
+            console.warn('️ Error registrando log:', e);
         }
     }
 
-    async function buscarPersona() {
-        const cedula = buscarInput?.value.trim() || '';
-        if (!cedula || cedula.length < 7 || cedula.length > 8) {
-            mostrarMensaje('⚠️ Ingrese una cédula válida (entre 7 y 8 dígitos)', 'error');
+    // 🔹 FLAG PARA EVITAR BÚSQUEDAS SIMULTÁNEAS
+    let isSearching = false;
+
+    const docsUnicos = [
+        { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
+        { id: 'acta_denuncia', label: '📝 Acta de Denuncia' },
+        { id: 'medida_proteccion', label: '🛡️ Medida de Protección' }
+    ];
+    const docsMultiples = [
+        { id: 'acta_entrevista', label: '🎤 Acta de Entrevista', max: 10 },
+        { id: 'datos_filiatorios', label: '👤 Datos Filiatorios', max: 10 },
+        { id: 'evidencias', label: '🔍 Evidencias', max: 10 },
+        { id: 'solicitud_senamecf', label: '🏥 Solicitud SENAMECF', max: 10 }
+    ];
+    const modEstadoDocs = { unicos: {}, multiples: {} };
+
+    function inicializarContenedores() {
+        const contUnicos = document.getElementById('mod_docs_unicos_container');
+        const contMultiples = document.getElementById('mod_docs_multiples_container');
+        if (contUnicos) contUnicos.innerHTML = '';
+        if (contMultiples) contMultiples.innerHTML = '';
+
+        docsUnicos.forEach(doc => {
+            modEstadoDocs.unicos[doc.id] = { urlOriginal: null, toDelete: false, newFile: null };
+            const div = document.createElement('div');
+            div.className = 'doc-item';
+            div.innerHTML = `
+                <div class="doc-header">
+                    <label>${doc.label}</label>
+                    <div class="doc-si-no">
+                        <label><input type="radio" name="mod_doc_${doc.id}" value="no" checked onchange="window.mod_toggleDocField('${doc.id}', false)"><span>No</span></label>
+                        <label><input type="radio" name="mod_doc_${doc.id}" value="si" onchange="window.mod_toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                    </div>
+                </div>
+                <div class="doc-upload-area" id="mod_upload_${doc.id}">
+                    <div id="mod_status_${doc.id}"></div>
+                    <input type="file" id="mod_file_${doc.id}" accept=".pdf,application/pdf" onchange="window.mod_cargarDocUnico('${doc.id}', this)" style="margin-top: 8px;">
+                </div>
+            `;
+            if (contUnicos) contUnicos.appendChild(div);
+        });
+
+        docsMultiples.forEach(doc => {
+            modEstadoDocs.multiples[doc.id] = { urlsOriginales: [], indicesToDelete: [], newFiles: [] };
+            const div = document.createElement('div');
+            div.className = 'doc-item';
+            div.innerHTML = `
+                <div class="doc-header">
+                    <label>${doc.label} <span style="font-size:0.75rem; color:#64748b;">(Máximo ${doc.max})</span></label>
+                    <div class="doc-si-no">
+                        <label><input type="radio" name="mod_doc_${doc.id}" value="no" checked onchange="window.mod_toggleDocField('${doc.id}', false)"><span>No</span></label>
+                        <label><input type="radio" name="mod_doc_${doc.id}" value="si" onchange="window.mod_toggleDocField('${doc.id}', true)"><span>Sí</span></label>
+                    </div>
+                </div>
+                <div class="doc-upload-area" id="mod_upload_${doc.id}">
+                    <div id="mod_list_${doc.id}" style="margin-bottom: 8px;"></div>
+                    <input type="file" id="mod_file_${doc.id}" accept=".pdf,application/pdf" multiple style="margin-bottom: 8px;">
+                    <button type="button" class="btn-add-file" onclick="window.mod_agregarMultiples('${doc.id}', ${doc.max})">➕ Agregar archivos</button>
+                    <div class="file-count" id="mod_count_${doc.id}">0 archivos</div>
+                </div>
+            `;
+            if (contMultiples) contMultiples.appendChild(div);
+        });
+    }
+
+    // ==========================================
+    // FUNCIONES GLOBALES DE UI (Documentos)
+    // ==========================================
+    window.mod_toggleDocField = function(campo, mostrar) {
+        const area = document.getElementById(`mod_upload_${campo}`);
+        if (area) area.style.display = mostrar ? 'block' : 'none';
+    };
+
+    window.mod_cargarDocUnico = function(docId, input) {
+        if (input.files && input.files[0]) {
+            modEstadoDocs.unicos[docId].newFile = input.files[0];
+            modEstadoDocs.unicos[docId].toDelete = false;
+            const statusDiv = document.getElementById(`mod_status_${docId}`);
+            statusDiv.innerHTML = `<div class="file-loaded" style="background: #dcfce7; border-color: #86efac; color: #15803d;"><span>🔄 Nuevo:</span><span class="file-name">${input.files[0].name}</span></div>`;
+        }
+    };
+
+    window.mod_quitarDocUnico = function(docId) {
+        modEstadoDocs.unicos[docId].toDelete = true;
+        modEstadoDocs.unicos[docId].newFile = null;
+        const statusDiv = document.getElementById(`mod_status_${docId}`);
+        statusDiv.innerHTML = `<div class="file-loaded" style="background: #fde2e2; border-color: #fca5a5; color: #b91c1c;"><span>❌ Marcado para eliminar</span></div>`;
+        const fileInput = document.getElementById(`mod_file_${docId}`);
+        if (fileInput) fileInput.value = '';
+    };
+
+    window.mod_agregarMultiples = function(docId, max) {
+        const input = document.getElementById(`mod_file_${docId}`);
+        if (!input || !input.files || input.files.length === 0) return;
+        const estado = modEstadoDocs.multiples[docId];
+        const totalActual = estado.urlsOriginales.length - estado.indicesToDelete.length + estado.newFiles.length;
+        const disponibles = max - totalActual;
+        if (disponibles <= 0) { alert(`Máximo ${max} archivos permitidos`); return; }
+        let agregados = 0;
+        for (const file of input.files) {
+            if (agregados >= disponibles) break;
+            if (file.type === 'application/pdf') { estado.newFiles.push(file); agregados++; }
+        }
+        window.mod_actualizarListaMultiples(docId, max);
+        input.value = '';
+    };
+
+    window.mod_quitarMultipleExistente = function(docId, indexOriginal) {
+        modEstadoDocs.multiples[docId].indicesToDelete.push(indexOriginal);
+        window.mod_actualizarListaMultiples(docId, docsMultiples.find(d => d.id === docId).max);
+    };
+
+    window.mod_quitarMultipleNuevo = function(docId, indexNuevo) {
+        modEstadoDocs.multiples[docId].newFiles.splice(indexNuevo, 1);
+        window.mod_actualizarListaMultiples(docId, docsMultiples.find(d => d.id === docId).max);
+    };
+
+    window.mod_actualizarListaMultiples = function(docId, max) {
+        const listDiv = document.getElementById(`mod_list_${docId}`);
+        const countDiv = document.getElementById(`mod_count_${docId}`);
+        if (!listDiv || !countDiv) return;
+        const estado = modEstadoDocs.multiples[docId];
+        listDiv.innerHTML = '';
+        let contador = 0;
+        estado.urlsOriginales.forEach((url, idx) => {
+            if (!estado.indicesToDelete.includes(idx)) {
+                contador++;
+                const nombre = url.split('/').pop() || 'Archivo';
+                const item = document.createElement('div');
+                item.className = 'file-item-multiple';
+                item.innerHTML = `<span> ${nombre} (Actual)</span><button type="button" onclick="window.mod_quitarMultipleExistente('${docId}', ${idx})">❌ Quitar</button>`;
+                listDiv.appendChild(item);
+            }
+        });
+        estado.newFiles.forEach((file, idx) => {
+            contador++;
+            const item = document.createElement('div');
+            item.className = 'file-item-multiple';
+            item.style.background = '#dcfce7'; item.style.borderColor = '#86efac';
+            item.innerHTML = `<span> ${file.name} (Nuevo)</span><button type="button" onclick="window.mod_quitarMultipleNuevo('${docId}', ${idx})">❌ Quitar</button>`;
+            listDiv.appendChild(item);
+        });
+        countDiv.textContent = `${contador} de ${max} archivos`;
+    };
+
+    // ==========================================
+    // 🔹 DROPDOWN DE TELÉFONO CON BUSCADOR
+    // ==========================================
+    const nativeSelect = document.getElementById('mod_tlf_pais');
+    const displayBox = document.querySelector('.phone-display');
+    const optionsBox = document.querySelector('.phone-options');
+    const flagImg = document.getElementById('mod-tlf-flag-img');
+    const codeText = document.getElementById('mod-tlf-code-text');
+    const countryText = document.getElementById('mod-tlf-country-text');
+
+    const isoMap = {
+        "Venezuela":"ve","Colombia":"co","Estados Unidos":"us","España":"es","Argentina":"ar","Chile":"cl","Perú":"pe","México":"mx",
+        "Afganistán":"af","Albania":"al","Alemania":"de","Andorra":"ad","Angola":"ao","Antigua y Barbuda":"ag","Arabia Saudita":"sa","Argelia":"dz","Armenia":"am","Australia":"au","Austria":"at","Azerbaiyán":"az","Bahamas":"bs","Baréin":"bh","Bangladés":"bd","Barbados":"bb","Bélgica":"be","Belice":"bz","Benín":"bj","Bielorrusia":"by","Birmania":"mm","Bolivia":"bo","Bosnia y Herzegovina":"ba","Botsuana":"bw","Brasil":"br","Brunéi":"bn","Bulgaria":"bg","Burkina Faso":"bf","Burundi":"bi","Bután":"bt","Cabo Verde":"cv","Camboya":"kh","Camerún":"cm","Canadá":"ca","Catar":"qa","Rep. Centroafricana":"cf","Chad":"td","Rep. Checa":"cz","China":"cn","Chipre":"cy","Comoras":"km","Corea del Norte":"kp","Corea del Sur":"kr","Costa de Marfil":"ci","Costa Rica":"cr","Croacia":"hr","Cuba":"cu","Dinamarca":"dk","Dominica":"dm","Ecuador":"ec","Egipto":"eg","El Salvador":"sv","Emiratos Árabes":"ae","Eritrea":"er","Eslovaquia":"sk","Eslovenia":"si","Estonia":"ee","Etiopía":"et","Filipinas":"ph","Finlandia":"fi","Fiyi":"fj","Francia":"fr","Gabón":"ga","Gambia":"gm","Georgia":"ge","Ghana":"gh","Granada":"gd","Grecia":"gr","Guatemala":"gt","Guinea":"gn","Guinea Ecuatorial":"gq","Guinea-Bisáu":"gw","Guyana":"gy","Haití":"ht","Honduras":"hn","Hungría":"hu","India":"in","Indonesia":"id","Irak":"iq","Irán":"ir","Irlanda":"ie","Islandia":"is","Israel":"il","Italia":"it","Jamaica":"jm","Japón":"jp","Jordania":"jo","Kazajistán":"kz","Kenia":"ke","Kirguistán":"kg","Kiribati":"ki","Kuwait":"kw","Laos":"la","Lesoto":"ls","Letonia":"lv","Líbano":"lb","Liberia":"lr","Libia":"ly","Liechtenstein":"li","Lituania":"lt","Luxemburgo":"lu","Macedonia del Norte":"mk","Madagascar":"mg","Malasia":"my","Malaui":"mw","Maldivas":"mv","Malí":"ml","Malta":"mt","Marruecos":"ma","Mauricio":"mu","Mauritania":"mr","Micronesia":"fm","Moldavia":"md","Mónaco":"mc","Mongolia":"mn","Montenegro":"me","Mozambique":"mz","Namibia":"na","Nauru":"nr","Nepal":"np","Nicaragua":"ni","Níger":"ne","Nigeria":"ng","Nueva Zelanda":"nz","Noruega":"no","Omán":"om","Países Bajos":"nl","Pakistán":"pk","Palaos":"pw","Palestina":"ps","Panamá":"pa","Papúa Nueva Guinea":"pg","Paraguay":"py","Polonia":"pl","Portugal":"pt","Reino Unido":"gb","Puerto Rico":"pr","Ruanda":"rw","Rumania":"ro","Rusia":"ru","Samoa":"ws","San Marino":"sm","Santa Lucía":"lc","Santo Tomé y Príncipe":"st","San Vicente y las Granadinas":"vc","Senegal":"sn","Serbia":"rs","Seychelles":"sc","Sierra Leona":"sl","Singapur":"sg","Siria":"sy","Somalia":"so","Sudáfrica":"za","Sudán":"sd","Sudán del Sur":"ss","Suecia":"se","Suiza":"ch","Surinam":"sr","Esuatini":"sz","Tayikistán":"tj","Tanzania":"tz","Tailandia":"th","Timor Oriental":"tl","Togo":"tg","Tonga":"to","Trinidad y Tobago":"tt","Túnez":"tn","Turquía":"tr","Turkmenistán":"tm","Tuvalu":"tv","Ucrania":"ua","Uganda":"ug","Uruguay":"uy","Uzbekistán":"uz","Vanuatu":"vu","Vaticano":"va","Vietnam":"vn","Yemen":"ye","Yibuti":"dj","Zambia":"zm","Zimbabue":"zw"
+    };
+
+    if (nativeSelect && displayBox && optionsBox) {
+        optionsBox.innerHTML = '';
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.className = 'phone-search-input';
+        searchInput.placeholder = '🔍 Buscar país o código...';
+        searchInput.addEventListener('click', (e) => e.stopPropagation());
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            optionsBox.querySelectorAll('.phone-option').forEach(opt => {
+                opt.style.display = opt.textContent.toLowerCase().includes(term) ? 'flex' : 'none';
+            });
+        });
+        optionsBox.appendChild(searchInput);
+
+        Array.from(nativeSelect.options).forEach(opt => {
+            if (!opt.value) return;
+            const iso = isoMap[opt.text] || opt.value.replace('+','').toLowerCase();
+            const div = document.createElement('div');
+            div.className = 'phone-option';
+            div.innerHTML = `<img src="https://flagcdn.com/w20/${iso}.png" style="width:18px;height:13px;object-fit:contain;border-radius:2px;"><span class="code" style="font-weight:600;min-width:30px;">${opt.value}</span><span class="country" style="color:#475569;font-size:0.8rem;">${opt.text}</span>`;
+            div.addEventListener('click', () => {
+                nativeSelect.value = opt.value;
+                flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
+                codeText.textContent = opt.value;
+                countryText.textContent = opt.text;
+                optionsBox.style.display = 'none';
+                searchInput.value = '';
+            });
+            optionsBox.appendChild(div);
+        });
+
+        displayBox.addEventListener('click', (e) => {
+            e.stopPropagation();
+            optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block';
+            if (optionsBox.style.display === 'block') searchInput.focus();
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.phone-dropdown-wrapper')) optionsBox.style.display = 'none';
+        });
+    }
+
+    // ==========================================
+    // 🔹 LÓGICA DE BÚSQUEDA (ANTI-CUELgues + FLEXIBLE)
+    // ==========================================
+    const cedulaInput = document.getElementById('mod_buscar_cedula');
+    const btnBuscar = document.getElementById('mod_btn_buscar');
+
+    if (cedulaInput && btnBuscar) {
+        cedulaInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                btnBuscar.click();
+            }
+        });
+    }
+
+    btnBuscar?.addEventListener('click', async () => {
+        // 🔹 EVITAR BÚSQUEDAS SIMULTÁNEAS
+        if (isSearching) {
+            console.warn('⚠️ Ya hay una búsqueda en curso...');
+            return;
+        }
+        isSearching = true;
+
+        const cedulaInputValue = cedulaInput?.value.trim().toUpperCase().replace(/\s/g, '') || '';
+        const msgBusqueda = document.getElementById('mod_msg_busqueda');
+        const formContainer = document.getElementById('mod_form_container');
+        const listaContainer = document.getElementById('mod_denuncias_lista');
+
+        // ✅ VALIDACIÓN FLEXIBLE - Acepta con o sin prefijo V- o E-
+        const cedulaRegex = /^([VE]-)?\d{6,9}$/;
+
+        // 🔹 LIMPIAR ESTADO ANTES DE CADA BÚSQUEDA
+        if (formContainer) formContainer.style.display = 'none';
+        if (listaContainer) { listaContainer.style.display = 'none'; listaContainer.innerHTML = ''; }
+
+        if (!cedulaInputValue) {
+            if (msgBusqueda) { msgBusqueda.textContent = '⚠️ El campo de cédula no puede estar vacío.'; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
+            isSearching = false;
+            return;
+        }
+        if (!cedulaRegex.test(cedulaInputValue)) {
+            if (msgBusqueda) { msgBusqueda.textContent = '⚠️ Formato incorrecto. Use: V-12345678, E-12345678, o solo 12345678'; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
+            isSearching = false;
             return;
         }
 
-        mostrarMensaje('🔍 Buscando...', 'info');
-        fichaBreve.style.display = 'none';
-        incidenciasSection.style.display = 'none';
-        personaActual = null;
-        tipoRegistroActual = null;
-        datosProcesado = null;
-        incidenciasPaginaActual = 1;
+        // ✅ NORMALIZAR: Extraer solo los números para la búsqueda
+        const cedulaNumeros = cedulaInputValue.replace(/^[VE]-/, '');
+
+        console.log('🔍 Buscando cédula:', cedulaInputValue, '→ Números:', cedulaNumeros);
+
+        if (msgBusqueda) { msgBusqueda.textContent = ' Buscando...'; msgBusqueda.className = 'msg'; msgBusqueda.style.display = 'block'; }
 
         try {
-            const { data: persona, error: errPersona } = await window.supabaseClient
-                .from('registro_personas').select('*').eq('cedula', cedula).maybeSingle();
-            
-            if (errPersona) throw errPersona;
-            
-            if (persona) {
-                personaActual = persona;
-                tipoRegistroActual = 'persona';
-                const estatus = (persona.estatus || '').toLowerCase();
-                if (estatus.includes('procesad')) {
-                    try {
-                        const { data: procData } = await window.supabaseClient
-                            .from('registro_procesados').select('tipo_delito').eq('cedula', cedula)
-                            .order('created_at', { ascending: false }).limit(1).maybeSingle();
-                        if (procData) datosProcesado = procData;
-                    } catch (e) { /* Silencioso */ }
+            // ✅ BÚSQUEDA FLEXIBLE con .ilike() (ignora mayúsculas/minúsculas)
+            const { data, error } = await window.supabaseClient
+                .from('denuncias')
+                .select('*')
+                .ilike('cedula', cedulaNumeros)
+                .order('created_at', { ascending: false });
+
+            console.log('📊 Resultado:', { encontrados: data ? data.length : 0, error });
+
+            if (error) throw error;
+
+            // ✅ LOG DE BÚSQUEDA
+            await logModDenuncias('BUSCAR', {
+                cedula_buscada: cedulaInputValue,
+                cedula_normalizada: cedulaNumeros,
+                resultados_encontrados: data ? data.length : 0
+            });
+
+            if (!data || data.length === 0) {
+                if (msgBusqueda) {
+                    msgBusqueda.textContent = `❌ No se encontró ninguna denuncia con cédula ${cedulaInputValue}. Verifique que esté bien escrita.`;
+                    msgBusqueda.className = 'msg error';
+                    msgBusqueda.style.display = 'block';
                 }
-                await renderFichaBreve(persona, 'persona');
-                await window.cargarIncidencias(cedula, 'persona', 1);
-                mostrarMensaje('✅ Persona encontrada', 'success');
-                
-                // ✅ LOG DE CONSULTA DE PERSONA
-                if (typeof window.registrarLog === 'function') {
-                    window.registrarLog(
-                        'CONSULTA',
-                        'PERSONAS',
-                        {
-                            valor_buscado: cedula,
-                            nombre_completo: `${persona.primer_nombre || ''} ${persona.primer_apellido || ''}`.trim() || 'No disponible',
-                            tipo: 'Persona',
-                            estacion: persona.estacion_policial || 'N/A'
-                        },
-                        persona.id
-                    );
-                }
+                isSearching = false;
                 return;
             }
 
-            const { data: vinculado, error: errVinculado } = await window.supabaseClient
-                .from('registro_vinculado').select('*').eq('cedula', cedula).maybeSingle();
-            
-            if (errVinculado) throw errVinculado;
-            
-            if (vinculado) {
-                personaActual = vinculado;
-                tipoRegistroActual = 'vinculado';
-                const estatus = (vinculado.estatus || '').toLowerCase();
-                if (estatus.includes('procesad')) {
-                    try {
-                        const { data: procData } = await window.supabaseClient
-                            .from('registro_procesados').select('tipo_delito').eq('cedula', cedula)
-                            .order('created_at', { ascending: false }).limit(1).maybeSingle();
-                        if (procData) datosProcesado = procData;
-                    } catch (e) { /* Silencioso */ }
-                }
-                await renderFichaBreve(vinculado, 'vinculado');
-                await window.cargarIncidencias(cedula, 'vinculado', 1);
-                mostrarMensaje('✅ Vehículo vinculado encontrado', 'success');
-                
-                // ✅ LOG DE CONSULTA DE VINCULADO
-                if (typeof window.registrarLog === 'function') {
-                    window.registrarLog(
-                        'CONSULTA',
-                        'PERSONAS',
-                        {
-                            valor_buscado: cedula,
-                            nombre_completo: `${vinculado.primer_nombre || ''} ${vinculado.primer_apellido || ''}`.trim() || 'No disponible',
-                            tipo: 'Vinculado',
-                            estacion: vinculado.estacion_policial || 'N/A',
-                            placa: vinculado.placa || 'N/A'
-                        },
-                        vinculado.id
-                    );
-                }
-                return;
-            }
+            // Mostrar lista de denuncias
+            if (msgBusqueda) { msgBusqueda.textContent = `✅ Se encontraron ${data.length} denuncia(s). Seleccione una para editar.`; msgBusqueda.className = 'msg success'; msgBusqueda.style.display = 'block'; }
 
-            mostrarMensaje('❌ No se encontró ninguna persona con esa cédula', 'error');
-            
-            // ✅ LOG DE CONSULTA SIN RESULTADOS
-            if (typeof window.registrarLog === 'function') {
-                window.registrarLog(
-                    'CONSULTA',
-                    'PERSONAS',
-                    {
-                        valor_buscado: cedula,
-                        resultado: 'No encontrado'
-                    }
-                );
-            }
-        } catch (err) {
-            console.error('Error buscando:', err);
-            mostrarMensaje('❌ Error: ' + err.message, 'error');
-            
-            // ✅ LOG DE ERROR EN BÚSQUEDA
-            if (typeof window.registrarLog === 'function') {
-                window.registrarLog(
-                    'ERROR',
-                    'PERSONAS',
-                    {
-                        accion: 'CONSULTA',
-                        valor_buscado: cedula,
-                        error: err.message
-                    }
-                );
-            }
-        }
-    }
-
-    async function renderFichaBreve(data, tipo) {
-        if (!fichaBreve) return;
-        const estatus = data.estatus || 'N/A';
-        const estatusLower = (estatus || '').toLowerCase();
-        const estatusClass = estatusLower.includes('verificaci') ? 'estatus-verificacion' :
-            estatusLower.includes('procesad') ? 'estatus-procesado' : 'estatus-liberado';
-        
-        let nombreCompleto = tipo === 'persona'
-            ? `${data.primer_nombre || ''} ${data.segundo_nombre || ''} ${data.primer_apellido || ''} ${data.segundo_apellido || ''}`.trim() || 'N/A'
-            : ((data.primer_nombre && data.primer_apellido) ? `${data.primer_nombre} ${data.primer_apellido}` : (data.propietario || `Vehículo ${data.placa || ''}`));
-
-        let alertasHtml = '';
-        if (estatusLower.includes('procesad') && datosProcesado?.tipo_delito) {
-            alertasHtml += `<div class="ficha-alert ficha-alert-delito">⚖️ <strong>Procesado por:</strong> ${datosProcesado.tipo_delito}</div>`;
-        }
-        const problemaJudicial = data.problema_judicial || '';
-        if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLowerCase() !== 'no') {
-            alertasHtml += `<div class="ficha-alert ficha-alert-judicial">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
-        }
-
-        let htmlCampos = `
-            <div class="ficha-breve-item"><div class="ficha-breve-label">Cédula</div><div class="ficha-breve-value">${data.cedula || 'N/A'}</div></div>
-            <div class="ficha-breve-item"><div class="ficha-breve-label">Tipo</div><div class="ficha-breve-value">${tipo === 'persona' ? ' Persona' : '🚗 Vinculado (Vehículo)'}</div></div>
-            <div class="ficha-breve-item"><div class="ficha-breve-label">Estación de Detención</div><div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div></div>
-            <div class="ficha-breve-item"><div class="ficha-breve-label">Fecha</div><div class="ficha-breve-value">${new Date(data.created_at || data.creado_en).toLocaleString('es-VE')}</div></div>
-        `;
-
-        if (tipo === 'vinculado') {
-            htmlCampos += `
-                <div class="ficha-breve-item"><div class="ficha-breve-label">Vehículo</div><div class="ficha-breve-value">${data.tipo_vehiculo || 'N/A'} ${data.marca_vehiculo || ''} ${data.modelo_vehiculo || ''}</div></div>
-                <div class="ficha-breve-item"><div class="ficha-breve-label">Placa</div><div class="ficha-breve-value" style="font-weight:800; color:var(--primary); font-size:1.1rem;">${data.placa || 'N/A'}</div></div>
-            `;
-        }
-
-        if (data.observaciones) {
-            htmlCampos += `<div class="ficha-breve-item full-width"><div class="ficha-breve-label">📝 Observaciones</div><div class="ficha-breve-value">${data.observaciones}</div></div>`;
-        }
-
-        const tienePermisos = await tienePermisosIncidencia();
-        const btnIncidenciaHtml = tienePermisos
-            ? `<button type="button" class="btn-nueva-incidencia" id="cp_btn_nueva_incidencia">➕ Nueva Incidencia</button>`
-            : '';
-
-        let html = `
-            <div class="ficha-breve">
-                <div class="ficha-breve-header">
-                    <h3>${tipo === 'persona' ? '👤' : '🚗'} ${nombreCompleto}</h3>
-                    <span class="estatus-badge ${estatusClass}">${estatus}</span>
-                </div>
-                ${alertasHtml}
-                <div class="ficha-breve-grid">${htmlCampos}</div>
-                <div class="ficha-breve-actions">
-                    <button type="button" class="btn-ver-detalles" id="cp_btn_ver_detalles">📋 Ver Detalles Completos</button>
-                    ${btnIncidenciaHtml}
-                </div>
-            </div>
-        `;
-
-        fichaBreve.innerHTML = html;
-        fichaBreve.style.display = 'block';
-
-        setTimeout(() => {
-            const btnDetalles = el('cp_btn_ver_detalles');
-            if (btnDetalles) btnDetalles.onclick = () => mostrarDetallesCompletos(data, tipo);
-            const btnIncidencia = el('cp_btn_nueva_incidencia');
-            if (btnIncidencia) {
-                btnIncidencia.onclick = () => {
-                    modalIncidencia.classList.add('active');
-                    el('cp_incidencia_descripcion').value = '';
-                    el('cp_incidencia_descripcion').focus();
-                };
-            }
-        }, 100);
-    }
-
-    async function mostrarDetallesCompletos(data, tipo) {
-        if (!modalBody || !modalTitulo) return;
-        modalTitulo.textContent = `📋 Detalles - ${tipo === 'persona' ? 'Persona' : 'Vehículo Vinculado'}`;
-        modalBody.innerHTML = '<div class="loading">⏳ Generando número de reporte oficial...</div>';
-        modalDetalles.classList.add('active');
-
-        try {
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            if (!user) throw new Error('Debe iniciar sesión');
-
-            const fechaHoy = new Date();
-            const fechaStr = fechaHoy.getFullYear().toString() + String(fechaHoy.getMonth() + 1).padStart(2, '0') + String(fechaHoy.getDate()).padStart(2, '0');
-
-            const [nuevoReporte, datosProcesadosCompletos] = await Promise.all([
-                window.supabaseClient
-                    .from('reportes_generados')
-                    .insert([{
-                        fecha_texto: fechaStr,
-                        cedula_consultada: data.cedula,
-                        tipo_registro: tipo,
-                        user_id: user.id,
-                        user_email: user.email
-                    }])
-                    .select('consecutivo_global')
-                    .single(),
-                (data.estatus || '').toLowerCase().includes('procesad')
-                    ? window.supabaseClient
-                        .from('registro_procesados')
-                        .select('*')
-                        .eq('cedula', data.cedula)
-                        .order('created_at', { ascending: false })
-                        .limit(1)
-                        .maybeSingle()
-                    : Promise.resolve({ data: null })
-            ]);
-
-            if (nuevoReporte.error) throw nuevoReporte.error;
-
-            const consecutivoFormateado = String(nuevoReporte.data.consecutivo_global).padStart(8, '0');
-            const numeroReporteFinal = `REPORTE-CPNB-${fechaStr}-N° ${consecutivoFormateado}`;
-            const datosProcesados = datosProcesadosCompletos.data;
-
-            let html = `<div class="reporte-header-print" style="text-align: center; margin-bottom: 20px; border-bottom: 3px double var(--primary); padding-bottom: 15px;">
-                <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 10px;">
-                    <img src="img/LOGO-PNB.png" alt="Logo PNB" style="max-height: 90px; width: auto;" onerror="this.style.display='none'">
-                </div>
-                <h2 style="color: var(--primary); margin: 0; font-family: 'Playfair Display', serif;">CUERPO DE POLICÍA NACIONAL BOLIVARIANA</h2>
-                <h3 style="color: var(--secondary); margin: 5px 0; font-size: 1rem;">CENTRO DE COORDINACIÓN POLICIAL ESTADAL (CCPE) ZULIA</h3>
-                <p style="font-size: 0.9rem; color: #334155; margin-top: 15px;">
-                    <strong>N° de Reporte:</strong>
-                    <span style="color: var(--primary); font-weight: 800; font-size: 1.1rem;">${numeroReporteFinal}</span>
-                </p>
-                <p style="font-size: 0.85rem; color: #64748b;"><strong>Fecha de Consulta:</strong> ${fechaHoy.toLocaleString('es-VE')}</p>
-                <p style="font-size: 0.85rem; color: #64748b;"><strong>Generado por:</strong> ${user.email}</p>
-            </div>`;
-
-            if (tipo === 'persona') {
-                if (data.foto_frontal || data.foto_perfil_izq || data.foto_perfil_der) {
-                    html += `<div class="seccion-titulo">📸 Fotografías</div><div class="fotos-container">`;
-                    if (data.foto_frontal) html += `<div class="foto-item"><img src="${data.foto_frontal}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
-                    if (data.foto_perfil_izq) html += `<div class="foto-item"><img src="${data.foto_perfil_izq}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Izq.</div></div>`;
-                    if (data.foto_perfil_der) html += `<div class="foto-item"><img src="${data.foto_perfil_der}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Der.</div></div>`;
-                    html += `</div>`;
-                }
-
-                let alertasHtml = '';
-                if (datosProcesados?.tipo_delito) {
-                    alertasHtml += `<div class="ficha-alert ficha-alert-delito" style="page-break-inside: avoid; margin: 15px 0;">⚖️ <strong>Procesado por:</strong> ${datosProcesados.tipo_delito}</div>`;
-                }
-                const problemaJudicial = data.problema_judicial || '';
-                if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLowerCase() !== 'no') {
-                    alertasHtml += `<div class="ficha-alert ficha-alert-judicial" style="page-break-inside: avoid; margin: 15px 0;">⚠️ <strong>Antecedentes:</strong> ${problemaJudicial}</div>`;
-                }
-
-                html += `<div class="seccion-titulo"> Datos Personales</div>`;
-                html += alertasHtml;
-                html += `<div class="ficha-completa-grid">`;
-
-                // ✅ CAMBIADO: Se quitó "Estatus" y se movió "Estación" más arriba
-                const camposPersona = [
-                    { label: 'Primer Nombre', value: data.primer_nombre },
-                    { label: 'Segundo Nombre', value: data.segundo_nombre },
-                    { label: 'Primer Apellido', value: data.primer_apellido },
-                    { label: 'Segundo Apellido', value: data.segundo_apellido },
-                    { label: 'Cédula', value: data.cedula },
-                    { label: 'Estación de Detención', value: data.estacion_policial },
-                    { label: 'Fecha Nac.', value: data.fecha_nacimiento },
-                    { label: 'Edad', value: data.edad ? `${data.edad} años` : null },
-                    { label: 'Nacionalidad', value: data.nacionalidad },
-                    { label: 'Sexo', value: data.sexo },
-                    { label: 'Estatura', value: data.estatura_cm ? `${data.estatura_cm} cm` : null },
-                    { label: 'Color Piel', value: data.color_piel },
-                    { label: 'Color Ojos', value: data.color_ojos },
-                    { label: 'Cabello', value: data.color_cabello },
-                    { label: 'Complexión', value: data.complexion },
-                    { label: 'Teléfono', value: `${data.tlf_pais || ''} ${data.tlf_numero || ''}`.trim() || null },
-                    { label: 'Dirección', value: data.direccion },
-                    { label: 'Apodo', value: data.apodo },
-                    { label: 'Marca Corporal', value: data.marca_corporal },
-                    { label: 'Lentes', value: data.usa_lentes !== undefined ? (data.usa_lentes ? 'Sí' : 'No') : null },
-                    { label: 'Detalle Lentes', value: data.detalle_lentes },
-                    { label: 'Perforaciones', value: data.perforaciones !== undefined ? (data.perforaciones ? 'Sí' : 'No') : null },
-                    { label: 'Detalle Perfor.', value: data.detalle_perforaciones },
-                    { label: 'Cond. Médica', value: data.condicion_medica },
-                    { label: 'Medicamento', value: data.consume_medicamento },
-                    { label: 'Dir. Detención', value: data.direccion_detencion }
-                ];
-
-                camposPersona.forEach(c => {
-                    if (c.value !== null && c.value !== undefined && c.value !== '') {
-                        html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value">${c.value}</div></div>`;
-                    }
-                });
-
-                if (data.observaciones) {
-                    html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
-                }
-                html += `</div>`;
-            } else {
-                if (data.foto_frontal_persona || data.foto_perfil_izq_persona || data.foto_perfil_der_persona) {
-                    html += `<div class="seccion-titulo">📸 Fotografías de la Persona</div><div class="fotos-container">`;
-                    if (data.foto_frontal_persona) html += `<div class="foto-item"><img src="${data.foto_frontal_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
-                    if (data.foto_perfil_izq_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_izq_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Izq.</div></div>`;
-                    if (data.foto_perfil_der_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_der_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Der.</div></div>`;
-                    html += `</div>`;
-                }
-
-                let alertasHtmlVinc = '';
-                if (datosProcesados?.tipo_delito) {
-                    alertasHtmlVinc += `<div class="ficha-alert ficha-alert-delito" style="page-break-inside: avoid; margin: 15px 0;">⚖️ <strong>Procesado por:</strong> ${datosProcesados.tipo_delito}</div>`;
-                }
-                const problemaJudicialVinc = data.problema_judicial || '';
-                if (problemaJudicialVinc && problemaJudicialVinc.trim() !== '' && problemaJudicialVinc.toLowerCase() !== 'no') {
-                    alertasHtmlVinc += `<div class="ficha-alert ficha-alert-judicial" style="page-break-inside: avoid; margin: 15px 0;">⚠️ <strong>Antecedentes:</strong> ${problemaJudicialVinc}</div>`;
-                }
-
-                html += `<div class="seccion-titulo">👤 Datos de la Persona</div>`;
-                html += alertasHtmlVinc;
-                html += `<div class="ficha-completa-grid">`;
-
-                const camposPersonaVinc = [
-                    { label: 'Primer Nombre', value: data.primer_nombre },
-                    { label: 'Segundo Nombre', value: data.segundo_nombre },
-                    { label: 'Primer Apellido', value: data.primer_apellido },
-                    { label: 'Segundo Apellido', value: data.segundo_apellido },
-                    { label: 'Cédula', value: data.cedula },
-                    { label: 'Estación de Detención', value: data.estacion_policial },
-                    { label: 'Fecha Nac.', value: data.fecha_nacimiento },
-                    { label: 'Edad', value: data.edad ? `${data.edad} años` : null },
-                    { label: 'Apodo', value: data.apodo },
-                    { label: 'Nacionalidad', value: data.nacionalidad },
-                    { label: 'Sexo', value: data.sexo },
-                    { label: 'Estatura', value: data.estatura_cm ? `${data.estatura_cm} cm` : null },
-                    { label: 'Color Piel', value: data.color_piel },
-                    { label: 'Color Ojos', value: data.color_ojos },
-                    { label: 'Cabello', value: data.color_cabello },
-                    { label: 'Complexión', value: data.complexion },
-                    { label: 'Teléfono', value: `${data.tlf_pais || ''} ${data.tlf_numero || ''}`.trim() || null },
-                    { label: 'Dirección', value: data.direccion },
-                    { label: 'Lentes', value: data.usa_lentes !== undefined ? (data.usa_lentes ? 'Sí' : 'No') : null },
-                    { label: 'Detalle Lentes', value: data.detalle_lentes },
-                    { label: 'Perforaciones', value: data.perforaciones !== undefined ? (data.perforaciones ? 'Sí' : 'No') : null },
-                    { label: 'Detalle Perfor.', value: data.detalle_perforaciones },
-                    { label: 'Cond. Médica', value: data.condicion_medica },
-                    { label: 'Medicamento', value: data.consume_medicamento },
-                    { label: 'Prob. Judicial', value: data.problema_judicial }
-                ];
-
-                camposPersonaVinc.forEach(c => {
-                    if (c.value !== null && c.value !== undefined && c.value !== '') {
-                        html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value">${c.value}</div></div>`;
-                    }
-                });
-                html += `</div>`;
-
-                if (data.foto_frontal_vehiculo || data.foto_trasera_vehiculo || data.foto_lado_der_vehiculo || data.foto_lado_izq_vehiculo) {
-                    html += `<div class="seccion-titulo">📸 Fotografías del Vehículo</div><div class="fotos-container">`;
-                    if (data.foto_frontal_vehiculo) html += `<div class="foto-item"><img src="${data.foto_frontal_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
-                    if (data.foto_trasera_vehiculo) html += `<div class="foto-item"><img src="${data.foto_trasera_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Trasera</div></div>`;
-                    if (data.foto_lado_der_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_der_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Der.</div></div>`;
-                    if (data.foto_lado_izq_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_izq_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Izq.</div></div>`;
-                    html += `</div>`;
-                }
-
-                html += `<div class="seccion-titulo">🚗 Datos del Vehículo</div><div class="ficha-completa-grid">`;
-                const camposVehiculo = [
-                    { label: 'Placa', value: data.placa, highlight: true },
-                    { label: 'Tipo', value: data.tipo_vehiculo },
-                    { label: 'Marca', value: data.marca_vehiculo },
-                    { label: 'Modelo', value: data.modelo_vehiculo },
-                    { label: 'Color', value: data.color_vehiculo },
-                    { label: 'Año', value: data.anio_vehiculo },
-                    { label: 'Serial Motor', value: data.serial_motor },
-                    { label: 'Serial Carrocería', value: data.serial_carroceria },
-                    { label: 'Cilindraje', value: data.cilindraje },
-                    { label: 'Marca Corporal (Vehículo)', value: data.marca_corporal }
-                ];
-                camposVehiculo.forEach(c => {
-                    if (c.value !== null && c.value !== undefined && c.value !== '') {
-                        const style = c.highlight ? 'font-weight:800; color:var(--primary); font-size:1.1rem;' : '';
-                        html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value" style="${style}">${c.value}</div></div>`;
-                    }
-                });
-                html += `</div>`;
-
-                html += `<div class="seccion-titulo">🏛️ Datos de Detención</div><div class="ficha-completa-grid">`;
-                const camposDetencion = [
-                    { label: 'Estación Policial', value: data.estacion_policial },
-                    { label: 'Dirección de Detención', value: data.direccion_detencion }
-                ];
-                camposDetencion.forEach(c => {
-                    if (c.value !== null && c.value !== undefined && c.value !== '') {
-                        html += `<div class="ficha-completa-item"><div class="ficha-completa-label">${c.label}</div><div class="ficha-completa-value">${c.value}</div></div>`;
-                    }
-                });
-                if (data.observaciones) {
-                    html += `<div class="ficha-completa-item full-width"><div class="ficha-completa-label">Observaciones</div><div class="ficha-completa-value">${data.observaciones}</div></div>`;
-                }
-                html += `</div>`;
-            }
-
-            html += `<div class="seccion-titulo" style="margin-top: 30px;">📜 Historial de Incidencias</div>`;
-            try {
-                const { data: incidencias } = await window.supabaseClient.from('registro_incidencias').select('*').eq('cedula', data.cedula).eq('tipo_registro', tipo).order('fecha_hora', { ascending: false });
-                if (incidencias && incidencias.length > 0) {
-                    html += `<div class="incidencias-print-container">`;
-                    incidencias.forEach(inc => {
-                        html += `<div class="incidencia-item-print" style="border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 10px; border-left: 4px solid var(--secondary); border-radius: 4px; page-break-inside: avoid;">
-                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">
-                                <span>🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
-                                <span>Por: ${inc.email_registrante || 'N/A'}</span>
-                            </div>
-                            <div style="font-size: 0.9rem; color: #1e293b; line-height: 1.5;">${inc.descripcion}</div>
-                        </div>`;
+            if (listaContainer) {
+                listaContainer.innerHTML = `<div class="denuncias-lista-header">📋 Denuncias encontradas (${data.length})</div>`;
+                data.forEach((denuncia, index) => {
+                    const fecha = new Date(denuncia.created_at).toLocaleString('es-VE', {
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit'
                     });
-                    html += `</div>`;
-                } else {
-                    html += `<div style="text-align: center; padding: 20px; color: #94a3b8; font-style: italic; border: 1px dashed #cbd5e1; border-radius: 5px;">No hay incidencias registradas para este expediente.</div>`;
-                }
-            } catch (err) { /* Silencioso */ }
-
-            html += `<div class="reporte-footer-print" style="margin-top: 40px; text-align: center; font-size: 0.75rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px;">
-                <p>Documento generado electrónicamente por el Sistema de Verificación y Registro Policial.</p>
-                <p>Este reporte es de carácter informativo y confidencial. Uso exclusivo del CPNB.</p>
-            </div>`;
-
-            modalBody.innerHTML = html;
-        } catch (err) {
-            console.error('Error generando reporte:', err);
-            modalBody.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">
-                <h3>❌ Error al generar el reporte</h3>
-                <p>${err.message}</p>
-            </div>`;
-        }
-    }
-
-    window.cargarIncidencias = async function(cedula, tipo, pagina = 1) {
-        if (!incidenciasSection) return;
-        cedulaActualIncidencias = cedula;
-        tipoActualIncidencias = tipo;
-        incidenciasPaginaActual = pagina;
-
-        try {
-            const desde = (pagina - 1) * incidenciasPorPagina;
-            const hasta = desde + incidenciasPorPagina - 1;
-
-            const { data: todasIncidencias, error: errorCount } = await window.supabaseClient
-                .from('registro_incidencias')
-                .select('*', { count: 'exact', head: false })
-                .eq('cedula', cedula)
-                .eq('tipo_registro', tipo);
-            
-            if (errorCount) throw errorCount;
-            totalIncidencias = todasIncidencias ? todasIncidencias.length : 0;
-            const totalPaginas = Math.ceil(totalIncidencias / incidenciasPorPagina);
-
-            const { data: incidencias, error } = await window.supabaseClient
-                .from('registro_incidencias')
-                .select('*')
-                .eq('cedula', cedula)
-                .eq('tipo_registro', tipo)
-                .order('fecha_hora', { ascending: false })
-                .range(desde, hasta);
-
-            if (error) throw error;
-
-            const esAdministrador = sessionStorage.getItem('pnb_user_nivel') === 'administrador';
-
-            let html = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3>';
-            if (!incidencias || incidencias.length === 0) {
-                html += '<div class="sin-incidencias">No hay incidencias registradas</div>';
-            } else {
-                incidencias.forEach(inc => {
-                    const btnEliminarHtml = esAdministrador
-                        ? `<button class="btn-eliminar-incidencia"
-                            data-id="${inc.id}"
-                            data-cedula="${cedula}"
-                            data-tipo="${tipo}"
-                            data-pagina="${pagina}"
-                            data-desc="${inc.descripcion}"
-                            data-fecha="${inc.fecha_hora}"
-                            data-autor="${inc.email_registrante || 'N/A'}"
-                            onclick="window.prepararEliminacion(this)">🗑️ Eliminar</button>`
-                        : '';
-                    html += `
-                        <div class="incidencia-item">
-                            <div class="incidencia-item-header">
-                                <div>
-                                    <span class="incidencia-fecha">🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
-                                    <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
-                                </div>
-                                ${btnEliminarHtml}
+                    const item = document.createElement('div');
+                    item.className = 'denuncia-item';
+                    item.innerHTML = `
+                        <div class="denuncia-item-info">
+                            <div class="denuncia-item-numero">${denuncia.numero_denuncia || 'N/A'}</div>
+                            <div class="denuncia-item-detalles">
+                                <strong>Estación:</strong> ${denuncia.estacion_policial || 'N/A'} |
+                                <strong>Motivo:</strong> ${denuncia.motivo_denuncia ? denuncia.motivo_denuncia.substring(0, 80) + (denuncia.motivo_denuncia.length > 80 ? '...' : '') : 'N/A'}
                             </div>
-                            <div class="incidencia-descripcion">${inc.descripcion}</div>
-                        </div>`;
+                        </div>
+                        <div class="denuncia-item-fecha">${fecha}</div>
+                        <button type="button" class="denuncia-item-btn" data-index="${index}">✏️ Editar</button>
+                    `;
+                    item.querySelector('.denuncia-item-btn').addEventListener('click', () => {
+                        cargarDenunciaEnFormulario(denuncia);
+                    });
+                    listaContainer.appendChild(item);
                 });
-
-                if (totalPaginas > 1) {
-                    html += `<div class="paginacion-incidencias" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--beige-border);">`;
-                    html += `<button type="button" class="btn-paginacion" ${pagina === 1 ? 'disabled' : ''} onclick="window.cambiarPaginaIncidencias(${pagina - 1})" style="padding: 8px 16px; background: ${pagina === 1 ? '#cbd5e1' : 'var(--primary)'}; color: white; border: none; border-radius: 5px; cursor: ${pagina === 1 ? 'not-allowed' : 'pointer'}; font-weight: 600;">⬅️ Anterior</button>`;
-                    html += `<span style="font-size: 0.9rem; color: #64748b; font-weight: 600;">Página ${pagina} de ${totalPaginas} (${totalIncidencias} incidencias)</span>`;
-                    html += `<button type="button" class="btn-paginacion" ${pagina === totalPaginas ? 'disabled' : ''} onclick="window.cambiarPaginaIncidencias(${pagina + 1})" style="padding: 8px 16px; background: ${pagina === totalPaginas ? '#cbd5e1' : 'var(--primary)'}; color: white; border: none; border-radius: 5px; cursor: ${pagina === totalPaginas ? 'not-allowed' : 'pointer'}; font-weight: 600;">Siguiente ➡️</button>`;
-                    html += `</div>`;
-                }
-            }
-            html += '</div>';
-
-            incidenciasSection.innerHTML = html;
-            incidenciasSection.style.display = 'block';
-        } catch (err) {
-            console.error('Error cargando incidencias:', err);
-            incidenciasSection.innerHTML = '<div class="incidencias-section"><h3> Historial de Incidencias</h3><div class="sin-incidencias">Error al cargar</div></div>';
-            incidenciasSection.style.display = 'block';
-        }
-    };
-
-    window.cambiarPaginaIncidencias = function(nuevaPagina) {
-        if (cedulaActualIncidencias && tipoActualIncidencias) {
-            window.cargarIncidencias(cedulaActualIncidencias, tipoActualIncidencias, nuevaPagina);
-        }
-    };
-
-    async function guardarIncidencia() {
-        const descripcion = el('cp_incidencia_descripcion')?.value.trim();
-        if (!descripcion) { alert('⚠️ Ingrese una descripción'); return; }
-
-        const btnGuardar = el('cp_btn_guardar_incidencia');
-        btnGuardar.disabled = true; btnGuardar.textContent = ' Guardando...';
-
-        try {
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            if (!user) throw new Error('Debe iniciar sesión');
-
-            const { data: insertedData, error } = await window.supabaseClient
-                .from('registro_incidencias')
-                .insert([{
-                    cedula: personaActual.cedula,
-                    tipo_registro: tipoRegistroActual,
-                    descripcion: descripcion,
-                    fecha_hora: new Date().toISOString(),
-                    registrada_por: user.id,
-                    email_registrante: user.email
-                }])
-                .select('id')
-                .maybeSingle();
-
-            if (error) throw error;
-
-            modalIncidencia.classList.remove('active');
-            mostrarMensaje('✅ Incidencia registrada', 'success');
-            await window.cargarIncidencias(personaActual.cedula, tipoRegistroActual, 1);
-
-            // ✅ LOG DE CREACIÓN DE INCIDENCIA
-            if (typeof window.registrarLog === 'function' && insertedData?.id) {
-                window.registrarLog(
-                    'CREAR',
-                    'PERSONAS',
-                    {
-                        cedula: personaActual.cedula,
-                        nombre_completo: `${personaActual.primer_nombre || ''} ${personaActual.primer_apellido || ''}`.trim() || 'No disponible',
-                        tipo: tipoRegistroActual,
-                        descripcion: descripcion,
-                        estacion: personaActual.estacion_policial || 'N/A'
-                    },
-                    insertedData.id
-                );
+                listaContainer.style.display = 'block';
             }
         } catch (err) {
-            console.error('Error guardando incidencia:', err);
-            alert('❌ Error: ' + err.message);
+            console.error('❌ Error en búsqueda:', err);
+            if (msgBusqueda) { msgBusqueda.textContent = ' Error al buscar: ' + err.message; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
+
+            // ✅ LOG DE ERROR
+            await logModDenuncias('ERROR', {
+                accion: 'BUSCAR',
+                error: err.message,
+                cedula_buscada: cedulaInputValue
+            });
         } finally {
-            btnGuardar.disabled = false; btnGuardar.textContent = '💾 Guardar Incidencia';
+            isSearching = false;
         }
+    });
+
+    // ==========================================
+    // 🔹 CARGAR DENUNCIA SELECCIONADA EN EL FORMULARIO
+    // ==========================================
+    async function cargarDenunciaEnFormulario(data) {
+        const formContainer = document.getElementById('mod_form_container');
+        const listaContainer = document.getElementById('mod_denuncias_lista');
+        const msgBusqueda = document.getElementById('mod_msg_busqueda');
+
+        // Cargar datos básicos
+        document.getElementById('mod_denuncia_id').value = data.id;
+        document.getElementById('mod_numero_denuncia').value = data.numero_denuncia || 'N/A';
+        document.getElementById('mod_fecha_hora').value = data.fecha_hora || '';
+        document.getElementById('mod_cedula').value = data.cedula;
+        document.getElementById('mod_estacion').value = data.estacion_policial || '';
+        document.getElementById('mod_nombre1').value = data.primer_nombre || '';
+        document.getElementById('mod_nombre2').value = data.segundo_nombre || '';
+        document.getElementById('mod_apellido1').value = data.primer_apellido || '';
+        document.getElementById('mod_apellido2').value = data.segundo_apellido || '';
+        document.getElementById('mod_tlf_pais').value = data.tlf_pais || '+58';
+        document.getElementById('mod_tlf_num').value = data.tlf_numero || '';
+        document.getElementById('mod_direccion').value = data.direccion || '';
+        document.getElementById('mod_motivo').value = data.motivo_denuncia || '';
+        document.getElementById('mod_observaciones').value = data.observaciones || '';
+
+        // Actualizar visualización del teléfono
+        if (data.tlf_pais) {
+            const opt = Array.from(nativeSelect.options).find(o => o.value === data.tlf_pais);
+            if (opt) {
+                const iso = isoMap[opt.text] || data.tlf_pais.replace('+','').toLowerCase();
+                flagImg.src = `https://flagcdn.com/w20/${iso}.png`;
+                codeText.textContent = data.tlf_pais;
+                countryText.textContent = opt.text;
+            }
+        }
+
+        inicializarContenedores();
+
+        // Cargar documentos únicos
+        docsUnicos.forEach(doc => {
+            const url = data[doc.id];
+            if (url) {
+                modEstadoDocs.unicos[doc.id].urlOriginal = url;
+                const statusDiv = document.getElementById(`mod_status_${doc.id}`);
+                const nombre = url.split('/').pop() || 'Archivo';
+                statusDiv.innerHTML = `<div class="file-loaded"><span> Actual:</span><span class="file-name">${nombre}</span><button type="button" class="btn-remove" onclick="window.mod_quitarDocUnico('${doc.id}')">❌ Quitar</button></div>`;
+                const radioSi = document.querySelector(`input[name="mod_doc_${doc.id}"][value="si"]`);
+                if (radioSi) { radioSi.checked = true; window.mod_toggleDocField(doc.id, true); }
+            }
+        });
+
+        // Cargar documentos múltiples
+        docsMultiples.forEach(doc => {
+            const urls = data[doc.id];
+            if (Array.isArray(urls) && urls.length > 0) {
+                modEstadoDocs.multiples[doc.id].urlsOriginales = urls;
+                const radioSi = document.querySelector(`input[name="mod_doc_${doc.id}"][value="si"]`);
+                if (radioSi) { radioSi.checked = true; window.mod_toggleDocField(doc.id, true); }
+                window.mod_actualizarListaMultiples(doc.id, doc.max);
+            }
+        });
+
+        if (msgBusqueda) { msgBusqueda.textContent = `✅ Editando denuncia ${data.numero_denuncia}`; msgBusqueda.className = 'msg success'; msgBusqueda.style.display = 'block'; }
+        if (listaContainer) listaContainer.style.display = 'none';
+        if (formContainer) formContainer.style.display = 'block';
+
+        // ✅ LOG DE CARGA DE DENUNCIA
+        await logModDenuncias('CARGAR', {
+            numero_denuncia: data.numero_denuncia,
+            denuncia_id: data.id,
+            cedula: data.cedula
+        }, data.id);
     }
 
-    window.prepararEliminacion = function(btn) {
-        window.incidenciaPendienteEliminacion = {
-            id: btn.dataset.id,
-            cedula: btn.dataset.cedula,
-            tipo: btn.dataset.tipo,
-            pagina: parseInt(btn.dataset.pagina),
-            descripcion: btn.dataset.desc,
-            fecha: btn.dataset.fecha,
-            autor: btn.dataset.autor,
-            nombre_completo: personaActual ? `${personaActual.primer_nombre || ''} ${personaActual.primer_apellido || ''}`.trim() : 'No disponible'
-        };
-        document.getElementById('cp_elim_descripcion').textContent = window.incidenciaPendienteEliminacion.descripcion;
-        document.getElementById('cp_elim_fecha').textContent = new Date(window.incidenciaPendienteEliminacion.fecha).toLocaleString('es-VE');
-        document.getElementById('cp_elim_autor').textContent = window.incidenciaPendienteEliminacion.autor;
-        document.getElementById('cp_modal_confirmar_eliminacion').classList.add('active');
-    };
+    // ==========================================
+    // 🔹 ENVÍO DEL FORMULARIO DE EDICIÓN
+    // ==========================================
+    document.getElementById('form-mod-denuncias')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        if (!form.checkValidity()) { form.reportValidity(); return; }
 
-    document.getElementById('cp_btn_confirmar_eliminacion').onclick = async () => {
-        const datos = window.incidenciaPendienteEliminacion;
-        if (!datos) return;
+        const btn = form.querySelector('.btn-submit');
+        const msg = document.getElementById('mod_msg_form');
+        const loading = document.getElementById('mod_loading_overlay');
+        const denunciaId = document.getElementById('mod_denuncia_id').value;
 
-        const btnConfirmar = document.getElementById('cp_btn_confirmar_eliminacion');
-        btnConfirmar.disabled = true;
-        btnConfirmar.textContent = '⏳ Procesando...';
+        btn.disabled = true; btn.textContent = '⏳ Guardando cambios...';
+        if (msg) msg.style.display = 'none';
+        loading.classList.add('active');
 
         try {
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            if (!user) throw new Error('Debe iniciar sesión');
+            const bucket = window.supabaseClient.storage.from('denuncias_documentos');
+            const updateData = {};
 
-            const { data: incData, error: fetchError } = await window.supabaseClient
-                .from('registro_incidencias')
-                .select('*')
-                .eq('id', datos.id)
-                .single();
-            
-            if (fetchError) throw new Error('No se encontró la incidencia: ' + fetchError.message);
-
-            const { id, created_at, ...datosBackup } = incData;
-            datosBackup.incidencia_id_original = datos.id;
-            datosBackup.eliminado_por = user.id;
-            datosBackup.email_eliminador = user.email;
-            datosBackup.fecha_eliminacion = new Date().toISOString();
-
-            const { error: backupError } = await window.supabaseClient
-                .from('registro_incidencias_backup')
-                .insert([datosBackup])
-                .select();
-            
-            if (backupError) throw new Error('Error al crear respaldo: ' + backupError.message);
-
-            const { error: deleteError } = await window.supabaseClient
-                .from('registro_incidencias')
-                .delete()
-                .eq('id', datos.id)
-                .select();
-            
-            if (deleteError) throw new Error('Error al eliminar: ' + deleteError.message);
-
-            document.getElementById('cp_modal_confirmar_eliminacion').classList.remove('active');
-            window.incidenciaPendienteEliminacion = null;
-
-            await window.cargarIncidencias(datos.cedula, datos.tipo, datos.pagina);
-
-            const msgEl = document.getElementById('cp_msg');
-            if (msgEl) {
-                msgEl.textContent = '✅ Incidencia eliminada y respaldada correctamente';
-                msgEl.className = 'msg success';
-                msgEl.style.display = 'block';
-                setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+            // Procesar documentos únicos
+            for (const doc of docsUnicos) {
+                const radio = document.querySelector(`input[name="mod_doc_${doc.id}"]:checked`);
+                const estado = modEstadoDocs.unicos[doc.id];
+                if (radio && radio.value === 'si') {
+                    if (estado.newFile) {
+                        const ts = Date.now(); const path = `mod_${ts}_${doc.id}.pdf`;
+                        const { error: uploadError } = await bucket.upload(path, estado.newFile, { contentType: 'application/pdf' });
+                        if (uploadError) throw new Error(`Error subiendo ${doc.label}: ${uploadError.message}`);
+                        updateData[doc.id] = bucket.getPublicUrl(path).data.publicUrl;
+                        if (estado.urlOriginal) { const oldPath = estado.urlOriginal.split('/denuncias_documentos/')[1]; if (oldPath) await bucket.remove([oldPath]).catch(() => {}); }
+                    } else if (estado.toDelete) {
+                        updateData[doc.id] = null;
+                        if (estado.urlOriginal) { const oldPath = estado.urlOriginal.split('/denuncias_documentos/')[1]; if (oldPath) await bucket.remove([oldPath]).catch(() => {}); }
+                    } else { updateData[doc.id] = estado.urlOriginal; }
+                } else { updateData[doc.id] = null; }
             }
 
-            // ✅ LOG DE ELIMINACIÓN DE INCIDENCIA
-            if (typeof window.registrarLog === 'function') {
-                window.registrarLog(
-                    'ELIMINAR',
-                    'PERSONAS',
-                    {
-                        cedula: datos.cedula,
-                        nombre_completo: datos.nombre_completo || 'No disponible',
-                        tipo: datos.tipo,
-                        descripcion_eliminada: datos.descripcion,
-                        estacion: personaActual?.estacion_policial || 'N/A'
-                    },
-                    datos.id
-                );
+            // Procesar documentos múltiples
+            for (const doc of docsMultiples) {
+                const radio = document.querySelector(`input[name="mod_doc_${doc.id}"]:checked`);
+                const estado = modEstadoDocs.multiples[doc.id];
+                if (radio && radio.value === 'si') {
+                    const urlsFinales = [];
+                    estado.urlsOriginales.forEach((url, idx) => {
+                        if (!estado.indicesToDelete.includes(idx)) urlsFinales.push(url);
+                        else { const oldPath = url.split('/denuncias_documentos/')[1]; if (oldPath) bucket.remove([oldPath]).catch(() => {}); }
+                    });
+                    for (const file of estado.newFiles) {
+                        const ts = Date.now() + Math.random(); const path = `mod_${ts}_${doc.id}.pdf`;
+                        const { error: uploadError } = await bucket.upload(path, file, { contentType: 'application/pdf' });
+                        if (uploadError) throw new Error(`Error subiendo ${doc.label}: ${uploadError.message}`);
+                        urlsFinales.push(bucket.getPublicUrl(path).data.publicUrl);
+                    }
+                    updateData[doc.id] = urlsFinales.length > 0 ? urlsFinales : null;
+                } else {
+                    updateData[doc.id] = null;
+                    estado.urlsOriginales.forEach(url => { const oldPath = url.split('/denuncias_documentos/')[1]; if (oldPath) bucket.remove([oldPath]).catch(() => {}); });
+                }
             }
+
+            // Campos a actualizar
+            updateData.estacion_policial = document.getElementById('mod_estacion').value;
+            updateData.primer_nombre = document.getElementById('mod_nombre1').value.trim();
+            updateData.segundo_nombre = document.getElementById('mod_nombre2').value.trim() || null;
+            updateData.primer_apellido = document.getElementById('mod_apellido1').value.trim();
+            updateData.segundo_apellido = document.getElementById('mod_apellido2').value.trim() || null;
+            updateData.tlf_pais = document.getElementById('mod_tlf_pais').value || null;
+            updateData.tlf_numero = document.getElementById('mod_tlf_num').value.trim().replace(/\D/g, '') || null;
+            updateData.direccion = document.getElementById('mod_direccion').value.trim() || null;
+            updateData.motivo_denuncia = document.getElementById('mod_motivo').value.trim() || null;
+            updateData.observaciones = document.getElementById('mod_observaciones').value.trim() || null;
+
+            const { error: dbError } = await window.supabaseClient.from('denuncias').update(updateData).eq('id', denunciaId);
+            if (dbError) throw dbError;
+
+            if (msg) { msg.textContent = '✅ Denuncia actualizada exitosamente.'; msg.className = 'msg success'; msg.style.display = 'block'; }
+
+            // ✅ LOG DE ACTUALIZACIÓN (Con los valores que pediste)
+            await logModDenuncias('CREAR', {
+                denuncia_id: denunciaId,
+                numero_denuncia: document.getElementById('mod_numero_denuncia').value,
+                estacion: updateData.estacion_policial,
+                cedula: document.getElementById('mod_cedula').value,
+                estatus: 'Registrado'
+            }, denunciaId);
+
+            setTimeout(() => {
+                if (msg) msg.style.display = 'none';
+                document.getElementById('mod_form_container').style.display = 'none';
+                if (cedulaInput) cedulaInput.value = '';
+            }, 3000);
+
         } catch (err) {
-            console.error('Error al eliminar:', err);
-            alert('❌ Error al eliminar: ' + err.message);
-        } finally {
-            btnConfirmar.disabled = false;
-            btnConfirmar.textContent = '🗑️ Sí, Eliminar y Respaldar';
-        }
-    };
+            console.error('Error al actualizar:', err);
+            if (msg) { msg.textContent = '❌ ' + err.message; msg.className = 'msg error'; msg.style.display = 'block'; }
 
-    console.log("✅ Módulo consulta-personas.js inicializado correctamente");
+            // ✅ LOG DE ERROR EN ACTUALIZACIÓN
+            await logModDenuncias('ERROR', {
+                accion: 'ACTUALIZAR',
+                error: err.message,
+                denuncia_id: denunciaId
+            });
+        } finally {
+            btn.disabled = false; btn.textContent = '💾 Guardar Cambios';
+            loading.classList.remove('active');
+        }
+    });
+
+    inicializarContenedores();
+
+    // ✅ LOG DE INICIO DE MÓDULO
+    logModDenuncias('INICIAR', {
+        mensaje: 'Usuario abrió el módulo de modificación de denuncias'
+    });
+
+    console.log("✅ Módulo mod-denuncias.js inicializado correctamente");
 };
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', window.initConsultaPersonas);
+    document.addEventListener('DOMContentLoaded', window.initModDenuncias);
 } else {
-    window.initConsultaPersonas();
+    window.initModDenuncias();
 }
