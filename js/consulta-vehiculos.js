@@ -88,7 +88,7 @@ window.initConsultaVehiculos = function() {
 
         console.log('🔍 Buscando vehículo:', { tipo: tipoBusqueda, valor });
 
-        mostrarMensaje('🔍 Buscando...', 'info');
+        mostrarMensaje(' Buscando...', 'info');
         tipoSelector.style.display = 'none';
         fichaBreve.style.display = 'none';
         incidenciasSection.style.display = 'none';
@@ -132,20 +132,13 @@ window.initConsultaVehiculos = function() {
                 }
             }
 
+            // ✅ SI NO ENCUENTRA NADA: Solo muestra mensaje, NO registra log
             if (resultados.length === 0) {
                 mostrarMensaje('❌ No se encontró ningún vehículo con ese valor', 'error');
-                
-                // ✅ LOG: BÚSQUEDA SIN RESULTADOS
-                await logConsultaVehiculos('CONSULTA', {
-                    tipo_busqueda: tipoBusqueda,
-                    valor_buscado: valor,
-                    resultado: 'No encontrado',
-                    estatus: 'Verificación'
-                });
                 return;
             }
 
-            // ✅ LOG: BÚSQUEDA EXITOSA (Con datos del vehículo, estatus: Verificación)
+            // ✅ LOG: SOLO SE REGISTRA CUANDO SÍ ENCUENTRA UN VEHÍCULO
             const primerResultado = resultados[0];
             const marca = primerResultado.marca || primerResultado.marca_vehiculo || 'N/A';
             const modelo = primerResultado.modelo || primerResultado.modelo_vehiculo || 'N/A';
@@ -173,7 +166,7 @@ window.initConsultaVehiculos = function() {
             if (tiposUnicos.length > 1) {
                 resultadosMultiples = resultados;
                 mostrarSelectorTipos(resultados);
-                mostrarMensaje(`⚠️ Se encontraron ${resultados.length} registros en diferentes tipos`, 'info');
+                mostrarMensaje(`️ Se encontraron ${resultados.length} registros en diferentes tipos`, 'info');
             } else {
                 vehiculoActual = resultados[0];
                 tipoRegistroActual = resultados[0].tipo_registro;
@@ -185,14 +178,6 @@ window.initConsultaVehiculos = function() {
         } catch (err) {
             console.error('❌ Error buscando vehículo:', err);
             mostrarMensaje('❌ Error: ' + err.message, 'error');
-            
-            await logConsultaVehiculos('ERROR', {
-                accion: 'CONSULTA',
-                tipo_busqueda: tipoBusqueda,
-                valor_buscado: valor,
-                error: err.message,
-                estatus: 'Verificación'
-            });
         }
     }
 
@@ -207,7 +192,7 @@ window.initConsultaVehiculos = function() {
         const iconos = { automovil: '🚗', moto: '🏍️', vinculado: '🔗' };
         const titulos = { automovil: 'Automóvil', moto: 'Motocicleta', vinculado: 'Vinculado (Persona + Vehículo)' };
 
-        let html = `<div class="tipo-selector"><h3>⚠️ Se encontraron registros en múltiples tipos. Seleccione cuál desea ver:</h3><div class="tipo-options">`;
+        let html = `<div class="tipo-selector"><h3>️ Se encontraron registros en múltiples tipos. Seleccione cuál desea ver:</h3><div class="tipo-options">`;
         Object.keys(agrupados).forEach(tipo => {
             const count = agrupados[tipo].length;
             html += `<div class="tipo-option" onclick="window.seleccionarTipoVehiculo('${tipo}')">
@@ -235,7 +220,7 @@ window.initConsultaVehiculos = function() {
             await window.cargarIncidenciasVehiculo(identificador, tipoRegistroActual, 1);
             mostrarMensaje('✅ Vehículo seleccionado', 'success');
 
-            // ✅ LOG: SELECCIÓN DE TIPO (Con datos del vehículo, estatus: Verificación)
+            // ✅ LOG: SELECCIÓN DE TIPO
             const marca = vehiculoActual.marca || vehiculoActual.marca_vehiculo || 'N/A';
             const modelo = vehiculoActual.modelo || vehiculoActual.modelo_vehiculo || 'N/A';
             const anio = vehiculoActual.anio || vehiculoActual.anio_vehiculo || 'N/A';
@@ -266,12 +251,12 @@ window.initConsultaVehiculos = function() {
         const estatusClass = estatusLower.includes('verificaci') ? 'estatus-verificacion' :
             estatusLower.includes('procesad') ? 'estatus-procesado' : 'estatus-liberado';
 
-        const tipoIconos = { automovil: '🚗', moto: '️', vinculado: '🔗' };
+        const tipoIconos = { automovil: '🚗', moto: '🏍️', vinculado: '🔗' };
         const tipoTitulos = { automovil: 'Automóvil', moto: 'Motocicleta', vinculado: 'Vehículo Vinculado' };
 
         let alertasHtml = '';
         if (estatusLower.includes('procesad') && datosProcesado?.tipo_delito) {
-            alertasHtml += `<div class="ficha-alert ficha-alert-delito">️ <strong>Procesado por:</strong> ${datosProcesado.tipo_delito}</div>`;
+            alertasHtml += `<div class="ficha-alert ficha-alert-delito">⚖️ <strong>Procesado por:</strong> ${datosProcesado.tipo_delito}</div>`;
         }
         const problemaJudicial = data.problema_judicial || '';
         if (problemaJudicial && problemaJudicial.trim() !== '' && problemaJudicial.toLowerCase() !== 'no') {
@@ -324,7 +309,7 @@ window.initConsultaVehiculos = function() {
                 ${alertasHtml}
                 <div class="ficha-breve-grid">${htmlCampos}</div>
                 <div class="ficha-breve-actions">
-                    <button type="button" class="btn-ver-detalles" id="cv_btn_ver_detalles">📋 Ver Detalles Completos</button>
+                    <button type="button" class="btn-ver-detalles" id="cv_btn_ver_detalles"> Ver Detalles Completos</button>
                     ${btnIncidenciaHtml}
                 </div>
             </div>
@@ -350,7 +335,7 @@ window.initConsultaVehiculos = function() {
     async function mostrarDetallesCompletos(data, tipo) {
         if (!modalBody || !modalTitulo || !modalDetalles) return;
         modalTitulo.textContent = `📋 Detalles - ${tipo === 'automovil' ? 'Automóvil' : tipo === 'moto' ? 'Motocicleta' : 'Vehículo Vinculado'}`;
-        modalBody.innerHTML = '<div class="loading">⏳ Generando reporte oficial...</div>';
+        modalBody.innerHTML = '<div class="loading"> Generando reporte oficial...</div>';
         modalDetalles.classList.add('active');
 
         try {
@@ -426,14 +411,14 @@ window.initConsultaVehiculos = function() {
                 }
             } else if (tipo === 'vinculado') {
                 if (data.foto_frontal_persona || data.foto_perfil_izq_persona || data.foto_perfil_der_persona) {
-                    html += `<div class="seccion-titulo">📸 Fotografías de la Persona</div><div class="fotos-container">`;
+                    html += `<div class="seccion-titulo"> Fotografías de la Persona</div><div class="fotos-container">`;
                     if (data.foto_frontal_persona) html += `<div class="foto-item"><img src="${data.foto_frontal_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
                     if (data.foto_perfil_izq_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_izq_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Izq.</div></div>`;
                     if (data.foto_perfil_der_persona) html += `<div class="foto-item"><img src="${data.foto_perfil_der_persona}" onerror="this.style.display='none'"><div class="foto-item-label">Perfil Der.</div></div>`;
                     html += `</div>`;
                 }
                 if (data.foto_frontal_vehiculo || data.foto_trasera_vehiculo || data.foto_lado_der_vehiculo || data.foto_lado_izq_vehiculo) {
-                    html += `<div class="seccion-titulo">📸 Fotografías del Vehículo</div><div class="fotos-container">`;
+                    html += `<div class="seccion-titulo"> Fotografías del Vehículo</div><div class="fotos-container">`;
                     if (data.foto_frontal_vehiculo) html += `<div class="foto-item"><img src="${data.foto_frontal_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Frontal</div></div>`;
                     if (data.foto_trasera_vehiculo) html += `<div class="foto-item"><img src="${data.foto_trasera_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Trasera</div></div>`;
                     if (data.foto_lado_der_vehiculo) html += `<div class="foto-item"><img src="${data.foto_lado_der_vehiculo}" onerror="this.style.display='none'"><div class="foto-item-label">Lado Der.</div></div>`;
@@ -442,7 +427,7 @@ window.initConsultaVehiculos = function() {
                 }
             }
 
-            html += `<div class="seccion-titulo"> Datos del Vehículo</div><div class="ficha-completa-grid">`;
+            html += `<div class="seccion-titulo">🚗 Datos del Vehículo</div><div class="ficha-completa-grid">`;
 
             if (tipo === 'automovil' || tipo === 'moto') {
                 const campos = [
@@ -534,7 +519,7 @@ window.initConsultaVehiculos = function() {
                     incidencias.forEach(inc => {
                         html += `<div class="incidencia-item-print" style="border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 10px; border-left: 4px solid var(--secondary); border-radius: 4px; page-break-inside: avoid;">
                             <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">
-                                <span>🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+                                <span> ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
                                 <span>Por: ${inc.email_registrante || 'N/A'}</span>
                             </div>
                             <div style="font-size: 0.9rem; color: #1e293b; line-height: 1.5;">${inc.descripcion}</div>
@@ -556,7 +541,7 @@ window.initConsultaVehiculos = function() {
         } catch (err) {
             console.error('❌ Error generando reporte:', err);
             modalBody.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">
-                <h3>❌ Error al generar el reporte</h3>
+                <h3> Error al generar el reporte</h3>
                 <p>${err.message}</p>
             </div>`;
         }
@@ -576,7 +561,7 @@ window.initConsultaVehiculos = function() {
 
             if (error) throw error;
 
-            let html = '<div class="incidencias-section"><h3>📜 Historial de Incidencias</h3>';
+            let html = '<div class="incidencias-section"><h3> Historial de Incidencias</h3>';
 
             if (!incidencias || incidencias.length === 0) {
                 html += '<div class="sin-incidencias">No hay incidencias registradas</div>';
@@ -599,7 +584,7 @@ window.initConsultaVehiculos = function() {
                     html += `<div class="incidencia-item">
                         <div class="incidencia-item-header">
                             <div>
-                                <span class="incidencia-fecha"> ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
+                                <span class="incidencia-fecha">🕒 ${new Date(inc.fecha_hora).toLocaleString('es-VE')}</span>
                                 <span class="incidencia-autor">Por: ${inc.email_registrante || 'N/A'}</span>
                             </div>
                             ${btnEliminarHtml}
@@ -663,7 +648,7 @@ window.initConsultaVehiculos = function() {
             mostrarMensaje('✅ Incidencia registrada', 'success');
             await window.cargarIncidenciasVehiculo(identificador, tipoRegistroActual, 1);
 
-            // ✅ LOG: CREAR INCIDENCIA (Con datos del vehículo, estatus: Verificación)
+            // ✅ LOG: CREAR INCIDENCIA
             const marca = vehiculoActual.marca || vehiculoActual.marca_vehiculo || 'N/A';
             const modelo = vehiculoActual.modelo || vehiculoActual.modelo_vehiculo || 'N/A';
             const placa = vehiculoActual.placa || 'N/A';
@@ -761,7 +746,7 @@ window.initConsultaVehiculos = function() {
                 setTimeout(() => { msgEl.style.display = 'none'; }, 4000);
             }
 
-            // ✅ LOG: ELIMINAR INCIDENCIA (Con datos del vehículo, estatus: Verificación)
+            // ✅ LOG: ELIMINAR INCIDENCIA
             const placa = vehiculoActual?.placa || 'N/A';
             const marca = vehiculoActual?.marca || vehiculoActual?.marca_vehiculo || 'N/A';
             const modelo = vehiculoActual?.modelo || vehiculoActual?.modelo_vehiculo || 'N/A';
@@ -782,7 +767,7 @@ window.initConsultaVehiculos = function() {
             alert('❌ Error al eliminar: ' + err.message);
         } finally {
             btnConfirmar.disabled = false;
-            btnConfirmar.textContent = '️ Sí, Eliminar y Respaldar';
+            btnConfirmar.textContent = '🗑️ Sí, Eliminar y Respaldar';
         }
     };
 
