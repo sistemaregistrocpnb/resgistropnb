@@ -1,9 +1,9 @@
 window.initModDenuncias = function() {
-    console.log("⚙️ Iniciando módulo mod-denuncias.js...");
+    console.log("️ Iniciando módulo mod-denuncias.js...");
     if (window._modDenunciasInitialized) return;
     window._modDenunciasInitialized = true;
 
-    // 🔹 FUNCIÓN AUXILIAR PARA LOGS
+    // 🔹 FUNCIÓN AUXILIAR PARA LOGS (Integración con utils.js)
     async function logModDenuncias(accion, detalles, registroId = null) {
         if (typeof window.registrarLog !== 'function') {
             console.warn('⚠️ utils.js no disponible para registrar log');
@@ -12,9 +12,12 @@ window.initModDenuncias = function() {
         try {
             await window.registrarLog(accion, 'MOD_DENUNCIAS', detalles, registroId);
         } catch (e) {
-            console.warn('⚠️ Error registrando log:', e);
+            console.warn('️ Error registrando log:', e);
         }
     }
+
+    // 🔹 FLAG PARA EVITAR BÚSQUEDAS SIMULTÁNEAS
+    let isSearching = false;
 
     const docsUnicos = [
         { id: 'oficio_remision', label: '📨 Oficio de Remisión' },
@@ -152,7 +155,7 @@ window.initModDenuncias = function() {
             const item = document.createElement('div');
             item.className = 'file-item-multiple';
             item.style.background = '#dcfce7'; item.style.borderColor = '#86efac';
-            item.innerHTML = `<span>🆕 ${file.name} (Nuevo)</span><button type="button" onclick="window.mod_quitarMultipleNuevo('${docId}', ${idx})">❌ Quitar</button>`;
+            item.innerHTML = `<span> ${file.name} (Nuevo)</span><button type="button" onclick="window.mod_quitarMultipleNuevo('${docId}', ${idx})">❌ Quitar</button>`;
             listDiv.appendChild(item);
         });
         countDiv.textContent = `${contador} de ${max} archivos`;
@@ -217,7 +220,7 @@ window.initModDenuncias = function() {
     }
 
     // ==========================================
-    //  LÓGICA DE BÚSQUEDA (CON LOGS Y BÚSQUEDA FLEXIBLE)
+    // 🔹 LÓGICA DE BÚSQUEDA (ANTI-CUELgues + FLEXIBLE)
     // ==========================================
     const cedulaInput = document.getElementById('mod_buscar_cedula');
     const btnBuscar = document.getElementById('mod_btn_buscar');
@@ -232,6 +235,13 @@ window.initModDenuncias = function() {
     }
 
     btnBuscar?.addEventListener('click', async () => {
+        // 🔹 EVITAR BÚSQUEDAS SIMULTÁNEAS
+        if (isSearching) {
+            console.warn('⚠️ Ya hay una búsqueda en curso...');
+            return;
+        }
+        isSearching = true;
+
         const cedulaInputValue = cedulaInput?.value.trim().toUpperCase().replace(/\s/g, '') || '';
         const msgBusqueda = document.getElementById('mod_msg_busqueda');
         const formContainer = document.getElementById('mod_form_container');
@@ -240,26 +250,30 @@ window.initModDenuncias = function() {
         // ✅ VALIDACIÓN FLEXIBLE - Acepta con o sin prefijo V- o E-
         const cedulaRegex = /^([VE]-)?\d{6,9}$/;
 
+        // 🔹 LIMPIAR ESTADO ANTES DE CADA BÚSQUEDA
+        if (formContainer) formContainer.style.display = 'none';
+        if (listaContainer) { listaContainer.style.display = 'none'; listaContainer.innerHTML = ''; }
+
         if (!cedulaInputValue) {
             if (msgBusqueda) { msgBusqueda.textContent = '⚠️ El campo de cédula no puede estar vacío.'; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
+            isSearching = false;
             return;
         }
         if (!cedulaRegex.test(cedulaInputValue)) {
             if (msgBusqueda) { msgBusqueda.textContent = '⚠️ Formato incorrecto. Use: V-12345678, E-12345678, o solo 12345678'; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
+            isSearching = false;
             return;
         }
 
         // ✅ NORMALIZAR: Extraer solo los números para la búsqueda
         const cedulaNumeros = cedulaInputValue.replace(/^[VE]-/, '');
 
-        console.log(' Buscando cédula:', cedulaInputValue, '→ Números:', cedulaNumeros);
+        console.log('🔍 Buscando cédula:', cedulaInputValue, '→ Números:', cedulaNumeros);
 
-        if (msgBusqueda) { msgBusqueda.textContent = '⏳ Buscando...'; msgBusqueda.className = 'msg'; msgBusqueda.style.display = 'block'; }
-        if (formContainer) formContainer.style.display = 'none';
-        if (listaContainer) listaContainer.style.display = 'none';
+        if (msgBusqueda) { msgBusqueda.textContent = ' Buscando...'; msgBusqueda.className = 'msg'; msgBusqueda.style.display = 'block'; }
 
         try {
-            // ✅ BUSCAR TANTO CON COMO SIN PREFIJO (usando ilike para ser flexible)
+            // ✅ BÚSQUEDA FLEXIBLE con .ilike() (ignora mayúsculas/minúsculas)
             const { data, error } = await window.supabaseClient
                 .from('denuncias')
                 .select('*')
@@ -283,6 +297,7 @@ window.initModDenuncias = function() {
                     msgBusqueda.className = 'msg error';
                     msgBusqueda.style.display = 'block';
                 }
+                isSearching = false;
                 return;
             }
 
@@ -317,8 +332,8 @@ window.initModDenuncias = function() {
                 listaContainer.style.display = 'block';
             }
         } catch (err) {
-            console.error(' Error en búsqueda:', err);
-            if (msgBusqueda) { msgBusqueda.textContent = '❌ Error al buscar: ' + err.message; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
+            console.error('❌ Error en búsqueda:', err);
+            if (msgBusqueda) { msgBusqueda.textContent = ' Error al buscar: ' + err.message; msgBusqueda.className = 'msg error'; msgBusqueda.style.display = 'block'; }
 
             // ✅ LOG DE ERROR
             await logModDenuncias('ERROR', {
@@ -326,6 +341,8 @@ window.initModDenuncias = function() {
                 error: err.message,
                 cedula_buscada: cedulaInputValue
             });
+        } finally {
+            isSearching = false;
         }
     });
 
@@ -481,12 +498,13 @@ window.initModDenuncias = function() {
 
             if (msg) { msg.textContent = '✅ Denuncia actualizada exitosamente.'; msg.className = 'msg success'; msg.style.display = 'block'; }
 
-            // ✅ LOG DE ACTUALIZACIÓN
-            await logModDenuncias('ACTUALIZAR', {
+            // ✅ LOG DE ACTUALIZACIÓN (Con los valores que pediste)
+            await logModDenuncias('CREAR', {
                 denuncia_id: denunciaId,
                 numero_denuncia: document.getElementById('mod_numero_denuncia').value,
                 estacion: updateData.estacion_policial,
-                cedula: document.getElementById('mod_cedula').value
+                cedula: document.getElementById('mod_cedula').value,
+                estatus: 'Registrado'
             }, denunciaId);
 
             setTimeout(() => {
