@@ -295,7 +295,7 @@ if (log.detalles) {
             return;
         }
 
-       const badgeClass = (accion) => {
+ const badgeClass = (accion) => {
     const map = {
         'CREAR': 'badge-crear',
         'MODIFICAR': 'badge-modificar',
@@ -303,6 +303,7 @@ if (log.detalles) {
         'REINTEGRAR': 'badge-crear',
         'LOGIN': 'badge-login',
         'LOGOUT': 'badge-logout',
+        'CONSULTA': 'badge-consulta',
         'CONSULTA_VEHICULO': 'badge-consulta',
         'CONSULTA_PERSONA': 'badge-consulta',
         'CREAR_INCIDENCIA_VEHICULO': 'badge-crear',
