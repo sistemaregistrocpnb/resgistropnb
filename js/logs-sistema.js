@@ -311,8 +311,7 @@ const badgeClass = (accion) => {
         'ELIMINAR_INCIDENCIA_PERSONA': 'badge-eliminar'
     };
     return map[accion] || 'badge-otros';
-};
-        let html = `
+};    let html = `
         <table class="logs-table">
             <thead>
                 <tr>
