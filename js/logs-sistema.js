@@ -211,33 +211,53 @@ function formatearDetalles(log) {
         }
 
         // ✅ INCIDENCIAS - Badges específicos
-        if (log.accion === 'ELIMINAR_INCIDENCIA_PERSONA' || log.accion === 'ELIMINAR_INCIDENCIA_VEHICULO') {
-            return `<span class="badge badge-eliminar">ELIMINADO</span>`;
+      // ✅ CONSULTA DE VEHÍCULO - Mostrar "CONSULTA"
+if (log.accion === 'CONSULTA_VEHICULO') {
+    return `<span class="badge badge-modificar">CONSULTA</span>`;
+}
+
+// ✅ CONSULTA DE PERSONA - Mostrar "CONSULTA"
+if (log.accion === 'CONSULTA_PERSONA') {
+    return `<span class="badge badge-modificar">CONSULTA</span>`;
+}
+
+// ✅ INCIDENCIAS - Badges específicos
+if (log.accion === 'ELIMINAR_INCIDENCIA_PERSONA' || log.accion === 'ELIMINAR_INCIDENCIA_VEHICULO') {
+    return `<span class="badge badge-eliminar">ELIMINADO</span>`;
+}
+if (log.accion === 'CREAR_INCIDENCIA_PERSONA' || log.accion === 'CREAR_INCIDENCIA_VEHICULO') {
+    return `<span class="badge badge-crear">CREADO</span>`;
+}
+
+// ✅ Procesar detalles
+if (log.detalles) {
+    let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
+
+    // PRIORIDAD 1: Si hay estatus, mostrarlo como badge
+    if (d.estatus) {
+        const estatusLower = d.estatus.toLowerCase();
+        let badgeClass = 'badge-crear';
+
+        if (estatusLower.includes('eliminad') || estatusLower.includes('procesad')) {
+            badgeClass = 'badge-eliminar';
+        } else if (estatusLower.includes('verificaci')) {
+            badgeClass = 'badge-otros';
+        } else if (estatusLower.includes('modificad') || estatusLower.includes('reintegrad')) {
+            badgeClass = 'badge-modificar';
         }
-        if (log.accion === 'CREAR_INCIDENCIA_PERSONA' || log.accion === 'CREAR_INCIDENCIA_VEHICULO') {
-            return `<span class="badge badge-crear">CREADO</span>`;
+
+        return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
+    }
+
+    // PRIORIDAD 2: Para VEHICULOS
+    if (log.modulo === 'VEHICULOS') {
+        if (d.placa) {
+            const badgeClass = log.accion === 'MODIFICAR' ? 'badge-modificar' : 'badge-crear';
+            return `<span class="badge ${badgeClass}">${d.placa}</span>`;
+        } else {
+            return `<span class="badge badge-otros">VERIFICACIÓN</span>`;
         }
-
-        // ✅ Procesar detalles
-        if (log.detalles) {
-            let d = typeof log.detalles === 'string' ? JSON.parse(log.detalles) : log.detalles;
-
-            // PRIORIDAD 1: Si hay estatus, mostrarlo como badge
-            if (d.estatus) {
-                const estatusLower = d.estatus.toLowerCase();
-                let badgeClass = 'badge-crear';
-
-                if (estatusLower.includes('eliminad') || estatusLower.includes('procesad')) {
-                    badgeClass = 'badge-eliminar';
-                } else if (estatusLower.includes('verificaci')) {
-                    badgeClass = 'badge-otros';
-                } else if (estatusLower.includes('modificad') || estatusLower.includes('reintegrad')) {
-                    badgeClass = 'badge-modificar';
-                }
-
-                return `<span class="badge ${badgeClass}">${d.estatus}</span>`;
-            }
-
+    }
             // PRIORIDAD 2: Para VEHICULOS
             if (log.modulo === 'VEHICULOS') {
                 if (d.placa) {
