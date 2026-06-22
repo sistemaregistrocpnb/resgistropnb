@@ -174,15 +174,8 @@ window.initConsultaPersonas = function() {
                 return;
             }
 
-            console.log('❌ No se encontró en ninguna tabla');
-            mostrarMensaje('❌ No se encontró ninguna persona con esa cédula', 'error');
-            
-            await logConsultaPersonas('CONSULTA', {
-                cedula_buscada: cedulaInput,
-                cedula_normalizada: cedulaNormalizada,
-                resultado: 'No encontrado',
-                estatus: 'Verificación'
-            });
+                   console.log('❌ No se encontró en ninguna tabla');
+            mostrarMensaje(' No se encontró ninguna persona con esa cédula', 'error');
         } catch (err) {
             console.error('Error buscando:', err);
             mostrarMensaje('❌ Error: ' + err.message, 'error');
