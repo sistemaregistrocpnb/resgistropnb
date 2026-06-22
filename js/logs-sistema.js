@@ -211,11 +211,10 @@ function formatearDetalles(log) {
         }
 
         // ✅ INCIDENCIAS - Badges específicos
-      // ✅ CONSULTA DE VEHÍCULO - Mostrar "CONSULTA"
+// ✅ CONSULTA DE VEHÍCULO - Mostrar "VERIFICACIÓN" (amarillo)
 if (log.accion === 'CONSULTA_VEHICULO') {
-    return `<span class="badge badge-modificar">CONSULTA</span>`;
+    return `<span class="badge badge-otros">VERIFICACIÓN</span>`;
 }
-
 // ✅ CONSULTA DE PERSONA - Mostrar "CONSULTA"
 if (log.accion === 'CONSULTA_PERSONA') {
     return `<span class="badge badge-modificar">CONSULTA</span>`;
