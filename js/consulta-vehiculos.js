@@ -110,27 +110,27 @@ window.initConsultaVehiculos = function() {
                 return;
             }
 
-            // ✅ LOG: BÚSQUEDA EXITOSA (Con datos completos del vehículo, SIN estatus)
-            if (typeof window.registrarLog === 'function') {
-                const primerResultado = resultados[0];
-                window.registrarLog(
-                    'CONSULTA_VEHICULO',
-                    'VEHICULOS',
-                    {
-                        tipo_busqueda: tipoBusqueda,
-                        valor_buscado: valor,
-                        resultados_encontrados: resultados.length,
-                        placa: primerResultado.placa || 'N/A',
-                        marca: primerResultado.marca || primerResultado.marca_vehiculo || 'N/A',
-                        modelo: primerResultado.modelo || primerResultado.modelo_vehiculo || 'N/A',
-                        anio: primerResultado.anio || primerResultado.anio_vehiculo || 'N/A',
-                        color: primerResultado.color || primerResultado.color_vehiculo || 'N/A',
-                        serial_carroceria: primerResultado.serial_carroceria || 'N/A',
-                        serial_motor: primerResultado.serial_motor || 'N/A'
-                    },
-                    primerResultado.id
-                );
-            }
+       // Bloque 1 - En buscarVehiculo()
+if (typeof window.registrarLog === 'function') {
+    const primerResultado = resultados[0];
+    // Determinar el módulo según el tipo de registro
+    const moduloLog = primerResultado.tipo_registro === 'vinculado' ? 'PERSONAS' : 'VEHICULOS';
+    
+    window.registrarLog(
+        'CONSULTA_VEHICULO',
+        moduloLog,  // ← AHORA USA EL MÓDULO CORRECTO
+        {
+            tipo_busqueda: tipoBusqueda,
+            valor_buscado: valor,
+            resultados_encontrados: resultados.length,
+            estatus: primerResultado.estatus || 'N/A',
+            placa: primerResultado.placa || null,
+            marca: primerResultado.marca || primerResultado.marca_vehiculo || null,
+            modelo: primerResultado.modelo || primerResultado.modelo_vehiculo || null
+        },
+        primerResultado.id
+    );
+}
 
             const tiposUnicos = [...new Set(resultados.map(r => r.tipo_registro))];
 
@@ -192,26 +192,24 @@ window.initConsultaVehiculos = function() {
 
             // ✅ LOG: SELECCIÓN DE TIPO (Con datos completos del vehículo, SIN estatus)
             if (typeof window.registrarLog === 'function' && vehiculoActual) {
-                window.registrarLog(
-                    'CONSULTA_VEHICULO',
-                    'VEHICULOS',
-                    {
-                        tipo_busqueda: tipoBusquedaSelect?.value || 'placa',
-                        valor_buscado: buscarInput?.value.trim().toUpperCase() || '',
-                        tipo_seleccionado: tipo,
-                        placa: vehiculoActual.placa || 'N/A',
-                        marca: vehiculoActual.marca || vehiculoActual.marca_vehiculo || 'N/A',
-                        modelo: vehiculoActual.modelo || vehiculoActual.modelo_vehiculo || 'N/A',
-                        anio: vehiculoActual.anio || vehiculoActual.anio_vehiculo || 'N/A',
-                        color: vehiculoActual.color || vehiculoActual.color_vehiculo || 'N/A',
-                        serial_carroceria: vehiculoActual.serial_carroceria || 'N/A',
-                        serial_motor: vehiculoActual.serial_motor || 'N/A'
-                    },
-                    vehiculoActual.id
-                );
-            }
-        }
-    };
+    // Determinar el módulo según el tipo de registro
+    const moduloLog = tipoRegistroActual === 'vinculado' ? 'PERSONAS' : 'VEHICULOS';
+    
+    window.registrarLog(
+        'CONSULTA_VEHICULO',
+        moduloLog,  // ← AHORA USA EL MÓDULO CORRECTO
+        {
+            tipo_busqueda: tipoBusquedaSelect?.value || 'placa',
+            valor_buscado: buscarInput?.value.trim().toUpperCase() || '',
+            tipo_seleccionado: tipo,
+            estatus: vehiculoActual.estatus || 'N/A',
+            placa: vehiculoActual.placa || null,
+            marca: vehiculoActual.marca || vehiculoActual.marca_vehiculo || null,
+            modelo: vehiculoActual.modelo || vehiculoActual.modelo_vehiculo || null
+        },
+        vehiculoActual.id
+    );
+}
 
     async function renderFichaBreve(data, tipo) {
         if (!fichaBreve) return;
