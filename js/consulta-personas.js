@@ -133,15 +133,15 @@ window.initConsultaPersonas = function() {
                 mostrarMensaje('✅ Persona encontrada', 'success');
                 
                 // ✅ LOG DE CONSULTA DE PERSONA
-                await logConsultaPersonas('CONSULTA', {
-                    cedula_buscada: cedulaInput,
-                    cedula_normalizada: cedulaNormalizada,
-                    nombre_completo: `${persona.primer_nombre || ''} ${persona.primer_apellido || ''}`.trim() || 'No disponible',
-                    tipo: 'Persona',
-                    estacion: persona.estacion_policial || 'N/A'
-                }, persona.id);
-                return;
-            }
+          // ✅ LOG DE CONSULTA DE PERSONA
+await logConsultaPersonas('CONSULTA', {
+    cedula_buscada: cedulaInput,
+    cedula_normalizada: cedulaNormalizada,
+    nombre_completo: `${persona.primer_nombre || ''} ${persona.primer_apellido || ''}`.trim() || 'No disponible',
+    tipo: 'Persona',
+    estacion: persona.estacion_policial || 'N/A',
+    estatus: 'Verificación'
+}, persona.id);
 
             // ✅ BUSCAR EN registro_vinculado CON CÉDULA NORMALIZADA
             const { data: vinculado, error: errVinculado } = await window.supabaseClient
@@ -170,14 +170,16 @@ window.initConsultaPersonas = function() {
                 mostrarMensaje('✅ Vehículo vinculado encontrado', 'success');
                 
                 // ✅ LOG DE CONSULTA DE VINCULADO
-                await logConsultaPersonas('CONSULTA', {
-                    cedula_buscada: cedulaInput,
-                    cedula_normalizada: cedulaNormalizada,
-                    nombre_completo: `${vinculado.primer_nombre || ''} ${vinculado.primer_apellido || ''}`.trim() || 'No disponible',
-                    tipo: 'Vinculado',
-                    estacion: vinculado.estacion_policial || 'N/A',
-                    placa: vinculado.placa || 'N/A'
-                }, vinculado.id);
+           // ✅ LOG DE CONSULTA DE VINCULADO
+await logConsultaPersonas('CONSULTA', {
+    cedula_buscada: cedulaInput,
+    cedula_normalizada: cedulaNormalizada,
+    nombre_completo: `${vinculado.primer_nombre || ''} ${vinculado.primer_apellido || ''}`.trim() || 'No disponible',
+    tipo: 'Vinculado',
+    estacion: vinculado.estacion_policial || 'N/A',
+    placa: vinculado.placa || 'N/A',
+    estatus: 'Verificación'
+}, vinculado.id);
                 return;
             }
 
@@ -185,11 +187,13 @@ window.initConsultaPersonas = function() {
             mostrarMensaje('❌ No se encontró ninguna persona con esa cédula', 'error');
             
             // ✅ LOG DE CONSULTA SIN RESULTADOS
-            await logConsultaPersonas('CONSULTA', {
-                cedula_buscada: cedulaInput,
-                cedula_normalizada: cedulaNormalizada,
-                resultado: 'No encontrado'
-            });
+// ✅ LOG DE CONSULTA SIN RESULTADOS
+await logConsultaPersonas('CONSULTA', {
+    cedula_buscada: cedulaInput,
+    cedula_normalizada: cedulaNormalizada,
+    resultado: 'No encontrado',
+    estatus: 'Verificación'
+});
         } catch (err) {
             console.error('Error buscando:', err);
             mostrarMensaje('❌ Error: ' + err.message, 'error');
