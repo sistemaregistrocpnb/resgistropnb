@@ -17,8 +17,6 @@ window.initConsultaPersonas = function() {
     let totalIncidencias = 0;
     let cedulaActualIncidencias = null;
     let tipoActualIncidencias = null;
-
-    // 🔹 FUNCIÓN AUXILIAR PARA LOGS
     async function logConsultaPersonas(accion, detalles, registroId = null) {
         if (typeof window.registrarLog !== 'function') {
             console.warn('⚠️ utils.js no disponible para registrar log');
@@ -31,7 +29,6 @@ window.initConsultaPersonas = function() {
         }
     }
 
-    // 🔹 FUNCIÓN PARA NORMALIZAR CÉDULA
     function normalizarCedula(cedulaInput) {
         if (!cedulaInput) return '';
         let cedula = cedulaInput.trim().toUpperCase().replace(/\s/g, '');
@@ -103,7 +100,7 @@ window.initConsultaPersonas = function() {
         incidenciasPaginaActual = 1;
 
         try {
-            // ✅ BUSCAR EN registro_personas
+    
             const { data: persona, error: errPersona } = await window.supabaseClient
                 .from('registro_personas')
                 .select('*')
@@ -129,7 +126,6 @@ window.initConsultaPersonas = function() {
                 await window.cargarIncidencias(cedulaNormalizada, 'persona', 1);
                 mostrarMensaje('✅ Persona encontrada', 'success');
                 
-                // ✅ LOG DE CONSULTA
                 await logConsultaPersonas('CONSULTA', {
                     cedula_buscada: cedulaInput,
                     cedula_normalizada: cedulaNormalizada,
@@ -141,7 +137,6 @@ window.initConsultaPersonas = function() {
                 return;
             }
 
-            // ✅ BUSCAR EN registro_vinculado
             const { data: vinculado, error: errVinculado } = await window.supabaseClient
                 .from('registro_vinculado')
                 .select('*')
@@ -167,7 +162,6 @@ window.initConsultaPersonas = function() {
                 await window.cargarIncidencias(cedulaNormalizada, 'vinculado', 1);
                 mostrarMensaje('✅ Vehículo vinculado encontrado', 'success');
                 
-                // ✅ LOG DE CONSULTA
                 await logConsultaPersonas('CONSULTA', {
                     cedula_buscada: cedulaInput,
                     cedula_normalizada: cedulaNormalizada,
@@ -183,7 +177,6 @@ window.initConsultaPersonas = function() {
             console.log('❌ No se encontró en ninguna tabla');
             mostrarMensaje('❌ No se encontró ninguna persona con esa cédula', 'error');
             
-            // ✅ LOG DE CONSULTA SIN RESULTADOS
             await logConsultaPersonas('CONSULTA', {
                 cedula_buscada: cedulaInput,
                 cedula_normalizada: cedulaNormalizada,
@@ -194,7 +187,6 @@ window.initConsultaPersonas = function() {
             console.error('Error buscando:', err);
             mostrarMensaje('❌ Error: ' + err.message, 'error');
             
-            // ✅ LOG DE ERROR
             await logConsultaPersonas('ERROR', {
                 accion: 'CONSULTA',
                 cedula_buscada: cedulaInput,
@@ -356,8 +348,6 @@ window.initConsultaPersonas = function() {
                 html += `<div class="seccion-titulo">👤 Datos Personales</div>`;
                 html += alertasHtml;
                 html += `<div class="ficha-completa-grid">`;
-
-                // ✅ CAMBIADO: Se quitó "Estatus" y se agregó "Estación de Detención"
                 const camposPersona = [
                     { label: 'Primer Nombre', value: data.primer_nombre },
                     { label: 'Segundo Nombre', value: data.segundo_nombre },
@@ -651,7 +641,6 @@ window.initConsultaPersonas = function() {
             mostrarMensaje('✅ Incidencia registrada', 'success');
             await window.cargarIncidencias(personaActual.cedula, tipoRegistroActual, 1);
 
-            // ✅ LOG DE CREACIÓN DE INCIDENCIA
             await logConsultaPersonas('CREAR', {
                 cedula: personaActual.cedula,
                 nombre_completo: `${personaActual.primer_nombre || ''} ${personaActual.primer_apellido || ''}`.trim() || 'No disponible',
@@ -738,7 +727,6 @@ window.initConsultaPersonas = function() {
                 setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
             }
 
-            // ✅ LOG DE ELIMINACIÓN DE INCIDENCIA
             await logConsultaPersonas('ELIMINAR', {
                 cedula: datos.cedula,
                 nombre_completo: datos.nombre_completo || 'No disponible',
