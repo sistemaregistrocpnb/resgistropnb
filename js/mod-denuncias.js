@@ -499,12 +499,12 @@ window.initModDenuncias = function() {
             if (msg) { msg.textContent = '✅ Denuncia actualizada exitosamente.'; msg.className = 'msg success'; msg.style.display = 'block'; }
 
             // ✅ LOG DE ACTUALIZACIÓN (Con los valores que pediste)
-            await logModDenuncias('CREAR', {
+            await logModDenuncias('MODIFICAR', {
                 denuncia_id: denunciaId,
                 numero_denuncia: document.getElementById('mod_numero_denuncia').value,
                 estacion: updateData.estacion_policial,
                 cedula: document.getElementById('mod_cedula').value,
-                estatus: 'Registrado'
+                estatus: 'MODIFICADO'
             }, denunciaId);
 
             setTimeout(() => {
