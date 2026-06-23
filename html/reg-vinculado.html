@@ -1,4 +1,27 @@
 <style>
+  .status-msg {
+    font-size: 0.8rem;
+    margin-top: 4px;
+    font-weight: 600;
+    min-height: 20px;
+}
+.status-msg.valid {
+    color: #15803d;
+}
+.status-msg.error {
+    color: #dc2626;
+}
+.status-msg {
+    color: #64748b;
+}
+.input-valid {
+    border-color: #15803d !important;
+    background-color: #f0fdf4 !important;
+}
+.input-error {
+    border-color: #dc2626 !important;
+    background-color: #fef2f2 !important;
+}
 :root { 
   --primary: #002b5c; 
   --secondary: #c5a028; 
@@ -817,7 +840,7 @@
                 
 <div class="form-group">
     <label>Serial Carrocería <span style="color:#64748b; font-weight:400;"></span></label>
-    <input type="text" id="pv_v_serial_carro">
+    <input type="text" id="pv_v_serial_motor" placeholder="Ingrese el serial de motor" style="text-transform: uppercase;">
     <small style="color:#64748b; font-size:0.75rem; display:block; margin-top:4px;">
         Deje vacío si no es visible o no aplica
     </small>
@@ -825,7 +848,7 @@
 
 <div class="form-group">
     <label>Serial Motor <span style="color:#64748b; font-weight:400;"></span></label>
-    <input type="text" id="pv_v_serial_motor">
+    <input type="text" id="pv_v_serial_motor" placeholder="Deje vacío si no es visible o no aplica" style="text-transform: uppercase; font-style: italic; color: #64748b;">
     <small style="color:#64748b; font-size:0.75rem; display:block; margin-top:4px;">
         Deje vacío si no es visible o no aplica
     </small>
