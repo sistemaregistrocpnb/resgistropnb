@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-      // 2. TIEMPO REAL (Lógica de privacidad estricta + APERTURA AUTOMÁTICA)
+    // 2. TIEMPO REAL (Lógica de privacidad estricta + APERTURA AUTOMÁTICA)
 window.chatChannelMessages = window.supabaseClient.channel('chat-room-privado')
 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensajes' }, (payload) => {
     const nuevoMensaje = payload.new;
