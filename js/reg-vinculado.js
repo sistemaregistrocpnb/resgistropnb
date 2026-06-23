@@ -215,13 +215,13 @@ window.initRegVinculado = function() {
             displayBox.addEventListener('click', (e) => { e.stopPropagation(); optionsBox.style.display = optionsBox.style.display === 'block' ? 'none' : 'block'; });
             document.addEventListener('click', (e) => { if (!e.target.closest('.phone-dropdown-wrapper')) optionsBox.style.display = 'none'; });
 
-
             nativeSelect.value = '+58';
             flagImg.src = 'https://flagcdn.com/w20/ve.png';
             codeText.textContent = '+58';
             countryText.textContent = 'Venezuela';
         }
     };
+
     const setupPhotoPreview = (inputId, imgId) => {
         const input = document.getElementById(inputId);
         const img = document.getElementById(imgId);
@@ -243,37 +243,67 @@ window.initRegVinculado = function() {
         };
     }
 
+    // ✅ FUNCIÓN MEJORADA: Verifica duplicados buscando en todas las tablas relevantes
+    // Para seriales (carrocería/motor), busca incluso si otros registros tienen null
     async function verificarDuplicado(inputId, msgId, tablas, columna, tipoVehiculo) {
         const input = document.getElementById(inputId);
         const msgEl = document.getElementById(msgId);
         if (!input || !msgEl) return;
+        
         const val = input.value.trim().toUpperCase();
+        
+        // Si está vacío o muy corto, limpiar validación
         if (!val || val.length < 5) {
             input.classList.remove('input-valid', 'input-error');
             msgEl.textContent = '';
             msgEl.className = 'status-msg';
             return;
         }
+        
         if (tablas.length === 0) {
             input.classList.remove('input-valid', 'input-error');
             msgEl.textContent = '⚠️ Seleccione el tipo de vehículo primero';
             msgEl.className = 'status-msg error';
             return;
         }
+        
         msgEl.textContent = '⏳ Verificando...';
         msgEl.className = 'status-msg';
+        
         try {
             let found = false;
             let foundIn = '';
+            let foundValue = '';
+            
+            // Para seriales, usar búsqueda exacta (eq) en lugar de ilike
+            const esSerial = columna === 'serial_carroceria' || columna === 'serial_motor';
+            
             for (const tabla of tablas) {
                 let query = window.supabaseClient.from(tabla).select('id');
+                
+                // Filtrar por tipo de vehículo si es necesario
                 if (tabla === 'registro_vinculado' && columna !== 'cedula' && tipoVehiculo) {
                     query = query.eq('tipo_vehiculo', tipoVehiculo);
                 }
-                const { data, error } = await query.ilike(columna, val).limit(1);
-                if (error) throw error;
+                
+                // Para seriales, usar búsqueda exacta (case-sensitive)
+                // Para placa y cédula, usar ilike (case-insensitive)
+                if (esSerial) {
+                    query = query.eq(columna, val);
+                } else {
+                    query = query.ilike(columna, val);
+                }
+                
+                const { data, error } = await query.limit(1);
+                
+                if (error) {
+                    console.warn(`Error buscando en ${tabla}:`, error);
+                    continue;
+                }
+                
                 if (data && data.length > 0) {
                     found = true;
+                    foundValue = val;
                     if (tabla === 'registro_motos') foundIn = 'Motocicletas';
                     else if (tabla === 'registro_automoviles') foundIn = 'Automóviles';
                     else if (tabla === 'registro_vinculado') foundIn = 'Vehículos Vinculados';
@@ -281,6 +311,7 @@ window.initRegVinculado = function() {
                     break;
                 }
             }
+            
             if (found) {
                 input.classList.add('input-error');
                 input.classList.remove('input-valid');
@@ -322,6 +353,7 @@ window.initRegVinculado = function() {
                 verificarDuplicado('pv_p_cedula', 'pv-msg-cedula', tablas, 'cedula', null);
             }, 600));
         }
+        
         if (placaInput) {
             placaInput.addEventListener('input', debounce(() => {
                 const tipo = tipoVehInput?.value;
@@ -334,19 +366,27 @@ window.initRegVinculado = function() {
                 verificarDuplicado('pv_v_placa', 'pv-msg-placa', tablas, 'placa', tipo);
             }, 600));
         }
+        
         if (serialCarroInput) {
             serialCarroInput.addEventListener('input', debounce(() => {
                 const tipo = tipoVehInput?.value;
                 if (!tipo) return;
-                const tablas = tipo === 'Motocicleta' ? ['registro_motos', 'registro_vinculado'] : ['registro_automoviles', 'registro_vinculado'];
+                // ✅ Buscar en TODAS las tablas donde pueda existir el serial
+                const tablas = tipo === 'Motocicleta' 
+                    ? ['registro_motos', 'registro_vinculado'] 
+                    : ['registro_automoviles', 'registro_vinculado'];
                 verificarDuplicado('pv_v_serial_carro', 'pv-msg-carro', tablas, 'serial_carroceria', tipo);
             }, 600));
         }
+        
         if (serialMotorInput) {
             serialMotorInput.addEventListener('input', debounce(() => {
                 const tipo = tipoVehInput?.value;
                 if (!tipo) return;
-                const tablas = tipo === 'Motocicleta' ? ['registro_motos', 'registro_vinculado'] : ['registro_automoviles', 'registro_vinculado'];
+                // ✅ Buscar en TODAS las tablas donde pueda existir el serial
+                const tablas = tipo === 'Motocicleta' 
+                    ? ['registro_motos', 'registro_vinculado'] 
+                    : ['registro_automoviles', 'registro_vinculado'];
                 verificarDuplicado('pv_v_serial_motor', 'pv-msg-motor', tablas, 'serial_motor', tipo);
             }, 600));
         }
@@ -527,7 +567,6 @@ window.initRegVinculado = function() {
             e.target.value = e.target.value.replace(/\D/g, '');
         });
     }
-
 
     cargarEstaciones();
     cargarAnios();
