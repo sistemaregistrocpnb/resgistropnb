@@ -92,6 +92,11 @@ body { background: var(--bg); color: var(--text); height: 100vh; overflow: hidde
 .chat-send-btn { background: var(--secondary); color: var(--primary); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
 .chat-send-btn:hover { background: #d4af37; }
 @media (max-width: 600px) { .chat-window { width: 90%; right: 5%; bottom: 95px; height: 60vh; } .chat-bubble { bottom: 15px; right: 15px; width: 55px; height: 55px; } }
+ @keyframes pulseChat {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(197, 160, 40, 0.7); }
+    50% { transform: scale(1.02); box-shadow: 0 0 15px 5px rgba(197, 160, 40, 0.4); }
+    100% { transform: scale(1); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+}
 </style>
 </head>
 <body>
