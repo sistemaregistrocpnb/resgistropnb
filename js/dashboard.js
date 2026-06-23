@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.isManualLogout = false;
 
     const userEmailEl = document.getElementById('user-email');
-    const userRoleEl = document.getElementById('user-role');
+    const userRoleEl = document.getElementById('user-role');a
     const btnLogout = document.getElementById('btn-logout');
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
@@ -329,35 +329,60 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // 2. TIEMPO REAL (Lógica de privacidad estricta)
-        window.chatChannelMessages = window.supabaseClient.channel('chat-room-privado')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensajes' }, (payload) => {
-                const nuevoMensaje = payload.new;
-                if (nuevoMensaje.id && document.querySelector(`[data-msg-id="${nuevoMensaje.id}"]`)) return;
+      // 2. TIEMPO REAL (Lógica de privacidad estricta + APERTURA AUTOMÁTICA)
+window.chatChannelMessages = window.supabaseClient.channel('chat-room-privado')
+.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensajes' }, (payload) => {
+    const nuevoMensaje = payload.new;
+    if (nuevoMensaje.id && document.querySelector(`[data-msg-id="${nuevoMensaje.id}"]`)) return;
 
-                const esMio = nuevoMensaje.remitente_id === currentUserId;
-                const esParaMi = nuevoMensaje.receptor_id === currentUserId;
-                const esSoporte = nuevoMensaje.receptor_id === null;
+    const esMio = nuevoMensaje.remitente_id === currentUserId;
+    const esParaMi = nuevoMensaje.receptor_id === currentUserId;
+    const esSoporte = nuevoMensaje.receptor_id === null;
 
-                let puedoVerlo = false;
-                if (currentUserRole === 'administrador' || currentUserRole === 'moderador') {
-                    puedoVerlo = esMio || esParaMi || esSoporte;
-                } else {
-                    puedoVerlo = esMio || esParaMi;
-                }
+    let puedoVerlo = false;
+    if (currentUserRole === 'administrador' || currentUserRole === 'moderador') {
+        puedoVerlo = esMio || esParaMi || esSoporte;
+    } else {
+        puedoVerlo = esMio || esParaMi;
+    }
 
-                if (puedoVerlo) {
-                    if (chatWindow.style.display === 'none' && !esMio) {
-                        const badge = document.getElementById('chat-notification');
-                        if (badge) {
-                            badge.style.display = 'flex';
-                            badge.textContent = parseInt(badge.textContent || 0) + 1;
-                        }
-                    }
-                    if (chatMessages) agregarMensajeAlDOM(nuevoMensaje);
-                }
-            })
-            .subscribe();
+    if (puedoVerlo) {
+        // 🚨 NUEVA LÓGICA: APERTURA AUTOMÁTICA SI EL EMISOR ES ADMINISTRADOR 🚨
+        const esEmisorAdmin = nuevoMensaje.rol_remitente === 'administrador';
+        const soyModoConsultor = (currentUserRole === 'moderador' || currentUserRole === 'consultor');
+        const chatEstaCerrado = (chatWindow.style.display === 'none' || chatWindow.style.display === '');
+
+        if (esEmisorAdmin && soyModoConsultor && chatEstaCerrado && !esMio) {
+            chatWindow.style.display = 'flex'; // Abre el chat automáticamente
+            
+            // Aplica una pequeña animación para que noten que se abrió solo
+            chatWindow.style.animation = 'none';
+            setTimeout(() => {
+                chatWindow.style.animation = 'pulseChat 0.5s ease-out';
+            }, 10);
+
+            // Carga el historial para que el mensaje nuevo se vea en contexto
+            if (activeChatUserId) {
+                cargarMensajesIndividuales(activeChatUserId);
+            } else {
+                cargarMensajesRecientes();
+            }
+        }
+        // --------------------------------------------------------------------
+
+        // Lógica original de la notificación (Badge)
+        if (chatWindow.style.display === 'none' && !esMio) {
+            const badge = document.getElementById('chat-notification');
+            if (badge) {
+                badge.style.display = 'flex';
+                badge.textContent = parseInt(badge.textContent || 0) + 1;
+            }
+        }
+        
+        if (chatMessages) agregarMensajeAlDOM(nuevoMensaje);
+    }
+})
+.subscribe();
 
         // 3. INTERFAZ
         if (chatBubble) {
