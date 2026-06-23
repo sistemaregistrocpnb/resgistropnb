@@ -243,92 +243,94 @@ window.initRegVinculado = function() {
         };
     }
 
-    // ✅ FUNCIÓN MEJORADA: Verifica duplicados buscando en todas las tablas relevantes
-    // Para seriales (carrocería/motor), busca incluso si otros registros tienen null
     async function verificarDuplicado(inputId, msgId, tablas, columna, tipoVehiculo) {
-        const input = document.getElementById(inputId);
-        const msgEl = document.getElementById(msgId);
-        if (!input || !msgEl) return;
-        
-        const val = input.value.trim().toUpperCase();
-        
-        // Si está vacío o muy corto, limpiar validación
-        if (!val || val.length < 5) {
-            input.classList.remove('input-valid', 'input-error');
-            msgEl.textContent = '';
-            msgEl.className = 'status-msg';
-            return;
-        }
-        
-        if (tablas.length === 0) {
-            input.classList.remove('input-valid', 'input-error');
-            msgEl.textContent = '⚠️ Seleccione el tipo de vehículo primero';
-            msgEl.className = 'status-msg error';
-            return;
-        }
-        
-        msgEl.textContent = '⏳ Verificando...';
+    const input = document.getElementById(inputId);
+    const msgEl = document.getElementById(msgId);
+    if (!input || !msgEl) return;
+    
+    const val = input.value.trim().toUpperCase();
+    
+    // Si el campo está vacío, mostrar "Disponible" (es opcional)
+    if (!val) {
+        input.classList.remove('input-error');
+        input.classList.add('input-valid');
+        msgEl.textContent = '✅ Disponible';
+        msgEl.className = 'status-msg valid';
+        return;
+    }
+    
+    // Si tiene menos de 3 caracteres, esperar
+    if (val.length < 3) {
+        input.classList.remove('input-valid', 'input-error');
+        msgEl.textContent = '⏳ Ingrese más caracteres...';
         msgEl.className = 'status-msg';
+        return;
+    }
+    
+    if (tablas.length === 0) {
+        input.classList.remove('input-valid', 'input-error');
+        msgEl.textContent = '⚠️ Seleccione el tipo de vehículo primero';
+        msgEl.className = 'status-msg error';
+        return;
+    }
+    
+    msgEl.textContent = '⏳ Verificando...';
+    msgEl.className = 'status-msg';
+    
+    try {
+        let found = false;
+        let foundIn = '';
         
-        try {
-            let found = false;
-            let foundIn = '';
-            let foundValue = '';
+        for (const tabla of tablas) {
+            let query = window.supabaseClient.from(tabla).select('id');
             
-            // Para seriales, usar búsqueda exacta (eq) en lugar de ilike
+            // Para seriales, usar búsqueda exacta (case-sensitive)
             const esSerial = columna === 'serial_carroceria' || columna === 'serial_motor';
             
-            for (const tabla of tablas) {
-                let query = window.supabaseClient.from(tabla).select('id');
-                
-                // Filtrar por tipo de vehículo si es necesario
-                if (tabla === 'registro_vinculado' && columna !== 'cedula' && tipoVehiculo) {
-                    query = query.eq('tipo_vehiculo', tipoVehiculo);
-                }
-                
-                // Para seriales, usar búsqueda exacta (case-sensitive)
-                // Para placa y cédula, usar ilike (case-insensitive)
-                if (esSerial) {
-                    query = query.eq(columna, val);
-                } else {
-                    query = query.ilike(columna, val);
-                }
-                
-                const { data, error } = await query.limit(1);
-                
-                if (error) {
-                    console.warn(`Error buscando en ${tabla}:`, error);
-                    continue;
-                }
-                
-                if (data && data.length > 0) {
-                    found = true;
-                    foundValue = val;
-                    if (tabla === 'registro_motos') foundIn = 'Motocicletas';
-                    else if (tabla === 'registro_automoviles') foundIn = 'Automóviles';
-                    else if (tabla === 'registro_vinculado') foundIn = 'Vehículos Vinculados';
-                    else if (tabla === 'registro_personas') foundIn = 'Personas Registradas';
-                    break;
-                }
+            if (esSerial) {
+                query = query.eq(columna, val);
+            } else {
+                query = query.ilike(columna, val);
             }
             
-            if (found) {
-                input.classList.add('input-error');
-                input.classList.remove('input-valid');
-                msgEl.textContent = `❌ Ya registrado en ${foundIn}`;
-                msgEl.className = 'status-msg error';
-            } else {
-                input.classList.add('input-valid');
-                input.classList.remove('input-error');
-                msgEl.textContent = '✅ Disponible';
-                msgEl.className = 'status-msg valid';
+            // IMPORTANTE: Filtrar por tipo de vehículo en registro_vinculado
+            if (tabla === 'registro_vinculado' && tipoVehiculo) {
+                query = query.eq('tipo_vehiculo', tipoVehiculo);
             }
-        } catch (e) {
-            console.error('Error en validación:', e);
-            msgEl.textContent = '⚠️ Error de conexión';
-            msgEl.className = 'status-msg error';
+            
+            const { data, error } = await query.limit(1);
+            
+            if (error) {
+                console.warn(`Error buscando en ${tabla}:`, error);
+                continue;
+            }
+            
+            if (data && data.length > 0) {
+                found = true;
+                if (tabla === 'registro_motos') foundIn = 'Motocicletas';
+                else if (tabla === 'registro_automoviles') foundIn = 'Automóviles';
+                else if (tabla === 'registro_vinculado') foundIn = 'Vehículos Vinculados';
+                break;
+            }
         }
+        
+        if (found) {
+            input.classList.add('input-error');
+            input.classList.remove('input-valid');
+            msgEl.textContent = `❌ Ya registrado en ${foundIn}`;
+            msgEl.className = 'status-msg error';
+        } else {
+            input.classList.add('input-valid');
+            input.classList.remove('input-error');
+            msgEl.textContent = '✅ Disponible';
+            msgEl.className = 'status-msg valid';
+        }
+    } catch (e) {
+        console.error('Error en validación:', e);
+        msgEl.textContent = '⚠️ Error de conexión';
+        msgEl.className = 'status-msg error';
     }
+}
 
     window.reValidarCamposVehiculo = function() {
         const placa = document.getElementById('pv_v_placa');
