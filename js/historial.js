@@ -213,87 +213,109 @@ window.initHistorial = function() {
         if (statVehiculos) statVehiculos.textContent = countAutos + countMotos;
     }
 
-    // ✅ CARGAR ESTADÍSTICAS POR ESTACIÓN
-    async function cargarEstadisticasPorEstacion() {
-        if (tableContainer) {
-            tableContainer.innerHTML = '<div class="loading">Cargando estadísticas por estación...</div>';
-        }
-
-        const estaciones = [
-            'EPM MARACAIBO', 'EPM SAN FRANCISCO', 'EPM LA CAÑADA',
-            'EPM ESTACION POLICIAL JESUS E. LOSADA', 'EPP CRISTO DE ARANZA',
-            'EPP LUIS HURTADO', 'EPP DAGNINO', 'EPP OLEGARIO VILLALOBOS',
-            'EPP CHIQUINQUIRA', 'EPP FRANCISCO EUGENIO', 'EPP CARACCIOLO',
-            'EPP IDELFONSO', 'EPP VENANCIO PULGAR', 'EPP COQUIVACOA-ZAPARA',
-            'EPP RAUL LEONI', 'EPP ANTONIO BORJAS ROMERO', 'EPP JUANA DE AVILA',
-            'EPP SAN ISIDRO', 'EPP CASIQUE MARA', 'EPP BOLIVAR', 'EPP EL BAJO',
-            'EPP DOMITILA', 'EPP CORTIJOS', 'EPP MARCIAL HERNANDEZ',
-            'EPP POTRERITO', 'EPP ANDRES BELLO', 'EPP SANTA LUCIA'
-        ];
-
-        estacionesData = [];
-        const totalEstaciones = estaciones.length;
-
-        for (let i = 0; i < totalEstaciones; i++) {
-            const estacion = estaciones[i];
-            const stats = {
-                estacion: estacion,
-                personas: 0,
-                vehiculos: 0,
-                vinculados: 0,
-                denuncias: 0,
-                procesados: 0,
-                total: 0
-            };
-
-            const progresoBase = 30 + ((i / totalEstaciones) * 65);
-            actualizarProgreso(
-                progresoBase,
-                '🏛️ Analizando estaciones...',
-                `${i + 1}/${totalEstaciones}: ${estacion}`
-            );
-
-            // ✅ Personas totales de la estación
-            if (tablasDisponibles['registro_personas']) {
-                stats.personas = await contarSeguro('registro_personas', { estacion_policial: estacion });
-            }
-            
-            // ✅ Automóviles de la estación
-            if (tablasDisponibles['registro_automoviles']) {
-                stats.vehiculos += await contarSeguro('registro_automoviles', { estacion_policial: estacion });
-            }
-            
-            // ✅ Motos de la estación
-            if (tablasDisponibles['registro_motos']) {
-                stats.vehiculos += await contarSeguro('registro_motos', { estacion_policial: estacion });
-            }
-            
-            // ✅ Vinculados de la estación
-            if (tablasDisponibles['registro_vinculado']) {
-                stats.vinculados = await contarSeguro('registro_vinculado', { estacion_policial: estacion });
-            }
-            
-            // ✅ Denuncias de la estación
-            if (tablasDisponibles['denuncias']) {
-                stats.denuncias = await contarSeguro('denuncias', { estacion_policial: estacion });
-            }
-            
-            // ✅ PROCESADOS: Ahora viene de registro_personas con estacion + estatus='Procesado'
-            if (tablasDisponibles['registro_personas']) {
-                stats.procesados = await contarSeguro('registro_personas', { 
-                    estacion_policial: estacion,
-                    estatus: 'Procesado'
-                });
-            }
-
-            stats.total = stats.personas + stats.vehiculos + stats.vinculados + stats.denuncias + stats.procesados;
-            estacionesData.push(stats);
-        }
-
-        estacionesData.sort((a, b) => b.total - a.total);
-        currentPage = 1;
-        renderTablaEstaciones();
+ // ✅ CARGAR ESTADÍSTICAS POR ESTACIÓN
+async function cargarEstadisticasPorEstacion() {
+    if (tableContainer) {
+        tableContainer.innerHTML = '<div class="loading">Cargando estadísticas por estación...</div>';
     }
+    
+const estaciones = [
+    'EPM MARACAIBO',
+    'EPP CHIQUINQUIRA',
+    'EPP FRANCISCO EUGENIO BUSTAMANTE',
+    'EPP RAUL LEONI',
+    'EPP LUIS HURTADO HIGUERA',
+    'EPP OLEGARIO VILLALOBOS',
+    'EPP CRISTO DE ARANZA',
+    'EPP ANTONIO BORJAS ROMERO',
+    'EPP COQUIVACOA',
+    'EPP IDELFONSO VASQUEZ',
+    'EPP MANUEL DAGNINO',
+    'EPP CARACCIOLO PARRA PEREZ',
+    'EPP VENANCIO PULGAR',
+    'EPP JUANA DE AVILA',
+    'EPP SAN ISIDRO',
+    'EPP BOLIVAR',
+    'EPP SANTA LUCIA',
+    'EPP CECILIO ACOSTA',
+    'EPP CACIQUE MARA',
+    'BRIGADA CICLISTA',
+    'EPM SAN FRANCISCO',
+    'EPP EL BAJO',
+    'EPP DOMITILA FLORES',
+    'EPP LOS CORTIJOS',
+    'EPP DOMINGO RUS',
+    'EPP MARCIAL HERNANDEZ',
+    'EPM LA CAÑADA DE URDANETA',
+    'EPP ANDRES BELLO',
+    'EPP SAN JOSE DE POTRERITO',
+    'EPM JESUS ENRIQUE LOSSADA',
+    'SERVICIO MOTORIZADO'
+];
+    
+    estacionesData = [];
+    const totalEstaciones = estaciones.length;
+    
+    for (let i = 0; i < totalEstaciones; i++) {
+        const estacion = estaciones[i];
+        const stats = {
+            estacion: estacion,
+            personas: 0,
+            vehiculos: 0,
+            vinculados: 0,
+            denuncias: 0,
+            procesados: 0,
+            total: 0
+        };
+        
+        const progresoBase = 30 + ((i / totalEstaciones) * 65);
+        actualizarProgreso(
+            progresoBase,
+            '🏛️ Analizando estaciones...',
+            `${i + 1}/${totalEstaciones}: ${estacion}`
+        );
+        
+        // ✅ Personas totales de la estación
+        if (tablasDisponibles['registro_personas']) {
+            stats.personas = await contarSeguro('registro_personas', { estacion_policial: estacion });
+        }
+        
+        // ✅ Automóviles de la estación
+        if (tablasDisponibles['registro_automoviles']) {
+            stats.vehiculos += await contarSeguro('registro_automoviles', { estacion_policial: estacion });
+        }
+        
+        // ✅ Motos de la estación
+        if (tablasDisponibles['registro_motos']) {
+            stats.vehiculos += await contarSeguro('registro_motos', { estacion_policial: estacion });
+        }
+        
+        // ✅ Vinculados de la estación
+        if (tablasDisponibles['registro_vinculado']) {
+            stats.vinculados = await contarSeguro('registro_vinculado', { estacion_policial: estacion });
+        }
+        
+        // ✅ Denuncias de la estación
+        if (tablasDisponibles['denuncias']) {
+            stats.denuncias = await contarSeguro('denuncias', { estacion_policial: estacion });
+        }
+        
+        // ✅ PROCESADOS: Ahora viene de registro_personas con estacion + estatus='Procesado'
+        if (tablasDisponibles['registro_personas']) {
+            stats.procesados = await contarSeguro('registro_personas', {
+                estacion_policial: estacion,
+                estatus: 'Procesado'
+            });
+        }
+        
+        stats.total = stats.personas + stats.vehiculos + stats.vinculados + stats.denuncias + stats.procesados;
+        estacionesData.push(stats);
+    }
+    
+    estacionesData.sort((a, b) => b.total - a.total);
+    currentPage = 1;
+    renderTablaEstaciones();
+}
 
     // ✅ FUNCIÓN PRINCIPAL
     async function cargarEstadisticas() {
