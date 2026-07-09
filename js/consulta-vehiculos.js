@@ -261,7 +261,7 @@ window.initConsultaVehiculos = function() {
             }
         }
 
-        htmlCampos += `<div class="ficha-breve-item"><div class="ficha-breve-label">Estación</div><div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div></div>`;
+        htmlCampos += `<div class="ficha-breve-item"><div class="ficha-breve-label">Estación/Servicio de Detención</div><div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div></div>`;
 
         const observaciones = data.observaciones || '';
         if (observaciones) {
@@ -414,7 +414,7 @@ window.initConsultaVehiculos = function() {
                     { label: 'Cilindraje', value: data.cilindraje },
                     { label: 'Tipo Carrocería', value: data.tipo_carroceria },
                     { label: 'Cédula Propietario', value: data.cedula_propietario },
-                    { label: 'Estación', value: data.estacion_policial },
+                    { label: 'Estación/Servicio de Detención', value: data.estacion_policial },
                     { label: 'Estatus', value: data.estatus }
                 ];
                 campos.forEach(c => {
@@ -437,7 +437,7 @@ window.initConsultaVehiculos = function() {
                     { label: 'Serial Carroc.', value: data.serial_carroceria },
                     { label: 'Cilindraje', value: data.cilindraje },
                     { label: 'Marca Corporal', value: data.marca_corporal },
-                    { label: 'Estación', value: data.estacion_policial },
+                    { label: 'Estación/Servicio de Detención', value: data.estacion_policial },
                     { label: 'Estatus', value: data.estatus }
                 ];
                 campos.forEach(c => {
