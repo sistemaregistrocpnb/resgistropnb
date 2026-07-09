@@ -347,7 +347,7 @@ window.initConsultaPersonas = function() {
                     { label: 'Primer Apellido', value: data.primer_apellido },
                     { label: 'Segundo Apellido', value: data.segundo_apellido },
                     { label: 'Cédula', value: data.cedula },
-                    { label: 'Estación de Detención', value: data.estacion_policial },
+                    { label: 'Estación/Servicio de Detención', value: data.estacion_policial },
                     { label: 'Fecha Nac.', value: data.fecha_nacimiento },
                     { label: 'Edad', value: data.edad ? `${data.edad} años` : null },
                     { label: 'Nacionalidad', value: data.nacionalidad },
