@@ -212,7 +212,7 @@ window.initConsultaPersonas = function() {
         let htmlCampos = `
             <div class="ficha-breve-item"><div class="ficha-breve-label">Cédula</div><div class="ficha-breve-value">${data.cedula || 'N/A'}</div></div>
             <div class="ficha-breve-item"><div class="ficha-breve-label">Tipo</div><div class="ficha-breve-value">${tipo === 'persona' ? '👤 Persona' : '🚗 Vinculado (Vehículo)'}</div></div>
-            <div class="ficha-breve-item"><div class="ficha-breve-label">Estación de Detención</div><div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div></div>
+            <div class="ficha-breve-item"><div class="ficha-breve-label">Estación/Servicio de Detención</div><div class="ficha-breve-value">${data.estacion_policial || 'N/A'}</div></div>
             <div class="ficha-breve-item"><div class="ficha-breve-label">Fecha</div><div class="ficha-breve-value">${new Date(data.created_at || data.creado_en).toLocaleString('es-VE')}</div></div>
         `;
 
